@@ -1,0 +1,102 @@
+system: You are a judge that compares two answers and determines their similarity and accuracy.
+  These below are some examples of how the evaluation should behave. given the question, the expected answer, and the generated response, rate the semantic similarity from a scale to 1 to 5.
+  If the wordings differs but the meaning of the two responsesis exactly the same, the result should be 5. Otherwise, rate it accordingly.
+
+  Here are some examples of previous scored responses.
+
+  <questions>
+    <question_item>
+        <question>Secondo l'articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza), in materia di abusi di mercato, per informazione privilegiata si intende un'informazione che, tra l'altro:</question>
+        <expected_correct_answer>se resa pubblica, potrebbe avere un effetto significativo sui prezzi di uno strumento finanziario</expected_correct_answer>
+        <generated_response>Secondo l’articolo 180 del d. lgs. n. 58/1998 (TUF), per informazione privilegiata si intende un'informazione di carattere preciso, che non è stata resa pubblica, concernente, direttamente o indirettamente, uno o più emittenti strumenti finanziari o strumenti finanziari stessi e che, se resa pubblica, potrebbe influire in modo sensibile sui prezzi di tali strumenti finanziari.</generated_response>
+        <evaluation_score>5.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Ai sensi del comma 1 dell'articolo 187-septies del decreto legislativo n. 58/1998 (Testo Unico della Finanza), entro quanti giorni dalla contestazione i soggetti interessati possono presentare deduzioni in merito a sanzioni amministrative applicate nei casi di abuso di informazioni privilegiate e manipolazione del mercato?</question>
+        <expected_correct_answer>Entro trenta giorni e possono anche chiedere un’audizione personale in sede di istruttoria</expected_correct_answer>
+        <generated_response>Ai sensi del comma 1 dell’articolo 187-septies del decreto legislativo n. 58/1998, i soggetti interessati possono presentare deduzioni in merito entro **30 giorni** dalla contestazione delle violazioni.</generated_response>
+        <evaluation_score>4.0</evaluation_score>
+    </question_item>
+
+    <question_item>
+        <question>Secondo il comma 1 dell’art. 184 del d. lgs. n. 58/1998 (Testo Unico della Finanza), un soggetto che, essendo in possesso di informazioni privilegiate in ragione della partecipazione al capitale dell’emittente, acquista per conto di terzi strumenti finanziari, utilizzando tali informazioni, commette abuso di informazioni privilegiate e viene conseguentemente punito?</question>
+        <expected_correct_answer>Sì, e viene punito con la reclusione da due a dodici anni e con la multa da euro ventimila a euro tre milioni</expected_correct_answer>
+        <generated_response>Sì. Secondo il comma 1 dell’art. 184 del d. lgs. n. 58/1998 (TUF), commette abuso di informazioni privilegiate (insider trading) anche chi, possedendo informazioni privilegiate in ragione della partecipazione al capitale dell’emittente, acquista (o vende) strumenti finanziari per conto proprio o di terzi, utilizzando tali informazioni. Tale condotta è punita penalmente.</generated_response>
+        <evaluation_score>4.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Secondo il comma 1 dell'art. 182 del d. lgs. n. 58/1998 (Testo Unico della Finanza), le disposizioni in materia di manipolazione del mercato, di cui all'art. 187-ter dello stesso decreto, si applicano:</question>
+        <expected_correct_answer>ai fatti concernenti strumenti del mercato monetario per i quali è stata presentata una richiesta di ammissione alla negoziazione in un sistema multilaterale di negoziazione di un qualunque Paese dell'Unione europea</expected_correct_answer>
+        <generated_response>Secondo il comma 1 dell’art. 182 del d.lgs. n. 58/1998 (TUF), le disposizioni in materia di manipolazione del mercato, di cui all’art. 187-ter, si applicano agli strumenti finanziari ammessi alla negoziazione in un mercato regolamentato italiano o di altro Stato dell’Unione Europea, nonché agli strumenti finanziari il cui valore dipende da tali strumenti.</generated_response>
+        <evaluation_score>4.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Nel caso delle persone incaricate dell'esecuzione di ordini relativi a strumenti finanziari, l'informazione trasmessa da un cliente e connessa agli ordini pendenti in strumenti finanziari del cliente può essere considerata una informazione privilegiata ai sensi dell'articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza)?</question>
+        <expected_correct_answer>Sì, purché, tra l'altro, abbia un carattere preciso</expected_correct_answer>
+        <generated_response>Sì, l'informazione trasmessa da un cliente e connessa agli ordini pendenti in strumenti finanziari può essere considerata informazione privilegiata ai sensi dell’art. 180 del d.lgs. n. 58/1998, se tratta di informazioni di carattere preciso, non pubbliche e idonee, se rese pubbliche, a influenzare sensibilmente il prezzo degli strumenti finanziari.</generated_response>
+        <evaluation_score>5.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Ai sensi del comma 3 dell'art. 187-quater del d. lgs. n. 58/1998 (Testo Unico della Finanza), se un consulente finanziario abilitato all'offerta fuori sede riceve un provvedimento sanzionatorio in materia di abuso di informazioni privilegiate e manipolazione del mercato, la CONSOB può intimare al soggetto abilitato di non avvalersi dell’autore della violazione per un periodo non superiore a:</question>
+        <expected_correct_answer>tre anni</expected_correct_answer>
+        <generated_response>Ai sensi del comma 3 dell'art. 187-quater del d. lgs. n. 58/1998, la CONSOB può intimare al soggetto abilitato di non avvalersi dell’autore della violazione per un periodo non superiore a **tre anni**.</generated_response>
+        <evaluation_score>5.0</evaluation_score>
+    </question_item>
+
+    <question_item>
+        <question>Secondo l'articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza), in materia di abusi di mercato, le azioni di società, ammesse alla negoziazione in un mercato regolamentato di un qualunque Paese dell’Unione europea, sono considerate strumenti finanziari?</question>
+        <expected_correct_answer>Sì, sempre</expected_correct_answer>
+        <generated_response>Sì, secondo l’articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza), le azioni di società ammesse alla negoziazione in un mercato regolamentato di un qualunque Paese dell’Unione europea sono considerate strumenti finanziari ai fini della disciplina sugli abusi di mercato.</generated_response>
+        <evaluation_score>5.0</evaluation_score>
+    </question_item>
+
+    <question_item>
+        <question>Ai sensi dell’art. 186 del d. lgs. n. 58/1998 (Testo Unico della Finanza), un soggetto condannato per aver diffuso notizie false, idonee a provocare una sensibile alterazione del prezzo di strumenti finanziari negoziati in un mercato regolamentato italiano, è punito anche con l’applicazione di pene accessorie previste dal codice penale per una durata non inferiore a:</question>
+        <expected_correct_answer>sei mesi</expected_correct_answer>
+        <generated_response>Ai sensi dell’art. 186 del d. lgs. n. 58/1998, il soggetto è punito anche con le pene accessorie previste dal codice penale per una durata **non inferiore a due anni**.</generated_response>
+        <evaluation_score>1.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Secondo l'articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza), in materia di abusi di mercato, per informazione privilegiata si intende un'informazione che, tra l'altro:</question>
+        <expected_correct_answer>concerne, direttamente o indirettamente, uno o più emittenti strumenti finanziari o uno o più strumenti finanziari</expected_correct_answer>
+        <generated_response>Secondo l’articolo 180 del d. lgs. n. 58/1998, un’informazione privilegiata è qualsiasi informazione che riguarda uno strumento finanziario, anche se non ancora resa pubblica, senza ulteriori dettagli sugli emittenti o strumenti specifici.</generated_response>
+        <evaluation_score>2.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Secondo l'articolo 180 del d. lgs. n. 58/1998 (Testo Unico della Finanza), in materia di abusi di mercato, i valori mobiliari, per i quali è stata presentata richiesta di ammissione alle negoziazioni in un mercato regolamentato di un qualunque Paese dell'Unione europea, sono considerati strumenti finanziari?</question>
+        <expected_correct_answer>Sì, sempre</expected_correct_answer>
+        <generated_response>Sì, i valori mobiliari per i quali è stata presentata richiesta di ammissione alle negoziazioni in un mercato regolamentato dell'Unione europea sono generalmente considerati strumenti finanziari, ma potrebbero esserci eccezioni in casi particolari.</generated_response>
+        <evaluation_score>3.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Ai sensi del comma 1 dell'art. 187-ter del d. lgs. n. 58/1998 (TUF), salve le sanzioni penali quando il fatto costituisce reato, chi diffonde informazioni tramite Internet, che forniscano segnali falsi o fuorvianti in merito all'offerta, alla domanda o al prezzo di uno strumento finanziario, è punito con una sanzione amministrativa pecuniaria?</question>
+        <expected_correct_answer>Sì, quando la persona che ha proceduto alla diffusione sapeva, o avrebbe dovuto sapere, che le informazioni erano false o fuorvianti</expected_correct_answer>
+        <generated_response>Sì, ai sensi del comma 1 dell’art. 187-ter del d. lgs. n. 58/1998 (TUF), salvo che il fatto costituisca reato, chi diffonde informazioni tramite Internet fornendo segnali falsi o fuorvianti sull’offerta, domanda o prezzo di strumenti finanziari è punito con una sanzione amministrativa pecuniaria.</generated_response>
+        <evaluation_score>5.0</evaluation_score>
+    </question_item>
+    <question_item>
+        <question>Ai sensi dell'art. 187-septies del d. lgs. n. 58/1998 (Testo Unico della Finanza), le sanzioni amministrative previste in materia di abusi di mercato sono applicate dalla CONSOB, previa contestazione degli addebiti agli interessati, da effettuarsi entro:</question>
+        <expected_correct_answer>centottanta giorni dall'accertamento ovvero entro trecentosessanta giorni se l'interessato risiede o ha la sede all'estero</expected_correct_answer>
+        <generated_response>Ai sensi dell’art. 187-septies del d. lgs. n. 58/1998 (TUF), la CONSOB deve contestare gli addebiti agli interessati entro **180 giorni** dalla data in cui ha avuto notizia degli illeciti.</generated_response>
+        <evaluation_score>4.0</evaluation_score>
+    </question_item>
+  </questions>
+
+
+
+  
+user: |
+  Given the question, Cìcompare the expected correct answer and the generated response rate their semantic similarity and accuracy on a scale from 1 to 5:
+  1 = Very low accuracy and similarity
+  2 = Low accuracy and similarity
+  3 = Moderate accuracy and similarity
+  4 = High accuracy and similarity
+  5 = Equal response
+  
+  <question>{question}</Question>
+  <expected_correct_answer>{expected_correct_answer}</Expected_answer>
+  <generated_response>{generated_response}</Generated_Response>
+
+  
+
+  Respond only with a single digit from 1 to 5.

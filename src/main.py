@@ -16,5 +16,9 @@ logger = logging.getLogger(__name__)
 """ MAIN """
 if __name__ == "__main__":
 
-
+    # Dataset creation and upload
     logger.info(f"Starting Financial Advisor QA Data Preparation...")
+
+    data_prep = FinancialAdvisorDataPrep(DATA_LOCATION)
+    qa_items = data_prep.prepare_data()
+    logger.info(f"Prepared {len(qa_items)} QA items.")
