@@ -1,13 +1,12 @@
 import logging, os
-from dataset_core.dataset_loader import DatasetLoader
-from dataset_core.models.qa_model import QAItem
+from src.dataset.loaders import DatasetLoader
+from src.dataset.models import QAItem
 from langfuse import Langfuse, get_client
 from langfuse.openai import OpenAI
 from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 from typing import List
-from urllib.parse import quote
 
 
 """ CONFIG """
@@ -16,40 +15,31 @@ logging.basicConfig(level=logging.INFO)
 
 
 """ CLASS """
-class DatasetManager(DatasetLoader):
+class QADatasetLoader(DatasetLoader):
     """
     Specialized class to prepare financial advisor QA dataset.
     Inherits from DatasetLoader to utilize its loading capabilities.
     Attributes:
-        input_path (str): The path to the financial advisor dataset files.
+        input_path (str): Path to the financial advisor dataset files.
+        create_langfuse_dataset_bool: The
     Methods:
         prepare_data() -> List[QAItem]: Prepares and returns the financial advisor QA data as a list of QAItem instances.
     """
 
-    def __init__(self, input_path: str, create_langfuse_dataset_bool: bool = False):
-
-
-        super().__init__(input_path)
-        self.langfuse_client = Langfuse(
-            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-            host=os.getenv("LANGFUSE_OTEL_HOST"),
+    def __init__(self, input_path: str, create_langfuse_dataset_bool: bool = False, dataset_name: str = ""):
+        super().__init__(input_path, create_langfuse_dataset_bool, dataset_name)
+        self.langfuse = Langfuse(
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
+            host=os.getenv("LANGFUSE_HOST", ""),
         )
-        self.create_langfuse_dataset_bool = create_langfuse_dataset_bool
+        self.input_files = []
 
-    def prepare_data(self) -> List[QAItem]:
-        """
-        Prepares and returns the financial advisor QA data as a list of QAItem instances.
-        Adds a 'theme' field to each QAItem, which is the filename of the Excel file.
-        Logs the head of each dataframe.
-        Also creates a Langfuse dataset item for each row. No expected_output is provided.
-        Returns:
-            List[QAItem]: A list of QAItem instances for financial advisor data.
-        """
-        items = []
+
+    def load(self):
         excel_files = list(Path(self.input_path).glob("*.xlsx"))
         for file in excel_files:
-            df = pd.read_excel(file)[:100]
+            df = pd.read_excel(file)
             df = df.rename(
                 columns={
                     "ID": "id",
@@ -65,7 +55,21 @@ class DatasetManager(DatasetLoader):
                 }
             )
             df["theme"] = file.stem
-            logger.info(f"Head of {file.name}:")
+            self.input_files.append(df)
+
+
+    def prepare_data(self) -> List[QAItem]:
+        """
+        Prepares and returns the financial advisor QA data as a list of QAItem instances.
+        Adds a 'theme' field to each QAItem, which is the filename of the Excel file.
+        Logs the head of each dataframe.
+        Also creates a Langfuse dataset item for each row. No expected_output is provided.
+        Returns:
+            List[QAItem]: A list of QAItem instances for financial advisor data.
+        """
+        items = []
+        for df in self.input_files:
+            logger.info(f"\tHead:")
             logger.info(df.head())
             for _, row in df.iterrows():
                 # build QAItem
@@ -94,10 +98,19 @@ class DatasetManager(DatasetLoader):
         """
         if self.create_langfuse_dataset_bool:
             logger.info("Creating Langfuse dataset items...")
-            dataset_name = "unicredit/fin-adv-dataset"
+
+            # Checking of dataset existence
+            try:
+                self.langfuse.get_dataset(self.dataset_name)
+                logger.info(f"\tDataset '{self.dataset_name}' already exists.")
+            except Exception:
+                logger.info(f"\tDataset '{self.dataset_name}' not found. Creating it now...")
+                self.langfuse.create_dataset(name=self.dataset_name)
+
+
             for _, row in tqdm(dataset_df.iterrows(), total=len(dataset_df)):
-                self.langfuse_client.create_dataset_item(
-                    dataset_name=dataset_name,
+                self.langfuse.create_dataset_item(
+                    dataset_name=self.dataset_name,
                     input={
                         "id": str(row["id"]),
                         "question": (

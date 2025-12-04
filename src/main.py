@@ -1,10 +1,8 @@
 import logging, os
 from dotenv import load_dotenv
-from src.__init__ import (
-    DATA_LOCATION,
-    EXECUTION_RESULTS_LOCATION,
-    EVALUATION_RESULTS_LOCATION,
-)
+from src import DATA_LOCATION
+from src.dataset.loaders import QADatasetLoader
+from src.dataset.loaders.dataset_m import GenericDatasetLoader
 
 
 """ CONFIG """
@@ -17,8 +15,31 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
 
     # Dataset creation and upload
-    logger.info(f"Starting Financial Advisor QA Data Preparation...")
+    logger.info(f"\tStarting Data Preparation...")
 
-    data_prep = FinancialAdvisorDataPrep(DATA_LOCATION)
-    qa_items = data_prep.prepare_data()
-    logger.info(f"Prepared {len(qa_items)} QA items.")
+    """
+    dataset = QADatasetLoader(input_path=DATA_LOCATION,
+                              create_langfuse_dataset_bool=True,
+                              dataset_name="QADataset")
+    dataset.load()
+    qa_items = dataset.prepare_data()
+    logger.info(f"\tPrepared {len(qa_items)} QA items.")
+    """
+
+    dataset = GenericDatasetLoader(
+        input_path=DATA_LOCATION,
+        column_mapping={
+            "ID": "id",
+            "livello": "level",
+            "Argomento": "topic",
+            "pratico": "practical",
+            "Domanda": "question",
+            "opzione A": "option_a",
+            "opzione B": "option_b",
+            "opzione C": "option_c",
+            "opzione D": "option_d",
+            "Risposta": "answer",
+        }
+    )
+    dataset.load()
+    qa_items = dataset.prepare_data()
