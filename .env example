@@ -1,0 +1,15 @@
+## IMPORTANT
+# This file is used to set environment variables.
+# Do not commit this file to version control.
+
+##########################
+# Langfuse Configuration #
+##########################
+LANGFUSE_SECRET_KEY=
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_HOST=
+
+##########################
+# OpenAI Configuration   #
+##########################
+OPENAI_API_KEY=

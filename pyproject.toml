@@ -1,0 +1,29 @@
+[project]
+name = "multi-language-model-evaluation-framework"
+version = "0.1.0"
+description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis"
+readme = "README.md"
+requires-python = ">3.11"
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "python-dotenv",
+    "uvicorn",
+    "openai",
+    "langchain",
+    "langchain-core",
+    "langchain-openai",
+    "langgraph>=0.6.6",
+    "langfuse>=3.10.1",
+    "litellm>=1.79.3",
+    "matplotlib",
+    "networkx",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
+    "streamlit",
+    "openpyxl",
+    "xlsxwriter>=3.2.9",
+    "pandas>=2.3.3",
+    "playwright",
+]
