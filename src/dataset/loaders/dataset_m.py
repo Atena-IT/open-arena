@@ -58,8 +58,7 @@ class GenericDatasetLoader:
             for _, row in df.iterrows():
 
                 # Select only fields that exist in model
-                row_dict = {
-                    field: None if pd.isna(row[field]) else str(row[field])
+                row_dict = {field: None if pd.isna(row[field]) else str(row[field])
                     for field in model_fields
                     if field in row
                 }
