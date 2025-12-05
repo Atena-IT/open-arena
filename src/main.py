@@ -28,18 +28,10 @@ if __name__ == "__main__":
 
     dataset = GenericDatasetLoader(
         input_path=DATA_LOCATION,
-        column_mapping={
-            "ID": "id",
-            "livello": "level",
-            "Argomento": "topic",
-            "pratico": "practical",
-            "Domanda": "question",
-            "opzione A": "option_a",
-            "opzione B": "option_b",
-            "opzione C": "option_c",
-            "opzione D": "option_d",
-            "Risposta": "answer",
-        }
+        create_langfuse_dataset_bool=True,
+        dataset_name="QADataset",
     )
     dataset.load()
     qa_items = dataset.prepare_data()
+
+    print(qa_items[0])
