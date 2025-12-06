@@ -18,9 +18,9 @@ class LLMClient:
         self.langfuse = Langfuse(
             public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
             secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
-            host="http://localhost:3000",
+            host=os.getenv("LANGFUSE_HOST", ""),
         )
-        os.environ["OPENAI_API_KEY"] = "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"
+        os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "").strip()
         print(os.environ["OPENAI_API_KEY"])
 
 
