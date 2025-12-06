@@ -9,31 +9,42 @@ class DatasetLoader(ABC):
     """
     General class to load the dataset from a specified input path.
     Can be extended to match new input specifications and formats, to be then transformed into QAItem instances.
-    Attributes:
-        input_path (Path): The path to the dataset files.
+    Parameters:
+        :param input_path: The path to the dataset files.
+        :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse dataset.
+        :param dataset_name: The name of the Langfuse dataset.
     Methods:
-        load() -> List[QAItem]: Loads and parses the dataset files into a list of QAItem instances.
+        load(): Loads and parses the dataset files into a list of instances.
+        prepare_data() -> List: Prepares and returns the dataset as a list of model instances
+        create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse dataset from the provided DataFrame.
     """
 
+
     def __init__(self, input_path: str, create_langfuse_dataset_bool: bool = False, dataset_name: str = ""):
-        self.input_path = Path(input_path)
         self.create_langfuse_dataset_bool = create_langfuse_dataset_bool
         self.dataset_name = dataset_name
+        self.input_path = Path(input_path)
+
 
     @abstractmethod
     def load(self):
         """
-        Loads and parses the dataset files into a list of QAItem instances.
-
-        Returns:
-            List[QAItem]: A list of QAItem instances parsed from the dataset files.
+        Loads and parses the dataset files into a list of instances.
         """
         pass
 
+
     @abstractmethod
     def prepare_data(self) -> List:
+        """
+        Prepares and returns the dataset as a list of model instances.
+        """
         pass
+
 
     @abstractmethod
     def create_langfuse_dataset(self, dataset_df: pd.DataFrame):
+        """
+        Creates a Langfuse dataset from the provided DataFrame.
+        """
         pass

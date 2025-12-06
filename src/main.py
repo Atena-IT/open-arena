@@ -1,8 +1,8 @@
-import logging, os
+import logging
 from dotenv import load_dotenv
 from src import DATA_LOCATION
-from src.dataset.loaders import QADatasetLoader
-from src.dataset.loaders.dataset_m import GenericDatasetLoader
+from src.dataset.loaders import GenericDatasetLoader
+from src.dataset.models import QAItem, ToolScaleItem
 
 
 """ CONFIG """
@@ -17,21 +17,23 @@ if __name__ == "__main__":
     # Dataset creation and upload
     logger.info(f"\tStarting Data Preparation...")
 
-    """
-    dataset = QADatasetLoader(input_path=DATA_LOCATION,
-                              create_langfuse_dataset_bool=True,
-                              dataset_name="QADataset")
-    dataset.load()
-    qa_items = dataset.prepare_data()
-    logger.info(f"\tPrepared {len(qa_items)} QA items.")
-    """
-
-    dataset = GenericDatasetLoader(
+    # QA Dataset
+    qa_dataset = GenericDatasetLoader(
         input_path=DATA_LOCATION,
+        excel_files=["QA.xlsx"],
         create_langfuse_dataset_bool=True,
         dataset_name="QADataset",
+        model_class=QAItem
     )
-    dataset.load()
-    qa_items = dataset.prepare_data()
+    qa_items = qa_dataset.prepare_data()
 
-    print(qa_items[0])
+    # ToolScale Dataset
+    tool_scale_dataset = GenericDatasetLoader(
+        input_path=DATA_LOCATION,
+        excel_files=["ToolScale.xlsx"],
+        create_langfuse_dataset_bool=True,
+        dataset_name="ToolScaleDataset",
+        model_class=ToolScaleItem
+    )
+    tool_scale_items = tool_scale_dataset.prepare_data()
+
