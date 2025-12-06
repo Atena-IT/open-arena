@@ -4,7 +4,7 @@ from typing import Optional, Dict
 
 class QAItem(BaseModel):
     """
-    Represents a single question-answer item for the Financial Advisor dataset.
+    Represents a single question-answer item for the Financial Advisor datasets.
     Parameters:
         :param id (str): Unique identifier for the question.
         :param level (str): Difficulty or level.
@@ -22,7 +22,6 @@ class QAItem(BaseModel):
         :param multiple_choice_evaluation (dict): Evaluation results for multiple choice.
         :param open_ended_evaluation (dict): Evaluation results for open ended.
     """
-
     id: str = Field(..., description="Unique identifier for the question.", json_schema_extra={"langfuse_dataset": "metadata"})
     level: str = Field(..., description="Difficulty or level.", json_schema_extra={"langfuse_dataset": "metadata"})
     topic: str = Field(..., description="Topic of the question.", json_schema_extra={"langfuse_dataset": "input"})

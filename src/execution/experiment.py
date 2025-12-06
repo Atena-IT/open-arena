@@ -9,7 +9,7 @@ LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
 LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
 EXPERIMENT_NAME = "my_experiment_v1"
-DATASET_NAME = "my_dataset"  # <-- name of the dataset stored in Langfuse
+DATASET_NAME = "my_dataset"  # <-- name of the datasets stored in Langfuse
 
 
 if __name__ == "__main__":
@@ -20,11 +20,11 @@ if __name__ == "__main__":
     )
 
     # --- LOAD DATASET ---
-    # Retrieve the dataset and its items (inputs + expected outputs)
+    # Retrieve the datasets and its items (inputs + expected outputs)
     dataset = langfuse.dataset(DATASET_NAME)
     items = dataset.items()
 
-    print(f"Found {len(items)} items in dataset '{DATASET_NAME}'.")
+    print(f"Found {len(items)} items in datasets '{DATASET_NAME}'.")
 
     # --- DEFINE THE MODEL / FUNCTION TO TEST ---
     def run_model(input_text: str) -> str:
@@ -40,13 +40,13 @@ if __name__ == "__main__":
         input_data = item.input
         expected_output = item.expected_output  # may be None
 
-        # Run your model on the dataset input
+        # Run your model on the datasets input
         model_output = run_model(input_data["text"])
 
         # Log the model output as part of the experiment
         trace = langfuse.trace(
             name="experiment_trace",
-            metadata={"dataset": DATASET_NAME},
+            metadata={"datasets": DATASET_NAME},
             user_id="test_runner"
         )
 

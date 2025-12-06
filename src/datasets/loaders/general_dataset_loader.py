@@ -1,14 +1,16 @@
 import logging, os, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dotenv import load_dotenv
 from langfuse import Langfuse
 import pandas as pd
 from pydantic import BaseModel, ValidationError
-from src.dataset.loaders import DatasetLoader
+from src.datasets.loaders import DatasetLoader
 from typing import Type, List
 from tqdm import tqdm
 
 
 """ CONFIG """
+load_dotenv()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 MAX_WORKERS = 12
@@ -33,27 +35,23 @@ class GenericDatasetLoader(DatasetLoader):
     Generic loader that dynamically reads tabular datasets and maps them
     into instances of any Pydantic model.
     Parameters:
-        :param input_path: The path to the dataset files.
-        :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse dataset.
-        :param dataset_name: The name of the Langfuse dataset.
+        :param input_path: The path to the datasets files.
+        :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
+        :param dataset_name: The name of the Langfuse datasets.
     """
-
-
-    def __init__(self,
-                 input_path: str,
-                 excel_files: list,
-                 model_class: Type[BaseModel],
-                 create_langfuse_dataset_bool: bool = False,
-                 dataset_name: str = ""):
+    def __init__(self, input_path: str, excel_files: list, model_class: Type[BaseModel], create_langfuse_dataset_bool: bool = False, dataset_name: str = ""):
         super().__init__(input_path=input_path, create_langfuse_dataset_bool=create_langfuse_dataset_bool, dataset_name=dataset_name)
+        self.dataframes: List[pd.DataFrame] = []
+        self.excel_files = excel_files
+        self.model_class = model_class
+
+        # Setting up environment variables for Langfuse
         self.langfuse = Langfuse(
             public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
             secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
             host=os.getenv("LANGFUSE_HOST", ""),
         )
-        self.dataframes: List[pd.DataFrame] = []
-        self.excel_files = excel_files
-        self.model_class = model_class
+
         self.load()
 
 
@@ -104,16 +102,16 @@ class GenericDatasetLoader(DatasetLoader):
 
     def create_langfuse_dataset(self, items: List[BaseModel]):
         """
-        Create a Langfuse dataset by sending each Pydantic model instance.
+        Create a Langfuse datasets by sending each Pydantic model instance.
         Uses only fields from the Pydantic model_class.
         Automatically excludes fields that are None, empty strings,
         empty dicts or empty lists.
         Parameters:
             :param items: List of Pydantic model instances to upload.
         """
-        logger.info(f"\tCreating Langfuse dataset '{self.dataset_name}'...")
+        logger.info(f"\tCreating Langfuse datasets '{self.dataset_name}'...")
 
-        # Ensuring dataset existence
+        # Ensuring datasets existence
         try:
             self.langfuse.get_dataset(self.dataset_name)
             logger.info(f"\tDataset '{self.dataset_name}' already exists.")
@@ -146,7 +144,7 @@ class GenericDatasetLoader(DatasetLoader):
                 elif field == "metadata":
                     metadata_data[field_name] = value
 
-            # Creating dataset item in Langfuse
+            # Creating datasets item in Langfuse
             self.langfuse.create_dataset_item(
                 dataset_name=self.dataset_name,
                 input=input_data,
@@ -157,6 +155,6 @@ class GenericDatasetLoader(DatasetLoader):
         # Main process
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             futures = [executor.submit(process_item, item) for item in items]
-            for _ in tqdm(as_completed(futures), total=len(futures), desc="\tUploading Langfuse dataset items"):
+            for _ in tqdm(as_completed(futures), total=len(futures), desc="\tUploading Langfuse datasets items"):
                 pass  # just progress bar
         logger.info("\tDataset upload completed successfully.")
