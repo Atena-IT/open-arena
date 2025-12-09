@@ -8,6 +8,7 @@ dependencies = [
     "fastapi",
     "pydantic",
     "python-dotenv",
+    "pyyaml",
     "uvicorn",
     "openai",
     "langchain",

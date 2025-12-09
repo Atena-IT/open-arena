@@ -31,7 +31,7 @@ if __name__ == "__main__":
         qa_items = data_prep.prepare_data()
         logger.info(f"Prepared {len(qa_items)} QA items.")
 
-        """
+
         client = LMClient()
 
         for model_name in models_list:
@@ -84,5 +84,3 @@ if __name__ == "__main__":
                 input_filename=f"qa_items_evaluation.json",
                 exams_folder=f"synthetic_exams",
             )
-            
-            """

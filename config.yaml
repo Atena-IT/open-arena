@@ -1,0 +1,8 @@
+# Run Configuration
+dataset_creation: False
+
+# List of models to evaluate
+model:
+  - "gpt-4o"
+  - "gpt-4.1-mini"
+  - "claude-3-5-sonnet"

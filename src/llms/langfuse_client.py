@@ -21,8 +21,6 @@ class LLMClient:
             host=os.getenv("LANGFUSE_HOST", ""),
         )
         os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "").strip()
-        print(os.environ["OPENAI_API_KEY"])
-
 
     def format_messages(self, system: str, user: str) -> list:
         """
@@ -60,7 +58,6 @@ class LLMClient:
         self.langfuse.flush()
 
         return response.choices[0].message.content
-
 
 
 """ MAIN """
