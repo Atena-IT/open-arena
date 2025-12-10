@@ -2,7 +2,7 @@
 dataset_creation: False
 
 # List of models to evaluate
-model:
-  - "gpt-4o"
+models:
   - "gpt-4.1-mini"
+  - "gpt-4o"
   - "claude-3-5-sonnet"

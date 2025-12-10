@@ -1,9 +1,10 @@
 import logging
 from dotenv import load_dotenv
-from src import DATA_LOCATION, load_config
+from src import DATA_LOCATION, EXECUTION_RESULTS_LOCATION, EVALUATION_RESULTS_LOCATION, load_config
 from src.datasets.loaders import GenericDatasetLoader
 from src.datasets.models import QAItem, ToolScaleItem
 from src.llms import LLMClient
+from src.execution import GenericExecutor
 
 
 """ CONFIG """
@@ -39,5 +40,16 @@ if __name__ == "__main__":
     )
     tool_scale_items = tool_scale_dataset.prepare_data()
 
-    # Model Client
+    # Model Selection
     client = LLMClient()
+    for model_name in CONFIG['models']:
+        logger.info(f"\tUsing model: {model_name}")
+
+        executor = GenericExecutor(client=client, dataset=qa_items, model_class=QAItem, model_name=model_name, results_path=EXECUTION_RESULTS_LOCATION)
+        logger.info(f"Running Executor for model {model_name}...")
+        #executor.run_on_dataset()
+        logger.info(f"Executor finished for {model_name}. Results saved.")
+
+
+
+

@@ -27,30 +27,25 @@ from tqdm import tqdm
 from langfuse import get_client
 from pydantic import BaseModel
 
-from src.language_models_core.language_models import LMClient
+from src.llms import LLMClient
 
 logger = logging.getLogger(__name__)
 
 
-class GenericFinAdvExecutor:
+class GenericExecutor:
     """
-    Executor generico per QA tasks, adattabile a qualunque modello Pydantic
+    Generic executor for tasks, adattabile a qualunque modello Pydantic
     che annoti i campi con json_schema_extra["role"].
     """
 
-    def __init__(
-        self,
-        lm_client: LMClient,
-        dataset: List[BaseModel],          # liste di istanze Pydantic
-        model_class: Type[BaseModel],      # classe Pydantic (per introspezione)
-        models_list: List[str],
-        results_folder: str,
-    ):
-        self.lm_client = lm_client
+    def __init__(self, client: LLMClient, dataset: List[BaseModel], model_class: Type[BaseModel], model_name: str, results_path: str):
+        self.client = client
         self.dataset = dataset
         self.model_class = model_class
-        self.models_list = models_list
-        self.results_folder = results_folder
+        self.model_name = model_name
+        self.results_folder = results_path
+        exec_model_folder = os.path.join(results_path, self.model_name)
+        os.makedirs(exec_model_folder, exist_ok=True)
 
         self.multiple_choice_results_dict: dict[str, dict] = {}
         self.open_ended_results_dict: dict[str, dict] = {}
@@ -76,10 +71,13 @@ class GenericFinAdvExecutor:
             "options_fields": {},      # es. {"A": "option_a", ...}
             "options_dict_field": None # es. "options"
         }
+        print(self.model_class.model_fields.items())
+        for name, field in self.model_class.model_fields.items():
+            print('Name: ', name, ' Field: ', field)
 
         for name, field in self.model_class.model_fields.items():
             extra = field.json_schema_extra or {}
-            role = extra.get("role")
+            role = extra.get("langfuse_dataset")
 
             if role == "id":
                 roles["id_field"] = name
@@ -256,44 +254,36 @@ class GenericFinAdvExecutor:
     # ---------- Chiamata ai modelli ----------
 
     def execute_multiple_choice(self, user_message: str) -> dict:
-        messages = self.lm_client.format_messages(
+        messages = self.client.format_messages(
             system="Respond only with the letter corresponding to the correct choice (A, B, C, or D).",
             user=user_message,
         )
 
         results = {}
-        for model in self.models_list:
-            response = self.lm_client.chat(
-                model,
-                messages=messages,
-            )
-            results[model] = response
+        response = self.client.chat(
+            self.model_name,
+            messages=messages,
+        )
+        results[self.model_name] = response
         return results
 
     def execute_open_ended(self, user_message: str) -> dict:
-        messages = self.lm_client.format_messages(
+        messages = self.client.format_messages(
             system="Provide a concise answer to the following question.",
             user=user_message,
         )
 
         results = {}
-        for model in self.models_list:
-            response = self.lm_client.chat(
-                model,
-                messages=messages,
-            )
-            results[model] = response
+        response = self.client.chat(
+            self.model_name,
+            messages=messages,
+        )
+        results[self.model_name] = response
         return results
 
     # ---------- Langfuse (opzionale, invariato a grandi linee) ----------
 
-    def run_langfuse_experiment_with_lmclient(
-        self,
-        experiment_name: str,
-        experiment_description: str,
-        model_name: str,
-        dataset_name: str = "GenericDatasetExecutor",
-    ):
+    def run_langfuse_experiment_with_lmclient(self, experiment_name: str, experiment_description: str, model_name: str, dataset_name: str = "GenericDatasetExecutor"):
         langfuse = get_client()
         encoded_dataset_name = quote(dataset_name, safe="")
         dataset = langfuse.get_dataset(encoded_dataset_name)
@@ -327,17 +317,7 @@ class GenericFinAdvExecutor:
         print(result.format())
         return result
 
-    def run_langfuse_experiments_for_models_with_lmclient(
-        self,
-        models_list: list,
-        experiment_name_prefix: str = "Model Evaluation",
-        dataset_name: str = "GenericDatasetExecutor",
-    ):
-        for model_name in models_list:
-            experiment_name = f"{experiment_name_prefix} - {model_name}"
-            experiment_description = (
-                f"Evaluation of model {model_name} on {dataset_name}"
-            )
-            self.run_langfuse_experiment_with_lmclient(
-                experiment_name, experiment_description, model_name, dataset_name
-            )
+    def run_langfuse_experiments_for_models_with_lmclient(self, model_name: list, experiment_name_prefix: str = "Model Evaluation", dataset_name: str = "GenericDatasetExecutor"):
+        experiment_name = f"{experiment_name_prefix} - {model_name}"
+        experiment_description = (f"Evaluation of model {model_name} on {dataset_name}")
+        self.run_langfuse_experiment_with_lmclient(experiment_name, experiment_description, model_name, dataset_name)
