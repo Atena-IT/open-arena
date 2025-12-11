@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 """ CONFIG """
 load_dotenv()
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 MAX_WORKERS = 12
 
 
@@ -20,7 +20,7 @@ MAX_WORKERS = 12
 def to_snake_case(name: str) -> str:
     """
     Convert a string to snake_case.
-    :param name: Input string.
+        :param name: Input string.
     """
     name = name.strip()
     name = re.sub(r"[^\w]+", "_", name)
@@ -85,10 +85,9 @@ class GenericDatasetLoader(DatasetLoader):
             for _, row in dataframe.iterrows():
 
                 # Selecting only fields that exist in model
-                row_dict = {field: None if pd.isna(row[field]) else str(row[field])
-                    for field in model_fields
-                    if field in row
-                }
+                row_dict = {field: None if pd.isna(row[field])
+                                        else
+                                    str(row[field]) for field in model_fields if field in row}
                 try:
                     item = self.model_class(**row_dict)
                     items.append(item)
@@ -96,7 +95,7 @@ class GenericDatasetLoader(DatasetLoader):
                     logger.error(f"\tRow validation error: {e}")
         if self.create_langfuse_dataset_bool:
             self.create_langfuse_dataset(items)
-
+        logger.info(f"\tLocal {self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
         return items
 
 
@@ -109,14 +108,14 @@ class GenericDatasetLoader(DatasetLoader):
         Parameters:
             :param items: List of Pydantic model instances to upload.
         """
-        logger.info(f"\tCreating Langfuse datasets '{self.dataset_name}'...")
+        logger.info(f"\tPreparing '{self.dataset_name} on Langfuse")
 
         # Ensuring datasets existence
         try:
             self.langfuse.get_dataset(self.dataset_name)
-            logger.info(f"\tDataset '{self.dataset_name}' already exists.")
+            logger.info(f"\tDataset '{self.dataset_name}' already exists")
         except Exception:
-            logger.info(f"\tDataset '{self.dataset_name}' not found. Creating new one...")
+            logger.info(f"\tDataset '{self.dataset_name}' not found. Just created a new one")
             self.langfuse.create_dataset(name=self.dataset_name)
 
         # Processing one item
@@ -157,4 +156,4 @@ class GenericDatasetLoader(DatasetLoader):
             futures = [executor.submit(process_item, item) for item in items]
             for _ in tqdm(as_completed(futures), total=len(futures), desc="\tUploading Langfuse datasets items"):
                 pass  # just progress bar
-        logger.info("\tDataset upload completed successfully.")
+        logger.info(f"\tLangfuse {self.model_class.__name__}s dataset with {len(items)} items prepared successfully")

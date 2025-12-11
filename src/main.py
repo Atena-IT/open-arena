@@ -1,6 +1,6 @@
 import logging
 from dotenv import load_dotenv
-from src import DATA_LOCATION, EXECUTION_RESULTS_LOCATION, EVALUATION_RESULTS_LOCATION, load_config
+from src import DATA_LOCATION, EXECUTION_RESULTS_LOCATION, EVALUATION_RESULTS_LOCATION, load_config, PROMPT_LOCATION
 from src.datasets.loaders import GenericDatasetLoader
 from src.datasets.models import QAItem, ToolScaleItem
 from src.llms import LLMClient
@@ -18,38 +18,30 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
 
     # Dataset creation and upload
-    logger.info(f"\tStarting Data Preparation...")
-
+    logger.info(f"\tDATA PREPARATION:")
     # QA Dataset
-    qa_dataset = GenericDatasetLoader(
+    qa_loader = GenericDatasetLoader(
         input_path=DATA_LOCATION,
         excel_files=["QA.xlsx"],
         create_langfuse_dataset_bool=CONFIG['dataset_creation'],
         dataset_name="QADataset",
         model_class=QAItem
     )
-    qa_items = qa_dataset.prepare_data()
-
+    qa_dataset = qa_loader.prepare_data()
     # ToolScale Dataset
-    tool_scale_dataset = GenericDatasetLoader(
+    tool_scale_loader = GenericDatasetLoader(
         input_path=DATA_LOCATION,
         excel_files=["ToolScale.xlsx"],
         create_langfuse_dataset_bool=CONFIG['dataset_creation'],
         dataset_name="ToolScaleDataset",
         model_class=ToolScaleItem
     )
-    tool_scale_items = tool_scale_dataset.prepare_data()
+    tool_scale_dataset = tool_scale_loader.prepare_data()
 
-    # Model Selection
+    # Execution
+    logger.info(f"\tEXECUTION:")
     client = LLMClient()
-    for model_name in CONFIG['models']:
-        logger.info(f"\tUsing model: {model_name}")
-
-        executor = GenericExecutor(client=client, dataset=qa_items, model_class=QAItem, model_name=model_name, results_path=EXECUTION_RESULTS_LOCATION)
-        logger.info(f"Running Executor for model {model_name}...")
-        #executor.run_on_dataset()
-        logger.info(f"Executor finished for {model_name}. Results saved.")
-
-
-
-
+    # executor = GenericExecutor(client=client, dataset=qa_dataset, model_class=QAItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
+    # executor.langfuse_experiment(dataset_name="QADataset", experiment_name_prefix="QA Test")
+    executor = GenericExecutor(client=client, dataset=tool_scale_dataset, model_class=ToolScaleItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
+    executor.langfuse_experiment(dataset_name="ToolScaleDataset", experiment_name_prefix="ToolScale Test")

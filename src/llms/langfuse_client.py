@@ -21,6 +21,7 @@ class LLMClient:
             host=os.getenv("LANGFUSE_HOST", ""),
         )
         os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "").strip()
+        os.environ["HUGGINGFACE_API_KEY"] = os.getenv("HUGGINGFACE_API_KEY", "").strip()
 
     def format_messages(self, system: str, user: str) -> list:
         """
@@ -68,9 +69,9 @@ if __name__ == "__main__":
 
     # Conversation
     system_prompt = "You are a helpful assistant."
-    user_prompt = "Ciao! Come stai?"
+    user_prompt = "Ciao! Mi spieghi la teoria della relatività?"
     print("SYSTEM: ", system_prompt)
     print("USER: ", user_prompt)
     messages = client.format_messages(system_prompt, user_prompt)
-    assistant_response = client.chat(model="gpt-4.1-mini", messages=messages)
+    assistant_response = client.chat(model="huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct", messages=messages)
     print("ASSISTANT: ", assistant_response)

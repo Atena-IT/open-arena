@@ -4,5 +4,9 @@ dataset_creation: False
 # List of models to evaluate
 models:
   - "gpt-4.1-mini"
-  - "gpt-4o"
-  - "claude-3-5-sonnet"
+#  - "gpt-4o"
+#  - "huggingface/meta-llama/Llama-3.1-70B-Instruct"
+# - "huggingface/meta-llama/Llama-3.2-3B-Instruct"
+#  - "huggingface/deepseek-ai/DeepSeek-V3.2"
+#  - "huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct"
+#  - "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct"

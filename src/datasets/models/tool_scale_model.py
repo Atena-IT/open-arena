@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Any, Optional
 
 
 """ CLASSES """
@@ -14,7 +14,36 @@ class ToolScaleItem(BaseModel):
         :param evaluation_criteria (dict): Evaluation criteria as a dict.
     """
     id: str = Field(..., description="Unique identifier for the item.", json_schema_extra={"langfuse_dataset": "metadata"})
-    description: str = Field(..., description="Text description of the item.", json_schema_extra={"langfuse_dataset": "input"})
+    description: Optional[str] = Field(None, description="Text description of the item.", json_schema_extra={"langfuse_dataset": "input"})
     user_scenario: str = Field(..., description="User scenario details as a dict.", json_schema_extra={"langfuse_dataset": "input"})
     initial_state: Optional[str] = Field(None, description="Initial state, can be null.", json_schema_extra={"langfuse_dataset": "metadata"})
     evaluation_criteria: str = Field(..., description="Evaluation criteria as a dict.", json_schema_extra={"langfuse_dataset": "expected_output"})
+
+    @classmethod
+    def from_langfuse_item(cls, item: Any) -> "ToolScaleItem":
+        """
+        Creates a ToolScaleItem from a Langfuse dataset item.
+        Expects that:
+        - item.input contains fields marked as “input”
+        - item.expected_output contains fields marked as “expected_output”
+        - item.metadata contains fields marked as “metadata”
+        Parameters:
+            :param item: The Langfuse dataset item.
+        Return:
+            :return ToolScaleItem: The constructed ToolScaleItem instance.
+        """
+        input_data = getattr(item, "input", {}) or {}
+        expected_output = getattr(item, "expected_output", {}) or {}
+        metadata = getattr(item, "metadata", {}) or {}
+        data = {
+            # input
+            "user_scenario": input_data.get("user_scenario", ""),
+
+            # expected_output
+            "evaluation_criteria": expected_output.get("evaluation_criteria", ""),
+
+            # metadata
+            "id": metadata.get("id", ""),
+        }
+        return cls(**data)
+
