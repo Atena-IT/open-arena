@@ -2,6 +2,7 @@ import logging, os, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from langfuse import Langfuse
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ValidationError
 from src.datasets.loaders import DatasetLoader
@@ -39,11 +40,12 @@ class GenericDatasetLoader(DatasetLoader):
         :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
         :param dataset_name: The name of the Langfuse datasets.
     """
-    def __init__(self, input_path: str, excel_files: list, model_class: Type[BaseModel], create_langfuse_dataset_bool: bool = False, dataset_name: str = ""):
+    def __init__(self, input_path: str, excel_files: list, model_class: Type[BaseModel], create_langfuse_dataset_bool: bool = False, dataset_name: str = "", max_length_langfuse_dataset: int = np.inf):
         super().__init__(input_path=input_path, create_langfuse_dataset_bool=create_langfuse_dataset_bool, dataset_name=dataset_name)
         self.dataframes: List[pd.DataFrame] = []
         self.excel_files = excel_files
         self.model_class = model_class
+        self.max_length_langfuse_dataset = max_length_langfuse_dataset
 
         # Setting up environment variables for Langfuse
         self.langfuse = Langfuse(
@@ -94,7 +96,10 @@ class GenericDatasetLoader(DatasetLoader):
                 except ValidationError as e:
                     logger.error(f"\tRow validation error: {e}")
         if self.create_langfuse_dataset_bool:
-            self.create_langfuse_dataset(items)
+            if len(items) > self.max_length_langfuse_dataset:
+                self.create_langfuse_dataset(items[:self.max_length_langfuse_dataset])
+            else:
+                self.create_langfuse_dataset(items)
         logger.info(f"\tLocal {self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
         return items
 

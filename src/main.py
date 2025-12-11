@@ -25,18 +25,22 @@ if __name__ == "__main__":
         excel_files=["QA.xlsx"],
         create_langfuse_dataset_bool=CONFIG['dataset_creation'],
         dataset_name="QADataset",
+        max_length_langfuse_dataset=CONFIG['max_length_langfuse_dataset'],
         model_class=QAItem
     )
     qa_dataset = qa_loader.prepare_data()
+    '''
     # ToolScale Dataset
     tool_scale_loader = GenericDatasetLoader(
         input_path=DATA_LOCATION,
         excel_files=["ToolScale.xlsx"],
         create_langfuse_dataset_bool=CONFIG['dataset_creation'],
         dataset_name="ToolScaleDataset",
+        max_length_langfuse_dataset=CONFIG['max_length_langfuse_dataset'],
         model_class=ToolScaleItem
     )
     tool_scale_dataset = tool_scale_loader.prepare_data()
+    '''
 
     # Execution
     logger.info(f"\tEXECUTION:")
@@ -45,3 +49,7 @@ if __name__ == "__main__":
     executor.langfuse_experiment(dataset_name="QADataset", experiment_name_prefix="QA Test")
     # executor = GenericExecutor(client=client, dataset=tool_scale_dataset, model_class=ToolScaleItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
     # executor.langfuse_experiment(dataset_name="ToolScaleDataset", experiment_name_prefix="ToolScale Test")
+
+    # Evaluation
+    logger.info(f"\tEVALUATION:")
+

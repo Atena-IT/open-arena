@@ -1,69 +1,92 @@
-def langfuse_experiment_for_each_dataset(...):
+def run_llm_judge_on_experiment(self, experiment_result, judge_model: str):
     langfuse = get_client()
-    encoded_dataset_name = quote(dataset_name, safe="")
-    dataset = langfuse.get_dataset(encoded_dataset_name)
 
-    with open(os.path.join(self.prompt_path, f"{self.model_class.__name__.removesuffix("Item")}.txt"), "r", encoding="utf-8") as f:
-        system_prompt = f.read()
+    for res in experiment_result.item_results:
+        user_input = res.item.input
+        expected_output = res.item.expected_output
+        metadata = res.item.metadata
+        model_output = res.output
+        trace_id = res.trace_id
 
-    def task(item, **kwargs):
-        dataset_item = self.model_class.from_langfuse_item(item)
-        model_output = self.completion(
-            system_prompt=system_prompt,
-            user_prompt=dataset_item.user_prompt()
-        ).get(model_name, "")
-        return str(model_output)
-
-    experiment = dataset.run_experiment(
-        name=experiment_name,
-        description=experiment_description,
-        task=task,
-        max_concurrency=12,
-    )
-
-    print(experiment.format())
-
-    # (1) recuperi i risultati dell'experiment
-    runs = experiment.items  # dipende dalla versione SDK, ma concettualmente è la lista delle run
-
-    # (2) per ciascuna run applichi una evaluation LLM-as-a-judge
-    for run in runs:
-        input_text = run.input           # o come lo espone Langfuse
-        model_output = run.output
-        ground_truth = getattr(run, "expected_output", None)  # se presente nel dataset
-
-        judge_result = call_llm_judge(
-            input_text=input_text,
+        judge_score, judge_explanation = self.call_llm_judge(
+            judge_model=judge_model,
+            user_input=user_input,
             model_output=model_output,
-            ground_truth=ground_truth,
+            ground_truth=expected_output,
+            metadata=metadata,
         )
 
-        # (3) logghi l'evaluation in Langfuse come trace / observation / score
-        langfuse.create_score(
-            trace_id=run.trace_id,
-            name="llm_judge_score",
-            value=judge_result["score"],
-            comment=judge_result["explanation"],
-        )
+        # Salva lo score sul trace in Langfuse
+        if judge_score is not None:
+            langfuse.create_score(
+                trace_id=trace_id,
+                name="llm_judge_score",
+                value=judge_score,
+                comment=judge_explanation,
+            )
 
-    return experiment
 
+def call_llm_judge(
+    self,
+    judge_model: str,
+    user_input: str,
+    model_output: str,
+    ground_truth: str | None,
+    metadata: dict | None = None,
+):
+    extra = f"\nMetadata: {metadata}" if metadata else ""
 
-def call_llm_judge(input_text: str, model_output: str, ground_truth: str | None):
     judge_prompt = f"""
 Sei un valutatore. Ti do:
 
-- Input utente: {input_text}
+- Input utente: {user_input}
 - Output del modello: {model_output}
-- (Opzionale) Ground truth: {ground_truth}
+- Ground truth (se presente): {ground_truth}
+{extra}
 
-Valuta la qualità dell'output del modello rispetto all'input (e al ground truth se presente)
-con un punteggio da 1 a 5 e una breve spiegazione.
-
-Rispondi in JSON con le chiavi:
+Valuta la qualità dell'output del modello rispetto all'input e alla ground truth.
+Restituisci JSON con:
 - "score": numero da 1 a 5
 - "explanation": testo breve
 """
-    # qui chiami il tuo client LLM
-    raw = self.judge_client.completion(system_prompt="", user_prompt=judge_prompt)
-    return json.loads(raw["some_model_name"])
+
+    raw = self.completion(
+        system_prompt="Sei un LLM che valuta le risposte di altri LLM.",
+        user_prompt=judge_prompt,
+    ).get(judge_model, "")
+
+    try:
+        parsed = json.loads(raw)
+        return parsed.get("score"), parsed.get("explanation")
+    except Exception:
+        return None, f"Parsing error. Raw: {raw}"
+
+
+def langfuse_experiment(self, dataset_name: str, experiment_name_prefix: str = "Model Evaluation"):
+    # ... codice che hai già per lanciare gli experiment ...
+
+    results = {}
+    with ThreadPoolExecutor() as executor:
+        future_to_model = {
+            executor.submit(
+                self.langfuse_experiment_for_each_dataset,
+                experiment_name[model_name],
+                experiment_description[model_name],
+                model_name,
+                dataset_name
+            ): model_name
+            for model_name in self.models_list
+        }
+        for future in tqdm.tqdm(as_completed(future_to_model), total=len(future_to_model), desc="Evaluating QA items"):
+            model_name = future_to_model[future]
+            exp_result = future.result()
+            results[model_name] = exp_result
+
+    # Esempio: usa lo stesso modello come judge, o uno dedicato
+    exp_41 = results["gpt-4.1-mini"]
+    self.run_llm_judge_on_experiment(
+        experiment_result=exp_41,
+        judge_model="gpt-4.1-mini",  # o altro
+    )
+
+    return results

@@ -1,4 +1,4 @@
-import logging, os
+import logging, os, tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from langfuse import get_client
 from pydantic import BaseModel
@@ -99,5 +99,33 @@ class GenericExecutor:
             experiment_description[model_name] = f"Evaluation of model {model_name} on {dataset_name}"
 
         # Main process
+        results = {}
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.langfuse_experiment_for_each_dataset, experiment_name[model_name], experiment_description[model_name], model_name, dataset_name) for model_name in self.models_list]
+            # Binding each to future to the relative model
+            future_to_model = {
+                executor.submit(
+                    self.langfuse_experiment_for_each_dataset,
+                    experiment_name[model_name],
+                    experiment_description[model_name],
+                    model_name,
+                    dataset_name
+                ): model_name
+                for model_name in self.models_list
+            }
+            for future in tqdm.tqdm(as_completed(future_to_model), total=len(future_to_model), desc="Evaluating QA items"):
+                model_name = future_to_model[future]
+                result = future.result()
+                results[model_name] = result
+
+        print(results['gpt-4.1-mini'].item_results[0].trace_id)
+        for result in results['gpt-4.1-mini'].item_results[:1]:
+            print(f"Model Output: {result.output}")
+            print(f"TOTAL: {dir(result.item)}")
+            print(f"Langfuse: {dir(result.item.langfuse)}")
+
+            print(f"Input: {result.item.input}")
+            print(f"Expected Output: {result.item.expected_output}")
+            print(f"Metadata: {result.item.metadata}")
+            print(f"Output: {dir(result.item)}")
+            print(f"Expected: {dir(result.trace_id)}")
+            print("-----")
