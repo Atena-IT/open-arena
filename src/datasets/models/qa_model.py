@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
+from src.datasets.models import DatasetItem
 from typing import Any, Dict, Optional
 
 
-class QAItem(BaseModel):
+""" CLASSES """
+class QAItem(DatasetItem):
     """
     Represents a single question-answer item for the Financial Advisor datasets.
     Parameters:
@@ -80,7 +82,7 @@ class QAItem(BaseModel):
         return cls(**data)
 
 
-    def build_multiple_choice_prompt(self) -> str:
+    def user_prompt(self) -> str:
         """
         Return:
             :return Input string

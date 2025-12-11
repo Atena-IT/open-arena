@@ -29,7 +29,7 @@ class DatasetLoader(ABC):
         """
         Loads and parses the datasets files into a list of instances.
         """
-        pass
+        raise NotImplementedError
 
 
     @abstractmethod
@@ -37,7 +37,7 @@ class DatasetLoader(ABC):
         """
         Prepares and returns the datasets as a list of model instances.
         """
-        pass
+        raise NotImplementedError
 
 
     @abstractmethod
@@ -45,4 +45,4 @@ class DatasetLoader(ABC):
         """
         Creates a Langfuse datasets from the provided DataFrame.
         """
-        pass
+        raise NotImplementedError

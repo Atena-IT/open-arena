@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
+from src.datasets.models import DatasetItem
 from typing import Any, Optional
 
 
 """ CLASSES """
-class ToolScaleItem(BaseModel):
+class ToolScaleItem(DatasetItem):
     """
     Represents a single tool scale item.
     Parameters:
@@ -47,3 +48,10 @@ class ToolScaleItem(BaseModel):
         }
         return cls(**data)
 
+
+    def user_prompt(self) -> str:
+        """
+        Return:
+            :return Input string
+        """
+        return self.user_scenario

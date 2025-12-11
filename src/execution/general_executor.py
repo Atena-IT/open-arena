@@ -31,39 +31,19 @@ class GenericExecutor:
         self.models_list = models_list
         self.prompt_path = prompt_path
         self.results_path = results_path
-        self.system_prompt = None
         self.multiple_choice_results_dict: dict[str, dict] = {}
         self.open_ended_results_dict: dict[str, dict] = {}
 
 
-    def execute_multiple_choice(self, user_message: str) -> dict:
-        """
-        Executes a user message using the LMClient and returns the response, according to the multiple choice selected by the model.
-        Parameters:
-            :param user_message: The user message to evaluate.
-        """
-        messages = self.client.format_messages(
-            system = "Respond only with the letter corresponding to the correct choice (A, B, C, or D).",
-            user = user_message,
-        )
-        results = {}
-        for model in self.models_list:
-            response = self.client.chat(messages=messages, model=model)
-            results[model] = response
-        return results
-
-
-    def execute_open_ended(self, user_message: str) -> dict:
+    def completion(self, system_prompt: str, user_prompt: str) -> dict:
         """
         Executes a user message using the LMClient and returns the response for open-ended questions.
         Parameters:
-            :param user_message: The user message to evaluate.
+            :param user_prompt: The user message to evaluate.
         """
-        with open(os.path.join(self.prompt_path, f"{self.model_class.__name__.removesuffix("Item")}.txt"), "r", encoding="utf-8") as f:
-            self.system_prompt = f.read()
         messages = self.client.format_messages(
-            system = self.system_prompt,
-            user = user_message,
+            system = system_prompt,
+            user = user_prompt,
         )
         results = {}
         for model in self.models_list:
@@ -72,7 +52,7 @@ class GenericExecutor:
         return results
 
 
-    def run_langfuse_experiment_with_lmclient(self, experiment_name: str, experiment_description: str, model_name: str, dataset_name: str) -> Any:
+    def langfuse_experiment_for_each_dataset(self, experiment_name: str, experiment_description: str, model_name: str, dataset_name: str) -> Any:
         """
         Runs a Langfuse experiment using LMClient for both multiple choice and open-ended responses.
         Parameters:
@@ -85,26 +65,21 @@ class GenericExecutor:
         encoded_dataset_name = quote(dataset_name, safe="")
         dataset = langfuse.get_dataset(encoded_dataset_name)
 
+        # Reading the right execution prompt for the current dataset
+        with open(os.path.join(self.prompt_path, f"{self.model_class.__name__.removesuffix("Item")}.txt"), "r", encoding="utf-8") as f:
+            system_prompt = f.read()
+
         def task(item, **kwargs):
             # Unpacking dataset
             dataset_item = self.model_class.from_langfuse_item(item)
 
-            if self.model_class.__name__ == "QAItem":
-                prepared_multiple_choice_question = dataset_item.build_multiple_choice_prompt()
-                multiple_choice_result = self.execute_multiple_choice(prepared_multiple_choice_question).get(model_name, "")
-                question = dataset_item.question
-                open_ended_result = self.execute_open_ended(question).get(model_name, "")
-                return {
-                    "multiple_choice_response": multiple_choice_result,
-                    "open_ended_response": open_ended_result,
-                }
-            elif self.model_class.__name__ == "ToolScaleItem":
-                user_scenario = dataset_item.user_scenario
-                open_ended_result = self.execute_open_ended(user_scenario).get(model_name, "")
-                return str(open_ended_result)
+            # Sending message to the model
+            open_ended_result = self.completion(system_prompt=system_prompt, user_prompt=dataset_item.user_prompt()).get(model_name, "")
+
+            # Getting the result
+            return str(open_ended_result)
 
         result = dataset.run_experiment(name=experiment_name, description=experiment_description, task=task, max_concurrency=12)
-
         print(result.format())
         return result
 
@@ -125,4 +100,4 @@ class GenericExecutor:
 
         # Main process
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.run_langfuse_experiment_with_lmclient, experiment_name[model_name], experiment_description[model_name], model_name, dataset_name) for model_name in self.models_list]
+            futures = [executor.submit(self.langfuse_experiment_for_each_dataset, experiment_name[model_name], experiment_description[model_name], model_name, dataset_name) for model_name in self.models_list]

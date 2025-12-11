@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # Execution
     logger.info(f"\tEXECUTION:")
     client = LLMClient()
-    # executor = GenericExecutor(client=client, dataset=qa_dataset, model_class=QAItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
-    # executor.langfuse_experiment(dataset_name="QADataset", experiment_name_prefix="QA Test")
-    executor = GenericExecutor(client=client, dataset=tool_scale_dataset, model_class=ToolScaleItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
-    executor.langfuse_experiment(dataset_name="ToolScaleDataset", experiment_name_prefix="ToolScale Test")
+    executor = GenericExecutor(client=client, dataset=qa_dataset, model_class=QAItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
+    executor.langfuse_experiment(dataset_name="QADataset", experiment_name_prefix="QA Test")
+    # executor = GenericExecutor(client=client, dataset=tool_scale_dataset, model_class=ToolScaleItem, models_list=CONFIG['models'], prompt_path=PROMPT_LOCATION, results_path=EXECUTION_RESULTS_LOCATION)
+    # executor.langfuse_experiment(dataset_name="ToolScaleDataset", experiment_name_prefix="ToolScale Test")
