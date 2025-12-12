@@ -24,7 +24,7 @@ def to_snake_case(name: str) -> str:
         :param name: Input string.
     """
     name = name.strip()
-    name = re.sub(r"[^\w]+", "_", name)
+    name = re.sub(r"\W+", "_", name)
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
     return name.lower()
@@ -39,6 +39,10 @@ class GenericDatasetLoader(DatasetLoader):
         :param input_path: The path to the datasets files.
         :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
         :param dataset_name: The name of the Langfuse datasets.
+    Methods:
+        load(): Loads and parses the dataset files into a list of instances.
+        prepare_data() -> List: Prepares and returns the datasets as a list of model instances
+        create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
     """
     def __init__(self, input_path: str, excel_files: list, model_class: Type[BaseModel], create_langfuse_dataset_bool: bool = False, dataset_name: str = "", max_length_langfuse_dataset: int = np.inf):
         super().__init__(input_path=input_path, create_langfuse_dataset_bool=create_langfuse_dataset_bool, dataset_name=dataset_name)
@@ -54,7 +58,14 @@ class GenericDatasetLoader(DatasetLoader):
             host=os.getenv("LANGFUSE_HOST", ""),
         )
 
-        self.load()
+        # Setting up the dataset
+        if self.create_langfuse_dataset_bool:
+            self.load()
+            items = self.prepare_data()
+            if len(items) > self.max_length_langfuse_dataset:
+                self.create_langfuse_dataset(items[:self.max_length_langfuse_dataset])
+            else:
+                self.create_langfuse_dataset(items)
 
 
     def load(self):
@@ -86,7 +97,7 @@ class GenericDatasetLoader(DatasetLoader):
         for dataframe in self.dataframes:
             for _, row in dataframe.iterrows():
 
-                # Selecting only fields that exist in model
+                # Selecting only fields that exist in the model
                 row_dict = {field: None if pd.isna(row[field])
                                         else
                                     str(row[field]) for field in model_fields if field in row}
@@ -95,12 +106,7 @@ class GenericDatasetLoader(DatasetLoader):
                     items.append(item)
                 except ValidationError as e:
                     logger.error(f"\tRow validation error: {e}")
-        if self.create_langfuse_dataset_bool:
-            if len(items) > self.max_length_langfuse_dataset:
-                self.create_langfuse_dataset(items[:self.max_length_langfuse_dataset])
-            else:
-                self.create_langfuse_dataset(items)
-        logger.info(f"\tLocal {self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
+        logger.info(f"\t{self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
         return items
 
 
@@ -161,4 +167,4 @@ class GenericDatasetLoader(DatasetLoader):
             futures = [executor.submit(process_item, item) for item in items]
             for _ in tqdm(as_completed(futures), total=len(futures), desc="\tUploading Langfuse datasets items"):
                 pass  # just progress bar
-        logger.info(f"\tLangfuse {self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
+        logger.info(f"\tLangfuse {self.model_class.__name__}s dataset with {len(items)} items uploaded successfully")

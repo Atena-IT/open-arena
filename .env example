@@ -13,3 +13,8 @@ LANGFUSE_HOST=
 # OpenAI Configuration   #
 ##########################
 OPENAI_API_KEY=
+
+##########################
+#    HF Configuration    #
+##########################
+HUGGINGFACE_API_KEY=

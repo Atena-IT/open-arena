@@ -1,13 +1,16 @@
 # Run Configuration
-dataset_creation: False
+dataset_creation: True
 max_length_langfuse_dataset: 10
 
 # List of models to evaluate
 models:
   - "gpt-4.1-mini"
-#  - "gpt-4o"
+  - "gpt-4o"
 #  - "huggingface/meta-llama/Llama-3.1-70B-Instruct"
 #  - "huggingface/meta-llama/Llama-3.2-3B-Instruct"
 #  - "huggingface/deepseek-ai/DeepSeek-V3.2"
 #  - "huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct"
 #  - "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct"
+
+# Model to use as LLM-as-a-judge
+judge_model: "gpt-4.1-mini"

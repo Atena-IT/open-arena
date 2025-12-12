@@ -20,9 +20,12 @@ class QAItem(DatasetItem):
         :param answer (str): The correct answer.
         :param theme (str): The theme of the question (filename).
         :param multiple_choice_responses (dict): Model responses for multiple choice.
-        :param open_ended_responses (dict): Model responses for open ended.
+        :param open_ended_responses (dict): Model responses for open-ended.
         :param multiple_choice_evaluation (dict): Evaluation results for multiple choice.
-        :param open_ended_evaluation (dict): Evaluation results for open ended.
+        :param open_ended_evaluation (dict): Evaluation results for open-ended.
+    Methods:
+        from_langfuse_item() -> Any: Creates a Pydantic BaseModel object from a Langfuse dataset item.
+        user_prompt() -> str: Returns Input string.
     """
     id: str = Field(..., description="Unique identifier for the question.", json_schema_extra={"langfuse_dataset": "metadata"})
     level: str = Field(..., description="Difficulty or level.", json_schema_extra={"langfuse_dataset": "metadata"})
@@ -85,6 +88,6 @@ class QAItem(DatasetItem):
     def user_prompt(self) -> str:
         """
         Return:
-            :return Input string
+            return Input string
         """
         return f"{self.question}\n"f"A) {self.option_a}\n"f"B) {self.option_b}\n"f"C) {self.option_c}\n"f"D) {self.option_d}"

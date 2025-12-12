@@ -14,7 +14,7 @@ class DatasetLoader(ABC):
         :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
         :param dataset_name: The name of the Langfuse datasets.
     Methods:
-        load(): Loads and parses the datasets files into a list of instances.
+        load(): Loads and parses the dataset files into a list of instances.
         prepare_data() -> List: Prepares and returns the datasets as a list of model instances
         create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
     """
@@ -27,7 +27,7 @@ class DatasetLoader(ABC):
     @abstractmethod
     def load(self):
         """
-        Loads and parses the datasets files into a list of instances.
+        Loads and parses the dataset files into a list of instances.
         """
         raise NotImplementedError
 

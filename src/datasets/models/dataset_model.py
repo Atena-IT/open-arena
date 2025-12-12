@@ -7,6 +7,9 @@ from typing import Any
 class DatasetItem(BaseModel, ABC):
     """
     Represents a single dataset item
+    Methods:
+        from_langfuse_item() -> Any: Creates a Pydantic BaseModel object from a Langfuse dataset item.
+        user_prompt() -> str: Returns Input string.
     """
 
 
@@ -31,6 +34,6 @@ class DatasetItem(BaseModel, ABC):
     def user_prompt(self) -> str:
         """
         Return:
-            :return Input string
+            return Input string
         """
         raise NotImplementedError
