@@ -23,7 +23,9 @@ class LLMClient:
         os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "").strip()
         os.environ["HUGGINGFACE_API_KEY"] = os.getenv("HUGGINGFACE_API_KEY", "").strip()
 
-    def format_messages(self, system: str, user: str) -> list:
+
+    @staticmethod
+    def format_messages(system: str, user: str) -> list:
         """
         Formats messages for the LMClient chat method.
         Returns:
@@ -35,24 +37,31 @@ class LLMClient:
         ]
 
 
-    def chat(self, messages: list, model: str) -> str:
+    def chat(self, messages: list, model_config: dict) -> str:
         """
         Sends a chat completion request to the selected model.
         Args:
             :param messages: List of message dicts.
-            :param model:
+            :param model_config: Configuration dictionary for the model.
         Returns:
             :return dict: The response from the model.
-
         """
-        response = litellm.completion(model=model, messages=messages)
+        response = litellm.completion(
+            max_tokens=model_config["max_tokens"],
+            messages=messages,
+            model=model_config["name"],
+            response_format=model_config["response_format"],
+            temperature=model_config["temperature"],
+            tools=model_config["tools"],
+            stream=model_config["stream"],
+        )
 
         # Tracing as Langfuse event
-        event = self.langfuse.create_event(
+        self.langfuse.create_event(
             name="llm_completion",
             input=messages,
             output=response.choices[0].message.content,
-            metadata={"model": model}
+            metadata={"model": model_config["name"]}
         )
 
         # Optional flush to be sure to send the message immediately
@@ -73,5 +82,13 @@ if __name__ == "__main__":
     print("SYSTEM: ", system_prompt)
     print("USER: ", user_prompt)
     messages = client.format_messages(system_prompt, user_prompt)
-    assistant_response = client.chat(model="huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct", messages=messages)
+    assistant_response = client.chat(messages=messages,
+                                     model_config= {
+                                         "name": "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct",
+                                         "max_tokens": 2048,
+                                         "response_format": None,
+                                         "temperature": 0.3,
+                                         "tools": [],
+                                         "stream": False,
+                                     })
     print("ASSISTANT: ", assistant_response)

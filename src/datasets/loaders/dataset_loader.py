@@ -10,16 +10,16 @@ class DatasetLoader(ABC):
     General class to load the datasets from a specified input path.
     Can be extended to match new input specifications and formats, to be then transformed into QAItem instances.
     Parameters:
-        :param input_path: The path to the datasets files.
-        :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
+        :param dataset_config: Boolean indicating whether to create a Langfuse datasets.
         :param dataset_name: The name of the Langfuse datasets.
+        :param input_path: The path to the datasets files.
     Methods:
         load(): Loads and parses the dataset files into a list of instances.
         prepare_data() -> List: Prepares and returns the datasets as a list of model instances
         create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
     """
-    def __init__(self, input_path: str, create_langfuse_dataset_bool: bool = False, dataset_name: str = ""):
-        self.create_langfuse_dataset_bool = create_langfuse_dataset_bool
+    def __init__(self, dataset_config: dict = None, dataset_name: str = "", input_path: str = ""):
+        self.dataset_config = dataset_config
         self.dataset_name = dataset_name
         self.input_path = Path(input_path)
 

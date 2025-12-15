@@ -1,4 +1,4 @@
-import logging, os, json
+import logging, json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from langfuse import get_client
 from src.llms import LLMClient
@@ -7,7 +7,7 @@ from typing import Any
 
 """ CONFIG """
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 """ CLASS """
@@ -20,24 +20,22 @@ class GenericEvaluator:
         :param model_class (Type[BaseModel]): The Pydantic model class represents the structure of the dataset items.
         :param prompt_path (str): Path to pick the right prompt for the completion.
     """
-    def __init__(self, client: LLMClient, judge_model: str, prompt_path: str):
+    def __init__(self, client: LLMClient, judge_model_config: dict, judge_prompt: str):
         self.client = client
-        self.judge_model = judge_model
-        self.prompt_path = prompt_path
+        self.judge_model_config = judge_model_config
+        self.judge_prompt = judge_prompt
 
 
-    def completion(self, system_prompt: str, user_prompt: str) -> str:
+    def completion(self, model_config: dict, system_prompt: str, user_prompt: str) -> str:
         """
         Executes a user message using the LMClient and returns the response for open-ended questions.
         Parameters:
+            :param model_config: Judge Model configuration to use for this completion.
             :param system_prompt: The system prompt to use on this interaction.
             :param user_prompt: The user message to evaluate.
         """
-        messages = self.client.format_messages(
-            system=system_prompt,
-            user=user_prompt,
-        )
-        return self.client.chat(messages=messages, model=self.judge_model)
+        messages = self.client.format_messages(system=system_prompt, user=user_prompt)
+        return self.client.chat(messages=messages, model_config=model_config)
 
 
     @staticmethod
@@ -90,16 +88,11 @@ class GenericEvaluator:
     def judge_single_experiment(self, experiment_result):
         """
         Apply the LLM judge to ALL item_results of a single ExperimentResult.
-        Create an llm_judge_score score for each trace.
+        Create a llm_judge_score score for each trace.
         Parameters:
             :param experiment_result: Previous task results
         """
         langfuse = get_client()
-
-        # Judge system prompt
-        with open(os.path.join(self.prompt_path, "Judge.txt"), "r", encoding="utf-8") as f:
-            system_prompt = f.read()
-
         for result in experiment_result.item_results:
             user_input = result.item.input
             expected_output = result.item.expected_output
@@ -108,16 +101,27 @@ class GenericEvaluator:
             trace_id = result.trace_id
 
             # JSON payload
-            user_payload = self.judge_prompt_payload(user_input=user_input, model_output=model_output, expected_output=expected_output, metadata=metadata)
+            user_payload = self.judge_prompt_payload(
+                user_input=user_input,
+                model_output=model_output,
+                expected_output=expected_output,
+                metadata=metadata)
             user_prompt = json.dumps(user_payload, ensure_ascii=False)
 
             # LLM-as-a-judge
-            raw_response = self.completion(system_prompt=system_prompt, user_prompt=user_prompt)
+            raw_response = self.completion(
+                model_config=self.judge_model_config,
+                system_prompt=self.judge_prompt,
+                user_prompt=user_prompt)
 
             # Parsing judge answer
             judge_score, judge_explanation = self.parse_judge_response(raw_response)
             if judge_score is not None:
-                langfuse.create_score(trace_id=trace_id, name="llm_judge_score", value=judge_score, comment=judge_explanation)
+                langfuse.create_score(
+                    trace_id=trace_id,
+                    name="llm_judge_score",
+                    value=judge_score,
+                    comment=judge_explanation)
 
 
     def langfuse_evaluation(self, results_to_evaluate: dict[str, Any], dataset_name: str, evaluation_name_prefix: str = "Model Evaluation"):
@@ -132,9 +136,7 @@ class GenericEvaluator:
         evaluation_description: dict[str, str] = {}
         for model_name in results_to_evaluate.keys():
             evaluation_name[model_name] = f"{evaluation_name_prefix} - {model_name}"
-            evaluation_description[model_name] = (
-                f"LLM-as-a-judge evaluation of model {model_name} on {dataset_name}"
-            )
+            evaluation_description[model_name] = f"LLM-as-a-judge evaluation of model {model_name} on {dataset_name}"
 
         # Main process
         with ThreadPoolExecutor() as executor:
@@ -147,6 +149,6 @@ class GenericEvaluator:
                 model_name = future_to_model[future]
                 try:
                     future.result()
-                    logger.info(f"Finished judge '{self.judge_model}' on experiment results of model '{model_name}'")
+                    LOGGER.info(f"Finished judge '{self.judge_model_config['name']}' on experiment results of model '{model_name}'")
                 except Exception as e:
-                    logger.exception(f"Error while running judge '{self.judge_model}' on model '{model_name}': {e}")
+                    LOGGER.exception(f"Error while running judge '{self.judge_model_config['name']}' on model '{model_name}': {e}")

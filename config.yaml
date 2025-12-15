@@ -1,16 +1,117 @@
-# Run Configuration
-dataset_creation: True
-max_length_langfuse_dataset: 10
+# Dataset Configuration
+dataset_configuration:
+  dataset_creation: True
+  max_length_langfuse_dataset: 10
 
-# List of models to evaluate
-models:
-  - "gpt-4.1-mini"
-  - "gpt-4o"
-#  - "huggingface/meta-llama/Llama-3.1-70B-Instruct"
-#  - "huggingface/meta-llama/Llama-3.2-3B-Instruct"
-#  - "huggingface/deepseek-ai/DeepSeek-V3.2"
-#  - "huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct"
-#  - "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct"
+# Dataset Prompts:
+datasets_system_prompts:
+  qa_system_prompt: "Respond only with the letter corresponding to the correct choice (A, B, C, or D)."
+  tool_scale_system_prompt: |
+    You are an assistant that receives a JSON object with:
+    - "description": high-level metadata about the task
+    - "user_scenario": a Python-like dict (string) describing:
+      - persona
+      - instructions.task_instructions
+      - instructions.reason_for_call
+      - instructions.known_info
+      - instructions.unknown_info
+      - instructions.domain
 
-# Model to use as LLM-as-a-judge
-judge_model: "gpt-4.1-mini"
+    Your task:
+    1. Infer the sequence of tool actions (functions) that should be executed to satisfy the user request in the scenario.
+    2. Fill the "arguments" for each action based on the known information from the scenario.
+       - Use the user’s email to look up a client_id.
+       - Then list that client's accounts.
+       - Then search transactions over the likely date and amount range.
+    3. Decide which field(s) should be communicated back to the user ("communicate_info").
+    4. Produce at least one natural-language assertion ("nl_assertions") that describes the outcome of the actions taken.
+
+    You must respond with a JSON object with a single key "evaluation_criteria".
+    The value of "evaluation_criteria" MUST be a single Python-style dict, not JSON, and must follow this structure:
+
+    {
+        'actions': array([
+            {
+                'arguments': { ... full argument dict ... },
+                'name': '<function_name>',
+                'action_id': '<unique_id>'
+            },
+            ...
+        ], dtype=object),
+        'communicate_info': array([...], dtype=object),
+        'nl_assertions': array([...], dtype=object)
+    }
+
+    Conventions:
+    - Use the provided function names: "find_client_id_by_email", "list_client_accounts", "search_transactions".
+    - For unused arguments, set the value to None.
+    - For date-time ranges, use datetime.datetime(year, month, day, hour, minute, second).
+    - For amounts, translate "about EUR1,200" to a numeric range like min_amount=1100.0, max_amount=1300.0.
+    - Set transaction_type='payment' for a mortgage payment.
+    - In nl_assertions, give a concrete example outcome consistent with the intended use (e.g. a plausible posted transaction).
+
+    Now, given this input instance, produce ONLY the JSON with the "evaluation_criteria" key.
+    Do not repeat the input.
+    Do not add explanations.
+
+# Models to evaluate
+models_configuration:
+  - name: "gpt-4.1-mini"
+    max_tokens: 2048
+    response_format: null
+    temperature: 0.3
+    tools: []
+    stream: False
+  - name: "gpt-4o"
+    max_tokens: 2048
+    response_format: null
+    temperature: 0.3
+    tools: [ ]
+    stream: False
+# - name: "huggingface/meta-llama/Llama-3.1-70B-Instruct"
+#   max_tokens: 2048
+#   response_format: null
+#   temperature: 0.3
+#   tools: [ ]
+#   stream: False
+# - name: "huggingface/meta-llama/Llama-3.2-3B-Instruct"
+#   max_tokens: 2048
+#   response_format: null
+#   temperature: 0.3
+#   tools: [ ]
+#   stream: False
+# - name: "huggingface/deepseek-ai/DeepSeek-V3.2"
+#   max_tokens: 2048
+#   response_format: null
+#   temperature: 0.3
+#   tools: [ ]
+#   stream: False
+# - name: "huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct"
+#   max_tokens: 2048
+#   response_format: null
+#   temperature: 0.3
+#   tools: [ ]
+#   stream: False
+# - name: "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct"
+#   max_tokens: 2048
+#   response_format: null
+#   temperature: 0.3
+#   tools: [ ]
+#   stream: False
+
+# LLM-as-a-judge
+judge_model:
+  name: "gpt-4.1-mini"
+  max_tokens: 2048
+  response_format: null
+  temperature: 0.3
+  tools: []
+  stream: False
+
+# Judge prompt:
+judge_system_prompt: |
+  You're an expert judge.
+  Given a JSON object with the fields "input", "output" and "expected_output",
+  return ONLY a JSON object with the fields:
+  - "score": integer from 1 to 5 indicating how similar "output" is to "expected_output"
+  - "explanation": short string explaining the score

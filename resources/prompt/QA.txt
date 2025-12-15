@@ -1,1 +1,0 @@
-Respond only with the letter corresponding to the correct choice (A, B, C, or D).

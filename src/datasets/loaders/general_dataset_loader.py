@@ -2,7 +2,6 @@ import logging, os, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from langfuse import Langfuse
-import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ValidationError
 from src.datasets.loaders import DatasetLoader
@@ -13,7 +12,7 @@ from tqdm import tqdm
 """ CONFIG """
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 MAX_WORKERS = 12
 
 
@@ -36,20 +35,23 @@ class GenericDatasetLoader(DatasetLoader):
     Generic loader that dynamically reads tabular datasets and maps them
     into instances of any Pydantic model.
     Parameters:
-        :param input_path: The path to the datasets files.
-        :param create_langfuse_dataset_bool: Boolean indicating whether to create a Langfuse datasets.
+        :param dataset_config: Configuration dictionary for dataset loading.
         :param dataset_name: The name of the Langfuse datasets.
+        :param excel_files: List of Excel files to load.
+        :param input_path: The path to the datasets files.
+        :param model_class: The Pydantic model class represents the structure of the dataset items.
     Methods:
         load(): Loads and parses the dataset files into a list of instances.
         prepare_data() -> List: Prepares and returns the datasets as a list of model instances
         create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
     """
-    def __init__(self, input_path: str, excel_files: list, model_class: Type[BaseModel], create_langfuse_dataset_bool: bool = False, dataset_name: str = "", max_length_langfuse_dataset: int = np.inf):
-        super().__init__(input_path=input_path, create_langfuse_dataset_bool=create_langfuse_dataset_bool, dataset_name=dataset_name)
+    def __init__(self, dataset_config: dict = None, dataset_name: str = "", excel_files: list = None, input_path: str = ".", model_class: Type[BaseModel] = None):
+        super().__init__(dataset_config=dataset_config, dataset_name=dataset_name, input_path=input_path)
+        self.create_langfuse_dataset_bool = self.dataset_config["dataset_creation"]
         self.dataframes: List[pd.DataFrame] = []
         self.excel_files = excel_files
+        self.max_length_langfuse_dataset = self.dataset_config["max_length_langfuse_dataset"]
         self.model_class = model_class
-        self.max_length_langfuse_dataset = max_length_langfuse_dataset
 
         # Setting up environment variables for Langfuse
         self.langfuse = Langfuse(
@@ -82,7 +84,7 @@ class GenericDatasetLoader(DatasetLoader):
             # Keeping only fields that exist in the Pydantic model
             model_fields = set(self.model_class.model_fields.keys())
             dataframe = dataframe[[col for col in dataframe.columns if col in model_fields]]
-            logger.info(f"\tLoaded file {file}, columns: {list(dataframe.columns)}")
+            LOGGER.info(f"\tLoaded file {file}, columns: {list(dataframe.columns)}")
             self.dataframes.append(dataframe)
 
 
@@ -105,8 +107,8 @@ class GenericDatasetLoader(DatasetLoader):
                     item = self.model_class(**row_dict)
                     items.append(item)
                 except ValidationError as e:
-                    logger.error(f"\tRow validation error: {e}")
-        logger.info(f"\t{self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
+                    LOGGER.error(f"\tRow validation error: {e}")
+        LOGGER.info(f"\t{self.model_class.__name__}s dataset with {len(items)} items prepared successfully")
         return items
 
 
@@ -119,14 +121,14 @@ class GenericDatasetLoader(DatasetLoader):
         Parameters:
             :param items: List of Pydantic model instances to upload.
         """
-        logger.info(f"\tPreparing '{self.dataset_name} on Langfuse")
+        LOGGER.info(f"\tPreparing '{self.dataset_name} on Langfuse")
 
         # Ensuring datasets existence
         try:
             self.langfuse.get_dataset(self.dataset_name)
-            logger.info(f"\tDataset '{self.dataset_name}' already exists")
+            LOGGER.info(f"\tDataset '{self.dataset_name}' already exists")
         except Exception:
-            logger.info(f"\tDataset '{self.dataset_name}' not found. Just created a new one")
+            LOGGER.info(f"\tDataset '{self.dataset_name}' not found. Just created a new one")
             self.langfuse.create_dataset(name=self.dataset_name)
 
         # Processing one item
@@ -167,4 +169,4 @@ class GenericDatasetLoader(DatasetLoader):
             futures = [executor.submit(process_item, item) for item in items]
             for _ in tqdm(as_completed(futures), total=len(futures), desc="\tUploading Langfuse datasets items"):
                 pass  # just progress bar
-        logger.info(f"\tLangfuse {self.model_class.__name__}s dataset with {len(items)} items uploaded successfully")
+        LOGGER.info(f"\tLangfuse {self.model_class.__name__}s dataset with {len(items)} items uploaded successfully")
