@@ -1,30 +1,39 @@
 import asyncio
-from fastmcp import FastMCPClient
+import httpx
+
+BASE_URL = "http://localhost:8000"
 
 async def main():
-    # Start your MCP server as a subprocess
-    client = await FastMCPClient.create(
-        cmd=["python", "-m", "src.mcp.server"],  # adjust module path
-        name="MultiModelEvalServer",            # must match FastMCP("MultiModelEvalServer")
-    )
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=None) as client:
+        # Health
+        r = await client.get("/health")
+        r.raise_for_status()
+        print("Health:", r.json())
 
-    # List available tools
-    tools = await client.list_tools()
-    print("Available tools:", [t.name for t in tools])
+        # List models
+        r = await client.get("/models")
+        r.raise_for_status()
+        print("Models under test:", r.json())
 
-    # Call QA pipeline tool
-    qa_result = await client.call_tool("run_qa_pipeline")
-    print("QA pipeline result:", qa_result)
+        # Run QA pipeline (sync)
+        r = await client.post("/pipelines/qa")
+        r.raise_for_status()
+        print("QA pipeline result:", r.json())
 
-    # Call ToolScale pipeline tool
-    toolscale_result = await client.call_tool("run_toolscale_pipeline")
-    print("ToolScale pipeline result:", toolscale_result)
+        # Run ToolScale pipeline (sync)
+        r = await client.post("/pipelines/toolscale")
+        r.raise_for_status()
+        print("ToolScale pipeline result:", r.json())
 
-    # Call model listing tool
-    models = await client.call_tool("list_models_under_test")
-    print("Models under test:", models)
+        # Optional: run generic pipeline by dataset name
+        # r = await client.post("/pipelines/QADataset")
+        # r.raise_for_status()
+        # print("Generic pipeline result:", r.json())
 
-    await client.close()
+        # Optional: async fire-and-forget
+        # r = await client.post("/pipelines/QADataset/async")
+        # r.raise_for_status()
+        # print("Async accepted:", r.json())
 
 if __name__ == "__main__":
     asyncio.run(main())

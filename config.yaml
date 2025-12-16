@@ -62,11 +62,11 @@ models_configuration:
     temperature: 0.3
     tools: []
     stream: False
-  - name: "gpt-4o"
+  - name: "gpt-4o-mini"
     max_tokens: 2048
     response_format: null
     temperature: 0.3
-    tools: [ ]
+    tools: []
     stream: False
 # - name: "huggingface/meta-llama/Llama-3.1-70B-Instruct"
 #   max_tokens: 2048

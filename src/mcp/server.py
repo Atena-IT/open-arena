@@ -1,19 +1,27 @@
-import logging
 from dotenv import load_dotenv
-from fastmcp import FastMCP
+import logging
+from typing import Any, Dict, Optional
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from pydantic import BaseModel
 from src import DATA_LOCATION, load_config
 from src.llms import LLMClient
 from src.datasets.loaders.general_dataset_loader import GenericDatasetLoader
 from src.execution.general_executor import GenericExecutor
 from src.evaluator.general_evaluator import GenericEvaluator
-from src.datasets.models import QAItem
-from src.datasets.models import ToolScaleItem
-from typing import Dict, Any
+from src.datasets.models import QAItem, ToolScaleItem
 
 
-""" CONFIG """
+# =========================
+# CONFIG / GLOBALS
+# =========================
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+LOGGER = logging.getLogger(__name__)
+
 CONFIG = load_config()
 CLIENT = LLMClient()
+
 DATASETS = {
     "QADataset": {
         "excel": "QA.xlsx",
@@ -32,38 +40,24 @@ DATASETS = {
         "evaluation_prompt": CONFIG["judge_system_prompt"],
     },
 }
-load_dotenv()
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-LOGGER = logging.getLogger(__name__)
-MCP = FastMCP("MultiModelEvalServer")
+
+app = FastAPI(title="MultiModelEvalServer", version="1.0.0")
 
 
-""" FUNCTIONS """
-def _run_pipeline_for_dataset(dataset_name: str, dataset_config: dict, config: dict, client: LLMClient) -> dict:
+# =========================
+# CORE LOGIC
+# =========================
+def _run_pipeline_for_dataset(
+    dataset_name: str,
+    dataset_config: dict,
+    config: dict,
+    client: LLMClient,
+) -> Dict[str, Any]:
     """
-    Run the full pipeline for a single dataset:
-      1. DATA PREPARATION (create/upload Langfuse dataset from Excel)
-      2. EXECUTION (run all configured models on the dataset)
-      3. EVALUATION (run LLM-as-a-judge on the experiment results)
-
-    Parameters
-    ----------
-    dataset_name : str
-        Langfuse dataset name (e.g. "QADataset", "ToolScaleDataset").
-    dataset_config : dict
-        Per-dataset configuration from DATASETS, e.g.:
-        {
-          "excel": "QA.xlsx",
-          "model_class": QAItem,
-          "experiment_prefix": "QA Test",
-          "experiment_prompt": "...",
-          "evaluation_prefix": "QA Evaluation",
-          "evaluation_prompt": "..."
-        }
-    config : dict
-        Global CONFIG loaded via load_config().
-    client : LLMClient
-        Shared LLM client instance.
+    Run:
+      1) DATA PREPARATION (create/upload Langfuse dataset from Excel)
+      2) EXECUTION (run all configured models on the dataset)
+      3) EVALUATION (LLM-as-a-judge on experiment results)
     """
     excel_file = dataset_config["excel"]
     model_class = dataset_config["model_class"]
@@ -110,7 +104,6 @@ def _run_pipeline_for_dataset(dataset_name: str, dataset_config: dict, config: d
 
     LOGGER.info(f"\tCOMPLETED processing for dataset '{dataset_name}'.\n")
 
-    # You can return whatever is useful for callers (e.g. results + some metadata)
     return {
         "dataset_name": dataset_name,
         "models": list(experiment_results.keys()),
@@ -119,10 +112,54 @@ def _run_pipeline_for_dataset(dataset_name: str, dataset_config: dict, config: d
     }
 
 
-@MCP.tool
+def _assert_dataset_exists(dataset_name: str) -> None:
+    if dataset_name not in DATASETS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown dataset '{dataset_name}'. Allowed: {list(DATASETS.keys())}",
+        )
+
+
+# =========================
+# API MODELS
+# =========================
+class PipelineResponse(BaseModel):
+    dataset_name: str
+    models: list[str]
+    experiment_prefix: str
+    evaluation_prefix: str
+
+
+class AsyncAcceptedResponse(BaseModel):
+    status: str
+    dataset_name: str
+
+
+# =========================
+# ENDPOINTS (equivalenti ai tool MCP)
+# =========================
+@app.get("/health")
+def health() -> Dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/models")
+def list_models_under_test() -> Dict[str, Any]:
+    """
+    Equivalent of list_models_under_test MCP tool.
+    Supports both list-of-dicts and list-of-strings shapes.
+    """
+    models = CONFIG.get("models_configuration", [])
+    return {
+        "models": [m["name"] if isinstance(m, dict) else m for m in models],
+    }
+
+
+@app.post("/pipelines/qa", response_model=PipelineResponse)
 def run_qa_pipeline() -> Dict[str, Any]:
     """
-    Run the full pipeline (prepare + execute + evaluate) for the QA dataset.
+    Equivalent of run_qa_pipeline MCP tool.
+    Synchronous: request waits until the pipeline finishes.
     """
     return _run_pipeline_for_dataset(
         dataset_name="QADataset",
@@ -132,10 +169,11 @@ def run_qa_pipeline() -> Dict[str, Any]:
     )
 
 
-@MCP.tool
+@app.post("/pipelines/toolscale", response_model=PipelineResponse)
 def run_toolscale_pipeline() -> Dict[str, Any]:
     """
-    Run the full pipeline (prepare + execute + evaluate) for the ToolScale dataset.
+    Equivalent of run_toolscale_pipeline MCP tool.
+    Synchronous: request waits until the pipeline finishes.
     """
     return _run_pipeline_for_dataset(
         dataset_name="ToolScaleDataset",
@@ -145,22 +183,43 @@ def run_toolscale_pipeline() -> Dict[str, Any]:
     )
 
 
-@MCP.tool
-def list_models_under_test() -> Dict[str, Any]:
+# =========================
+# OPTIONAL: generic endpoint + async execution
+# =========================
+@app.post("/pipelines/{dataset_name}", response_model=PipelineResponse)
+def run_pipeline(dataset_name: str) -> Dict[str, Any]:
     """
-    Return the list of models configured in models_configuration.
-    Supports both list-of-dicts and list-of-strings shapes.
+    Generic synchronous endpoint for any dataset in DATASETS.
     """
-    models = CONFIG.get("models_configuration", [])
-    return {
-        "models": [
-            m["name"] if isinstance(m, dict) else m
-            for m in models
-        ]
-    }
+    _assert_dataset_exists(dataset_name)
+    return _run_pipeline_for_dataset(
+        dataset_name=dataset_name,
+        dataset_config=DATASETS[dataset_name],
+        config=CONFIG,
+        client=CLIENT,
+    )
 
 
-""" MAIN """
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-    MCP.run()
+@app.post("/pipelines/{dataset_name}/async", response_model=AsyncAcceptedResponse)
+def run_pipeline_async(dataset_name: str, background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """
+    Fire-and-forget: returns immediately (202-like semantics) and runs in background.
+    Note: without a job store, you won't have status/progress via API.
+    """
+    _assert_dataset_exists(dataset_name)
+
+    background_tasks.add_task(
+        _run_pipeline_for_dataset,
+        dataset_name,
+        DATASETS[dataset_name],
+        CONFIG,
+        CLIENT,
+    )
+    return {"status": "accepted", "dataset_name": dataset_name}
+
+
+# =========================
+# LOCAL RUN (optional)
+# =========================
+# Run with:
+#   uvicorn server_fastapi:app --host 0.0.0.0 --port 8000
