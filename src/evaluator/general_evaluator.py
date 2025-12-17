@@ -33,6 +33,8 @@ class GenericEvaluator:
             :param model_config: Judge Model configuration to use for this completion.
             :param system_prompt: The system prompt to use on this interaction.
             :param user_prompt: The user message to evaluate.
+        Return:
+            :return: LLM output message
         """
         messages = self.client.format_messages(system=system_prompt, user=user_prompt)
         return self.client.chat(messages=messages, model_config=model_config)
@@ -46,7 +48,9 @@ class GenericEvaluator:
             :param user_input: Original user input / question from the dataset item.
             :param model_output: Prediction produced by the evaluated model.
             :param expected_output: Ground truth or expected answer, if available.
-            :param metadata: Optional additional context (e.g. task type, difficulty).
+            :param metadata: Optional additional context (e.g., task type, difficulty).
+        Return:
+            :return: LLM-as-a-judge payload
         """
         payload = {
             "input": user_input,
@@ -63,12 +67,12 @@ class GenericEvaluator:
         """
         Parse the judge model response as JSON and extract evaluation fields.
         The judge is expected to return a JSON object with at least:
-        - "score": an integer (e.g. 1–5) representing the evaluation score
+        - "score": an integer (e.g., 1–5) representing the evaluation score
         - "explanation": a short string explaining the score
         Parameters:
             :param raw_response: Raw response returned by the LLM client.
         Returns:
-            tuple[Any, str]:
+            :return: tuple[Any, str]:
                 A tuple (score, explanation) where:
                 - score: the parsed value of the "score" field, or None on error
                 - explanation: the parsed "explanation" field, or an error message

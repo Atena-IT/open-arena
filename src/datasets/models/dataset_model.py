@@ -25,7 +25,7 @@ class DatasetItem(BaseModel, ABC):
         Parameters:
             :param item: The Langfuse dataset item.
         Return:
-            :return BaseModel: The constructed BaseModel instance.
+            :return: BaseModel: The constructed BaseModel instance.
         """
         raise NotImplementedError
 
@@ -34,6 +34,6 @@ class DatasetItem(BaseModel, ABC):
     def user_prompt(self) -> str:
         """
         Return:
-            return Input string
+            :return: Input string
         """
         raise NotImplementedError

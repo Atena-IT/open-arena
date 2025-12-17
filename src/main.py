@@ -40,32 +40,28 @@ if __name__ == "__main__":
     # PIPELINE START
     LOGGER.info("\tPIPELINE START\n")
     for dataset_name, dataset_config in DATASETS.items():
-        excel_file = dataset_config["excel"]
-        model_class = dataset_config["model_class"]
-        experiment_prefix = dataset_config["experiment_prefix"]
-        evaluation_prefix = dataset_config["evaluation_prefix"]
 
         # === DATA PREPARATION ===
         LOGGER.info(f"\tDATA PREPARATION for '{dataset_name}':")
         loader = GenericDatasetLoader(
             input_path=DATA_LOCATION,
-            excel_files=[excel_file],
+            excel_file=dataset_config["excel"],
             dataset_config=CONFIG["dataset_configuration"],
             dataset_name=dataset_name,
-            model_class=model_class,
+            model_class=dataset_config["model_class"],
         )
 
         # === EXECUTION ===
         LOGGER.info(f"\tEXECUTION for '{dataset_name}':")
         executor = GenericExecutor(
             client=CLIENT,
-            model_class=model_class,
+            model_class=dataset_config["model_class"],
             models_config=CONFIG["models_configuration"],
             dataset_prompt=dataset_config["experiment_prompt"],
         )
         experiment_results = executor.langfuse_experiment(
             dataset_name=dataset_name,
-            experiment_name_prefix=experiment_prefix,
+            experiment_name_prefix=dataset_config["experiment_prefix"],
         )
 
         # === EVALUATION ===
@@ -78,7 +74,7 @@ if __name__ == "__main__":
         evaluator.langfuse_evaluation(
             results_to_evaluate=experiment_results,
             dataset_name=dataset_name,
-            evaluation_name_prefix=evaluation_prefix,
+            evaluation_name_prefix=dataset_config["evaluation_prefix"],
         )
         LOGGER.info(f"\tCOMPLETED processing for dataset '{dataset_name}'.\n")
 

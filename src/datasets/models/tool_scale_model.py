@@ -34,7 +34,7 @@ class ToolScaleItem(DatasetItem):
         Parameters:
             :param item: The Langfuse dataset item.
         Return:
-            :return ToolScaleItem: The constructed ToolScaleItem instance.
+            :return: ToolScaleItem: The constructed ToolScaleItem instance.
         """
         input_data = getattr(item, "input", {}) or {}
         expected_output = getattr(item, "expected_output", {}) or {}
@@ -55,6 +55,6 @@ class ToolScaleItem(DatasetItem):
     def user_prompt(self) -> str:
         """
         Return:
-            return Input string
+            :return: Input string
         """
         return self.user_scenario

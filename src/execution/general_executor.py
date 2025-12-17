@@ -36,6 +36,8 @@ class GenericExecutor:
             :param model_config: Model configuration to use for this completion.
             :param system_prompt: The system prompt to use on this interaction.
             :param user_prompt: The user message to evaluate.
+        Return:
+            :return: LLM output message
         """
         messages = self.client.format_messages(system=system_prompt, user=user_prompt)
         return self.client.chat(messages=messages, model_config=model_config)
@@ -49,6 +51,8 @@ class GenericExecutor:
             :param experiment_name: Name of the experiment.
             :param experiment_description: Description of the experiment.
             :param model_config: Configuration of the model to evaluate.
+        Return:
+            :return: content result of the experiment on Langfuse
         """
         langfuse = get_client()
         encoded_dataset_name = quote(dataset_name, safe="")
@@ -79,12 +83,14 @@ class GenericExecutor:
         Parameters:
             :param dataset_name: Name of the dataset in Langfuse.
             :param experiment_name_prefix: Prefix for the experiment name.
+        Return:
+            :return: content result of all experiments on Langfuse
         """
         experiment_name = {}
         experiment_description = {}
         for model_config in self.models_config:
-            experiment_name[model_config["name"]] = f"{experiment_name_prefix} - {model_config["name"]}"
-            experiment_description[model_config["name"]] = f"Test of model {model_config["name"]} on {model_config["name"]}"
+            experiment_name[model_config["name"]] = f"{experiment_name_prefix} - {model_config['name']}"
+            experiment_description[model_config["name"]] = f"Test of model {model_config['name']} on {model_config['name']}"
 
         # Main process
         results = {}

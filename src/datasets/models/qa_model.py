@@ -55,7 +55,7 @@ class QAItem(DatasetItem):
         Parameters:
             :param item: The Langfuse dataset item.
         Return:
-            :return QAItem: The constructed QAItem instance.
+            :return: QAItem: The constructed QAItem instance.
         """
         input_data = getattr(item, "input", {}) or {}
         expected_output = getattr(item, "expected_output", {}) or {}
@@ -88,6 +88,6 @@ class QAItem(DatasetItem):
     def user_prompt(self) -> str:
         """
         Return:
-            return Input string
+            :return: Input string
         """
         return f"{self.question}\n"f"A) {self.option_a}\n"f"B) {self.option_b}\n"f"C) {self.option_c}\n"f"D) {self.option_d}"

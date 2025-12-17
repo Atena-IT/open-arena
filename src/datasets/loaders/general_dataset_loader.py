@@ -37,7 +37,7 @@ class GenericDatasetLoader(DatasetLoader):
     Parameters:
         :param dataset_config: Configuration dictionary for dataset loading.
         :param dataset_name: The name of the Langfuse datasets.
-        :param excel_files: List of Excel files to load.
+        :param excel_file: Name of the Excel file to load.
         :param input_path: The path to the datasets files.
         :param model_class: The Pydantic model class represents the structure of the dataset items.
     Methods:
@@ -45,11 +45,11 @@ class GenericDatasetLoader(DatasetLoader):
         prepare_data() -> List: Prepares and returns the datasets as a list of model instances
         create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
     """
-    def __init__(self, dataset_config: dict = None, dataset_name: str = "", excel_files: list = None, input_path: str = ".", model_class: Type[BaseModel] = None):
+    def __init__(self, dataset_config: dict = None, dataset_name: str = "", excel_file: str = None, input_path: str = ".", model_class: Type[BaseModel] = None):
         super().__init__(dataset_config=dataset_config, dataset_name=dataset_name, input_path=input_path)
         self.create_langfuse_dataset_bool = self.dataset_config["dataset_creation"]
         self.dataframes: List[pd.DataFrame] = []
-        self.excel_files = excel_files
+        self.excel_file = excel_file
         self.max_length_langfuse_dataset = self.dataset_config["max_length_langfuse_dataset"]
         self.model_class = model_class
 
@@ -72,20 +72,18 @@ class GenericDatasetLoader(DatasetLoader):
 
     def load(self):
         """
-        Load all .xlsx files, convert column names to snake_case,
-        and keep only model fields.
+        Load all .xlsx files, convert column names to snake_case, and keep only model fields.
         """
-        for file in self.excel_files:
-            dataframe = pd.read_excel(os.path.join(self.input_path, file))
+        dataframe = pd.read_excel(os.path.join(self.input_path, self.excel_file))
 
-            # Converting all column names to snake_case automatically
-            dataframe.columns = [to_snake_case(c) for c in dataframe.columns]
+        # Converting all column names to snake_case automatically
+        dataframe.columns = [to_snake_case(c) for c in dataframe.columns]
 
-            # Keeping only fields that exist in the Pydantic model
-            model_fields = set(self.model_class.model_fields.keys())
-            dataframe = dataframe[[col for col in dataframe.columns if col in model_fields]]
-            LOGGER.info(f"\tLoaded file {file}, columns: {list(dataframe.columns)}")
-            self.dataframes.append(dataframe)
+        # Keeping only fields that exist in the Pydantic model
+        model_fields = set(self.model_class.model_fields.keys())
+        dataframe = dataframe[[col for col in dataframe.columns if col in model_fields]]
+        LOGGER.info(f"\tLoaded file {self.excel_file}, columns: {list(dataframe.columns)}")
+        self.dataframes.append(dataframe)
 
 
     def prepare_data(self) -> List[BaseModel]:
@@ -116,8 +114,7 @@ class GenericDatasetLoader(DatasetLoader):
         """
         Create a Langfuse datasets by sending each Pydantic model instance.
         Uses only fields from the Pydantic model_class.
-        Automatically excludes fields that are None, empty strings,
-        empty dicts or empty lists.
+        Automatically excludes fields that are None, empty strings, empty dicts or empty lists.
         Parameters:
             :param items: List of Pydantic model instances to upload.
         """
