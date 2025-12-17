@@ -51,7 +51,7 @@ class LLMEvaluationGateway:
         :param version: Application version
         :param protect_endpoints_with_token: Enable the token protection
     """
-    def __init__(self, *, name: str = "Demo-MCP", title: str = "Demo MCP (fastapi_mcp)", description: str = "Demo server: FastAPI endpoints automatically exposed as MCP tools.", version: str = "0.1.0", protect_endpoints_with_token: bool = True) -> None:
+    def __init__(self, *, name: str = "Demo-MCP", title: str = "Demo MCP (fastapi_mcp)", description: str = "Demo server: FastAPI endpoints automatically exposed as MCP tools.", version: str = "0.1.0", protect_endpoints_with_token: bool = False) -> None:
         self.app = FastAPI(title=title, description=description, version=version)
         self.name = name
         self.protect_endpoints_with_token = protect_endpoints_with_token
@@ -237,6 +237,9 @@ class LLMEvaluationGateway:
 load_dotenv()
 gateway = LLMEvaluationGateway()
 app = gateway.app
+for r in app.routes:
+    methods = getattr(r, "methods", None)
+    print(f"{r.path}  {sorted(list(methods)) if methods else ''}")
 
 
 """ MAIN """

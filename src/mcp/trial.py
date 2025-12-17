@@ -1,7 +1,9 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 from src.mcp.gateway_tool_caller import GatewayToolCaller
 from src.mcp.llm_client import LLMClient
+from src.mcp.gateway_tool_caller import MCPToolCaller
 
 
 """ CONFIG """
@@ -66,6 +68,7 @@ load_dotenv()
 
 """ MAIN """
 if __name__ == "__main__":
+    '''
     client = LLMClient()
     gateway = GatewayToolCaller(base_url="http://localhost:8000", token=os.getenv("MCP_TOKEN", ""))
 
@@ -83,3 +86,22 @@ if __name__ == "__main__":
     }
 
     print(client.chat_with_tools(messages, model_config, gateway))
+    '''
+
+    async def main():
+        caller = MCPToolCaller(
+            base_url="http://127.0.0.1:8000",
+            headers={"X-MCP-Token": os.environ.get("MCP_TOKEN", "")},
+            transport="sse",
+            mcp_path="/mcp",
+            server_name="Demo-MCP",
+        )
+
+        await caller.setup()
+
+        print(await caller.acall("echo", {"text": "ciao", "uppercase": True}))
+        print(await caller.acall("add", {"a": 10, "b": 32}))
+        print(await caller.acall("get_unix_time", {}))
+        print(await caller.acall("simulate_kpi_fetch", {"system": "billing", "kpi_name": "success_rate", "region": "eu"}))
+
+    asyncio.run(main())
