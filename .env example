@@ -18,3 +18,8 @@ OPENAI_API_KEY=
 #    HF Configuration    #
 ##########################
 HUGGINGFACE_API_KEY=
+
+##########################
+#   MCP Configuration    #
+##########################
+MCP_TOKEN=
