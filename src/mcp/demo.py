@@ -229,7 +229,7 @@ class LLMEvaluationGateway:
         )
         # In your sample code you used mount(), but earlier you used mount_http().
         # Keep the same method you use in your environment. Here we follow your sample: mount().
-        mcp.mount_http()
+        mcp.mount()
         self.mcp = mcp  # keep reference if you need it later (optional)
 
 
@@ -239,7 +239,8 @@ gateway = LLMEvaluationGateway()
 app = gateway.app
 for r in app.routes:
     methods = getattr(r, "methods", None)
-    print(f"{r.path}  {sorted(list(methods)) if methods else ''}")
+    name = getattr(r, "name", "")
+    print(f"{getattr(r,'path','')}  {sorted(list(methods)) if methods else ''}  name={name}")
 
 
 """ MAIN """

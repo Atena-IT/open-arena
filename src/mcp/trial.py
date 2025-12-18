@@ -68,13 +68,13 @@ load_dotenv()
 
 """ MAIN """
 if __name__ == "__main__":
-    '''
+
     client = LLMClient()
     gateway = GatewayToolCaller(base_url="http://localhost:8000", token=os.getenv("MCP_TOKEN", ""))
 
     messages = client.format_messages(
         system="Usa i tool disponibili quando servono.",
-        user="Recupera il success_rate di billing in US e poi somma 24 + 38. Infine ripeti 'ok' in maiuscolo."
+        user="Recupera il success_rate di billing in US e poi somma 2497 + 3843. Infine ripeti 'ok' in maiuscolo."
     )
 
     model_config = {
@@ -105,3 +105,4 @@ if __name__ == "__main__":
         print(await caller.acall("simulate_kpi_fetch", {"system": "billing", "kpi_name": "success_rate", "region": "eu"}))
 
     asyncio.run(main())
+    '''
