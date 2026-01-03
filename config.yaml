@@ -5,7 +5,10 @@ dataset_configuration:
 
 # Dataset Prompts:
 datasets_system_prompts:
-  qa_system_prompt: "Respond only with the letter corresponding to the correct choice (A, B, C, or D)."
+  qa_system_prompt: |
+    Respond by copying only the content of the correct option (A, B, C, or D) without including the letter. 
+    Do not add any extra information, explanations, or formatting. 
+    Use the available tools only if needed to determine the correct option.
   tool_scale_system_prompt: |
     You are an assistant that receives a JSON object with:
     - "description": high-level metadata about the task
@@ -53,60 +56,70 @@ datasets_system_prompts:
     Now, given this input instance, produce ONLY the JSON with the "evaluation_criteria" key.
     Do not repeat the input.
     Do not add explanations.
+  tools_example_system_prompt: |
+    Use the available tools to determine the correct answer.
 
 # Models to evaluate
 models_configuration:
   - name: "gpt-4.1-mini"
     max_tokens: 2048
     response_format: null
+    stream: False
     temperature: 0.3
     tools: []
-    stream: False
+    tool_choice: "auto"
   - name: "gpt-4o-mini"
     max_tokens: 2048
     response_format: null
+    stream: False
     temperature: 0.3
     tools: []
-    stream: False
+    tool_choice: "auto"
 # - name: "huggingface/meta-llama/Llama-3.1-70B-Instruct"
 #   max_tokens: 2048
 #   response_format: null
+#   stream: False
 #   temperature: 0.3
 #   tools: [ ]
-#   stream: False
+#   tool_choice: "auto"
 # - name: "huggingface/meta-llama/Llama-3.2-3B-Instruct"
 #   max_tokens: 2048
 #   response_format: null
+#   stream: False
 #   temperature: 0.3
 #   tools: [ ]
-#   stream: False
+#   tool_choice: "auto"
 # - name: "huggingface/deepseek-ai/DeepSeek-V3.2"
 #   max_tokens: 2048
 #   response_format: null
+#   stream: False
 #   temperature: 0.3
 #   tools: [ ]
-#   stream: False
+#   tool_choice: "auto"
 # - name: "huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct"
 #   max_tokens: 2048
 #   response_format: null
+#   stream: False
 #   temperature: 0.3
 #   tools: [ ]
-#   stream: False
+#   tool_choice: "auto"
 # - name: "huggingface/Qwen/Qwen3-Next-80B-A3B-Instruct"
 #   max_tokens: 2048
 #   response_format: null
+#   stream: False
 #   temperature: 0.3
 #   tools: [ ]
-#   stream: False
+#   tool_choice: "auto"
 
 # LLM-as-a-judge
 judge_model:
   name: "gpt-4.1-mini"
   max_tokens: 2048
   response_format: null
-  temperature: 0.3
-  tools: []
   stream: False
+  temperature: 0.0
+  tools: []
+  tool_choice: "none"
 
 # Judge prompt:
 judge_system_prompt: |

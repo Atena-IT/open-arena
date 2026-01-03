@@ -1,4 +1,4 @@
-import json, litellm, os
+import json, litellm, os, time
 from dotenv import load_dotenv
 from langfuse import Langfuse
 
@@ -40,13 +40,6 @@ class LLMClient:
     async def chat_with_mcp_tools(self, messages: list, model_config: dict, mcp_session, mcp_tools_openai: list, max_steps: int = 8) -> str:
         """
         Run an **asynchronous** LiteLLM chat completion with tool-calling executed via **MCP**.
-        Workflow:
-        1) Sends `messages` to the model using `litellm.acompletion`, passing MCP tools already converted to **OpenAI
-            tool format** (`mcp_tools_openai`).
-        2) If the model returns `tool_calls`, appends the assistant message to the conversation, executes each requested
-            tool via `await mcp_session.call_tool(tool_name, args)`, and appends a corresponding `role="tool"` message
-            containing the tool output.
-        3) Repeats until the model produces a final response with no tool calls, or until `max_steps` is reached.
         Parameters:
             :param messages: List of OpenAI-style chat messages
             :param model_config: Model configuration
@@ -58,51 +51,49 @@ class LLMClient:
         Raises:
             :exception RuntimeError: If the tool loop exceeds `max_steps`.
         """
+        # Storing all tools outputs
+        tool_calls_log = []  # list[{"tool": str, "content": str}]
+
+
         for step in range(max_steps):
             response = await litellm.acompletion(
                 max_tokens=model_config["max_tokens"],
                 messages=messages,
                 model=model_config["name"],
                 response_format=model_config.get("response_format"),
+                stream=False,
                 temperature=model_config["temperature"],
                 tools=mcp_tools_openai,
                 tool_choice="auto",
-                stream=False,
             )
             msg = response.choices[0].message
             tool_calls = getattr(msg, "tool_calls", None) or []
+
+            # Final step
             if not tool_calls:
                 final_text = msg.content or ""
+                # Tracing as Langfuse event and flushing
                 self.langfuse.create_event(
-                    name="llm_final_answer",
+                    name="llm_response",
                     input=messages,
-                    output=final_text,
+                    output={"content": final_text, "tool_calls": tool_calls_log},
                     metadata={"model": model_config["name"], "steps": step},
                 )
                 self.langfuse.flush()
                 return final_text
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": msg.content,
-                    "tool_calls": tool_calls,
-                }
-            )
+
+            # Tool calls done
+            messages.append({"role": "assistant", "content": msg.content, "tool_calls": tool_calls})
             for call in tool_calls:
-                fn_name = call.function.name
+                function_name = call.function.name
                 args_raw = call.function.arguments or "{}"
                 try:
                     args = json.loads(args_raw) if isinstance(args_raw, str) else (args_raw or {})
                 except json.JSONDecodeError:
                     args = {}
-                result = await mcp_session.call_tool(fn_name, args)
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": call.id,
-                        "name": fn_name,
-                        "content": str(result.content),
-                    }
-                )
+                result = await mcp_session.call_tool(function_name, args)
+                tool_calls_log.append({"tool": function_name, "content": str(result.content)})
+                messages.append({"role": "tool", "tool_call_id": call.id, "name": function_name, "content": str(result.content)})
 
+        self.langfuse.flush()
         raise RuntimeError(f"Tool loop exceeded max_steps={max_steps}")

@@ -2,7 +2,7 @@ import logging
 from dotenv import load_dotenv
 from src import DATA_LOCATION, load_config
 from src.datasets.loaders import GenericDatasetLoader
-from src.datasets.models import QAItem, ToolScaleItem
+from src.datasets.models import QAItem, ToolScaleItem, ToolsExample
 from src.llms import LLMClient
 from src.evaluator import GenericEvaluator
 from src.execution import GenericExecutor
@@ -12,6 +12,14 @@ from src.execution import GenericExecutor
 CONFIG = load_config()
 CLIENT = LLMClient()
 DATASETS = {
+    "ToolsExample": {
+        "excel": "ToolsExample.xlsx",
+        "model_class": ToolsExample,
+        "experiment_prefix": "ToolsExample Test",
+        "experiment_prompt": CONFIG["datasets_system_prompts"]["tools_example_system_prompt"],
+        "evaluation_prefix": "ToolsExample Evaluation",
+        "evaluation_prompt": CONFIG["judge_system_prompt"],
+    },
     "QADataset": {
         "excel": "QA.xlsx",
         "model_class": QAItem,
