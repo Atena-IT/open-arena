@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="21036919-9e4f-4217-b6ba-b616bf81370a" name="Changes" comment="Working FastAPI + MCP Gateway with LLM completion">
+      <change afterPath="$PROJECT_DIR$/src/mcp_server/mcp_multi_threading.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/execution/general_executor.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/execution/general_executor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/llms/llm_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/llms/llm_client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools_server/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/mcp_server/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools_server/client.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools_server/llm_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/llm_client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools_server/mcp_sse_connection.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/mcp_server/mcp_sse_bearer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tools_server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/mcp_server/mcp_server.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;england00&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/lucabonali12/multi-language-model-evaluation-framework.git&quot;,
+    &quot;accountId&quot;: &quot;f68e2c24-37e7-480c-870e-0798f856706e&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="36NVUsin8Wa5FYTbd3UKAbxtFN3" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.MAIN -  Multi-LLM Evaluation framework.executor": "Run",
+    "Python.MCP - Server.executor": "Run",
+    "Python.check.executor": "Run",
+    "Python.client.executor": "Run",
+    "Python.data_converter.executor": "Run",
+    "Python.demo.executor": "Run",
+    "Python.langfuse_client.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.trial.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "develop",
+    "last_opened_file_path": "C:/Users/l.inghilterra/Desktop/Lavoro/multi-language-model-evaluation-framework",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\evaluator" />
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\dataset\models" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\test" />
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src" />
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\mcp" />
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\evaluator" />
+      <recent name="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\src\dataset\models" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.MAIN -  Multi-LLM Evaluation framework">
+    <configuration name="MAIN -  Multi-LLM Evaluation framework" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="multi-language-model-evaluation-framework" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </EXTENSION>
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="MCP - Server" type="PythonConfigurationType" factoryName="Python">
+      <module name="multi-language-model-evaluation-framework" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.11 virtualenv at C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\.venv" />
+      <option name="WORKING_DIRECTORY" value="C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </EXTENSION>
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/mcp_server/mcp_server.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="FastAPI Server" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="uvicorn src.mcp.server:app --host 0.0.0.0 --port 8000" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="" />
+      <option name="SCRIPT_OPTIONS" value="" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="powershell.exe" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="true" />
+      <option name="EXECUTE_SCRIPT_FILE" value="false" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.MCP - Server" />
+      <item itemvalue="Python.MAIN -  Multi-LLM Evaluation framework" />
+      <item itemvalue="Shell Script.FastAPI Server" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.MAIN -  Multi-LLM Evaluation framework" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-598b0484d0b5-e2d783800521-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-251.26927.74" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="21036919-9e4f-4217-b6ba-b616bf81370a" name="Changes" comment="" />
+      <created>1764847036876</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1764847036876</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Adding README.md and environment files">
+      <option name="closed" value="true" />
+      <created>1764852005159</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1764852005159</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Adding __init__.py and main.py files">
+      <option name="closed" value="true" />
+      <created>1764852733336</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1764852733336</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Adding all files for dataset creation and upload">
+      <option name="closed" value="true" />
+      <created>1764857088635</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1764857088635</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Adding generic loader">
+      <option name="closed" value="true" />
+      <created>1764867546255</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1764867546255</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Pipeline ready">
+      <option name="closed" value="true" />
+      <created>1765570913423</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765570913423</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Working FastAPI + MCP Gateway with LLM completion">
+      <option name="closed" value="true" />
+      <created>1765982105146</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1765982105146</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Adding README.md and environment files" />
+    <MESSAGE value="Adding __init__.py and main.py files" />
+    <MESSAGE value="Adding all files for dataset creation and upload" />
+    <MESSAGE value="Adding generic loader" />
+    <MESSAGE value="Pipeline ready" />
+    <MESSAGE value="Working FastAPI + MCP Gateway with LLM completion" />
+    <option name="LAST_COMMIT_MESSAGE" value="Working FastAPI + MCP Gateway with LLM completion" />
+  </component>
+</project>

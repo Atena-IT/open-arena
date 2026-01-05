@@ -1,13 +1,13 @@
 import os, asyncio
 from dotenv import load_dotenv
-from src.llms.llm_client import LLMClient
-from src.tools_server.mcp_sse_connection import MCPSSEConnection
+from src.test.llm_client import LLMClient
+from src.mcp_server.mcp_sse_bearer import MCPSSEBearer
 
 
 """ CONFIG """
 load_dotenv()
 TOKEN = os.getenv("MCP_TOKEN", "")
-URL =  f"{str(os.getenv("FAST_API_URL", ""))}:{str(os.getenv("FAST_API_PORT", ""))}/{str(os.getenv("MCP_PATH", ""))}"
+URL =  f'{str(os.getenv("FAST_API_URL", ""))}:{str(os.getenv("FAST_API_PORT", ""))}/{str(os.getenv("MCP_PATH", ""))}'
 
 
 """ FUNCTIONS """
@@ -23,7 +23,7 @@ async def main():
         "temperature": 0.0,
     }
 
-    async with MCPSSEConnection(mcp_url=URL, token=TOKEN) as mcp:
+    async with MCPSSEBearer(mcp_url=URL, token=TOKEN) as mcp:
         print(await llm.chat_with_mcp_tools(
             messages=messages,
             model_config=model_config,

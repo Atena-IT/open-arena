@@ -3,7 +3,7 @@
 <!-- HEADER STYLE: COMPACT -->
 <img src="multi-language-model-evaluation-framework.png" width="30%" align="left" style="margin-right: 15px">
 
-# MULTI-LANGUAGE-MODEL-EVALUATION-FRAMEWORK
+# MULTI-LANGUAGE-MODEL EVALUATION FRAMEWORK
 <em>Master Every Model. Compare. Improve. Succeed Faster.</em>
 
 <!-- BADGES -->

@@ -1,0 +1,34 @@
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"Black\">\r\n    <option name=\"sdkName\" value=\"uv (multi-language-model-evaluation-framework)\" />\r\n  </component>\r\n  <component name=\"ProjectRootManager\" version=\"2\" project-jdk-name=\"Python 3.13 virtualenv at C:\\Users\\giova\\Documents\\Work\\multi-language-model-evaluation-framework\\.venv\" project-jdk-type=\"Python SDK\" />\r\n</project>
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision fee6055388a17253becaf23487c5eab8fa6fe93a)
++++ b/.idea/misc.xml	(date 1766068221579)
+@@ -3,5 +3,5 @@
+   <component name="Black">
+     <option name="sdkName" value="uv (multi-language-model-evaluation-framework)" />
+   </component>
+-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 virtualenv at C:\Users\giova\Documents\Work\multi-language-model-evaluation-framework\.venv" project-jdk-type="Python SDK" />
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 virtualenv at C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\.venv" project-jdk-type="Python SDK" />
+ </project>
+\ No newline at end of file
+Index: .idea/multi-language-model-evaluation-framework.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<module type=\"PYTHON_MODULE\" version=\"4\">\r\n  <component name=\"NewModuleRootManager\">\r\n    <content url=\"file://$MODULE_DIR$\">\r\n      <excludeFolder url=\"file://$MODULE_DIR$/.venv\" />\r\n    </content>\r\n    <orderEntry type=\"jdk\" jdkName=\"Python 3.13 virtualenv at C:\\Users\\giova\\Documents\\Work\\multi-language-model-evaluation-framework\\.venv\" jdkType=\"Python SDK\" />\r\n    <orderEntry type=\"sourceFolder\" forTests=\"false\" />\r\n  </component>\r\n</module>
+===================================================================
+diff --git a/.idea/multi-language-model-evaluation-framework.iml b/.idea/multi-language-model-evaluation-framework.iml
+--- a/.idea/multi-language-model-evaluation-framework.iml	(revision fee6055388a17253becaf23487c5eab8fa6fe93a)
++++ b/.idea/multi-language-model-evaluation-framework.iml	(date 1766068221509)
+@@ -4,7 +4,7 @@
+     <content url="file://$MODULE_DIR$">
+       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+     </content>
+-    <orderEntry type="jdk" jdkName="Python 3.13 virtualenv at C:\Users\giova\Documents\Work\multi-language-model-evaluation-framework\.venv" jdkType="Python SDK" />
++    <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at C:\Users\l.inghilterra\Desktop\Lavoro\multi-language-model-evaluation-framework\.venv" jdkType="Python SDK" />
+     <orderEntry type="sourceFolder" forTests="false" />
+   </component>
+ </module>
+\ No newline at end of file

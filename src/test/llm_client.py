@@ -46,8 +46,8 @@ class LLMClient:
             :param mcp_session: An already-initialized MCP session used to invoke tools.
             :param mcp_tools_openai: Tools expressed in OpenAI schema
             :param max_steps: Maximum number of tool-calling iterations to prevent infinite loops.
-        Returns:
-            :return The model's final answer as a string.
+        Return:
+            return The model's final answer as a string.
         Raises:
             :exception RuntimeError: If the tool loop exceeds `max_steps`.
         """

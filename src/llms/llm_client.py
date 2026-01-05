@@ -28,7 +28,7 @@ class LLMClient:
     def format_messages(system: str, user: str) -> list:
         """
         Formats messages for the LMClient chat method.
-        Returns:
+        Return:
             :return list: Formatted messages.
         """
         return [
@@ -43,7 +43,7 @@ class LLMClient:
         Args:
             :param messages: List of message dicts.
             :param model_config: Configuration dictionary for the model.
-        Returns:
+        Return:
             :return dict: The response from the model.
         """
         response = litellm.completion(
@@ -78,8 +78,8 @@ class LLMClient:
             :param mcp_session: An already-initialized MCP session used to invoke tools.
             :param mcp_tools_openai: Tools expressed in OpenAI schema
             :param max_steps: Maximum number of tool-calling iterations to prevent infinite loops.
-        Returns:
-            :return The model's final answer as a string.
+        Return:
+            return The model's final answer as a string.
         Raises:
             :exception RuntimeError: If the tool loop exceeds `max_steps`.
         """
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     # Conversation
     system_prompt = "You are a helpful assistant."
-    user_prompt = "Ciao! Mi spieghi la teoria della relatività?"
+    user_prompt = "Hello! Can you explain me Einstein's relativity?"
     print("SYSTEM: ", system_prompt)
     print("USER: ", user_prompt)
     messages = client.format_messages(system_prompt, user_prompt)
