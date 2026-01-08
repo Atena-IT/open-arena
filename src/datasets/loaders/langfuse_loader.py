@@ -1,18 +1,18 @@
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Type, Dict, Any, Optional, TypeVar, TypedDict
-from pydantic import BaseModel
+from dataclasses import dataclass
+from typing import List, Type, Generic, Any, Optional, TypeVar, TypedDict
 from langfuse import Langfuse
-from langfuse.api.resources.commons.types.dataset_item import DatasetItem # TODO: fix
 from tqdm import tqdm
 
+from src.datasets.item_models import DatasetItem
 from src.datasets.loaders.dataset_loader import DatasetLoader
 from src.datasets.readers.base_reader import DatasetReader
 from src.datasets.types import DatasetConfig
 
 _logger = logging.getLogger(__name__)
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar('T', bound=DatasetItem)
 
 
 class _LangfuseDatasetItem(TypedDict):
@@ -21,6 +21,11 @@ class _LangfuseDatasetItem(TypedDict):
     expected_output: Any
     metadata: Any
 
+@dataclass
+class LangfuseDatasetItemMeta(TypedDict, Generic[T]):
+    """Langfuse metadata wrapper for dataset items."""
+    item: T
+    lf_item_id: str
 
 class LangfuseLoader(DatasetLoader[T]):
     """
@@ -121,7 +126,7 @@ class LangfuseLoader(DatasetLoader[T]):
                 description=self.dataset_description
             )
     
-    def upload(self, items: Optional[List[T]] = None) -> List[DatasetItem]:
+    def upload(self, items: Optional[List[T]] = None) -> List[LangfuseDatasetItemMeta[T]]:
         """
         Upload items to Langfuse dataset.
         
@@ -144,14 +149,18 @@ class LangfuseLoader(DatasetLoader[T]):
         self._ensure_dataset_exists()
         
         # Upload items in parallel
-        def upload_item(item: T):
+        def upload_item(item: T) -> LangfuseDatasetItemMeta[T]:
             langfuse_item = self.convert_type(item)
-            return self.langfuse.create_dataset_item(
+            created = self.langfuse.create_dataset_item(
                 dataset_name=self.dataset_name,
                 **langfuse_item
             )
+            return {
+                "item": item, 
+                "lf_item_id": created.id
+            }
         
-        created_items: List[DatasetItem] = []
+        created_items: List[LangfuseDatasetItemMeta[T]] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(upload_item, item) for item in items_to_upload]
             for future in tqdm(

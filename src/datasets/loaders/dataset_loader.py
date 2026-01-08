@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import List, Dict, Any, Type, Generic, TypeVar, Optional
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 import logging
 
+from src.datasets.item_models import DatasetItem
 from src.datasets.readers.base_reader import DatasetReader
 from src.datasets.types import DatasetConfig
 
 _logger = logging.getLogger(__name__)
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar('T', bound=DatasetItem)
 
 
 class DatasetLoader(Generic[T]):
