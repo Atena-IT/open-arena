@@ -1,10 +1,12 @@
 from typing import Dict, Any, TypeVar, Generic, Optional
 from dataclasses import dataclass, field
-from pydantic import BaseModel
 
-T = TypeVar('T', bound=BaseModel)
+from src.datasets.item_models import DatasetItem
+
+T = TypeVar('T', bound=DatasetItem)
 
 
+# TODO: why not a TypedDict?
 @dataclass
 class ExecutionResult(Generic[T]):
     """Result of executing a single dataset item."""

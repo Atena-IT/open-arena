@@ -1,13 +1,13 @@
 import litellm
-import os
 import logging
 import asyncio
 from typing import List, Dict, Optional, Any
 from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+from litellm import experimental_mcp_client
 
-from litellm import experimental_mcp_client, Tool
+from src.llms.types import MCPServerConfig
 
 load_dotenv()
 _logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class LLMClient:
         ]
 
 
-    async def _load_mcp_tools(self, mcp_servers: List[Dict[str, Any]]) -> List[dict]: # TODO: fix types
+    async def _load_mcp_tools(self, mcp_servers: List[MCPServerConfig]) -> List[dict]:
         """
         Load tools from remote MCP servers via SSE.
         
@@ -76,7 +76,7 @@ class LLMClient:
         self, 
         messages: List[Dict[str, str]], 
         model_config: Dict[str, Any],
-        mcp_servers: Optional[List[Dict[str, Any]]] = None
+        mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> str:
         """
         Async chat completion with optional MCP tools.
@@ -111,14 +111,14 @@ class LLMClient:
         
         response = await litellm.acompletion(**completion_args)
 
-        return response.choices[0].message.content # TODO: type checking
+        return response.choices[0].message.content # type: ignore # TODO: type checking
 
 
     def chat(
         self, 
         messages: List[Dict[str, str]], 
-        model_config: dict,
-        mcp_servers: Optional[List[Dict[str, Any]]] = None
+        model_config: Dict[str, Any],
+        mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> str:
         """
         Synchronous chat completion with optional MCP tools.
