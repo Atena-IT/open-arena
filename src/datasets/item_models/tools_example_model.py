@@ -1,5 +1,5 @@
 from pydantic import Field
-from src.datasets.models import DatasetItem
+from src.datasets.item_models import DatasetItem
 from typing import Any
 
 

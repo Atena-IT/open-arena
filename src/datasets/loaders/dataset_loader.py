@@ -1,48 +1,94 @@
-from abc import ABC, abstractmethod
-import pandas as pd
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any, Type, Generic, TypeVar, Optional
+from pydantic import BaseModel, ValidationError
+import logging
+
+from src.datasets.readers.base_reader import DatasetReader
+from src.datasets.types import DatasetConfig
+
+_logger = logging.getLogger(__name__)
+T = TypeVar('T', bound=BaseModel)
 
 
-""" CLASS """
-class DatasetLoader(ABC):
+class DatasetLoader(Generic[T]):
     """
-    General class to load the datasets from a specified input path.
-    Can be extended to match new input specifications and formats, to be then transformed into QAItem instances.
-    Parameters:
-        :param dataset_config: Boolean indicating whether to create a Langfuse datasets.
-        :param dataset_name: The name of the Langfuse datasets.
-        :param input_path: The path to the datasets files.
-    Methods:
-        load(): Loads and parses the dataset files into a list of instances.
-        prepare_data() -> List: Prepares and returns the datasets as a list of model instances
-        create_langfuse_dataset(dataset_df: pd.DataFrame): Creates a Langfuse datasets from the provided DataFrame.
+    Generic dataset loader that uses a Reader strategy to load data
+    and validates it against a Pydantic model.
     """
-    def __init__(self, dataset_config: dict = None, dataset_name: str = "", input_path: str = ""):
-        self.dataset_config = dataset_config
-        self.dataset_name = dataset_name
+    
+    def __init__(
+        self,
+        item_model: Type[T],
+        reader: DatasetReader,
+        config: DatasetConfig,
+        input_path: str = "."
+    ):
+        """
+        :param item_model: Pydantic model class for dataset items
+        :param reader: Reader instance to use for loading data
+        :param config: Dataset configuration (name and source file)
+        :param input_path: Base path for data files
+        """
+        self.item_model = item_model
+        self.reader = reader
+        self.config = config
+        self.dataset_name = config["dataset_name"]
+        self.source_file = config["source_file"]
         self.input_path = Path(input_path)
-
-
-    @abstractmethod
-    def load(self):
+        self._raw_data: List[Dict[str, Any]] = []
+        self._items: List[T] = []
+    
+    def load_raw(self) -> List[Dict[str, Any]]:
         """
-        Loads and parses the dataset files into a list of instances.
+        Load raw data from source using the configured reader.
+        
+        :return: List of raw dictionaries
         """
-        raise NotImplementedError
-
-
-    @abstractmethod
-    def prepare_data(self) -> List:
+        file_path = self.input_path / self.source_file
+        _logger.debug(f"Loading raw data from {file_path}")
+        self._raw_data = self.reader.read(str(file_path))
+        _logger.debug(f"Loaded {len(self._raw_data)} raw items from {self.source_file}")
+        return self._raw_data
+    
+    def validate_and_prepare(self, raw_data: Optional[List[Dict[str, Any]]] = None) -> List[T]:
         """
-        Prepares and returns the datasets as a list of model instances.
+        Validate raw dictionaries against the Pydantic model.
+        
+        :param raw_data: Optional raw data to validate (uses loaded data if None)
+        :return: List of validated Pydantic model instances
         """
-        raise NotImplementedError
-
-
-    @abstractmethod
-    def create_langfuse_dataset(self, dataset_df: pd.DataFrame):
+        data_to_validate = raw_data if raw_data is not None else self._raw_data
+        _logger.debug(f"Validating {len(data_to_validate)} items against {self.item_model.__name__}")
+        
+        validated_items: List[T] = []
+        for idx, record in enumerate(data_to_validate):
+            try:
+                # Convert all values to strings (matching current behavior)
+                processed = {k: str(v) if v is not None else None for k, v in record.items()}
+                item = self.item_model(**processed)
+                validated_items.append(item)
+            except ValidationError as e:
+                _logger.error(f"Validation error at row {idx}: {e}")
+        
+        self._items = validated_items
+        _logger.debug(f"Validated {len(validated_items)}/{len(data_to_validate)} items successfully")
+        return validated_items
+    
+    def load(self) -> List[T]:
         """
-        Creates a Langfuse datasets from the provided DataFrame.
+        Convenience method: load and validate in one step.
+        
+        :return: List of validated Pydantic model instances
         """
-        raise NotImplementedError
+        self.load_raw()
+        return self.validate_and_prepare()
+    
+    @property
+    def items(self) -> List[T]:
+        """Get the currently loaded and validated items."""
+        return self._items
+    
+    @property
+    def raw_data(self) -> List[Dict[str, Any]]:
+        """Get the raw loaded data."""
+        return self._raw_data
