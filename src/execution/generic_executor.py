@@ -1,12 +1,13 @@
-import logging
+import asyncio
 from typing import List, Optional, TypeVar, Dict, Any
+from tqdm.asyncio import tqdm as async_tqdm
 
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
-from src.execution import Executor, ExecutionResult
+from src.execution.executor_model import Executor
+from src.execution.types import ExecutionResult
 from src.llms.types import MCPServerConfig
 
-_logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)
 
 
@@ -22,7 +23,8 @@ class GenericExecutor(Executor[T]):
         llm_client: LLMClient,
         system_prompt: str,
         model_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]]
+        mcp_servers: Optional[List[MCPServerConfig]] = None,
+        max_concurrency: int = 50
     ):
         """
         :param dataset: List of items to execute
@@ -30,60 +32,35 @@ class GenericExecutor(Executor[T]):
         :param system_prompt: System prompt for all completions
         :param model_config: Model configuration to use
         :param mcp_servers: Optional list of MCP server configurations (LiteLLM format)
+        :param max_workers: Maximum number of concurrent executions
         """
-        self.dataset = dataset
-        self.client = llm_client
-        self.system_prompt = system_prompt
-        self.model_config = model_config
-        self.mcp_servers = mcp_servers
-        
-        if self.mcp_servers:
-            _logger.info(f"Executor configured with {len(self.mcp_servers)} MCP server(s)")
+        super().__init__(
+            llm_client=llm_client,
+            system_prompt=system_prompt,
+            model_config=model_config,
+            mcp_servers=mcp_servers
+        )
 
-    def _execute_item(self, item: T) -> ExecutionResult[T]:
-        """
-        Execute a single dataset item.
-        
-        :param item: Dataset item to execute
-        :return: ExecutionResult containing item, output, and model name
-        """
-        user_prompt = item.user_prompt()
-        messages = self.client.format_messages(
-            system=self.system_prompt,
-            user=user_prompt
-        )
-        
-        output = self.client.chat(
-            messages=messages,
-            model_config=self.model_config,
-            mcp_servers=self.mcp_servers
-        )
-        
-        return ExecutionResult(
-            item=item,
-            output=output,
-            model_name=self.model_config["name"]
-        )
+        self.dataset = dataset
+        self.max_concurrency = max_concurrency
     
-    def execute(self) -> List[ExecutionResult[T]]:
+    async def execute(self) -> List[ExecutionResult[T]]:
         """
-        Execute all items in the dataset.
+        Execute all items in the dataset in parallel.
         
         :return: List of execution results
-        """
-        results = []
+        """  
+        semaphore = asyncio.Semaphore(self.max_concurrency)
         
-        for item in self.dataset:
-            try:
-                result = self._execute_item(item)
-                results.append(result)
-            except Exception as e:
-                _logger.error(f"Execution failed for item: {e}")
-                results.append(ExecutionResult(
-                    item=item,
-                    output="",
-                    model_name=self.model_config["name"],
-                    error=str(e)
-                ))
+        async def execute_with_semaphore(item: T) -> ExecutionResult[T]:
+            async with semaphore:
+                return await self._execute_item(item)
+        
+        tasks = [execute_with_semaphore(item) for item in self.dataset]
+        
+        results = []
+        for coro in async_tqdm.as_completed(tasks, total=len(tasks), desc="Executing items"):
+            result = await coro
+            results.append(result)
         
         return results

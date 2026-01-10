@@ -95,11 +95,9 @@ class LLMClient:
             "stream": model_config.get("stream", False),
         }
         
-        # Add response format if specified
         if "response_format" in model_config:
             completion_args["response_format"] = model_config["response_format"]
         
-        # Load and add MCP tools if servers are provided
         if mcp_servers:
             _logger.info(f"Loading tools from {len(mcp_servers)} remote MCP server(s)")
             tools = await self._load_mcp_tools(mcp_servers)
@@ -112,7 +110,8 @@ class LLMClient:
         response = await litellm.acompletion(**completion_args)
 
         return response.choices[0].message.content # type: ignore # TODO: type checking
-
+    
+    # TODO: astream
 
     def chat(
         self, 

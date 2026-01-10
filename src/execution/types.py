@@ -11,7 +11,7 @@ T = TypeVar('T', bound=DatasetItem)
 class ExecutionResult(Generic[T]):
     """Result of executing a single dataset item."""
     item: T
-    output: str
+    output: Optional[str]
     model_name: str
     error: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
