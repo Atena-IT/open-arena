@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
-from pydantic import BaseModel
-from typing import Any
+from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional
 
 
 """ CLASSES """
@@ -11,7 +11,7 @@ class DatasetItem(BaseModel, ABC):
         from_langfuse_item() -> Any: Creates a Pydantic BaseModel object from a Langfuse dataset item.
         user_prompt() -> str: Returns Input string.
     """
-
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Optional metadata for the dataset item")
 
     @classmethod
     @abstractmethod
