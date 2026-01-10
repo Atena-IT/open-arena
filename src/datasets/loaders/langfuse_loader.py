@@ -21,12 +21,6 @@ class _LangfuseDatasetItem(TypedDict):
     expected_output: Any
     metadata: Any
 
-@dataclass
-class LangfuseDatasetItemMeta(TypedDict, Generic[T]):
-    """Langfuse metadata wrapper for dataset items."""
-    item: T
-    lf_item_id: str
-
 class LangfuseLoader(DatasetLoader[T]):
     """
     DatasetLoader with Langfuse integration.
@@ -62,7 +56,6 @@ class LangfuseLoader(DatasetLoader[T]):
         self.max_workers = max_workers
         self.dataset_description = config.get("dataset_description", "")
         
-        # Initialize Langfuse client
         self.langfuse = Langfuse(
             public_key=public_key or os.getenv("LANGFUSE_PUBLIC_KEY", ""),
             secret_key=secret_key or os.getenv("LANGFUSE_SECRET_KEY", ""),
@@ -82,7 +75,6 @@ class LangfuseLoader(DatasetLoader[T]):
         # Remove None, empty strings, empty lists, empty dicts
         cleaned = {k: v for k, v in raw.items() if v not in (None, "", [], {})}
         
-        # Categorize fields
         input_data = {}
         expected_output_data = {}
         metadata_data = {}
@@ -120,55 +112,66 @@ class LangfuseLoader(DatasetLoader[T]):
             self.langfuse.get_dataset(self.dataset_name)
             _logger.debug(f"Dataset '{self.dataset_name}' already exists on Langfuse")
         except Exception:
-            _logger.info(f"Creating new Langfuse dataset '{self.dataset_name}'")
+            _logger.debug(f"Creating new Langfuse dataset '{self.dataset_name}'")
             self.langfuse.create_dataset(
                 name=self.dataset_name,
                 description=self.dataset_description
             )
     
-    def upload(self, items: Optional[List[T]] = None) -> List[LangfuseDatasetItemMeta[T]]:
+    def _upload(self) -> List[T]:
         """
         Upload items to Langfuse dataset.
         
         :param items: Optional list of items to upload (uses self._items if None)
-        :return: List of created Langfuse dataset items
+        :return: List of uploaded items with lf_item_id added to metadata
         """
-        items_to_upload = items if items is not None else self._items
-        
-        if not items_to_upload:
+        if not self._items:
             _logger.warning("No items to upload to Langfuse")
             return []
         
-        # Apply max_items limit if specified
         if self.max_items:
-            items_to_upload = items_to_upload[:self.max_items]
+            self._items = self._items[:self.max_items]
         
-        _logger.info(f"Uploading {len(items_to_upload)} items to Langfuse dataset '{self.dataset_name}'")
+        _logger.debug(f"Uploading {len(self._items)} items to Langfuse dataset '{self.dataset_name}'")
         
-        # Ensure dataset exists
         self._ensure_dataset_exists()
         
         # Upload items in parallel
-        def upload_item(item: T) -> LangfuseDatasetItemMeta[T]:
+        def upload_item(item: T) -> T:
             langfuse_item = self.convert_type(item)
             created = self.langfuse.create_dataset_item(
                 dataset_name=self.dataset_name,
                 **langfuse_item
             )
-            return {
-                "item": item, 
-                "lf_item_id": created.id
-            }
+            
+            # Add Langfuse item ID to metadata
+            if item.metadata is None:
+                item.metadata = {}
+            item.metadata["lf_item_id"] = created.id
+            
+            return item
         
-        created_items: List[LangfuseDatasetItemMeta[T]] = []
+        created_items: List[T] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = [executor.submit(upload_item, item) for item in items_to_upload]
+            futures = [executor.submit(upload_item, item) for item in self._items]
             for future in tqdm(
                 as_completed(futures),
                 total=len(futures),
                 desc=f"Uploading to Langfuse"
             ):
-                created_items.append(future.result())
+                try:
+                    created_items.append(future.result())
+                except Exception as e:
+                    _logger.error(f"Ulpoad failed for item: {e}")
         
-        _logger.info(f"Successfully uploaded {len(created_items)} items to Langfuse")
+        _logger.debug(f"Successfully uploaded {len(created_items)} items to Langfuse")
         return created_items
+
+    def load(self) -> List[T]:
+        """
+        Load, validate, and upload items to Langfuse in one step.
+        
+        :return: List of validated and uploaded Pydantic model instances with lf_item_id in metadata
+        """
+        super().load()
+        return self._upload()
