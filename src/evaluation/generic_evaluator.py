@@ -5,9 +5,9 @@ from tqdm.asyncio import tqdm as async_tqdm
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
-from src.evaluator.evaluator_model import Evaluator
-from src.evaluator.types import EvaluationResult
-from src.evaluator.methods import EvaluationMethod
+from src.evaluation.evaluator_model import Evaluator
+from src.evaluation.types import EvaluationResult
+from src.evaluation.methods import EvaluationMethod
 
 T = TypeVar('T', bound=DatasetItem)
 

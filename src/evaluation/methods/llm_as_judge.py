@@ -5,8 +5,8 @@ from typing import Dict, Any, Optional, Tuple, TypeVar
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
-from src.evaluator.types import EvaluationResult, JudgeResponse
-from src.evaluator.methods.method_model import EvaluationMethod
+from src.evaluation.types import EvaluationResult, JudgeResponse
+from src.evaluation.methods.method_model import EvaluationMethod
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)

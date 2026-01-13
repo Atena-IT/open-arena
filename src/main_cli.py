@@ -21,8 +21,8 @@ from src.datasets.readers import ExcelReader, CsvReader
 from src.datasets.item_models import QAItem, ToolScaleItem, DatasetItem
 from src.execution import LangfuseExecutor
 from src.execution.types import ExecutionResult
-from src.evaluator import LangfuseEvaluator, LLMAsJudge
-from src.evaluator.types import EvaluationResult
+from src.evaluation import LangfuseEvaluator, LLMAsJudge
+from src.evaluation.types import EvaluationResult
 from src.llms import LangfuseLLMClient, LLMClient
 from src.llms.types import MCPServerConfig
 

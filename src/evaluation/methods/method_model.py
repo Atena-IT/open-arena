@@ -7,7 +7,7 @@ from typing import TypeVar, Generic
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
-from src.evaluator.types import EvaluationResult
+from src.evaluation.types import EvaluationResult
 
 T = TypeVar('T', bound=DatasetItem)
 
