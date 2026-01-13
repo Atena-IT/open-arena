@@ -1,0 +1,67 @@
+# Example configuration file for multi-language model evaluation framework
+# This file demonstrates all available configuration options with example values
+
+# Dataset Configuration (required)
+dataset:
+  # Dataset name - string, min 1 character (required)
+  name: "Example QA Dataset"
+  
+  # Path to dataset file relative to project root - string, min 1 character (required)
+  source: "resources/data/my_dataset.xlsx"
+  
+  # Dataset file format - enum: "excel" or "csv" (required)
+  format: "excel"
+  
+  # Dataset content type - enum: "QA", "ToolScale", or "ToolsExample" (required)
+  type: "QA"
+
+# System prompt applied to all experiments - string, min 1 character (required)
+system_prompt: >
+  You are a helpful AI assistant designed to answer questions accurately.
+  Always provide clear, concise, and well-reasoned responses.
+
+# List of experiments to run - list, min 1 experiment (required)
+experiments:
+  # Example 1: Minimal experiment configuration
+  - name: "experiment_baseline"
+    litellm:
+      # Model identifier - string, min 1 character (required)
+      model: "gpt-4o"
+  
+  # Example 2: Experiment with additional LiteLLM parameters
+  - name: "experiment_with_params"
+    litellm:
+      model: "gpt-4-turbo"
+      # Additional custom parameters (extra fields allowed)
+      temperature: 0.7
+      max_tokens: 2048
+      top_p: 0.9
+  
+  # Example 3: Experiment with MCP servers
+  - name: "experiment_with_mcp"
+    litellm:
+      model: "claude-3-sonnet"
+    # Optional list of MCP servers
+    mcp:
+      - name: "knowledge_base"
+        # Must be a valid HTTP/HTTPS URL
+        url: "https://mcp-server.example.com/api"
+      - name: "tools_server"
+        url: "https://tools.example.com/mcp"
+
+# Evaluation configuration (required)
+evaluation:
+  # Evaluation method name - string, min 1 character (required)
+  method: "llm_as_judge"
+  
+  # LiteLLM configuration for judge model (required)
+  litellm:
+    model: "gpt-4o"
+    # Additional parameters supported
+    temperature: 0.0
+  
+  # Optional: Score name to write to Langfuse - string (default: "evaluation_score")
+  score_name: "quality_score"
+  
+  # Optional: Maximum concurrent evaluations - integer >= 1 (default: 10)
+  max_concurrency: 5
