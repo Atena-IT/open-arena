@@ -63,7 +63,7 @@ def get_reader(format: str):
 def get_evaluation_method(config: ExperimentsFile):
     """Get appropriate evaluation method based on config."""
     if config.evaluation.method == "llm_as_judge":
-        judge_client = LLMClient()
+        judge_client = LangfuseLLMClient()
         judge_config = config.evaluation.litellm.model_dump()
         
         return LLMAsJudge(

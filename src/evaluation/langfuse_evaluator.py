@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import List, TypeVar
 
-from langfuse import get_client
+from langfuse import get_client, observe
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
@@ -43,6 +43,7 @@ class LangfuseEvaluator(Evaluator[T]):
         self.langfuse = get_client()
         self.max_concurrency = max_concurrency
     
+    @observe(as_type="evaluator", name="evaluation-item-run")
     async def _evaluate_and_score_item(
         self, 
         result: ExecutionResult[T]
