@@ -21,7 +21,9 @@ from src.datasets.readers import ExcelReader, CsvReader
 from src.datasets.item_models import QAItem, ToolScaleItem, DatasetItem
 from src.execution import LangfuseExecutor
 from src.execution.types import ExecutionResult
-from src.llms import LangfuseLLMClient
+from src.evaluator import LangfuseEvaluator, LLMAsJudge
+from src.evaluator.types import EvaluationResult
+from src.llms import LangfuseLLMClient, LLMClient
 from src.llms.types import MCPServerConfig
 
 logging.basicConfig(
@@ -58,6 +60,23 @@ def get_reader(format: str):
         raise ValueError(f"Unsupported format: {format}")
 
 
+def get_evaluation_method(config: ExperimentsFile):
+    """Get appropriate evaluation method based on config."""
+    if config.evaluation.method == "llm_as_judge":
+        judge_client = LLMClient()
+        judge_config = config.evaluation.litellm.model_dump()
+        
+        return LLMAsJudge(
+            llm_client=judge_client,
+            system_prompt="You are an expert judge evaluating the quality of responses. "
+                         "Provide a score between 0 and 5, where 0 is completely incorrect and 5 is perfect. "
+                         "Return your response as JSON with 'score' and 'explanation' keys.",
+            model_config=judge_config
+        )
+    else:
+        raise ValueError(f"Unsupported evaluation method: {config.evaluation.method}")
+
+
 async def load_and_upload_dataset(config: ExperimentsFile) -> None:
     """Load dataset and upload to Langfuse."""
     _logger.info(f"Loading dataset: {config.dataset.name} from {config.dataset.source}")
@@ -73,7 +92,7 @@ async def load_and_upload_dataset(config: ExperimentsFile) -> None:
             "source_file": config.dataset.source
         },
         input_path="./resources/data",
-        max_items=5
+        max_items=1 # TODO: remove
     )
     
     dataset = loader.load()
@@ -94,7 +113,7 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
     for exp_config in config.experiments:
         _logger.info(f"Configuring experiment: {exp_config.name} with model {exp_config.litellm.model}")
         
-        model_config = exp_config.litellm.model_dump()
+        llm_config = exp_config.litellm.model_dump()
         
         mcp_servers: List[MCPServerConfig] | None = None
         if exp_config.mcp:
@@ -108,7 +127,7 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
             dataset_name=config.dataset.name,
             llm_client=lf_client,
             system_prompt=config.system_prompt,
-            model_config=model_config,
+            llm_config=llm_config,
             from_langfuse_fn=item_model.from_langfuse_item,
             mcp_servers=mcp_servers,
             experiment_name=exp_config.name,
@@ -129,6 +148,43 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
     _logger.info("All experiments completed")
     
     return all_results
+
+
+async def run_evaluations(config: ExperimentsFile, all_results: List[List[ExecutionResult]]) -> List[List[EvaluationResult]]:
+    """Run evaluations on all experiment results."""
+    _logger.info(f"Preparing evaluation for {len(all_results)} experiments")
+    
+    evaluation_method = get_evaluation_method(config)
+    _logger.info(f"Configuring {config.evaluation.method} with model: {config.evaluation.litellm.model}")
+    
+    all_eval_results = []
+    
+    # Evaluate each experiment's results
+    for exp_config, results in zip(config.experiments, all_results):
+        _logger.info(f"Evaluating experiment: {exp_config.name}")
+        
+        evaluator = LangfuseEvaluator(
+            results=results,
+            method=evaluation_method,
+            score_name=config.evaluation.score_name or "evaluation_score",
+            max_concurrency=config.evaluation.max_concurrency or 10
+        )
+        
+        eval_results = await evaluator.evaluate()
+        all_eval_results.append(eval_results)
+        
+        scored = sum(1 for r in eval_results if r.score is not None)
+        errors = sum(1 for r in eval_results if r.error is not None)
+        avg_score = sum(r.score for r in eval_results if r.score is not None) / scored if scored > 0 else 0
+        
+        if errors > 0:
+            _logger.warning(f"Evaluation '{exp_config.name}' completed: {scored} scored (avg: {avg_score:.2f}), {errors} errors")
+        else:
+            _logger.info(f"Evaluation '{exp_config.name}' completed: {scored} scored (avg: {avg_score:.2f})")
+    
+    _logger.info("All evaluations completed")
+    
+    return all_eval_results
 
 
 @click.command()
@@ -152,7 +208,8 @@ def main(config: str, skip_upload: bool):
     1. Loads and validates the configuration
     2. Uploads the dataset to Langfuse (unless --skip-upload)
     3. Runs all experiments sequentially
-    4. Results are automatically tracked in Langfuse
+    4. Evaluates all experiment results
+    5. Results and scores are automatically tracked in Langfuse
     
     Example:
         python -m src.main_cli --config experiments.yaml
@@ -179,7 +236,9 @@ def main(config: str, skip_upload: bool):
             else:
                 _logger.info("Skipping dataset upload (--skip-upload flag set)")
             
-            await run_experiments(experiments_config)
+            all_results = await run_experiments(experiments_config)
+            
+            await run_evaluations(experiments_config, all_results)
         
         asyncio.run(workflow())
         
