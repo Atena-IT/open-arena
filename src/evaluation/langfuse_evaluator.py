@@ -6,7 +6,7 @@ from langfuse import get_client
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
-from src.evaluation.evaluator_model import Evaluator
+from src.evaluation.base_evaluator import Evaluator
 from src.evaluation.types import EvaluationResult
 from src.evaluation.methods import EvaluationMethod
 
@@ -60,7 +60,6 @@ class LangfuseEvaluator(Evaluator[T]):
         """
         eval_result = await self.method.evaluate(result)
         
-        # Extract trace_id from metadata
         trace_id = result.metadata.get("lf_trace_id") if result.metadata else None
         
         if not trace_id:

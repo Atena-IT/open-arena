@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Callable, TypeVar
 from langfuse import get_client
 from langfuse.experiment import ExperimentItem as ExperimentItem
 
-from src.execution.executor_model import Executor
+from src.execution.base_executor import Executor
 from src.execution.types import ExecutionResult
 from src.llms import LangfuseLLMClient
 from src.llms.types import MCPServerConfig

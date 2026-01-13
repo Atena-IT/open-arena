@@ -4,7 +4,7 @@ from tqdm.asyncio import tqdm as async_tqdm
 
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
-from src.execution.executor_model import Executor
+from src.execution.base_executor import Executor
 from src.execution.types import ExecutionResult
 from src.llms.types import MCPServerConfig
 
