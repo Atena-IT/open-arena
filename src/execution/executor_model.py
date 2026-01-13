@@ -57,14 +57,15 @@ class Executor(ABC, Generic[T]):
             return ExecutionResult(
                 item=item,
                 output=output,
-                model_name=self.model_config["name"]
+                model_name=self.model_config["model"]
             )
+        
         except Exception as e:
             _logger.error(f"Execution failed for item: {e}")
             return ExecutionResult(
                 item=item,
                 output="",
-                model_name=self.model_config["name"],
+                model_name=self.model_config["model"],
                 error=str(e)
             )
     

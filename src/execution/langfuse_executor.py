@@ -53,8 +53,8 @@ class LangfuseExecutor(Executor[T]):
         )
         
         self.dataset_name = dataset_name
-        self.experiment_name = experiment_name or f"Experiment-{model_config['name']}"
-        self.experiment_description = experiment_description or f"Experiment with {model_config['name']}"
+        self.experiment_name = experiment_name or f"Experiment-{model_config['model']}"
+        self.experiment_description = experiment_description or f"Experiment with {model_config['model']}"
         self.from_langfuse_fn = from_langfuse_fn
         self.langfuse = get_client() #TODO: public key? Other places where this is used?
         self.max_concurrency = max_concurrency

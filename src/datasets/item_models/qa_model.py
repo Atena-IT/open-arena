@@ -91,3 +91,6 @@ class QAItem(DatasetItem):
             :return: Input string
         """
         return f"{self.question}\n"f"A) {self.option_a}\n"f"B) {self.option_b}\n"f"C) {self.option_c}\n"f"D) {self.option_d}"
+    
+    def expected_output(self) -> str:
+        return self.answer

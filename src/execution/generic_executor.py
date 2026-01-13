@@ -14,7 +14,6 @@ T = TypeVar('T', bound=DatasetItem)
 class GenericExecutor(Executor[T]):
     """
     Generic executor for running LLM completions on dataset items.
-    Supports optional MCP tools via LiteLLM's built-in bridge.
     """
     
     def __init__(

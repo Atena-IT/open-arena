@@ -10,6 +10,7 @@ class DatasetItem(BaseModel, ABC):
     Methods:
         from_langfuse_item() -> Any: Creates a Pydantic BaseModel object from a Langfuse dataset item.
         user_prompt() -> str: Returns Input string.
+        expected_output() -> str: Returns expected output string (ground truth).
     """
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Optional metadata for the dataset item")
 
@@ -35,5 +36,13 @@ class DatasetItem(BaseModel, ABC):
         """
         Return:
             :return: Input string
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def expected_output(self) -> str:
+        """
+        Return:
+            :return: Expected output string (ground truth)
         """
         raise NotImplementedError
