@@ -49,6 +49,7 @@ class LangfuseLLMClient(LLMClient):
 
         self._langfuse.update_current_generation(
             model=llm_config["model"],
+            model_parameters={k: v for k, v in llm_config.items() if k != "model"}
         )
 
         return result
