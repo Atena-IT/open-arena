@@ -2,7 +2,7 @@
 
 dataset:
   name: "QA Dataset"
-  source: "QA.xlsx"
+  source: "resources/data/QA.xlsx"
   format: "excel"
   type: "QA"
 

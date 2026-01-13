@@ -29,7 +29,7 @@ class DatasetConfig(BaseModel):
     )
     source: str = Field(
         ...,
-        description="Path to the dataset file (local path or resolvable by the runner).",
+        description="Path to the dataset file, relative to the project root folder.",
         min_length=1,
     )
     format: DatasetFormat = Field(

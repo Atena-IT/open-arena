@@ -91,7 +91,7 @@ async def load_and_upload_dataset(config: ExperimentsFile) -> None:
             "dataset_name": config.dataset.name,
             "source_file": config.dataset.source
         },
-        input_path="./resources/data",
+        input_path="."
         max_items=1 # TODO: remove
     )
     
