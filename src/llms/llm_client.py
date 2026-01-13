@@ -52,10 +52,8 @@ class LLMClient:
             try:
                 async with sse_client(url, headers=headers) as (read, write):
                     async with ClientSession(read, write) as session:
-                        # Initialize the connection
                         await session.initialize()
                         
-                        # Load tools from this server
                         tools = await experimental_mcp_client.load_mcp_tools(
                             session=session,
                             format="openai"
@@ -86,26 +84,15 @@ class LLMClient:
         :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
-        # Build completion arguments
-        completion_args = {
-            "model": model_config["name"],
-            "messages": messages,
-            "max_tokens": model_config.get("max_tokens", 500),
-            "temperature": model_config.get("temperature", 0.7),
-            "stream": model_config.get("stream", False),
-        }
-        
-        if "response_format" in model_config:
-            completion_args["response_format"] = model_config["response_format"]
+        completion_args = model_config.copy()
+        completion_args["messages"] = messages
         
         if mcp_servers:
-            _logger.info(f"Loading tools from {len(mcp_servers)} remote MCP server(s)")
             tools = await self._load_mcp_tools(mcp_servers)
             
             if tools:
                 completion_args["tools"] = tools
                 completion_args["tool_choice"] = model_config.get("tool_choice", "auto")
-                _logger.info(f"Using {len(tools)} tools from MCP servers")
         
         response = await litellm.acompletion(**completion_args)
 
