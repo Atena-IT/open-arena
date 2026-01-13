@@ -14,7 +14,7 @@ dependencies = [
     "langchain-openai",
     "langfuse>=3.10.1",
     "langgraph>=0.6.6",
-    "litellm>=1.79.3",
+    "litellm>=1.80.15",
     "matplotlib",
     "networkx",
     "openai",
