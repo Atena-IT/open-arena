@@ -3,7 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import List, Type, Generic, Any, Optional, TypeVar, TypedDict
-from langfuse import Langfuse
+from langfuse import get_client
 from tqdm import tqdm
 
 from src.datasets.item_models import DatasetItem
@@ -35,9 +35,6 @@ class LangfuseLoader(DatasetLoader[T]):
         input_path: str = ".",
         max_items: Optional[int] = None,
         max_workers: int = 12,
-        public_key: Optional[str] = None,
-        secret_key: Optional[str] = None,
-        host: Optional[str] = None
     ):
         """
         :param item_model: Pydantic model class for dataset items
@@ -46,9 +43,6 @@ class LangfuseLoader(DatasetLoader[T]):
         :param input_path: Base path for data files
         :param max_items: Maximum number of items to upload (None = all)
         :param max_workers: Number of parallel workers for upload
-        :param public_key: Langfuse public key (defaults to env var)
-        :param secret_key: Langfuse secret key (defaults to env var)
-        :param host: Langfuse host (defaults to env var)
         """
         super().__init__(item_model, reader, config, input_path)
         
@@ -56,11 +50,7 @@ class LangfuseLoader(DatasetLoader[T]):
         self.max_workers = max_workers
         self.dataset_description = config.get("dataset_description", "")
         
-        self.langfuse = Langfuse(
-            public_key=public_key or os.getenv("LANGFUSE_PUBLIC_KEY", ""),
-            secret_key=secret_key or os.getenv("LANGFUSE_SECRET_KEY", ""),
-            host=host or os.getenv("LANGFUSE_HOST", ""),
-        )
+        self.langfuse = get_client()
     
     def convert_type(self, item: T) -> _LangfuseDatasetItem:
         """
