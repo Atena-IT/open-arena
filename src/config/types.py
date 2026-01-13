@@ -92,6 +92,29 @@ class ExperimentConfig(BaseModel):
     )
 
 
+class EvaluationConfig(BaseModel):
+    """Evaluation configuration for scoring experiment results."""
+
+    method: str = Field(
+        ...,
+        description="Evaluation method name (e.g., 'llm_as_judge', 'exact_match').",
+        min_length=1,
+    )
+    litellm: LiteLLMConfig = Field(
+        ...,
+        description="LiteLLM configuration for the evaluation model (e.g., judge LLM).",
+    )
+    score_name: Optional[str] = Field(
+        default="evaluation_score",
+        description="Name of the score to write to Langfuse (default: 'evaluation_score').",
+    )
+    max_concurrency: Optional[int] = Field(
+        default=10,
+        description="Maximum number of concurrent evaluations (default: 10).",
+        ge=1,
+    )
+
+
 class ExperimentsFile(BaseModel):
     """Root YAML document model (global dataset + global system_prompt + experiments list)."""
 
@@ -108,6 +131,10 @@ class ExperimentsFile(BaseModel):
         ...,
         description="List of experiments to run against the global dataset and system prompt.",
         min_length=1,
+    )
+    evaluation: EvaluationConfig = Field(
+        ...,
+        description="Evaluation configuration for scoring experiment results.",
     )
     
     @classmethod

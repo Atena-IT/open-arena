@@ -61,7 +61,8 @@ class LangfuseExecutor(Executor[T]):
 
         
         # Storage for results during experiment execution
-        self._execution_results: List[ExecutionResult[T]] = []
+        # Map experiment_item_id -> ExecutionResult for later trace_id linking
+        self._execution_results_map: Dict[str, ExecutionResult[T]] = {}
         self._results_lock = Lock()  # Thread safety for concurrent task execution
     
     def _create_task_fn(self):
@@ -80,12 +81,8 @@ class LangfuseExecutor(Executor[T]):
 
             result = await self._execute_item(converted_item)
             
-            if result.metadata is None:
-                result.metadata = {}
-            result.metadata["lf_experiment_id"] = item.id # type: ignore # TODO: fix
-            
             with self._results_lock:
-                self._execution_results.append(result)
+                self._execution_results_map[item.id] = result  # type: ignore # TODO fix
             
             return str(result.output) # TODO: what to return on error? output = None
         
@@ -97,16 +94,33 @@ class LangfuseExecutor(Executor[T]):
         
         :return: List of enhanced execution results with Langfuse metadata
         """
-        self._execution_results.clear()
+        self._execution_results_map.clear()
         
         dataset = self.langfuse.get_dataset(self.dataset_name)
 
-        dataset.run_experiment(
+        experiment_results = dataset.run_experiment(
             name=self.experiment_name,
             description=self.experiment_description,
             task=self._create_task_fn(),
             max_concurrency=self.max_concurrency
         )
+        
+        execution_results: List[ExecutionResult[T]] = []
+        
+        for item_result in experiment_results.item_results:
+            experiment_item_id = item_result.item.id # type: ignore # TODO: fix
+            trace_id = item_result.trace_id
+            
+            if experiment_item_id in self._execution_results_map:
+                exec_result = self._execution_results_map[experiment_item_id]
                 
-        return self._execution_results        
+                if exec_result.metadata is None:
+                    exec_result.metadata = {}
+                
+                exec_result.metadata["lf_trace_id"] = trace_id
+                exec_result.metadata["lf_experiment_id"] = experiment_item_id
+                
+                execution_results.append(exec_result)
+        
+        return execution_results        
     
