@@ -68,9 +68,6 @@ def get_evaluation_method(config: ExperimentsFile):
         
         return LLMAsJudge(
             llm_client=judge_client,
-            system_prompt="You are an expert judge evaluating the quality of responses. "
-                         "Provide a score between 0 and 5, where 0 is completely incorrect and 5 is perfect. "
-                         "Return your response as JSON with 'score' and 'explanation' keys.",
             model_config=judge_config
         )
     else:

@@ -2,11 +2,12 @@ import json
 import logging
 from typing import Dict, Any, Optional, Tuple, TypeVar
 
+from src import default_prompts
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
 from src.evaluation.types import EvaluationResult, JudgeResponse
-from src.evaluation.methods.method_model import EvaluationMethod
+from src.evaluation.methods.base_method import EvaluationMethod
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)
@@ -32,17 +33,17 @@ class LLMAsJudge(EvaluationMethod[T]):
     def __init__(
         self,
         llm_client: LLMClient,
-        system_prompt: str,
-        model_config: Dict[str, Any]
+        model_config: Dict[str, Any],
+        system_prompt: str = default_prompts["evaluation"]["llm_as_judge"],
     ):
         """
         :param llm_client: LLM client for judge completions
-        :param system_prompt: System prompt that defines how the judge should evaluate
         :param model_config: Model configuration for the judge
+        :param system_prompt: Optional system prompt that defines how the judge should evaluate
         """
         self.client = llm_client
-        self.system_prompt = system_prompt
         self.model_config = model_config
+        self.system_prompt = system_prompt
     
     async def evaluate(self, result: ExecutionResult[T]) -> EvaluationResult[T]:
         """
