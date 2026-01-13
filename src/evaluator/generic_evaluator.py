@@ -22,21 +22,21 @@ class GenericEvaluator(Evaluator[T]):
         results: List[ExecutionResult[T]],
         llm_client: LLMClient,
         system_prompt: str,
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         max_concurrency: int = 10
     ):
         """
         :param results: Results from executor to evaluate
         :param llm_client: LLM client for judge completions
         :param system_prompt: System prompt that defines how the judge should evaluate
-        :param model_config: Model configuration for the judge to use
+        :param llm_config: Model configuration for the judge to use
         :param max_concurrency: Maximum number of concurrent evaluations
         """
         super().__init__(
             results=results,
             llm_client=llm_client,
             system_prompt=system_prompt,
-            model_config=model_config
+            llm_config=llm_config
         )
         self.max_concurrency = max_concurrency
     

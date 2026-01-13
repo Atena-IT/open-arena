@@ -20,24 +20,24 @@ class GenericEvaluator:
         :param model_class (Type[BaseModel]): The Pydantic model class represents the structure of the dataset items.
         :param prompt_path (str): Path to pick the right prompt for the completion.
     """
-    def __init__(self, client: LLMClient, judge_model_config: dict, judge_prompt: str):
+    def __init__(self, client: LLMClient, judge_llm_config: dict, judge_prompt: str):
         self.client = client
-        self.judge_model_config = judge_model_config
+        self.judge_llm_config = judge_llm_config
         self.judge_prompt = judge_prompt
 
 
-    def completion(self, model_config: dict, system_prompt: str, user_prompt: str) -> str:
+    def completion(self, llm_config: dict, system_prompt: str, user_prompt: str) -> str:
         """
         Executes a user message using the LMClient and returns the response for open-ended questions.
         Parameters:
-            :param model_config: Judge Model configuration to use for this completion.
+            :param llm_config: Judge Model configuration to use for this completion.
             :param system_prompt: The system prompt to use on this interaction.
             :param user_prompt: The user message to evaluate.
         Return:
             :return: LLM output message
         """
         messages = self.client.format_messages(system=system_prompt, user=user_prompt)
-        return self.client.chat(messages=messages, model_config=model_config)
+        return self.client.chat(messages=messages, llm_config=llm_config)
 
 
     @staticmethod
@@ -114,7 +114,7 @@ class GenericEvaluator:
 
             # LLM-as-a-judge
             raw_response = self.completion(
-                model_config=self.judge_model_config,
+                llm_config=self.judge_llm_config,
                 system_prompt=self.judge_prompt,
                 user_prompt=user_prompt)
 
@@ -153,6 +153,6 @@ class GenericEvaluator:
                 model_name = future_to_model[future]
                 try:
                     future.result()
-                    LOGGER.info(f"Finished judge '{self.judge_model_config['name']}' on experiment results of model '{model_name}'")
+                    LOGGER.info(f"Finished judge '{self.judge_llm_config['name']}' on experiment results of model '{model_name}'")
                 except Exception as e:
-                    LOGGER.exception(f"Error while running judge '{self.judge_model_config['name']}' on model '{model_name}': {e}")
+                    LOGGER.exception(f"Error while running judge '{self.judge_llm_config['name']}' on model '{model_name}': {e}")

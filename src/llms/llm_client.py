@@ -73,18 +73,18 @@ class LLMClient:
     async def achat(
         self, 
         messages: List[Dict[str, str]], 
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> str:
         """
         Async chat completion with optional MCP tools.
         
         :param messages: List of message dicts
-        :param model_config: Model configuration
+        :param llm_config: Model configuration
         :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
-        completion_args = model_config.copy()
+        completion_args = llm_config.copy()
         completion_args["messages"] = messages
         
         if mcp_servers:
@@ -92,7 +92,7 @@ class LLMClient:
             
             if tools:
                 completion_args["tools"] = tools
-                completion_args["tool_choice"] = model_config.get("tool_choice", "auto")
+                completion_args["tool_choice"] = llm_config.get("tool_choice", "auto")
         
         response = await litellm.acompletion(**completion_args)
 
@@ -103,7 +103,7 @@ class LLMClient:
     def chat(
         self, 
         messages: List[Dict[str, str]], 
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> str:
         """
@@ -111,8 +111,8 @@ class LLMClient:
         Wrapper around async implementation.
         
         :param messages: List of message dicts
-        :param model_config: Model configuration
+        :param llm_config: Model configuration
         :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
-        return asyncio.run(self.achat(messages, model_config, mcp_servers))
+        return asyncio.run(self.achat(messages, llm_config, mcp_servers))

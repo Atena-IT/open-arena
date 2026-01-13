@@ -26,7 +26,7 @@ class LangfuseExecutor(Executor[T]):
         dataset_name: str,
         llm_client: LangfuseLLMClient,
         system_prompt: str,
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         from_langfuse_fn: Callable[[ExperimentItem], T],
         mcp_servers: Optional[List[MCPServerConfig]] = None,
         experiment_name: Optional[str] = None,
@@ -37,7 +37,7 @@ class LangfuseExecutor(Executor[T]):
         :param dataset_name: Name of Langfuse dataset
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
-        :param model_config: Model configuration
+        :param llm_config: Model configuration
         :param from_langfuse_fn: Function to convert Langfuse DatasetItem to T
         :param mcp_servers: Optional MCP server configs
         :param experiment_name: Experiment name (auto-generated if None)
@@ -48,13 +48,13 @@ class LangfuseExecutor(Executor[T]):
         super().__init__(
             llm_client=llm_client,
             system_prompt=system_prompt,
-            model_config=model_config,
+            llm_config=llm_config,
             mcp_servers=mcp_servers
         )
         
         self.dataset_name = dataset_name
-        self.experiment_name = experiment_name or f"Experiment-{model_config['model']}"
-        self.experiment_description = experiment_description or f"Experiment with {model_config['model']}"
+        self.experiment_name = experiment_name or f"Experiment-{llm_config['model']}"
+        self.experiment_description = experiment_description or f"Experiment with {llm_config['model']}"
         self.from_langfuse_fn = from_langfuse_fn
         self.langfuse = get_client() #TODO: public key? Other places where this is used?
         self.max_concurrency = max_concurrency

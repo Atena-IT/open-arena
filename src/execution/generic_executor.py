@@ -21,7 +21,7 @@ class GenericExecutor(Executor[T]):
         dataset: List[T],
         llm_client: LLMClient,
         system_prompt: str,
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         mcp_servers: Optional[List[MCPServerConfig]] = None,
         max_concurrency: int = 50
     ):
@@ -29,14 +29,14 @@ class GenericExecutor(Executor[T]):
         :param dataset: List of items to execute
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
-        :param model_config: Model configuration to use
+        :param llm_config: Model configuration to use
         :param mcp_servers: Optional list of MCP server configurations (LiteLLM format)
         :param max_workers: Maximum number of concurrent executions
         """
         super().__init__(
             llm_client=llm_client,
             system_prompt=system_prompt,
-            model_config=model_config,
+            llm_config=llm_config,
             mcp_servers=mcp_servers
         )
 

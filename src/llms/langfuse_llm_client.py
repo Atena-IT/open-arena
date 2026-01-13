@@ -30,25 +30,25 @@ class LangfuseLLMClient(LLMClient):
     async def achat(
         self, 
         messages: List[Dict[str, str]], 
-        model_config: Dict[str, Any],
+        llm_config: Dict[str, Any],
         mcp_servers: Optional[List[MCPServerConfig]] = None
     ) -> str:
         """
         Async chat completion with optional MCP tools.
         
         :param messages: List of message dicts
-        :param model_config: Model configuration
+        :param llm_config: Model configuration
         :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
         result = await super().achat(
             messages=messages,
-            model_config=model_config,
+            llm_config=llm_config,
             mcp_servers=mcp_servers
         )
 
         self._langfuse.update_current_generation(
-            model=model_config["model"]
+            model=llm_config["model"],
         )
 
         return result

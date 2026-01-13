@@ -23,18 +23,18 @@ class Evaluator(ABC, Generic[T]):
         results: List[ExecutionResult[T]],
         llm_client: LLMClient,
         system_prompt: str,
-        model_config: Dict[str, Any]
+        llm_config: Dict[str, Any]
     ):
         """
         :param results: Results from executor to evaluate
         :param llm_client: LLM client for judge completions
         :param system_prompt: System prompt that defines how the judge should evaluate
-        :param model_config: Model configuration for the judge to use
+        :param llm_config: Model configuration for the judge to use
         """
         self.results = results
         self.client = llm_client
         self.system_prompt = system_prompt
-        self.model_config = model_config
+        self.llm_config = llm_config
     
     @abstractmethod
     async def evaluate(self) -> List[EvaluationResult[T]]:
@@ -62,7 +62,7 @@ class Evaluator(ABC, Generic[T]):
             
             judge_output = await self.client.achat(
                 messages=messages,
-                model_config=self.model_config
+                llm_config=self.llm_config
             )
             
             score, explanation = self._parse_judge_response(judge_output)
