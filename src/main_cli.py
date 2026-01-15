@@ -10,6 +10,7 @@ import asyncio
 import logging
 import sys
 from typing import List
+import warnings
 
 import click
 from dotenv import load_dotenv
@@ -23,8 +24,10 @@ from src.execution import LangfuseExecutor
 from src.execution.types import ExecutionResult
 from src.evaluation import LangfuseEvaluator, LLMAsJudge
 from src.evaluation.types import EvaluationResult
-from src.llms import LangfuseLLMClient, LLMClient
+from src.llms import LangfuseLLMClient
 from src.llms.types import MCPServerConfig
+
+warnings.filterwarnings('ignore', category=UserWarning, module='pydantic') # TODO: remove when bug fixed
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,15 +63,16 @@ def get_reader(format: str):
         raise ValueError(f"Unsupported format: {format}")
 
 
-def get_evaluation_method(config: ExperimentsFile):
+async def get_evaluation_method(config: ExperimentsFile):
     """Get appropriate evaluation method based on config."""
     if config.evaluation.method == "llm_as_judge":
-        judge_client = LangfuseLLMClient()
         judge_config = config.evaluation.litellm.model_dump()
-        
+        judge_client = LangfuseLLMClient(judge_config)
+
+        await judge_client.setup()
+
         return LLMAsJudge(
             llm_client=judge_client,
-            model_config=judge_config
         )
     else:
         raise ValueError(f"Unsupported evaluation method: {config.evaluation.method}")
@@ -88,7 +92,8 @@ async def load_and_upload_dataset(config: ExperimentsFile) -> None:
             "dataset_name": config.dataset.name,
             "source_file": config.dataset.source
         },
-        input_path="."
+        input_path=".",
+        max_items=2
     )
     
     dataset = loader.load()
@@ -99,13 +104,10 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
     """Run all experiments sequentially."""
     _logger.info(f"Preparing {len(config.experiments)} experiments for execution")
     
-    lf_client = LangfuseLLMClient()
-    
     item_model = get_item_model(config.dataset.type)
     
     all_results = []
     
-    # Run experiments sequentially to avoid event loop conflicts
     for exp_config in config.experiments:
         _logger.info(f"Configuring experiment: {exp_config.name} with model {exp_config.litellm.model}")
         
@@ -118,19 +120,23 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
                 for mcp in exp_config.mcp
             ]
             _logger.info(f"  MCP servers configured: {len(mcp_servers)}")
+
+        lf_client = LangfuseLLMClient(
+            llm_config=llm_config,
+            mcp_servers=mcp_servers or []
+        )
+
+        await lf_client.setup()
         
         executor = LangfuseExecutor(
             dataset_name=config.dataset.name,
             llm_client=lf_client,
             system_prompt=config.system_prompt,
-            llm_config=llm_config,
             from_langfuse_fn=item_model.from_langfuse_item,
-            mcp_servers=mcp_servers,
             experiment_name=exp_config.name,
             experiment_description=f"Experiment: {exp_config.name} with model {exp_config.litellm.model}"
         )
         
-        # Execute experiment (blocks until complete)
         _logger.info(f"Executing experiment: {exp_config.name}")
         results = await executor.execute()
         all_results.append(results)
@@ -150,7 +156,7 @@ async def run_evaluations(config: ExperimentsFile, all_results: List[List[Execut
     """Run evaluations on all experiment results."""
     _logger.info(f"Preparing evaluation for {len(all_results)} experiments")
     
-    evaluation_method = get_evaluation_method(config)
+    evaluation_method = await get_evaluation_method(config)
     _logger.info(f"Configuring {config.evaluation.method} with model: {config.evaluation.litellm.model}")
     
     all_eval_results = []
@@ -212,9 +218,7 @@ def main(config: str, skip_upload: bool):
         python -m src.main_cli -c config.yaml --skip-upload
     """
     try:
-        _logger.info("=" * 80)
         _logger.info("Multi-Language Model Evaluation Framework")
-        _logger.info("=" * 80)
         
         _logger.info(f"Loading configuration from: {config}")
         try:
@@ -238,10 +242,8 @@ def main(config: str, skip_upload: bool):
         
         asyncio.run(workflow())
         
-        _logger.info("=" * 80)
         _logger.info("Execution completed successfully")
         _logger.info("View results in Langfuse dashboard")
-        _logger.info("=" * 80)
         sys.exit(0)
         
     except FileNotFoundError as e:
