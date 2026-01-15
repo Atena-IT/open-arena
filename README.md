@@ -18,6 +18,8 @@ Define experiments (model + optional MCP-backed tools) and a dataset; run experi
 - Access to any **MCP servers**, **LLM provider endpoints**, and other services you plan to use
 - (Recommended) **uv** installed and available in your `PATH`
 
+---
+
 ### 🧑‍💻 Development Setup
 
 #### 📦 Install (from source)
