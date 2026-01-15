@@ -156,8 +156,3 @@ And much more!
 ## 📃 License
 
 License to be determined.
-
-## Code of Conduct
-
-A project code of conduct will be added. Please keep interactions respectful and constructive.
-
