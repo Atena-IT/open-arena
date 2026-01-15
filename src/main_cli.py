@@ -1,11 +1,3 @@
-"""
-CLI script to run experiments from a YAML configuration file.
-
-Usage:
-    python -m src.main_cli --config path/to/config.yaml
-    python -m src.main_cli -c experiments.yaml
-"""
-
 import asyncio
 import logging
 import sys
