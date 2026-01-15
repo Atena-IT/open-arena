@@ -4,21 +4,21 @@ A framework to evaluate and compare LLMs and tool stacks against a dataset.
 
 Define experiments (model + optional MCP-backed tools) and a dataset; run experiments, collect model I/O and metadata, and score outputs with pluggable evaluation methods.
 
-# ✨ Key Features
+## ✨ Key Features
 
 - **Generality**: compare arbitrary model + tool combinations; tools are treated as pluggable services and models are provider-agnostic.
 - **Observability**: capture and inspect dataset handling, model I/O, and evaluation results to make experiments auditable and reproducible through Langfuse.
 - **Extensibility**: clear extension points allow adding new dataset formats, evaluation methods, executors, and integrations.
 - **Declarative configuration**: define experiments via YAML configuration files, enabling reproducible runs and easy CI/CD automation.
 
-# ⚡ Quickstart
+## ⚡ Quickstart
 
-## 🧰 Prerequisites
+### 🧰 Prerequisites
 
 - Python 3.10+
 - Access to any MCP servers, LLM provider endpoints, or other services you plan to use
 
-## 📦 Install
+### 📦 Install
 
 This project uses `uv` for dependency sync:
 
@@ -26,12 +26,12 @@ This project uses `uv` for dependency sync:
 uv sync
 ```
 
-## 🔒 Environment / Secrets
+### 🔒 Environment / Secrets
 - Copy `.env.example` to `.env`.
 - Add all LiteLLM-related variables required by the providers you plan to call (see each provider's docs for exact names and keys).
 - Fill in all the Langfuse related variables for observability (optional).
 
-## ⚙️ Configuration
+### ⚙️ Configuration
 
 The YAML schema for experiments is defined by the `ExperimentsFile` model in `src/config/types.py`.
 
@@ -71,13 +71,13 @@ evaluation:
 
 </details>
 
-### 🤖 Supported Providers and Models
+#### 🤖 Supported Providers and Models
 
 This framework uses LiteLLM. See the public model [index](https://models.litellm.ai/) for supported providers and model IDs.
 
 Refer to each provider’s docs for required environment variables and model configuration options.
 
-## ▶️ Run
+### ▶️ Run
 
 Run the CLI with `uv` and the example config:
 
@@ -85,9 +85,9 @@ Run the CLI with `uv` and the example config:
 uv run -m src.main_cli --config config.example.yaml
 ```
 
-# 👁️ Observability
+## 👁️ Observability
 
-## Langfuse Integration ⭐
+### Langfuse Integration ⭐
 
 **Full Langfuse integration is built-in**, providing enterprise-grade observability for your experiments:
 
@@ -96,7 +96,7 @@ uv run -m src.main_cli --config config.example.yaml
 - **Generations**: LLM calls are logged with latency, token usage, and cost tracking
 - **Scores**: Evaluation results are automatically attached to traces for easy comparison
 
-# 🤝 Contributing
+## 🤝 Contributing
 
 This framework is designed with extensibilty in mind. We welcome contributions that expand capabilities:
 
@@ -106,18 +106,18 @@ This framework is designed with extensibilty in mind. We welcome contributions t
 
 And much more!
 
-## How to Contribute
+### How to Contribute
 
 1. **Report bugs**: Open an issue with reproduction steps
 2. **Suggest features**: Describe your use case and proposed solution
 3. **Submit PRs**: Include tests and update documentation
 4. **Improve docs**: Fix typos, add examples, clarify instructions
 
-# 📃 License
+## 📃 License
 
 License to be determined. Add the chosen SPDX identifier and include the full license text.
 
-# Code of Conduct
+## Code of Conduct
 
 A project code of conduct will be added. Please keep interactions respectful and constructive.
 
