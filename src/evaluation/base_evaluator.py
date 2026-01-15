@@ -1,4 +1,3 @@
-import logging
 from abc import ABC, abstractmethod
 from typing import List, Generic, TypeVar
 
@@ -7,7 +6,6 @@ from src.execution.types import ExecutionResult
 from src.evaluation.types import EvaluationResult
 from src.evaluation.methods import EvaluationMethod
 
-_logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)
 
 
