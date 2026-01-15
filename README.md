@@ -14,38 +14,64 @@ Define experiments (model + optional MCP-backed tools) and a dataset; run experi
 ## ⚡ Quickstart
 
 ### 🧰 Prerequisites
+- **Python**: 3.11+
+- Access to any **MCP servers**, **LLM provider endpoints**, and other services you plan to use
+- (Recommended) **uv** installed and available in your `PATH`
 
-- Python 3.10+
-- Access to any MCP servers, LLM provider endpoints, or other services you plan to use
+### 🧑‍💻 Development Setup
 
-### 📦 Install
+#### 📦 Install (from source)
+Clone the repository and set up the environment:
 
-This project uses `uv` for dependency sync:
+```sh
+cd multi-language-model-evaluation-framework
+```
+
+Sync dependencies:
 
 ```sh
 uv sync
 ```
 
+Install the project in **editable mode** (recommended for development):
+
+```sh
+uv pip install -e .
+```
+
+Verify that the CLI entry point is available:
+
+```sh
+mlmef --help
+```
+
+---
+
 ### 🔒 Environment / Secrets
-- Copy `.env.example` to `.env`.
-- Add all LiteLLM-related variables required by the providers you plan to call (see each provider's docs for exact names and keys).
-- Fill in all the Langfuse related variables for observability (optional).
+Copy `.env.example` to `.env` and fill in the required values:
+
+```sh
+cp .env.example .env
+```
+
+- Add all **LiteLLM-related** variables required by the providers you plan to call (refer to each provider’s documentation for the exact names/keys).
+- Fill in the **Langfuse** variables for observability (**optional**).
+
+---
 
 ### ⚙️ Configuration
-
 The YAML schema for experiments is defined by the `ExperimentsFile` model in `src/config/types.py`.
 
-Important top-level fields:
-
-- `dataset`: Global dataset configuration (`name`, `source`, `format`, `type`).
-- `system_prompt`: Global system prompt applied to experiments.
-- `experiments`: List of experiment blocks with per-experiment LiteLLM config and optional `mcp` server list.
-- `evaluation`: Evaluation method and judge model config.
+**Important top-level fields:**
+- `dataset`: global dataset configuration (`name`, `source`, `format`, `type`)
+- `system_prompt`: global system prompt applied to experiments
+- `experiments`: list of experiment blocks with per-experiment LiteLLM config and optional MCP server list
+- `evaluation`: evaluation method and judge model config
 
 <details>
 <summary>Example minimal config</summary>
 
-See full version at [config.example.yaml](config.example.yaml)
+See the full version in `config.example.yaml`.
 
 ```yaml
 dataset:
@@ -72,18 +98,26 @@ evaluation:
 </details>
 
 #### 🤖 Supported Providers and Models
+This framework uses **LiteLLM**. Refer to the LiteLLM documentation/model index for supported providers and model IDs.
 
-This framework uses LiteLLM. See the public model [index](https://models.litellm.ai/) for supported providers and model IDs.
+Provider credentials and configuration are supplied via environment variables (see each provider’s documentation for the required keys).
 
-Refer to each provider’s docs for required environment variables and model configuration options.
+---
 
 ### ▶️ Run
+Run the CLI using the installed entry point:
 
-Run the CLI with `uv` and the example config:
+```sh
+mlmef --config config.example.yaml
+```
+
+Alternatively, run the module directly (useful for debugging):
 
 ```sh
 uv run -m src.main_cli --config config.example.yaml
 ```
+
+---
 
 ## 👁️ Observability
 
@@ -96,6 +130,10 @@ uv run -m src.main_cli --config config.example.yaml
 - **Generations**: LLM calls are logged with latency, token usage, and cost tracking
 - **Scores**: Evaluation results are automatically attached to traces for easy comparison
 
+## ⚠️ Limitations
+
+- **CLI is currently Langfuse-backed only**: `src/main_cli.py` runs the end-to-end workflow using Langfuse datasets/experiments (dataset upload, execution traces, and score writing). If you want to run without Langfuse (fully in-memory execution + evaluation), you currently need to write a small custom runner that wires together the in-memory components (e.g., `DatasetLoader` + `GenericExecutor` + `GenericEvaluator`).
+
 ## 🤝 Contributing
 
 This framework is designed with extensibilty in mind. We welcome contributions that expand capabilities:
@@ -106,7 +144,7 @@ This framework is designed with extensibilty in mind. We welcome contributions t
 
 And much more!
 
-### How to Contribute
+### ❓ How to Contribute
 
 1. **Report bugs**: Open an issue with reproduction steps
 2. **Suggest features**: Describe your use case and proposed solution
@@ -115,7 +153,7 @@ And much more!
 
 ## 📃 License
 
-License to be determined. Add the chosen SPDX identifier and include the full license text.
+License to be determined.
 
 ## Code of Conduct
 
