@@ -1,19 +1,41 @@
+
 [project]
 name = "multi-language-model-evaluation-framework"
 version = "0.1.0"
-description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis"
+description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis."
 readme = "README.md"
-requires-python = ">3.11"
+requires-python = ">=3.11"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "Atena Reply" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
 dependencies = [
     "langchain",
-    "langchain-core",
     "langchain-mcp-adapters",
     "langchain-litellm",
     "langfuse>=3.10.1",
     "langgraph>=0.6.6",
     "litellm>=1.80.15",
     "openpyxl",
-    "pandas>=2.3.3",
-    "pydantic",
+    "pandas",
+    "pydantic>=2",
     "python-dotenv",
 ]
+
+[project.scripts]
+mlmef = "src.main_cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

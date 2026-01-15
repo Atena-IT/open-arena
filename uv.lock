@@ -1,10 +1,9 @@
 version = 1
 revision = 2
-requires-python = ">3.11"
+requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14'",
-    "python_full_version == '3.13.*'",
-    "python_full_version == '3.12.*'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
     "python_full_version < '3.12'",
 ]
 
@@ -618,8 +617,7 @@ name = "grpcio"
 version = "1.67.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version == '3.13.*'",
-    "python_full_version == '3.12.*'",
+    "python_full_version >= '3.12' and python_full_version < '3.14'",
     "python_full_version < '3.12'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/20/53/d9282a66a5db45981499190b77790570617a604a38f3d103d0400974aeb5/grpcio-1.67.1.tar.gz", hash = "sha256:3dc2ed4cabea4dc14d5e708c2b426205956077cc5de419b4d4079315017e9732", size = 12580022, upload-time = "2024-10-29T06:30:07.787Z" }
@@ -1250,10 +1248,9 @@ wheels = [
 [[package]]
 name = "multi-language-model-evaluation-framework"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "langchain" },
-    { name = "langchain-core" },
     { name = "langchain-litellm" },
     { name = "langchain-mcp-adapters" },
     { name = "langfuse" },
@@ -1268,15 +1265,14 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "langchain" },
-    { name = "langchain-core" },
     { name = "langchain-litellm" },
     { name = "langchain-mcp-adapters" },
     { name = "langfuse", specifier = ">=3.10.1" },
     { name = "langgraph", specifier = ">=0.6.6" },
     { name = "litellm", specifier = ">=1.80.15" },
     { name = "openpyxl" },
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "pydantic" },
+    { name = "pandas" },
+    { name = "pydantic", specifier = ">=2" },
     { name = "python-dotenv" },
 ]
 
