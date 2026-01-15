@@ -26,9 +26,7 @@ class LangfuseExecutor(Executor[T]):
         dataset_name: str,
         llm_client: LangfuseLLMClient,
         system_prompt: str,
-        llm_config: Dict[str, Any],
         from_langfuse_fn: Callable[[ExperimentItem], T],
-        mcp_servers: Optional[List[MCPServerConfig]] = None,
         experiment_name: Optional[str] = None,
         experiment_description: Optional[str] = None,
         max_concurrency: int = 50
@@ -37,9 +35,7 @@ class LangfuseExecutor(Executor[T]):
         :param dataset_name: Name of Langfuse dataset
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
-        :param llm_config: Model configuration
         :param from_langfuse_fn: Function to convert Langfuse DatasetItem to T
-        :param mcp_servers: Optional MCP server configs
         :param experiment_name: Experiment name (auto-generated if None)
         :param experiment_description: Experiment description (auto-generated if None)
         :param langfuse_client: Optional Langfuse client
@@ -48,20 +44,17 @@ class LangfuseExecutor(Executor[T]):
         super().__init__(
             llm_client=llm_client,
             system_prompt=system_prompt,
-            llm_config=llm_config,
-            mcp_servers=mcp_servers
         )
         
         self.dataset_name = dataset_name
-        self.experiment_name = experiment_name or f"Experiment-{llm_config['model']}"
-        self.experiment_description = experiment_description or f"Experiment with {llm_config['model']}"
+        self.experiment_name = experiment_name or f"Experiment-{self.client.llm_config['model']}"
+        self.experiment_description = experiment_description or f"Experiment with {self.client.llm_config['model']}"
         self.from_langfuse_fn = from_langfuse_fn
         self.langfuse = get_client()
         self.max_concurrency = max_concurrency
 
         
         # Storage for results during experiment execution
-        # Map experiment_item_id -> ExecutionResult for later trace_id linking
         self._execution_results_map: Dict[str, ExecutionResult[T]] = {}
         self._results_lock = Lock()  # Thread safety for concurrent task execution
     

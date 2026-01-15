@@ -1,55 +1,55 @@
-from dotenv import load_dotenv
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any
 
-from langfuse import get_client, observe
+from langfuse.langchain import CallbackHandler
 
 from src.llms.llm_client import LLMClient
 from src.llms.types import MCPServerConfig
-
-load_dotenv()
 
 class LangfuseLLMClient(LLMClient):
     """
     LLM Client with Langfuse observability integration.
     
     Inherits all functionality from LLMClient and adds automatic
-    tracing of LLM calls to Langfuse via LiteLLM callbacks.
+    tracing of LLM calls to Langfuse via LangChain callbacks.
     """
     
     def __init__(
-        self
+        self,
+        llm_config: Dict[str, Any],
+        mcp_servers: List[MCPServerConfig] = []
     ):
         """
         Initialize LangfuseLLMClient with Langfuse observability.
+        
+        :param llm_config: LiteLLM model configuration
+        :param mcp_servers: List of MCP server configurations
         """
-        super().__init__()
+        super().__init__(llm_config, mcp_servers)
+        self.langfuse_handler = CallbackHandler()
 
-        self._langfuse = get_client()
-
-    @observe(as_type="generation", name="litellm")
     async def achat(
         self, 
-        messages: List[Dict[str, str]], 
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
+        messages: List[Dict[str, str]]
     ) -> str:
         """
-        Async chat completion with optional MCP tools.
+        Async chat completion with Langfuse tracing.
         
         :param messages: List of message dicts
-        :param llm_config: Model configuration
-        :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
-        result = await super().achat(
-            messages=messages,
-            llm_config=llm_config,
-            mcp_servers=mcp_servers
-        )
-
-        self._langfuse.update_current_generation(
-            model=llm_config["model"],
-            model_parameters={k: v for k, v in llm_config.items() if k != "model"}
-        )
-
-        return result
+        if self._initialized and self.graph:
+            langchain_messages = self._convert_messages_to_langchain(messages)
+            
+            # Invoke graph with Langfuse callback
+            result = await self.graph.ainvoke(
+                {"messages": langchain_messages},
+                config={"callbacks": [self.langfuse_handler]}
+            )
+            
+            final_message = result["messages"][-1]
+            if hasattr(final_message, "content") and final_message.content:
+                return str(final_message.content)
+            else:
+                return ""
+        else:
+            raise RuntimeError("LLMClient not initialized. Call setup() before making requests.")

@@ -1,22 +1,51 @@
-import litellm
 import logging
-import asyncio
-from typing import List, Dict, Optional, Any
-from dotenv import load_dotenv
-from mcp import ClientSession
-from mcp.client.sse import sse_client
-from litellm import experimental_mcp_client
+from typing import List, Dict, Any
+
+from langchain_litellm import ChatLiteLLM
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langgraph.graph import StateGraph, MessagesState, START
+from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from src.llms.types import MCPServerConfig
 
-load_dotenv()
 _logger = logging.getLogger(__name__)
 
 class LLMClient:
     """
-    Client for interacting with LLMs using LiteLLM.
+    Client for interacting with LLMs using LiteLLM and Langgraph.
     Supports MCP tools from remote servers via SSE.
     """
+
+    def __init__(
+        self,
+        llm_config: Dict[str, Any],
+        mcp_servers: List[MCPServerConfig] = []
+    ):
+        """
+        Initialize the LLM client.
+        
+        :param llm_config: LiteLLM model configuration
+        :param mcp_servers: Optional list of MCP server configurations
+        """
+        self.llm_config = llm_config
+        self.mcp_servers = mcp_servers
+        self.graph = None
+        self.mcp_client = None
+        self._initialized = False
+
+    async def setup(self):
+        """
+        Initialize MCP connection and build the graph.
+        Call this once after instantiation.
+        """
+        if self.llm_config:
+            self.graph, self.mcp_client = await self._create_graph_with_tools(
+                self.llm_config, 
+                self.mcp_servers
+            )
+            self._initialized = True
+            _logger.debug("LLM client initialized with MCP tools")
 
     @staticmethod
     def format_messages(system: str, user: str) -> List[Dict[str, str]]:
@@ -32,87 +61,98 @@ class LLMClient:
             {"role": "user", "content": user},
         ]
 
-
-    async def _load_mcp_tools(self, mcp_servers: List[MCPServerConfig]) -> List[dict]:
+    async def _create_graph_with_tools(
+        self, 
+        llm_config: Dict[str, Any],
+        mcp_servers: List[MCPServerConfig]
+    ):
         """
-        Load tools from remote MCP servers via SSE.
+        Create a LangGraph workflow with MCP tools.
         
-        :param mcp_servers: List of MCP server configurations with 'url' and optional 'headers'
-        :return: List of tools in OpenAI format
+        :param llm_config: Model configuration
+        :param mcp_servers: List of MCP server configurations
+        :return: Compiled graph and MCP client
         """
-        all_tools = []
+        # Convert MCP server configs to MultiServerMCPClient format
+        servers_config = {}
+        for server in mcp_servers:
+            server_name = server.get("server_name", f"server_{len(servers_config)}")
+            servers_config[server_name] = {
+                "transport": "sse",
+                "url": server["url"],
+                **({"headers": server["headers"]} if "headers" in server else {})
+            }
         
-        for server_config in mcp_servers:
-            server_name = server_config.get("server_name", "unknown")
-            url = server_config["url"]
-            headers = server_config.get("headers", {})
-            
-            _logger.debug(f"Loading tools from remote MCP server: {server_name} at {url}")
-            
-            try:
-                async with sse_client(url, headers=headers) as (read, write):
-                    async with ClientSession(read, write) as session:
-                        await session.initialize()
-                        
-                        tools = await experimental_mcp_client.load_mcp_tools(
-                            session=session,
-                            format="openai"
-                        )
-                        
-                        _logger.info(f"Loaded {len(tools)} tools from {server_name}")
-
-                        all_tools.extend(tools)
-                        
-            except Exception as e:
-                _logger.error(f"Failed to load tools from {server_name}: {e}")
-                continue
+        mcp_client = MultiServerMCPClient(servers_config)
+        tools = await mcp_client.get_tools()
         
-        return all_tools
+        _logger.debug(f"Loaded {len(tools)} tools from MCP servers")
+        
+        model = ChatLiteLLM(**llm_config)
+        
+        # Build the graph
+        def call_model(state: MessagesState):
+            response = model.bind_tools(tools).invoke(state["messages"])
+            return {"messages": response}
+        
+        builder = StateGraph(MessagesState)
+        builder.add_node("call_model", call_model)
+        builder.add_node("tools", ToolNode(tools))
+        builder.add_edge(START, "call_model")
+        builder.add_conditional_edges("call_model", tools_condition)
+        builder.add_edge("tools", "call_model")
+        
+        return builder.compile(), mcp_client
 
+    def _convert_messages_to_langchain(
+        self, 
+        messages: List[Dict[str, str]]
+    ) -> List[Any]:
+        """
+        Convert standard message format to LangChain messages.
+        
+        :param messages: List of message dicts with 'role' and 'content'
+        :return: List of LangChain message objects
+        """
+        langchain_messages = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            
+            if role == "system":
+                langchain_messages.append(SystemMessage(content=content))
+            elif role == "user":
+                langchain_messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                langchain_messages.append(AIMessage(content=content))
+            else:
+                _logger.warning(f"Unknown role '{role}', treating as user message")
+                langchain_messages.append(HumanMessage(content=content))
+        
+        return langchain_messages
 
     async def achat(
-        self, 
-        messages: List[Dict[str, str]], 
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
+        self,
+        messages: List[Dict[str, str]],
     ) -> str:
         """
         Async chat completion with optional MCP tools.
         
         :param messages: List of message dicts
-        :param llm_config: Model configuration
-        :param mcp_servers: Optional list of remote MCP server configurations
         :return: Model response content
         """
-        completion_args = llm_config.copy()
-        completion_args["messages"] = messages
         
-        if mcp_servers:
-            tools = await self._load_mcp_tools(mcp_servers)
+        if self._initialized and self.graph:
+            langchain_messages = self._convert_messages_to_langchain(messages)
             
-            if tools:
-                completion_args["tools"] = tools
-                completion_args["tool_choice"] = llm_config.get("tool_choice", "auto")
-        
-        response = await litellm.acompletion(**completion_args)
-
-        return response.choices[0].message.content # type: ignore # TODO: type checking
+            result = await self.graph.ainvoke({"messages": langchain_messages})
+            
+            final_message = result["messages"][-1]
+            if hasattr(final_message, "content") and final_message.content:
+                return str(final_message.content)
+            else:
+                return ""
+        else:
+            raise RuntimeError("LLMClient not initialized. Call setup() before making requests.")
     
     # TODO: astream
-
-    def chat(
-        self, 
-        messages: List[Dict[str, str]], 
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
-    ) -> str:
-        """
-        Synchronous chat completion with optional MCP tools.
-        Wrapper around async implementation.
-        
-        :param messages: List of message dicts
-        :param llm_config: Model configuration
-        :param mcp_servers: Optional list of remote MCP server configurations
-        :return: Model response content
-        """
-        return asyncio.run(self.achat(messages, llm_config, mcp_servers))

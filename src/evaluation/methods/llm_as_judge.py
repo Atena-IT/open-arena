@@ -32,17 +32,14 @@ class LLMAsJudge(EvaluationMethod[T]):
     
     def __init__(
         self,
-        llm_client: LLMClient,
-        model_config: Dict[str, Any],
+        llm_client: LLMClient, # TODO: simpler implementaion that does not require a graph
         system_prompt: str = default_prompts["evaluation"]["llm_as_judge"],
     ):
         """
         :param llm_client: LLM client for judge completions
-        :param model_config: Model configuration for the judge
         :param system_prompt: Optional system prompt that defines how the judge should evaluate
         """
         self.client = llm_client
-        self.model_config = model_config
         self.system_prompt = system_prompt
     
     async def evaluate(self, result: ExecutionResult[T]) -> EvaluationResult[T]:
@@ -61,8 +58,7 @@ class LLMAsJudge(EvaluationMethod[T]):
             )
             
             judge_output = await self.client.achat(
-                messages=messages,
-                llm_config=self.model_config
+                messages=messages
             )
             
             score, explanation = self._parse_judge_response(judge_output)

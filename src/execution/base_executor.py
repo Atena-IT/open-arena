@@ -20,19 +20,13 @@ class Executor(ABC, Generic[T]):
         self,
         llm_client: LLMClient,
         system_prompt: str,
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
     ):
         """
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
-        :param llm_config: Model configuration to use
-        :param mcp_servers: Optional list of MCP server configurations (LiteLLM format)
         """
         self.client = llm_client
         self.system_prompt = system_prompt
-        self.llm_config = llm_config
-        self.mcp_servers = mcp_servers
 
     async def _execute_item(self, item: T) -> ExecutionResult[T]:
         """
@@ -50,14 +44,12 @@ class Executor(ABC, Generic[T]):
             
             output = await self.client.achat(
                 messages=messages,
-                llm_config=self.llm_config,
-                mcp_servers=self.mcp_servers
             )
             
             return ExecutionResult(
                 item=item,
                 output=output,
-                model_name=self.llm_config["model"]
+                model_name=self.client.llm_config["model"]
             )
         
         except Exception as e:
@@ -65,7 +57,7 @@ class Executor(ABC, Generic[T]):
             return ExecutionResult(
                 item=item,
                 output="",
-                model_name=self.llm_config["model"],
+                model_name=self.client.llm_config["model"],
                 error=str(e)
             )
     
