@@ -95,7 +95,7 @@ class LLMAsJudge(EvaluationMethod[T]):
         :return: JSON string with evaluation payload
         """
         payload = {
-            "input": result.item.user_prompt(),
+            "input": result.item.input(),
             "output": result.output or "",
             "expected_output": result.item.expected_output(),
         }

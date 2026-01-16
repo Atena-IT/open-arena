@@ -1,18 +1,17 @@
 from abc import abstractmethod, ABC
 from pydantic import BaseModel, Field
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
-""" CLASSES """
 class DatasetItem(BaseModel, ABC):
     """
     Represents a single dataset item
     Methods:
-        from_langfuse_item() -> Any: Creates a Pydantic BaseModel object from a Langfuse dataset item.
-        user_prompt() -> str: Returns Input string.
+        input() -> str: Returns Input string.
         expected_output() -> str: Returns expected output string (ground truth).
+        meta() -> Dict[str, Any]: Returns metadata dictionary.
     """
-    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Optional metadata for the dataset item")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Optional metadata for the dataset item")
 
     @classmethod
     @abstractmethod
@@ -32,7 +31,7 @@ class DatasetItem(BaseModel, ABC):
 
 
     @abstractmethod
-    def user_prompt(self) -> str:
+    def input(self) -> str:
         """
         Return:
             :return: Input string
@@ -46,3 +45,10 @@ class DatasetItem(BaseModel, ABC):
             :return: Expected output string (ground truth)
         """
         raise NotImplementedError
+    
+    def meta(self) -> Dict[str, Any]:
+        """
+        Return:
+            :return: Metadata dictionary
+        """
+        return self.metadata

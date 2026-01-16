@@ -1,8 +1,6 @@
 import logging
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
-from typing import List, Type, Generic, Any, Optional, TypeVar, TypedDict
+from typing import List, Type, Any, Optional, TypeVar, TypedDict
 from langfuse import get_client
 from tqdm import tqdm
 
@@ -13,13 +11,6 @@ from src.datasets.types import DatasetConfig
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)
-
-
-class _LangfuseDatasetItem(TypedDict):
-    """Structure for Langfuse dataset items."""
-    input: Any
-    expected_output: Any
-    metadata: Any
 
 class LangfuseLoader(DatasetLoader[T]):
     """
@@ -51,50 +42,6 @@ class LangfuseLoader(DatasetLoader[T]):
         self.dataset_description = config.get("dataset_description", "")
         
         self.langfuse = get_client()
-    
-    def convert_type(self, item: T) -> _LangfuseDatasetItem:
-        """
-        Convert item fields into Langfuse dataset item format based on
-        json_schema_extra metadata in the Pydantic model.
-        
-        :param item: Pydantic model instance
-        :return: LangfuseDatasetItem with 'input', 'expected_output', 'metadata' keys
-        """
-        raw = item.model_dump()
-        
-        # Remove None, empty strings, empty lists, empty dicts
-        cleaned = {k: v for k, v in raw.items() if v not in (None, "", [], {})}
-        
-        input_data = {}
-        expected_output_data = {}
-        metadata_data = {}
-        
-        for field_name, field_def in type(item).model_fields.items():
-            value = cleaned.get(field_name)
-            if value is None:
-                continue
-            
-            # Default to "input" if no metadata specified
-            category = "input"
-            if (
-                field_def.json_schema_extra 
-                and isinstance(field_def.json_schema_extra, dict) 
-                and "langfuse_dataset" in field_def.json_schema_extra
-            ):
-                category = field_def.json_schema_extra["langfuse_dataset"]
-            
-            if category == "input":
-                input_data[field_name] = value
-            elif category == "expected_output":
-                expected_output_data[field_name] = value
-            elif category == "metadata":
-                metadata_data[field_name] = value
-        
-        return {
-            "input": input_data,
-            "expected_output": expected_output_data,
-            "metadata": metadata_data
-        }
     
     def _ensure_dataset_exists(self):
         """Ensure the Langfuse dataset exists, create if not."""
@@ -128,15 +75,13 @@ class LangfuseLoader(DatasetLoader[T]):
         
         # Upload items in parallel
         def upload_item(item: T) -> T:
-            langfuse_item = self.convert_type(item)
             created = self.langfuse.create_dataset_item(
                 dataset_name=self.dataset_name,
-                **langfuse_item
+                input=item.input(),
+                expected_output=item.expected_output(),
+                metadata=item.meta()
             )
             
-            # Add Langfuse item ID to metadata
-            if item.metadata is None:
-                item.metadata = {}
             item.metadata["lf_item_id"] = created.id
             item.metadata["lf_dataset_name"] = created.dataset_name
             item.metadata["lf_dataset_id"] = created.dataset_id
