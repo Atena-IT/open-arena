@@ -1,8 +1,9 @@
 import asyncio
 import logging
 from typing import List, TypeVar
+from tqdm.asyncio import tqdm as async_tqdm
 
-from langfuse import get_client, observe
+from langfuse import get_client
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
@@ -18,8 +19,8 @@ class LangfuseEvaluator(Evaluator[T]):
     """
     Evaluator that scores results in Langfuse using the Scores API.
     
-    Takes ExecutionResult[T] from LangfuseExecutor (which contains trace_id),
-    evaluates them using the provided method, and writes scores back to Langfuse.
+    Iterates over execution results and writes evaluation scores
+    back to Langfuse associated with the original trace IDs.
     
     This allows scores to be visible in the Langfuse dashboard for each trace,
     enabling analysis and comparison of model performance.
@@ -41,7 +42,7 @@ class LangfuseEvaluator(Evaluator[T]):
         self.langfuse = get_client()
         self.max_concurrency = max_concurrency
     
-    async def _evaluate_and_score_item(
+    async def _evaluate_item_with_langfuse(
         self, 
         result: ExecutionResult[T]
     ) -> EvaluationResult[T]:
@@ -56,6 +57,11 @@ class LangfuseEvaluator(Evaluator[T]):
         :param result: Execution result to evaluate
         :return: Evaluation result with score
         """
+        trace_id = result.metadata.get("lf_trace_id") if result.metadata else None
+            
+        if not trace_id:
+            _logger.warning(f"Item must have 'lf_trace_id' in metadata")
+
         with self.langfuse.start_as_current_observation(
             as_type="evaluator",
             name="evaluation-item-run",
@@ -65,12 +71,14 @@ class LangfuseEvaluator(Evaluator[T]):
             }
         ) as root_span:
             eval_result = await self.method.evaluate(result)
-            
-            trace_id = result.metadata.get("lf_trace_id") if result.metadata else None
-            
-            if not trace_id:
-                _logger.warning(f"No lf_trace_id found in result metadata. Cannot score in Langfuse.")
-                return eval_result
+
+            root_span.update(
+                output={
+                    "score": eval_result.score, 
+                    "explanation": eval_result.explanation
+                },
+                level="ERROR" if eval_result.error else "DEFAULT"
+            )
             
             if eval_result.score is not None:
                 try:
@@ -82,11 +90,6 @@ class LangfuseEvaluator(Evaluator[T]):
                     )
                 except Exception as e:
                     _logger.error(f"Failed to write score to Langfuse for trace {trace_id}: {e}")
-            
-            root_span.update(output={
-                "score": eval_result.score, 
-                "explanation": eval_result.explanation
-            })
         
         return eval_result
     
@@ -103,10 +106,13 @@ class LangfuseEvaluator(Evaluator[T]):
         
         async def evaluate_with_semaphore(result: ExecutionResult[T]):
             async with semaphore:
-                return await self._evaluate_and_score_item(result)
+                return await self._evaluate_item_with_langfuse(result)
         
-        eval_results = await asyncio.gather(
-            *[evaluate_with_semaphore(r) for r in self.results]
-        )
+        tasks = [evaluate_with_semaphore(r) for r in self.results]
+        
+        eval_results = []
+        for coro in async_tqdm.as_completed(tasks, total=len(tasks), desc="Evaluating items"):
+            result = await coro
+            eval_results.append(result)
         
         return eval_results
