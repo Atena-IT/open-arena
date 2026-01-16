@@ -43,7 +43,6 @@ class LangfuseEvaluator(Evaluator[T]):
         self.langfuse = get_client()
         self.max_concurrency = max_concurrency
     
-    @observe(as_type="evaluator", name="evaluation-item-run")
     async def _evaluate_and_score_item(
         self, 
         result: ExecutionResult[T]
@@ -59,24 +58,37 @@ class LangfuseEvaluator(Evaluator[T]):
         :param result: Execution result to evaluate
         :return: Evaluation result with score
         """
-        eval_result = await self.method.evaluate(result)
-        
-        trace_id = result.metadata.get("lf_trace_id") if result.metadata else None
-        
-        if not trace_id:
-            _logger.warning(f"No lf_trace_id found in result metadata. Cannot score in Langfuse.")
-            return eval_result
-        
-        if eval_result.score is not None:
-            try:
-                self.langfuse.create_score(
-                    trace_id=str(trace_id),
-                    name=self.score_name,
-                    value=float(eval_result.score),
-                    comment=str(eval_result.explanation) if eval_result.explanation else None
-                )
-            except Exception as e:
-                _logger.error(f"Failed to write score to Langfuse for trace {trace_id}: {e}")
+        with self.langfuse.start_as_current_observation(
+            as_type="evaluator",
+            name="evaluation-item-run",
+            input={
+                "item": result.item,
+                "output": result.output
+            }
+        ) as root_span:
+            eval_result = await self.method.evaluate(result)
+            
+            trace_id = result.metadata.get("lf_trace_id") if result.metadata else None
+            
+            if not trace_id:
+                _logger.warning(f"No lf_trace_id found in result metadata. Cannot score in Langfuse.")
+                return eval_result
+            
+            if eval_result.score is not None:
+                try:
+                    self.langfuse.create_score(
+                        trace_id=str(trace_id),
+                        name=self.score_name,
+                        value=float(eval_result.score),
+                        comment=str(eval_result.explanation) if eval_result.explanation else None
+                    )
+                except Exception as e:
+                    _logger.error(f"Failed to write score to Langfuse for trace {trace_id}: {e}")
+            
+            root_span.update(output={
+                "score": eval_result.score, 
+                "explanation": eval_result.explanation
+            })
         
         return eval_result
     
