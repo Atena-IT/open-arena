@@ -12,16 +12,15 @@ class EvaluationResult(Generic[T]):
     """
     Result of evaluating a single execution result.
     
-    Contains the original execution data plus the judge's score and explanation.
+    Contains the original execution data plus optional score and explanation.
     """
     item: T
     output: str
     model_name: str
     score: Optional[float] = None
     explanation: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
     error: Optional[str] = None
-
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 class JudgeResponse(BaseModel):
     """
