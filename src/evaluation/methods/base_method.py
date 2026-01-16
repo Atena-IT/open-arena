@@ -16,6 +16,13 @@ class EvaluationMethod(ABC, Generic[T]):
     execution results.
     """
     
+    def __init__(
+        self,
+        name: str = "evaluation"
+    ):
+        self.name = name
+
+    
     @abstractmethod
     async def evaluate(self, result: ExecutionResult[T]) -> EvaluationResult[T]:
         """

@@ -29,7 +29,6 @@ class LangfuseEvaluator(Evaluator[T]):
         self,
         results: List[ExecutionResult[T]],
         method: EvaluationMethod[T],
-        score_name: str = "evaluation_score",
         max_concurrency: int = 10
     ):
         """
@@ -39,7 +38,6 @@ class LangfuseEvaluator(Evaluator[T]):
         :param max_concurrency: Max parallel evaluations
         """
         super().__init__(results=results, method=method)
-        self.score_name = score_name
         self.langfuse = get_client()
         self.max_concurrency = max_concurrency
     
@@ -78,7 +76,7 @@ class LangfuseEvaluator(Evaluator[T]):
                 try:
                     self.langfuse.create_score(
                         trace_id=str(trace_id),
-                        name=self.score_name,
+                        name=self.method.name,
                         value=float(eval_result.score),
                         comment=str(eval_result.explanation) if eval_result.explanation else None
                     )

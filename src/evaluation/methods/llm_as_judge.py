@@ -39,6 +39,7 @@ class LLMAsJudge(EvaluationMethod[T]):
         :param llm_client: LLM client for judge completions
         :param system_prompt: Optional system prompt that defines how the judge should evaluate
         """
+        super().__init__(name="LLM-as-Judge")
         self.client = llm_client
         self.system_prompt = system_prompt
     

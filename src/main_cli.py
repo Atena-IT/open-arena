@@ -160,7 +160,6 @@ async def run_evaluations(config: ExperimentsFile, all_results: List[List[Execut
         evaluator = LangfuseEvaluator(
             results=results,
             method=evaluation_method,
-            score_name=config.evaluation.score_name or "evaluation_score",
             max_concurrency=config.evaluation.max_concurrency or 10
         )
         
