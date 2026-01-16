@@ -51,11 +51,11 @@ class LLMAsJudge(EvaluationMethod[T]):
         :return: Evaluation result with score and explanation
         """
         try:
-            user_prompt = self._build_judge_payload(result)
+            payload = self._build_judge_payload(result)
             
             messages = self.client.format_messages(
                 system=self.system_prompt,
-                user=user_prompt
+                user=payload
             )
             
             judge_output = await self.client.achat(
