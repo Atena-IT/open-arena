@@ -18,8 +18,6 @@ Define experiments (model + optional MCP-backed tools) and a dataset; run experi
 - Access to any **MCP servers**, **LLM provider endpoints**, and other services you plan to use
 - (Recommended) **uv** installed and available in your `PATH`
 
----
-
 ### 🧑‍💻 Development Setup
 
 #### 📦 Install (from source)
@@ -47,8 +45,6 @@ Verify that the CLI entry point is available:
 mlmef --help
 ```
 
----
-
 ### 🔒 Environment / Secrets
 Copy `.env.example` to `.env` and fill in the required values:
 
@@ -57,9 +53,7 @@ cp .env.example .env
 ```
 
 - Add all **LiteLLM-related** variables required by the providers you plan to call (refer to each provider’s documentation for the exact names/keys).
-- Fill in the **Langfuse** variables for observability (**optional**).
-
----
+- Fill in the **Langfuse** variables for observability (optional).
 
 ### ⚙️ Configuration
 The YAML schema for experiments is defined by the `ExperimentsFile` model in `src/config/types.py`.
@@ -104,8 +98,6 @@ This framework uses **LiteLLM**. Refer to the LiteLLM documentation/model index 
 
 Provider credentials and configuration are supplied via environment variables (see each provider’s documentation for the required keys).
 
----
-
 ### ▶️ Run
 Run the CLI using the installed entry point:
 
@@ -118,8 +110,6 @@ Alternatively, run the module directly (useful for debugging):
 ```sh
 uv run -m src.main_cli --config config.example.yaml
 ```
-
----
 
 ## 👁️ Observability
 
