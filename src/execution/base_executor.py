@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import List, Generic, Optional, TypeVar, Dict, Any
+from typing import List, Generic, TypeVar
 
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
-from src.llms.types import MCPServerConfig
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=DatasetItem)
@@ -18,13 +17,16 @@ class Executor(ABC, Generic[T]):
 
     def __init__(
         self,
+        dataset: List[T],
         llm_client: LLMClient,
         system_prompt: str,
     ):
         """
+        :param dataset: List of dataset items to execute
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
         """
+        self.dataset = dataset
         self.client = llm_client
         self.system_prompt = system_prompt
 
@@ -36,10 +38,10 @@ class Executor(ABC, Generic[T]):
         :return: ExecutionResult containing item, output, and model name
         """
         try:
-            user_prompt = item.user_prompt()
+            input = item.input()
             messages = self.client.format_messages(
                 system=self.system_prompt,
-                user=user_prompt
+                user=input
             )
             
             output = await self.client.achat(

@@ -70,7 +70,7 @@ async def get_evaluation_method(config: ExperimentsFile):
         raise ValueError(f"Unsupported evaluation method: {config.evaluation.method}")
 
 
-async def load_and_upload_dataset(config: ExperimentsFile) -> None:
+async def load_and_upload_dataset(config: ExperimentsFile) -> List[DatasetItem]:
     """Load dataset and upload to Langfuse."""
     _logger.info(f"Loading dataset: {config.dataset.name} from {config.dataset.source}")
     
@@ -91,12 +91,12 @@ async def load_and_upload_dataset(config: ExperimentsFile) -> None:
     dataset = loader.load()
     _logger.info(f"Dataset uploaded to Langfuse: {len(dataset)} items in '{config.dataset.name}'")
 
+    return dataset
 
-async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]]:
+
+async def run_experiments(config: ExperimentsFile, dataset: List[DatasetItem]) -> List[List[ExecutionResult]]:
     """Run all experiments sequentially."""
     _logger.info(f"Preparing {len(config.experiments)} experiments for execution")
-    
-    item_model = get_item_model(config.dataset.type)
     
     all_results = []
     
@@ -121,10 +121,9 @@ async def run_experiments(config: ExperimentsFile) -> List[List[ExecutionResult]
         await lf_client.setup()
         
         executor = LangfuseExecutor(
-            dataset_name=config.dataset.name,
+            dataset=dataset,
             llm_client=lf_client,
             system_prompt=config.system_prompt,
-            from_langfuse_fn=item_model.from_langfuse_item,
             experiment_name=exp_config.name,
             experiment_description=f"Experiment: {exp_config.name} with model {exp_config.litellm.model}"
         )
@@ -223,13 +222,13 @@ def main(config: str, skip_upload: bool):
         
         async def workflow():
             if not skip_upload:
-                await load_and_upload_dataset(experiments_config)
+                dataset = await load_and_upload_dataset(experiments_config)
             else:
                 _logger.info("Skipping dataset upload (--skip-upload flag set)")
             
-            all_results = await run_experiments(experiments_config)
+            results = await run_experiments(experiments_config, dataset)
             
-            await run_evaluations(experiments_config, all_results)
+            await run_evaluations(experiments_config, results)
         
         asyncio.run(workflow())
         

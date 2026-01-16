@@ -1,12 +1,11 @@
 import asyncio
-from typing import List, Optional, TypeVar, Dict, Any
+from typing import List, TypeVar
 from tqdm.asyncio import tqdm as async_tqdm
 
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
 from src.execution.base_executor import Executor
 from src.execution.types import ExecutionResult
-from src.llms.types import MCPServerConfig
 
 T = TypeVar('T', bound=DatasetItem)
 
@@ -27,9 +26,10 @@ class GenericExecutor(Executor[T]):
         :param dataset: List of items to execute
         :param llm_client: LLM client for completions
         :param system_prompt: System prompt for all completions
-        :param max_workers: Maximum number of concurrent executions
+        :param max_concurrency: Maximum number of concurrent executions
         """
         super().__init__(
+            dataset=dataset,
             llm_client=llm_client,
             system_prompt=system_prompt
         )

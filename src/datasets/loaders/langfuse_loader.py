@@ -138,6 +138,8 @@ class LangfuseLoader(DatasetLoader[T]):
             if item.metadata is None:
                 item.metadata = {}
             item.metadata["lf_item_id"] = created.id
+            item.metadata["lf_dataset_name"] = created.dataset_name
+            item.metadata["lf_dataset_id"] = created.dataset_id
             
             return item
         
