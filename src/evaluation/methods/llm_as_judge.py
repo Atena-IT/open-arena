@@ -102,11 +102,11 @@ class LLMAsJudge(EvaluationMethod[T]):
         
         return json.dumps(payload, indent=2)
     
-    def _parse_judge_response(self, raw_response: str) -> tuple[float | None, str | None]:
+    def _parse_judge_response(self, raw_response: str) -> tuple[int | None, str | None]:
         """
         Parse the judge's response into score and explanation using Pydantic validation.
         
-        Expects JSON format: {"score": 4.5, "explanation": "Good answer because..."}
+        Expects JSON format: {"score": 4, "explanation": "Good answer because..."}
         
         :param raw_response: Raw response from judge LLM
         :return: Tuple of (score, explanation)
