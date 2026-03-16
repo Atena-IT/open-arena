@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from typing import List, Dict, Any
+from typing import Any
 from .base_reader import DatasetReader
 from .utils import to_snake_case
 
@@ -18,7 +18,7 @@ class CsvReader(DatasetReader):
         self.encoding = encoding
         self.delimiter = delimiter
     
-    def read(self, file_path: str) -> List[Dict[str, Any]]:
+    def read(self, file_path: str) -> list[dict[str, Any]]:
         """
         Read CSV file and return list of dictionaries.
         

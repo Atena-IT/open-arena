@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Type, Optional, TypeVar
+from typing import TypeVar
 from langfuse import get_client
 from tqdm import tqdm
 
@@ -20,11 +20,11 @@ class LangfuseLoader(DatasetLoader[T]):
     
     def __init__(
         self,
-        item_model: Type[T],
+        item_model: type[T],
         reader: DatasetReader,
         config: DatasetConfig,
         input_path: str = ".",
-        max_items: Optional[int] = None,
+        max_items: int | None = None,
         max_workers: int = 12,
     ):
         """
@@ -55,7 +55,7 @@ class LangfuseLoader(DatasetLoader[T]):
                 description=self.dataset_description
             )
     
-    def _upload(self) -> List[T]:
+    def _upload(self) -> list[T]:
         """
         Upload items to Langfuse dataset.
         
@@ -88,7 +88,7 @@ class LangfuseLoader(DatasetLoader[T]):
             
             return item
         
-        created_items: List[T] = []
+        created_items: list[T] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [executor.submit(upload_item, item) for item in self._items]
             for future in tqdm(
@@ -104,7 +104,7 @@ class LangfuseLoader(DatasetLoader[T]):
         _logger.debug(f"Successfully uploaded {len(created_items)} items to Langfuse")
         return created_items
 
-    def load(self) -> List[T]:
+    def load(self) -> list[T]:
         """
         Load, validate, and upload items to Langfuse in one step.
         

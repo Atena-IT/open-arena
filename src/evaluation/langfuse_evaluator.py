@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, TypeVar
+from typing import TypeVar
 from tqdm.asyncio import tqdm as async_tqdm
 
 from langfuse import get_client
@@ -28,7 +28,7 @@ class LangfuseEvaluator(Evaluator[T]):
     
     def __init__(
         self,
-        results: List[ExecutionResult[T]],
+        results: list[ExecutionResult[T]],
         method: EvaluationMethod[T],
         score_name: str = "evaluation_score",
         max_concurrency: int = 10
@@ -95,7 +95,7 @@ class LangfuseEvaluator(Evaluator[T]):
         
         return eval_result
     
-    async def evaluate(self) -> List[EvaluationResult[T]]:
+    async def evaluate(self) -> list[EvaluationResult[T]]:
         """
         Evaluate all results with controlled concurrency and write scores to Langfuse.
         

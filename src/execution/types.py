@@ -1,4 +1,4 @@
-from typing import Dict, Any, TypeVar, Generic, Optional
+from typing import Any, TypeVar, Generic
 from dataclasses import dataclass, field
 
 from src.datasets.item_models import DatasetItem
@@ -11,7 +11,7 @@ T = TypeVar('T', bound=DatasetItem)
 class ExecutionResult(Generic[T]):
     """Result of executing a single dataset item."""
     item: T
-    output: Optional[str]
+    output: str | None
     model_name: str
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)

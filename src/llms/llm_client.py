@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from langchain_litellm import ChatLiteLLM
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
@@ -19,8 +19,8 @@ class LLMClient:
 
     def __init__(
         self,
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
+        llm_config: dict[str, Any],
+        mcp_servers: list[MCPServerConfig] | None = None
     ):
         """
         Initialize the LLM client.
@@ -48,7 +48,7 @@ class LLMClient:
             _logger.debug("LLM client initialized with MCP tools")
 
     @staticmethod
-    def format_messages(system: str, user: str) -> List[Dict[str, str]]:
+    def format_messages(system: str, user: str) -> list[dict[str, str]]:
         """
         Formats messages for chat completion.
         
@@ -63,8 +63,8 @@ class LLMClient:
 
     async def _create_graph_with_tools(
         self, 
-        llm_config: Dict[str, Any],
-        mcp_servers: List[MCPServerConfig]
+        llm_config: dict[str, Any],
+        mcp_servers: list[MCPServerConfig]
     ):
         """
         Create a LangGraph workflow with MCP tools.
@@ -106,8 +106,8 @@ class LLMClient:
 
     def _convert_messages_to_langchain(
         self, 
-        messages: List[Dict[str, str]]
-    ) -> List[Any]:
+        messages: list[dict[str, str]]
+    ) -> list[Any]:
         """
         Convert standard message format to LangChain messages.
         
@@ -133,7 +133,7 @@ class LLMClient:
 
     async def achat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
     ) -> str:
         """
         Async chat completion with optional MCP tools.

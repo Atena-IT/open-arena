@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Optional, TypeVar
+from typing import TypeVar
 from datetime import datetime, timezone
 from tqdm.asyncio import tqdm as async_tqdm
 
@@ -26,11 +26,11 @@ class LangfuseExecutor(Executor[T]):
     
     def __init__(
         self,
-        dataset: List[T],
+        dataset: list[T],
         llm_client: LangfuseLLMClient,
         system_prompt: str,
-        experiment_name: Optional[str] = None,
-        experiment_description: Optional[str] = None,
+        experiment_name: str | None = None,
+        experiment_description: str | None = None,
         max_concurrency: int = 50
     ):
         """
@@ -108,7 +108,7 @@ class LangfuseExecutor(Executor[T]):
             
             return result
     
-    async def execute(self) -> List[ExecutionResult[T]]:
+    async def execute(self) -> list[ExecutionResult[T]]:
         """
         Execute all items in the dataset in parallel and track with Langfuse.
         

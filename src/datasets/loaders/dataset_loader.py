@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict, Any, Type, Generic, TypeVar, Optional
+from typing import Any, Generic, TypeVar
 from pydantic import ValidationError
 import logging
 
@@ -19,7 +19,7 @@ class DatasetLoader(Generic[T]):
     
     def __init__(
         self,
-        item_model: Type[T],
+        item_model: type[T],
         reader: DatasetReader,
         config: DatasetConfig,
         input_path: str = "."
@@ -36,10 +36,10 @@ class DatasetLoader(Generic[T]):
         self.dataset_name = config["dataset_name"]
         self.source_file = config["source_file"]
         self.input_path = Path(input_path)
-        self._raw_data: List[Dict[str, Any]] = []
-        self._items: List[T] = []
+        self._raw_data: list[dict[str, Any]] = []
+        self._items: list[T] = []
     
-    def load_raw(self) -> List[Dict[str, Any]]:
+    def load_raw(self) -> list[dict[str, Any]]:
         """
         Load raw data from source using the configured reader.
         
@@ -51,7 +51,7 @@ class DatasetLoader(Generic[T]):
         _logger.debug(f"Loaded {len(self._raw_data)} raw items from {self.source_file}")
         return self._raw_data
     
-    def validate_and_prepare(self, raw_data: Optional[List[Dict[str, Any]]] = None) -> List[T]:
+    def validate_and_prepare(self, raw_data: list[dict[str, Any]] | None = None) -> list[T]:
         """
         Validate raw dictionaries against the Pydantic model.
         
@@ -61,7 +61,7 @@ class DatasetLoader(Generic[T]):
         data_to_validate = raw_data if raw_data is not None else self._raw_data
         _logger.debug(f"Validating {len(data_to_validate)} items against {self.item_model.__name__}")
         
-        validated_items: List[T] = []
+        validated_items: list[T] = []
         for idx, record in enumerate(data_to_validate):
             try:
                 # Convert all values to strings (matching current behavior)
@@ -75,7 +75,7 @@ class DatasetLoader(Generic[T]):
         _logger.debug(f"Validated {len(validated_items)}/{len(data_to_validate)} items successfully")
         return validated_items
     
-    def load(self) -> List[T]:
+    def load(self) -> list[T]:
         """
         Convenience method: load and validate in one step.
         
@@ -85,11 +85,11 @@ class DatasetLoader(Generic[T]):
         return self.validate_and_prepare()
     
     @property
-    def items(self) -> List[T]:
+    def items(self) -> list[T]:
         """Get the currently loaded and validated items."""
         return self._items
     
     @property
-    def raw_data(self) -> List[Dict[str, Any]]:
+    def raw_data(self) -> list[dict[str, Any]]:
         """Get the raw loaded data."""
         return self._raw_data

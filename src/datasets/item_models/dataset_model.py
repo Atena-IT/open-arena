@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from pydantic import BaseModel, Field
-from typing import Any, Dict
+from typing import Any
 
 
 class DatasetItem(BaseModel, ABC):
@@ -11,7 +11,7 @@ class DatasetItem(BaseModel, ABC):
         expected_output() -> str: Returns expected output string (ground truth).
         meta() -> Dict[str, Any]: Returns metadata dictionary.
     """
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Optional metadata for the dataset item")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Optional metadata for the dataset item")
 
     @classmethod
     @abstractmethod
@@ -46,7 +46,7 @@ class DatasetItem(BaseModel, ABC):
         """
         raise NotImplementedError
     
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         """
         Return:
             :return: Metadata dictionary

@@ -1,4 +1,4 @@
-from typing import Dict, Any, TypeVar, Generic, Optional
+from typing import Any, TypeVar, Generic
 from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
@@ -17,10 +17,10 @@ class EvaluationResult(Generic[T]):
     item: T
     output: str
     model_name: str
-    score: Optional[float] = None
-    explanation: Optional[str] = None
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    score: float | None = None
+    explanation: str | None = None
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 class JudgeResponse(BaseModel):
     """

@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, TypeVar
+from typing import TypeVar
 
 from tqdm.asyncio import tqdm as async_tqdm
 
@@ -19,7 +19,7 @@ class GenericEvaluator(Evaluator[T]):
     
     def __init__(
         self,
-        results: List[ExecutionResult[T]],
+        results: list[ExecutionResult[T]],
         method: EvaluationMethod[T],
         max_concurrency: int = 10
     ):
@@ -31,7 +31,7 @@ class GenericEvaluator(Evaluator[T]):
         super().__init__(results=results, method=method)
         self.max_concurrency = max_concurrency
     
-    async def evaluate(self) -> List[EvaluationResult[T]]:
+    async def evaluate(self) -> list[EvaluationResult[T]]:
         """
         Evaluate all execution results in parallel.
         

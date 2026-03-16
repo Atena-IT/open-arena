@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from langfuse.langchain import CallbackHandler
 
@@ -15,8 +15,8 @@ class LangfuseLLMClient(LLMClient):
     
     def __init__(
         self,
-        llm_config: Dict[str, Any],
-        mcp_servers: Optional[List[MCPServerConfig]] = None
+        llm_config: dict[str, Any],
+        mcp_servers: list[MCPServerConfig] | None = None
     ):
         """
         Initialize LangfuseLLMClient with Langfuse observability.
@@ -29,7 +29,7 @@ class LangfuseLLMClient(LLMClient):
 
     async def achat(
         self, 
-        messages: List[Dict[str, str]]
+        messages: list[dict[str, str]]
     ) -> str:
         """
         Async chat completion with Langfuse tracing.

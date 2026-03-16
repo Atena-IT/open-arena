@@ -4,7 +4,7 @@ name = "multi-language-model-evaluation-framework"
 version = "0.1.0"
 description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { file = "LICENSE.md" }
 authors = [
     { name = "Atena Reply" }

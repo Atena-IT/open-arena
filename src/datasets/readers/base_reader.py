@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any
 
 
 class DatasetReader(ABC):
     """Abstract base class for dataset readers."""
     
     @abstractmethod
-    def read(self, file_path: str) -> List[Dict[str, Any]]:
+    def read(self, file_path: str) -> list[dict[str, Any]]:
         """
         Read data from source and return list of raw dictionaries.
         

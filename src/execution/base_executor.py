@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import List, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from src.llms import LLMClient
 from src.datasets.item_models import DatasetItem
@@ -17,7 +17,7 @@ class Executor(ABC, Generic[T]):
 
     def __init__(
         self,
-        dataset: List[T],
+        dataset: list[T],
         llm_client: LLMClient,
         system_prompt: str,
     ):
@@ -64,7 +64,7 @@ class Executor(ABC, Generic[T]):
             )
     
     @abstractmethod
-    async def execute(self) -> List[ExecutionResult[T]]:
+    async def execute(self) -> list[ExecutionResult[T]]:
         """
         Execute the task on the dataset.
         """

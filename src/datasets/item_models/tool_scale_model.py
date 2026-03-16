@@ -1,6 +1,6 @@
 from pydantic import Field
 from src.datasets.item_models import DatasetItem
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ToolScaleItem(DatasetItem):
@@ -18,9 +18,9 @@ class ToolScaleItem(DatasetItem):
         meta() -> Dict[str, Any]: Returns metadata dictionary.
     """
     id: str = Field(..., description="Unique identifier for the item.")
-    description: Optional[str] = Field(None, description="Text description of the item.")
+    description: str | None = Field(None, description="Text description of the item.")
     user_scenario: str = Field(..., description="User scenario details as a dict.")
-    initial_state: Optional[str] = Field(None, description="Initial state, can be null.")
+    initial_state: str | None = Field(None, description="Initial state, can be null.")
     evaluation_criteria: str = Field(..., description="Evaluation criteria as a dict.")
 
     def input(self) -> str:
@@ -29,7 +29,7 @@ class ToolScaleItem(DatasetItem):
     def expected_output(self) -> str:
         return self.evaluation_criteria
     
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         return {
             **self.metadata,
             "description": self.description,

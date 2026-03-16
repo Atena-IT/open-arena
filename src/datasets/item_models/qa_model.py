@@ -1,6 +1,6 @@
 from pydantic import Field
 from src.datasets.item_models import DatasetItem
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class QAItem(DatasetItem):
@@ -37,11 +37,11 @@ class QAItem(DatasetItem):
     option_c: str = Field(..., description="Option C.")
     option_d: str = Field(..., description="Option D.")
     answer: str = Field(..., description="The correct answer.")
-    theme: Optional[str] = Field(None, description="The theme of the question (filename).")
-    multiple_choice_responses: Optional[Dict[str, str]] = Field(default_factory=dict, description="Model responses for multiple choice.")
-    open_ended_responses: Optional[Dict[str, str]] = Field(default_factory=dict, description="Model responses for open ended.")
-    multiple_choice_evaluation: Optional[Dict[str, str]] = Field(default_factory=dict, description="Evaluation results for multiple choice.")
-    open_ended_evaluation: Optional[Dict[str, str]] = Field(default_factory=dict, description="Evaluation results for open ended.")
+    theme: str | None = Field(None, description="The theme of the question (filename).")
+    multiple_choice_responses: dict[str, str] | None = Field(default_factory=dict, description="Model responses for multiple choice.")
+    open_ended_responses: dict[str, str] | None = Field(default_factory=dict, description="Model responses for open ended.")
+    multiple_choice_evaluation: dict[str, str] | None = Field(default_factory=dict, description="Evaluation results for multiple choice.")
+    open_ended_evaluation: dict[str, str] | None = Field(default_factory=dict, description="Evaluation results for open ended.")
 
     def input(self) -> str:
         return (
@@ -55,7 +55,7 @@ class QAItem(DatasetItem):
     def expected_output(self) -> str:
         return self.answer
     
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         return {
             **self.metadata,
             "id": self.id,

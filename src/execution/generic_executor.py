@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, TypeVar
+from typing import TypeVar
 from tqdm.asyncio import tqdm as async_tqdm
 
 from src.llms import LLMClient
@@ -17,7 +17,7 @@ class GenericExecutor(Executor[T]):
     
     def __init__(
         self,
-        dataset: List[T],
+        dataset: list[T],
         llm_client: LLMClient,
         system_prompt: str,
         max_concurrency: int = 50
@@ -37,7 +37,7 @@ class GenericExecutor(Executor[T]):
         self.dataset = dataset
         self.max_concurrency = max_concurrency
     
-    async def execute(self) -> List[ExecutionResult[T]]:
+    async def execute(self) -> list[ExecutionResult[T]]:
         """
         Execute all items in the dataset in parallel.
         
