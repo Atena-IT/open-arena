@@ -24,7 +24,7 @@ DATASETS = {
     "QADataset": {
         "excel": "QA.xlsx",
         "model_class": QAItem,
-        "experiment_prefix": "QA Test",  
+        "experiment_prefix": "QA Test",
         "experiment_prompt": CONFIG["datasets_system_prompts"]["qa_system_prompt"],
         "evaluation_prefix": "QA Evaluation",
         "evaluation_prompt": CONFIG["judge_system_prompt"],

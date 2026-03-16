@@ -11,4 +11,4 @@ if __name__ == "__main__":
     df = pd.read_parquet(INPUT_FILE)
     df.to_excel(OUTPUT_FILE, index=False)
 
-    print("Conversione completata! File salvato come output.xlsx")
+    print(f"Conversion completed! File saved as {OUTPUT_FILE}")

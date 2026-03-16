@@ -6,10 +6,10 @@ Open Arena is a lightweight evaluation framework for benchmarking LLMs and tool-
 
 ## ✨ Key Features
 
-- **Model and tool evaluation** across multiple datasets and experiment configurations
-- **Langfuse-backed observability** for experiment traces and judge results
-- **LiteLLM-based model access** with optional tool execution support
-- **Composable Python modules** for dataset loading, execution, evaluation, and MCP services
+- **Generality**: compare multiple model and tool configurations across curated datasets.
+- **Observability**: trace experiments and evaluation results through Langfuse.
+- **Extensibility**: compose dataset loading, execution, evaluation, and MCP integrations in Python.
+- **Practical runtime defaults**: the current pipeline runs directly from `config.yaml` via `src.main`.
 
 ## ⚡ Quickstart
 
@@ -52,26 +52,34 @@ The default runtime configuration lives in `config.yaml`. It defines:
 python -m src.main
 ```
 
+## 👁️ Observability
+
+Langfuse is used to capture experiment execution and evaluation metadata so model runs can be inspected and compared more easily.
+
 ## 🧱 Project Layout
 
 ```text
 open-arena/
 ├── config.yaml
+├── config.example.yaml
 ├── open-arena.png
 ├── pyproject.toml
 ├── resources/
 └── src/
     ├── datasets/
     ├── evaluator/
+    ├── evaluation/
     ├── execution/
     ├── llms/
     ├── mcp_server/
-    └── main.py
+    ├── main.py
+    └── main_cli.py
 ```
 
 ## 🔍 Notes
 
 - The current entrypoint loads `config.yaml` by default.
+- `config.example.yaml` documents the newer structured configuration introduced from `main`.
 - Test utilities live under `src/test/`.
 - A lightweight syntax validation can be run with `python -m compileall src`.
 
