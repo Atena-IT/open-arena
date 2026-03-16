@@ -1,4 +1,3 @@
-
 # AGENTS.md
 
 ## Dev environment tips
@@ -23,7 +22,15 @@
   ```sh
   python -m src.main
   ```
-- Alternative for the structured CLI added from `main`:
+- Packaged Open Arena CLI entry point:
+  ```sh
+  arena --config <config.yaml>
+  ```
+- Example:
+  ```sh
+  arena --config config.example.yaml
+  ```
+- Alternative (module execution, useful for debugging):
   ```sh
   uv run -m src.main_cli --config <config.yaml>
   ```

@@ -11,7 +11,7 @@ Open Arena is a lightweight evaluation framework for benchmarking LLMs and tool-
 - **Langfuse observability**: capture dataset uploads, execution traces, experiment runs, and evaluation scores in one place.
 - **Config-driven workflows**: use `config.yaml` for the current pipeline or `config.example.yaml` for the newer structured CLI flow.
 - **Extensible Python architecture**: swap readers, item models, executors, evaluators, and LLM clients without rewriting the whole pipeline.
-- **Practical runtime defaults**: the branch keeps a direct `python -m src.main` entrypoint while also carrying the structured CLI introduced from `main`.
+- **Practical runtime defaults**: the branch keeps a direct `python -m src.main` entrypoint while also carrying the packaged and module-based structured CLI introduced from `main`.
 
 ## ⚡ Quickstart
 
@@ -35,6 +35,12 @@ For local development, install the project in editable mode so module and entryp
 uv pip install -e .
 ```
 
+To verify the Open Arena CLI entry point is available:
+
+```sh
+arena --help
+```
+
 ### Configure secrets
 
 Copy the example environment file and fill in the required keys:
@@ -43,7 +49,7 @@ Copy the example environment file and fill in the required keys:
 cp .env.example .env
 ```
 
-At minimum, configure the Langfuse values plus any provider credentials required by the models defined in `config.yaml`.
+At minimum, configure the Langfuse values plus any provider credentials required by the models defined in `config.yaml` or `config.example.yaml`.
 
 ### Configure experiments
 
@@ -54,7 +60,7 @@ The default runtime configuration lives in `config.yaml`. It defines:
 - the list of models to evaluate
 - the judge model used for evaluation
 
-The repository also includes `config.example.yaml`, which documents the structured configuration model added from `main` for the newer CLI workflow.
+The repository also includes `config.example.yaml`, which documents the structured configuration model added from `main` for the newer CLI workflow. The YAML schema for the structured flow is defined in `src/config/types.py`.
 
 ### Run the pipeline
 
@@ -64,7 +70,13 @@ Current branch runtime:
 python -m src.main
 ```
 
-Structured CLI flow:
+Packaged Open Arena CLI flow:
+
+```sh
+arena --config config.example.yaml
+```
+
+Module-based structured CLI flow:
 
 ```sh
 uv run -m src.main_cli --config config.example.yaml
@@ -73,7 +85,7 @@ uv run -m src.main_cli --config config.example.yaml
 If you want to reuse an existing Langfuse dataset with the structured CLI, you can skip the upload step:
 
 ```sh
-uv run -m src.main_cli --config config.example.yaml --skip-upload
+arena --config config.example.yaml --skip-upload
 ```
 
 ## 👁️ Observability
@@ -84,6 +96,10 @@ Langfuse is used to capture experiment execution and evaluation metadata so mode
 - experiment traces and model outputs
 - evaluation results and judge scores
 - metadata for MCP-enabled executions
+
+## ⚠️ Limitations
+
+- **CLI is currently Langfuse-backed only**: `src/main_cli.py` runs the end-to-end workflow using Langfuse datasets and experiment traces. If you want to run without Langfuse, you currently need a small custom runner that wires together the in-memory components such as `DatasetLoader`, `GenericExecutor`, and `GenericEvaluator`.
 
 ## 🧱 Project Layout
 

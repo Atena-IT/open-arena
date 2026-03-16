@@ -343,7 +343,7 @@ async def run_evaluations(config: ExperimentsFile, all_results: list[list[Execut
 )
 def main(config: str, skip_upload: bool):
     """
-    Run experiments from a YAML configuration file.
+    Run the Open Arena CLI workflow from a YAML configuration file.
 
     This script:
     1. Loads and validates the configuration
@@ -353,7 +353,8 @@ def main(config: str, skip_upload: bool):
     5. Results and scores are automatically tracked in Langfuse
 
     Example:
-        python -m src.main_cli --config experiments.yaml
+        arena --config experiments.yaml
+        arena -c config.yaml --skip-upload
         python -m src.main_cli -c config.yaml --skip-upload
     """
     try:

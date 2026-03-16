@@ -22,11 +22,11 @@ dependencies = [
     "fastmcp",
     "langchain",
     "langchain-core",
+    "langchain-litellm",
     "langchain-mcp-adapters",
-    "langchain-openai",
     "langfuse>=3.10.1",
     "langgraph>=0.6.6",
-    "litellm>=1.79.3",
+    "litellm>=1.80.15",
     "matplotlib",
     "networkx",
     "openai",
@@ -36,13 +36,16 @@ dependencies = [
     "opentelemetry-sdk",
     "pandas>=2.3.3",
     "playwright",
-    "pydantic",
+    "pydantic>=2",
     "python-dotenv",
     "pyyaml",
     "streamlit",
     "uvicorn",
     "xlsxwriter>=3.2.9",
 ]
+
+[project.scripts]
+arena = "src.main_cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
