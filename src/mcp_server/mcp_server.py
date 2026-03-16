@@ -186,4 +186,4 @@ class LLMEvaluationGateway:
 if __name__ == "__main__":
     gateway = LLMEvaluationGateway(protect_mcp_with_token=True)
     app = gateway.app
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("FAST_API_PORT", "")))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("FAST_API_PORT", "9000")))
