@@ -38,10 +38,10 @@ class Executor(ABC, Generic[T]):
         :return: ExecutionResult containing item, output, and model name
         """
         try:
-            input = item.input()
+            user_input = item.input()
             messages = self.client.format_messages(
                 system=self.system_prompt,
-                user=input
+                user=user_input
             )
             
             output = await self.client.achat(

@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from langfuse.langchain import CallbackHandler
 
@@ -16,7 +16,7 @@ class LangfuseLLMClient(LLMClient):
     def __init__(
         self,
         llm_config: Dict[str, Any],
-        mcp_servers: List[MCPServerConfig] = []
+        mcp_servers: Optional[List[MCPServerConfig]] = None
     ):
         """
         Initialize LangfuseLLMClient with Langfuse observability.

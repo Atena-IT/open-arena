@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Type, Any, Optional, TypeVar, TypedDict
+from typing import List, Type, Optional, TypeVar
 from langfuse import get_client
 from tqdm import tqdm
 
@@ -99,7 +99,7 @@ class LangfuseLoader(DatasetLoader[T]):
                 try:
                     created_items.append(future.result())
                 except Exception as e:
-                    _logger.error(f"Ulpoad failed for item: {e}")
+                    _logger.error(f"Upload failed for item: {e}")
         
         _logger.debug(f"Successfully uploaded {len(created_items)} items to Langfuse")
         return created_items

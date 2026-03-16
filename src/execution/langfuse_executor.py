@@ -114,12 +114,16 @@ class LangfuseExecutor(Executor[T]):
         
         :return: List of execution results with Langfuse metadata
         """
+        if not self.dataset:
+            _logger.warning("Dataset is empty, no items to execute")
+            return []
+
         dataset_id = self.dataset[0].metadata.get("lf_dataset_id")
         
         if not dataset_id:
             raise ValueError("Dataset items must have 'lf_dataset_id' and 'lf_dataset_name' in metadata")
         
-        experiment_run_name = f"{self.experiment_name} - {datetime.now(timezone.utc).isoformat()}Z"
+        experiment_run_name = f"{self.experiment_name} - {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')}"
         
         semaphore = asyncio.Semaphore(self.max_concurrency)
         

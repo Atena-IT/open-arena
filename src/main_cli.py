@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from src.config.types import ExperimentsFile, DatasetType
 from src.datasets.loaders import LangfuseLoader
 from src.datasets.readers import ExcelReader, CsvReader
-from src.datasets.item_models import QAItem, ToolScaleItem, DatasetItem
+from src.datasets.item_models import QAItem, ToolScaleItem, ToolsExample, DatasetItem
 from src.execution import LangfuseExecutor
 from src.execution.types import ExecutionResult
 from src.evaluation import LangfuseEvaluator, LLMAsJudge
@@ -35,7 +35,7 @@ def get_item_model(dataset_type: DatasetType) -> type[DatasetItem]:
     mapping = {
         DatasetType.QA: QAItem,
         DatasetType.ToolScale: ToolScaleItem,
-        # Add more mappings as needed
+        DatasetType.ToolsExample: ToolsExample,
     }
     
     model = mapping.get(dataset_type)
@@ -84,12 +84,36 @@ async def load_and_upload_dataset(config: ExperimentsFile) -> List[DatasetItem]:
             "dataset_name": config.dataset.name,
             "source_file": config.dataset.source
         },
-        input_path=".",
-        max_items=2
+        input_path="."
     )
     
     dataset = loader.load()
     _logger.info(f"Dataset uploaded to Langfuse: {len(dataset)} items in '{config.dataset.name}'")
+
+    return dataset
+
+
+async def load_dataset_only(config: ExperimentsFile) -> List[DatasetItem]:
+    """Load and validate dataset from file without uploading to Langfuse."""
+    from src.datasets.loaders import DatasetLoader
+
+    _logger.info(f"Loading dataset (no upload): {config.dataset.name} from {config.dataset.source}")
+
+    item_model = get_item_model(config.dataset.type)
+    reader = get_reader(config.dataset.format)
+
+    loader = DatasetLoader(
+        item_model=item_model,
+        reader=reader,
+        config={
+            "dataset_name": config.dataset.name,
+            "source_file": config.dataset.source
+        },
+        input_path="."
+    )
+
+    dataset = loader.load()
+    _logger.info(f"Dataset loaded locally: {len(dataset)} items (not uploaded to Langfuse)")
 
     return dataset
 
@@ -159,6 +183,7 @@ async def run_evaluations(config: ExperimentsFile, all_results: List[List[Execut
         evaluator = LangfuseEvaluator(
             results=results,
             method=evaluation_method,
+            score_name=config.evaluation.score_name or "evaluation_score",
             max_concurrency=config.evaluation.max_concurrency or 10
         )
         
@@ -225,6 +250,7 @@ def main(config: str, skip_upload: bool):
                 dataset = await load_and_upload_dataset(experiments_config)
             else:
                 _logger.info("Skipping dataset upload (--skip-upload flag set)")
+                dataset = await load_dataset_only(experiments_config)
             
             results = await run_experiments(experiments_config, dataset)
             

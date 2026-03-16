@@ -41,7 +41,7 @@
 - `src/config/types.py`: Pydantic schema for the YAML file (`ExperimentsFile`, dataset types/formats, MCP config).
 - `src/datasets/`: readers + loaders + item models.
   - `readers/`: dataset readers for different formats (e.g. csv, excel).
-  - `item_models/`: dataset item types (implement `user_prompt()` and `expected_output()`).
+  - `item_models/`: dataset item types (implement `input()` and `expected_output()`).
   - `loaders/`: load from files and (optionally) upload to Langfuse.
 - `src/llms/`: LiteLLM/LangChain/LangGraph client, optional MCP tool integration.
 - `src/execution/`: executors (generic/in-memory vs Langfuse-backed).

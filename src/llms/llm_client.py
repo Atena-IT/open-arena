@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from langchain_litellm import ChatLiteLLM
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
@@ -20,7 +20,7 @@ class LLMClient:
     def __init__(
         self,
         llm_config: Dict[str, Any],
-        mcp_servers: List[MCPServerConfig] = []
+        mcp_servers: Optional[List[MCPServerConfig]] = None
     ):
         """
         Initialize the LLM client.
@@ -29,7 +29,7 @@ class LLMClient:
         :param mcp_servers: Optional list of MCP server configurations
         """
         self.llm_config = llm_config
-        self.mcp_servers = mcp_servers
+        self.mcp_servers = mcp_servers if mcp_servers is not None else []
         self.graph = None
         self.mcp_client = None
         self._initialized = False
@@ -91,8 +91,8 @@ class LLMClient:
         model = ChatLiteLLM(**llm_config)
         
         # Build the graph
-        def call_model(state: MessagesState):
-            response = model.bind_tools(tools).invoke(state["messages"])
+        async def call_model(state: MessagesState):
+            response = await model.bind_tools(tools).ainvoke(state["messages"])
             return {"messages": response}
         
         builder = StateGraph(MessagesState)

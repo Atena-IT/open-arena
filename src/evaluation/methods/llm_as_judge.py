@@ -32,7 +32,7 @@ class LLMAsJudge(EvaluationMethod[T]):
     
     def __init__(
         self,
-        llm_client: LLMClient, # TODO: simpler implementaion that does not require a graph
+        llm_client: LLMClient, # TODO: simpler implementation that does not require a graph
         system_prompt: str = default_prompts["evaluation"]["llm_as_judge"],
     ):
         """

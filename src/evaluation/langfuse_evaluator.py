@@ -30,16 +30,18 @@ class LangfuseEvaluator(Evaluator[T]):
         self,
         results: List[ExecutionResult[T]],
         method: EvaluationMethod[T],
+        score_name: str = "evaluation_score",
         max_concurrency: int = 10
     ):
         """
         :param results: Execution results from LangfuseExecutor (with trace_id metadata)
         :param method: Evaluation method (e.g., LLMAsJudge)
-        :param score_name: Name for the score in Langfuse (e.g., "correctness", "quality")
+        :param score_name: Name for the score written to Langfuse
         :param max_concurrency: Max parallel evaluations
         """
         super().__init__(results=results, method=method)
         self.langfuse = get_client()
+        self.score_name = score_name
         self.max_concurrency = max_concurrency
     
     async def _evaluate_item_with_langfuse(
@@ -66,7 +68,7 @@ class LangfuseEvaluator(Evaluator[T]):
             as_type="evaluator",
             name="evaluation-item-run",
             input={
-                "item": result.item,
+                "item": result.item.model_dump(),
                 "output": result.output
             }
         ) as root_span:
@@ -84,7 +86,7 @@ class LangfuseEvaluator(Evaluator[T]):
                 try:
                     self.langfuse.create_score(
                         trace_id=str(trace_id),
-                        name=self.method.name,
+                        name=self.score_name,
                         value=float(eval_result.score),
                         comment=str(eval_result.explanation) if eval_result.explanation else None
                     )

@@ -27,5 +27,5 @@ class JudgeResponse(BaseModel):
     Structured response expected from judge LLM.
     Judge must return JSON with this schema.
     """
-    score: float = Field(..., description="Numerical score (e.g., 1-5)")
+    score: int = Field(..., description="Integer score from 1 to 5", ge=1, le=5)
     explanation: str = Field(..., description="Explanation for the score")

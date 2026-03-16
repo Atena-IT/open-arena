@@ -128,7 +128,7 @@ uv run -m src.main_cli --config config.example.yaml
 
 ## 🤝 Contributing
 
-This framework is designed with extensibilty in mind. We welcome contributions that expand capabilities:
+This framework is designed with extensibility in mind. We welcome contributions that expand capabilities:
 
 - **New dataset formats**: JSON, Parquet, databases, APIs
 - **Evaluation metrics**: Custom scoring methods, domain-specific evaluators
