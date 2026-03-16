@@ -1,4 +1,4 @@
-from typing import Dict, Any, TypeVar, Generic, Optional
+from typing import Any, TypeVar, Generic
 from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
@@ -17,15 +17,15 @@ class EvaluationResult(Generic[T]):
     item: T
     output: str
     model_name: str
-    score: Optional[float] = None
-    explanation: Optional[str] = None
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    score: float | None = None
+    explanation: str | None = None
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 class JudgeResponse(BaseModel):
     """
     Structured response expected from judge LLM.
     Judge must return JSON with this schema.
     """
-    score: float = Field(..., description="Numerical score (e.g., 1-5)")
+    score: int = Field(..., description="Integer score from 1 to 5", ge=1, le=5)
     explanation: str = Field(..., description="Explanation for the score")

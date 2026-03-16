@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
@@ -86,7 +85,7 @@ class ExperimentConfig(BaseModel):
         ...,
         description="LiteLLM configuration block (must include 'model' and may include extra custom keys).",
     )
-    mcp: Optional[List[MCPServer]] = Field(
+    mcp: list[MCPServer] | None = Field(
         default=None,
         description="Optional list of MCP servers available to the experiment.",
     )
@@ -104,11 +103,11 @@ class EvaluationConfig(BaseModel):
         ...,
         description="LiteLLM configuration for the evaluation model (e.g., judge LLM).",
     )
-    score_name: Optional[str] = Field(
+    score_name: str | None = Field(
         default="evaluation_score",
         description="Name of the score to write to Langfuse (default: 'evaluation_score').",
     )
-    max_concurrency: Optional[int] = Field(
+    max_concurrency: int | None = Field(
         default=10,
         description="Maximum number of concurrent evaluations (default: 10).",
         ge=1,
@@ -127,7 +126,7 @@ class ExperimentsFile(BaseModel):
         description="Global system prompt applied to all experiments (unless your runner overrides it).",
         min_length=1,
     )
-    experiments: List[ExperimentConfig] = Field(
+    experiments: list[ExperimentConfig] = Field(
         ...,
         description="List of experiments to run against the global dataset and system prompt.",
         min_length=1,

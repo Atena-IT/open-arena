@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from src.datasets.item_models import DatasetItem
 from src.execution.types import ExecutionResult
@@ -17,7 +17,7 @@ class Evaluator(ABC, Generic[T]):
     
     def __init__(
         self,
-        results: List[ExecutionResult[T]],
+        results: list[ExecutionResult[T]],
         method: EvaluationMethod[T]
     ):
         """
@@ -28,7 +28,7 @@ class Evaluator(ABC, Generic[T]):
         self.method = method
     
     @abstractmethod
-    async def evaluate(self) -> List[EvaluationResult[T]]:
+    async def evaluate(self) -> list[EvaluationResult[T]]:
         """
         Evaluate the execution results.
         

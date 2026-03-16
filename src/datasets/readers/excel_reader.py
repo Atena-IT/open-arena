@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from typing import List, Dict, Any
+from typing import Any
 from .base_reader import DatasetReader
 from .utils import to_snake_case
 
@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 class ExcelReader(DatasetReader):
     """Reads Excel files and returns raw dictionaries."""
     
-    def read(self, file_path: str) -> List[Dict[str, Any]]:
+    def read(self, file_path: str) -> list[dict[str, Any]]:
         """
         Read Excel file and return list of dictionaries.
         

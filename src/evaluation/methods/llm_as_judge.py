@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Optional, Tuple, TypeVar
+from typing import Any, TypeVar
 
 from src import default_prompts
 from src.llms import LLMClient
@@ -32,7 +32,7 @@ class LLMAsJudge(EvaluationMethod[T]):
     
     def __init__(
         self,
-        llm_client: LLMClient, # TODO: simpler implementaion that does not require a graph
+        llm_client: LLMClient, # TODO: simpler implementation that does not require a graph
         system_prompt: str = default_prompts["evaluation"]["llm_as_judge"],
     ):
         """
@@ -102,7 +102,7 @@ class LLMAsJudge(EvaluationMethod[T]):
         
         return json.dumps(payload, indent=2)
     
-    def _parse_judge_response(self, raw_response: str) -> Tuple[Optional[float], Optional[str]]:
+    def _parse_judge_response(self, raw_response: str) -> tuple[float | None, str | None]:
         """
         Parse the judge's response into score and explanation using Pydantic validation.
         

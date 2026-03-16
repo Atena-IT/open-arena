@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Optional, TypeVar
+from typing import TypeVar
 from datetime import datetime, timezone
 from tqdm.asyncio import tqdm as async_tqdm
 
@@ -26,11 +26,11 @@ class LangfuseExecutor(Executor[T]):
     
     def __init__(
         self,
-        dataset: List[T],
+        dataset: list[T],
         llm_client: LangfuseLLMClient,
         system_prompt: str,
-        experiment_name: Optional[str] = None,
-        experiment_description: Optional[str] = None,
+        experiment_name: str | None = None,
+        experiment_description: str | None = None,
         max_concurrency: int = 50
     ):
         """
@@ -108,18 +108,22 @@ class LangfuseExecutor(Executor[T]):
             
             return result
     
-    async def execute(self) -> List[ExecutionResult[T]]:
+    async def execute(self) -> list[ExecutionResult[T]]:
         """
         Execute all items in the dataset in parallel and track with Langfuse.
         
         :return: List of execution results with Langfuse metadata
         """
+        if not self.dataset:
+            _logger.warning("Dataset is empty, no items to execute")
+            return []
+
         dataset_id = self.dataset[0].metadata.get("lf_dataset_id")
         
         if not dataset_id:
             raise ValueError("Dataset items must have 'lf_dataset_id' and 'lf_dataset_name' in metadata")
         
-        experiment_run_name = f"{self.experiment_name} - {datetime.now(timezone.utc).isoformat()}Z"
+        experiment_run_name = f"{self.experiment_name} - {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')}"
         
         semaphore = asyncio.Semaphore(self.max_concurrency)
         

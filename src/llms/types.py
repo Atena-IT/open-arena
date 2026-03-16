@@ -1,5 +1,4 @@
-from typing import Dict
-from typing_extensions import TypedDict, NotRequired
+from typing import TypedDict, NotRequired
 
 class MCPServerConfig(TypedDict):
     """
@@ -14,4 +13,4 @@ class MCPServerConfig(TypedDict):
     """
     server_name: str
     url: str
-    headers: NotRequired[Dict[str, str]]
+    headers: NotRequired[dict[str, str]]
