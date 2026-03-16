@@ -3,8 +3,8 @@ import json
 import logging
 import sys
 import warnings
-from collections import defaultdict
-from typing import Any
+from collections import defaultdict, deque
+from typing import Any, Protocol
 
 import click
 from dotenv import load_dotenv
@@ -29,8 +29,16 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 _logger = logging.getLogger(__name__)
+MISSING_ITEM_PREVIEW_LENGTH = 50
 
 load_dotenv()
+
+
+class LangfuseDatasetItemLike(Protocol):
+    id: str
+    input: Any
+    expected_output: Any
+    metadata: dict[str, Any] | None
 
 
 def get_item_model(dataset_type: DatasetType) -> type[DatasetItem]:
@@ -127,14 +135,32 @@ def _dataset_item_key(
     metadata: dict[str, Any] | None,
 ) -> str:
     """Build a stable key used to match local items to Langfuse dataset items."""
+    def normalize_for_json_key(value: Any) -> Any:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, dict):
+            string_key_items = [(str(key), val) for key, val in value.items()]
+            return {
+                str(key): normalize_for_json_key(val)
+                for key, val in sorted(string_key_items)
+            }
+        if isinstance(value, (list, tuple)):
+            return [normalize_for_json_key(item) for item in value]
+        if isinstance(value, set):
+            sortable_items = [
+                (json.dumps(normalized_item, sort_keys=True), normalized_item)
+                for normalized_item in (normalize_for_json_key(item) for item in value)
+            ]
+            return [item for _, item in sorted(sortable_items, key=lambda sortable_item: sortable_item[0])]
+        return str(value)
+
     return json.dumps(
         {
-            "input": input_value,
-            "expected_output": expected_output,
-            "metadata": metadata or {},
+            "input": normalize_for_json_key(input_value),
+            "expected_output": normalize_for_json_key(expected_output),
+            "metadata": normalize_for_json_key(metadata or {}),
         },
         sort_keys=True,
-        default=str,
     )
 
 
@@ -154,9 +180,9 @@ async def load_existing_langfuse_dataset(config: ExperimentsFile) -> list[Datase
     _logger.info(f"Loading existing Langfuse dataset: {config.dataset.name}")
     langfuse_dataset = get_client().get_dataset(config.dataset.name)
 
-    remote_items_by_key: dict[str, list[Any]] = defaultdict(list)
+    langfuse_items_by_key: dict[str, deque[LangfuseDatasetItemLike]] = defaultdict(deque)
     for remote_item in langfuse_dataset.items:
-        remote_items_by_key[
+        langfuse_items_by_key[
             _dataset_item_key(
                 remote_item.input,
                 remote_item.expected_output,
@@ -166,15 +192,24 @@ async def load_existing_langfuse_dataset(config: ExperimentsFile) -> list[Datase
 
     missing_items: list[str] = []
     for index, item in enumerate(dataset, start=1):
-        matching_items = remote_items_by_key.get(
+        matching_items = langfuse_items_by_key.get(
             _dataset_item_key(item.input(), item.expected_output(), item.meta())
         )
 
         if not matching_items:
-            missing_items.append(f"row {index}")
+            missing_items.append(
+                f"row {index} ({str(item.input())[:MISSING_ITEM_PREVIEW_LENGTH]!r})"
+            )
             continue
 
-        remote_item = matching_items.pop()
+        if len(matching_items) > 1:
+            _logger.warning(
+                "Multiple existing Langfuse items matched row %s in dataset '%s'; reusing one of them",
+                index,
+                config.dataset.name,
+            )
+
+        remote_item = matching_items.popleft()
         item.metadata["lf_item_id"] = remote_item.id
         item.metadata["lf_dataset_name"] = langfuse_dataset.name
         item.metadata["lf_dataset_id"] = langfuse_dataset.id
@@ -190,13 +225,13 @@ async def load_existing_langfuse_dataset(config: ExperimentsFile) -> list[Datase
             "Re-run without --skip-upload to upload the dataset again."
         )
 
-    unmatched_remote_items = sum(len(items) for items in remote_items_by_key.values())
-    if unmatched_remote_items:
+    extra_remote_items_count = sum(len(items) for items in langfuse_items_by_key.values())
+    if extra_remote_items_count:
         _logger.warning(
             "Existing Langfuse dataset '%s' contains %s extra items that were not matched "
             "to the local source file",
             config.dataset.name,
-            unmatched_remote_items,
+            extra_remote_items_count,
         )
 
     _logger.info(

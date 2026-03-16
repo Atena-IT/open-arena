@@ -17,6 +17,11 @@ class DatasetItem(BaseModel, ABC):
     def from_langfuse_item(cls, item: Any) -> Any:
         """
         Creates a Pydantic BaseModel object from a Langfuse dataset item.
+
+        Subclasses may override this when they support reconstructing a typed dataset item
+        from Langfuse data. The default implementation keeps local file-based item models
+        instantiable, but does not provide reconstruction support.
+
         Expects that:
         - item.input contains fields marked as “input”
         - item.expected_output contains fields marked as “expected_output”
