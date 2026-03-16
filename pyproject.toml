@@ -1,9 +1,9 @@
 [project]
-name = "multi-language-model-evaluation-framework"
+name = "open-arena"
 version = "0.1.0"
-description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis"
+description = "Open Arena evaluation framework for general datasets using Langfuse, LiteLLM, and multi-metric analysis"
 readme = "README.md"
-requires-python = ">3.11"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "fastmcp",

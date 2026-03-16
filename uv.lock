@@ -1990,7 +1990,7 @@ wheels = [
 ]
 
 [[package]]
-name = "multi-language-model-evaluation-framework"
+name = "open-arena"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

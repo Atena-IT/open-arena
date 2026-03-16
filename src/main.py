@@ -1,3 +1,5 @@
+"""Open Arena pipeline runner."""
+
 import logging
 from dotenv import load_dotenv
 from src import DATA_LOCATION, load_config
@@ -8,7 +10,6 @@ from src.evaluator import GenericEvaluator
 from src.execution import GenericExecutor
 
 
-""" CONFIG """
 CONFIG = load_config()
 CLIENT = LLMClient()
 DATASETS = {
@@ -42,7 +43,6 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 LOGGER = logging.getLogger(__name__)
 
 
-""" MAIN """
 if __name__ == "__main__":
 
     # PIPELINE START
