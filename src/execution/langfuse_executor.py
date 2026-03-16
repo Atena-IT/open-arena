@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from tqdm.asyncio import tqdm as async_tqdm
 
 from langfuse import get_client
-from langfuse.api.resources.dataset_run_items import CreateDatasetRunItemRequest
 
 from src.execution.base_executor import Executor
 from src.execution.types import ExecutionResult
@@ -91,12 +90,10 @@ class LangfuseExecutor(Executor[T]):
             
             try:
                 self._langfuse.api.dataset_run_items.create(
-                    request=CreateDatasetRunItemRequest(
-                        runName=experiment_run_name,
-                        datasetItemId=dataset_item_id,
-                        traceId=root_span.trace_id,
-                        runDescription=self.experiment_description,
-                    )
+                    run_name=experiment_run_name,
+                    dataset_item_id=dataset_item_id,
+                    trace_id=root_span.trace_id,
+                    run_description=self.experiment_description,
                 )
             except Exception as e:
                 _logger.error(f"Failed to create dataset run item for {dataset_item_id}: {e}")

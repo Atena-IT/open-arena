@@ -14,7 +14,6 @@ class DatasetItem(BaseModel, ABC):
     metadata: dict[str, Any] = Field(default_factory=dict, description="Optional metadata for the dataset item")
 
     @classmethod
-    @abstractmethod
     def from_langfuse_item(cls, item: Any) -> Any:
         """
         Creates a Pydantic BaseModel object from a Langfuse dataset item.

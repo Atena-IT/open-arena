@@ -1,10 +1,14 @@
 import asyncio
+import json
 import logging
 import sys
 import warnings
+from collections import defaultdict
+from typing import Any
 
 import click
 from dotenv import load_dotenv
+from langfuse import get_client
 from pydantic import ValidationError
 
 from src.config.types import ExperimentsFile, DatasetType
@@ -114,6 +118,92 @@ async def load_dataset_only(config: ExperimentsFile) -> list[DatasetItem]:
     dataset = loader.load()
     _logger.info(f"Dataset loaded locally: {len(dataset)} items (not uploaded to Langfuse)")
 
+    return dataset
+
+
+def _dataset_item_key(
+    input_value: Any,
+    expected_output: Any,
+    metadata: dict[str, Any] | None,
+) -> str:
+    """Build a stable key used to match local items to Langfuse dataset items."""
+    return json.dumps(
+        {
+            "input": input_value,
+            "expected_output": expected_output,
+            "metadata": metadata or {},
+        },
+        sort_keys=True,
+        default=str,
+    )
+
+
+async def load_existing_langfuse_dataset(config: ExperimentsFile) -> list[DatasetItem]:
+    """
+    Load and validate dataset from file, then attach metadata from an existing Langfuse dataset.
+
+    This powers the --skip-upload flow by reusing already-uploaded Langfuse items instead of
+    uploading duplicates, while still validating the local source file.
+    """
+    dataset = await load_dataset_only(config)
+
+    if not dataset:
+        _logger.warning("Dataset is empty, skipping Langfuse dataset lookup")
+        return dataset
+
+    _logger.info(f"Loading existing Langfuse dataset: {config.dataset.name}")
+    langfuse_dataset = get_client().get_dataset(config.dataset.name)
+
+    remote_items_by_key: dict[str, list[Any]] = defaultdict(list)
+    for remote_item in langfuse_dataset.items:
+        remote_items_by_key[
+            _dataset_item_key(
+                remote_item.input,
+                remote_item.expected_output,
+                remote_item.metadata,
+            )
+        ].append(remote_item)
+
+    missing_items: list[str] = []
+    for index, item in enumerate(dataset, start=1):
+        matching_items = remote_items_by_key.get(
+            _dataset_item_key(item.input(), item.expected_output(), item.meta())
+        )
+
+        if not matching_items:
+            missing_items.append(f"row {index}")
+            continue
+
+        remote_item = matching_items.pop()
+        item.metadata["lf_item_id"] = remote_item.id
+        item.metadata["lf_dataset_name"] = langfuse_dataset.name
+        item.metadata["lf_dataset_id"] = langfuse_dataset.id
+
+    if missing_items:
+        missing_preview = ", ".join(missing_items[:5])
+        if len(missing_items) > 5:
+            missing_preview += ", ..."
+
+        raise ValueError(
+            "Dataset validation succeeded, but some items were not found in the existing "
+            f"Langfuse dataset '{config.dataset.name}'. Missing matches: {missing_preview}. "
+            "Re-run without --skip-upload to upload the dataset again."
+        )
+
+    unmatched_remote_items = sum(len(items) for items in remote_items_by_key.values())
+    if unmatched_remote_items:
+        _logger.warning(
+            "Existing Langfuse dataset '%s' contains %s extra items that were not matched "
+            "to the local source file",
+            config.dataset.name,
+            unmatched_remote_items,
+        )
+
+    _logger.info(
+        "Reused %s existing Langfuse dataset items from '%s'",
+        len(dataset),
+        config.dataset.name,
+    )
     return dataset
 
 
@@ -249,7 +339,7 @@ def main(config: str, skip_upload: bool):
                 dataset = await load_and_upload_dataset(experiments_config)
             else:
                 _logger.info("Skipping dataset upload (--skip-upload flag set)")
-                dataset = await load_dataset_only(experiments_config)
+                dataset = await load_existing_langfuse_dataset(experiments_config)
             
             results = await run_experiments(experiments_config, dataset)
             
