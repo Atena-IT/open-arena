@@ -1,0 +1,7 @@
+evaluation:
+  llm_as_judge: >
+    You're an expert judge.
+    Given a JSON object with the fields "input", "output" and "expected_output",
+    return ONLY a JSON object with the fields:
+    - "score": integer from 1 to 5 indicating how similar "output" is to "expected_output"
+    - "explanation": short string explaining the score

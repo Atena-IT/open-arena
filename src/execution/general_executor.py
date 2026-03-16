@@ -59,7 +59,7 @@ class GenericExecutor:
 
     def completion_with_tools(self, model_config: dict, system_prompt: str, user_prompt: str) -> str:
         """
-        Async completion wrapper which syncs the API used by Langfuse task(). It borrows one MCP worker (one persistent 
+        Async completion wrapper which syncs the API used by Langfuse task(). It borrows one MCP worker (one persistent
         SSE connection), runs the coroutine on that worker loop, then releases the worker back to the pool.
         Parameters:
             :param model_config: Model configuration to use for this completion.

@@ -1,13 +1,25 @@
 [project]
-name = "multi-language-model-evaluation-framework"
+name = "open-arena"
 version = "0.1.0"
-description = "Evaluation framework for general dataset using Langfuse, LiteLLM and multi-metric analysis"
+description = "Open Arena evaluation framework for general datasets using Langfuse, LiteLLM, and multi-metric analysis."
 readme = "README.md"
-requires-python = ">3.11"
+requires-python = ">=3.12"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "Atena Reply" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
 dependencies = [
     "fastapi",
-    "fastmcp",
     "fastapi-mcp",
+    "fastmcp",
     "langchain",
     "langchain-core",
     "langchain-mcp-adapters",
@@ -20,8 +32,8 @@ dependencies = [
     "openai",
     "openpyxl",
     "opentelemetry-api",
-    "opentelemetry-sdk",
     "opentelemetry-exporter-otlp",
+    "opentelemetry-sdk",
     "pandas>=2.3.3",
     "playwright",
     "pydantic",
@@ -31,3 +43,13 @@ dependencies = [
     "uvicorn",
     "xlsxwriter>=3.2.9",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"src" = ["*.yaml"]
