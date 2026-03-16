@@ -6,7 +6,7 @@ from typing import Any
 """ CLASSES """
 class ToolsExample(DatasetItem):
     """
-    Represents a single tool scale item.
+    Represents a single tools-evaluation dataset item.
     Parameters:
         :param id (str): Unique identifier for the item.
         :param question (str): The question text.

@@ -1,5 +1,5 @@
 import asyncio, queue, threading
-from src.mcp_server import MCPSSEBearer
+from src.mcp_server.mcp_sse_bearer import MCPSSEBearer
 
 
 """ CLASSES """
