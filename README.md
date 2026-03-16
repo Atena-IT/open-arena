@@ -15,7 +15,7 @@ Open Arena is a lightweight evaluation framework for benchmarking LLMs and tool-
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - Access to the LLM providers and Langfuse instance you want to use
 - `uv` recommended for environment management
 

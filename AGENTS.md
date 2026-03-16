@@ -19,15 +19,11 @@
 
 ## Running instructions
 
-- Preferred way (validates packaging + entry point):
+- Preferred way for this branch:
   ```sh
-  mlmef --config <config.yaml>
+  python -m src.main
   ```
-- Example:
-  ```sh
-  mlmef --config config.example.yaml
-  ```
-- Alternative (module execution, useful for debugging):
+- Alternative for the structured CLI added from `main`:
   ```sh
   uv run -m src.main_cli --config <config.yaml>
   ```

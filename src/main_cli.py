@@ -357,7 +357,7 @@ def main(config: str, skip_upload: bool):
         python -m src.main_cli -c config.yaml --skip-upload
     """
     try:
-        _logger.info("Open Arena")
+        _logger.info("Starting Open Arena CLI pipeline")
 
         _logger.info(f"Loading configuration from: {config}")
         try:
