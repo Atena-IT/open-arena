@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from jinja2 import Environment, StrictUndefined, meta
+from jinja2 import nodes as jinja_nodes
 
 _env = Environment(undefined=StrictUndefined, autoescape=False)
 
@@ -12,7 +13,25 @@ Row = tuple[str, str, dict[str, Any]]  # (input, expected_output, metadata)
 
 
 def _referenced(template_source: str) -> set[str]:
-    return meta.find_undeclared_variables(_env.parse(template_source))
+    """Return all column names consumed by a template.
+
+    Handles three access patterns:
+      - {{ column }}          → direct variable reference
+      - {{ row.column }}      → attribute access on row
+      - {{ row["column"] }}   → subscript access on row
+    """
+    ast = _env.parse(template_source)
+    refs = meta.find_undeclared_variables(ast)
+
+    for node in ast.find_all((jinja_nodes.Getattr, jinja_nodes.Getitem)):
+        if isinstance(node.node, jinja_nodes.Name) and node.node.name == "row":
+            if isinstance(node, jinja_nodes.Getattr):
+                refs.add(node.attr)
+            elif isinstance(node, jinja_nodes.Getitem) and isinstance(node.arg, jinja_nodes.Const):
+                refs.add(node.arg.value)
+
+    refs.discard("row")
+    return refs
 
 
 class Dataset(ABC):
