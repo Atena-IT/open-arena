@@ -335,3 +335,23 @@ evaluation:
   #   You are a strict grader. No ground truth is provided. Judge the
   #   output's correctness, relevance, and clarity as a response to the
   #   input. Return a score 1-5 with a one-sentence explanation.
+
+  # --- Verifier-only knobs (llm_as_verifier / pairwise_verifier) ---------
+  # `granularity` (G): number of discrete score letters A..Z used to
+  # extract a logprob distribution. Typical: 8.
+  # `repeats`     (K): number of verifier samples averaged per call.
+  #                    Typical: 1 (fast) to 16 (low-variance).
+  # granularity: 8
+  # repeats: 1
+
+  # --- Criteria decomposition (llm_as_verifier only) ---------------------
+  # Splits scoring into independent per-criterion calls and averages the
+  # rewards. Each criterion runs its own verifier call, so total cost
+  # scales linearly with len(criteria). Omit for a single holistic score.
+  # The explanation string on each row surfaces the per-criterion values
+  # (e.g. "correctness=6.2, clarity=5.1, completeness=4.8").
+  #
+  # criteria:
+  #   - correctness
+  #   - clarity
+  #   - completeness

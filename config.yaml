@@ -33,11 +33,13 @@ experiments:
       temperature: 0.3
 
 evaluation:
-  method: "llm_as_judge"
+  method: "llm_as_verifier"
   litellm:
     model: "ollama_chat/qwen3:8b"
     api_base: "http://localhost:11434"
     max_tokens: 2048
     temperature: 0.0
-  score_name: "quality_score"
+  score_name: "verifier_score"
   max_concurrency: 5
+  granularity: 8
+  repeats: 1

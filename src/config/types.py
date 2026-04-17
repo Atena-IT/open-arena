@@ -65,6 +65,36 @@ class EvaluationConfig(BaseModel):
             "expected_output. If omitted, the evaluator's default is used."
         ),
     )
+    granularity: int | None = Field(
+        default=None,
+        ge=2,
+        le=26,
+        description=(
+            "Verifier methods only ('llm_as_verifier', 'pairwise_verifier'): "
+            "number of score letters (A..) used for logprob-based scoring. "
+            "Typical: 8."
+        ),
+    )
+    repeats: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Verifier methods only ('llm_as_verifier', 'pairwise_verifier'): "
+            "number of repeated verification samples to average (K). "
+            "Typical: 1-16."
+        ),
+    )
+    criteria: list[str] | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Verifier method only ('llm_as_verifier'): criterion names to "
+            "decompose scoring over (C). Each criterion is scored in its "
+            "own verifier call; the final reward is the arithmetic mean "
+            "across criteria. Omit for a single holistic score. "
+            "Example: ['correctness', 'clarity', 'completeness']."
+        ),
+    )
 
 
 class ExperimentsFile(BaseModel):
