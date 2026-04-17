@@ -41,8 +41,18 @@ class Dataset(ABC):
     Subclasses fetch raw rows from a provider (local, huggingface, ...) via
     `iter_raw_rows()`. This base class renders each row into
     `(input, expected_output, metadata)` using the Jinja2 templates from the
-    config. Columns referenced by the templates are consumed; unreferenced
-    columns flow through as metadata.
+    config. Column names are never normalized — they flow through exactly as
+    provided by the source adapter.
+
+    Templates can reference columns in three ways:
+      - ``{{ column }}``         — direct variable access
+      - ``{{ row.column }}``     — attribute access on the row dict
+      - ``{{ row["column"] }}``  — subscript access (required for headers
+        with spaces or non-identifier characters)
+
+    All three patterns are detected by the metadata filter: columns consumed
+    by either template are excluded from metadata, unreferenced columns flow
+    through.
     """
 
     def __init__(
