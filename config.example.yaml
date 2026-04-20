@@ -63,7 +63,7 @@ dataset:
 
   # --- expected_output: Jinja2 template rendered per row (required). -------
   # Produces the ground-truth string used by reference-based evaluators
-  # (`llm_as_judge`, `pairwise_judge`). Leave empty ("") in the rendered
+  # (`llm_as_judge`, `llm_as_verifier`). Leave empty ("") in the rendered
   # output to signal "no ground truth" — no-reference judge prompts will
   # be used automatically.
   expected_output: "{{ ['A', 'B', 'C', 'D'][answer] }}"
@@ -204,8 +204,9 @@ dataset:
 # -------------------------------------------------------------------------
 # system_prompt  (required)
 # -------------------------------------------------------------------------
-# Applied to every experiment. Not used by evaluators (the evaluator has
-# its own prompts shipped in src/prompts.default.yaml).
+# Applied to every experiment. Not used by evaluators (the evaluator
+# uses the `system_prompt` / `system_prompt_no_reference` defined under
+# `evaluation:` below).
 system_prompt: |
   You are answering multiple-choice questions. Reply with a single letter: A, B, C, or D.
 
@@ -274,21 +275,33 @@ experiments:
 # -------------------------------------------------------------------------
 # One evaluator is run after all experiments complete. Two evaluators
 # ship today:
-#   - llm_as_judge    (pointwise)  — scores each output independently
-#                                    against expected_output (or without
-#                                    reference if none was produced).
-#                                    The judge returns a 1-5 rating, which
-#                                    is normalized to a 0-1 Langfuse score.
-#   - pairwise_judge  (group)      — round-robin tournament across all
-#                                    experiments; each pair is judged twice
-#                                    with positions swapped to mitigate
-#                                    position bias. Per-model Langfuse
-#                                    score = win_rate (0-1).
-#
-# Both evaluators use ChatLiteLLM.with_structured_output(schema) for
-# validated JSON output; no manual JSON parsing anywhere.
+#   - llm_as_judge    (pointwise) — scores each output independently
+#                                   against expected_output (or without
+#                                   reference if none was produced).
+#                                   The judge returns a 1-5 rating, which
+#                                   is normalised to a 0-1 Langfuse score.
+#                                   Uses ChatLiteLLM.with_structured_output
+#                                   for validated JSON.
+#   - llm_as_verifier (group)     — round-robin pairwise verifier across
+#                                   experiments. For each unordered pair
+#                                   (A, B) the model emits
+#                                   <score_A>X</score_A><score_B>Y</score_B>;
+#                                   the reward at each tag is the expected
+#                                   value under the model's top_logprobs
+#                                   distribution over score letters. Each
+#                                   pair is sampled K times and the
+#                                   rewards are averaged (faithful to
+#                                   Kwok et al. 2026 — pairs are not
+#                                   position-swapped; variance reduction
+#                                   comes from K and from criterion
+#                                   decomposition). Optionally split
+#                                   across C criteria (per-pair reward =
+#                                   mean across criteria). Each model's
+#                                   Langfuse score is the mean reward
+#                                   over all pairs it appears in,
+#                                   normalised to [0, 1].
 evaluation:
-  # "llm_as_judge" | "pairwise_judge"
+  # "llm_as_judge" | "llm_as_verifier"
   method: "llm_as_judge"
 
   # LiteLLM config for the judge model. Same extras mechanism as
@@ -305,53 +318,136 @@ evaluation:
   # Max concurrent judge calls. Tune for rate limits.
   max_concurrency: 5
 
-  # --- Prompt overrides (both optional) ----------------------------------
-  # Defaults live in src/prompts.default.yaml. Override here to customise
-  # the judge's rubric without touching the package. Both evaluators
-  # (llm_as_judge, pairwise_judge) accept the same two keys:
+  # --- Prompts (both required) -------------------------------------------
+  # Both evaluator methods consume two prompts:
+  #   system_prompt               — used when the row has a non-empty
+  #                                 expected_output (reference mode).
+  #   system_prompt_no_reference  — used when expected_output is empty
+  #                                 (reference-free mode).
   #
-  #   system_prompt                 — used when the dataset provides a
-  #                                   non-empty expected_output (reference
-  #                                   mode: compare output to ground truth).
-  #   system_prompt_no_reference    — used when expected_output is empty
-  #                                   (reference-free mode: judge output
-  #                                   quality given only the input).
-  #
-  # The judge receives a JSON object on the user turn; the exact fields
+  # The model receives a JSON object on the user turn; the exact fields
   # depend on the evaluator:
   #   llm_as_judge    → {"input", "output", "expected_output"?}
-  #   pairwise_judge  → {"input", "output_A", "output_B", "expected_output"?}
-  # Your prompt MUST instruct the judge to return JSON matching the
-  # evaluator's schema (structured output is enforced via LangChain, so
-  # the shape is validated automatically — but your prompt still needs to
-  # describe the scoring semantics).
+  #   llm_as_verifier → {"input", "output_A", "output_B", "expected_output"?}
+  # llm_as_judge prompts MUST instruct the model to return JSON matching
+  # the evaluator's schema (structured output is enforced via LangChain).
+  # llm_as_verifier prompts MUST end with EXACTLY two score tags
+  # (<score_A>X</score_A><score_B>Y</score_B>) and may use the
+  # placeholders {granularity}, {score_letters}, {best_letter},
+  # {worst_letter}, {criterion}, {criterion_description},
+  # {scale_description}.
+  #
+  # The example below is for the `llm_as_judge` method selected above.
+  # If you switch to `llm_as_verifier`, see the verifier prompts shown
+  # at the bottom of this section.
+  system_prompt: >
+    You're an expert judge.
+    Given a JSON object with the fields "input", "output" and "expected_output",
+    rate how similar "output" is to "expected_output".
+    Return ONLY a JSON object with the following format:
+
+    {"thinking": "The output correctly identifies the main concept but misses two key details from the expected output.", "score": 4}
+
+    "thinking" must come first: a short step-by-step reasoning explaining your assessment.
+    "score" must be an integer from 1 to 5 (1 = completely wrong, 5 = perfect match).
+
+  system_prompt_no_reference: >
+    You're an expert judge. No ground truth is provided.
+    Given a JSON object with the fields "input" and "output",
+    judge the output's overall quality (correctness, relevance, clarity) as a response to the input.
+    Return ONLY a JSON object with the following format:
+
+    {"thinking": "The output is relevant but lacks depth and contains a minor inaccuracy.", "score": 3}
+
+    "thinking" must come first: a short step-by-step reasoning explaining your assessment.
+    "score" must be an integer from 1 to 5 (1 = poor, 5 = excellent).
+
+  # --- llm_as_verifier prompts (drop in if you switch `method` above) ----
   #
   # system_prompt: |
-  #   You are a strict grader. Compare "output" to "expected_output" and
-  #   return a score 1-5 where 5 means semantically equivalent and 1 means
-  #   completely wrong. Include a one-sentence explanation.
+  #   You are an expert evaluator. You will see a JSON object with the
+  #   fields "input", "output_A", "output_B", and "expected_output". Your
+  #   job is to evaluate the two outputs on ONE specific criterion:
+  #   **{criterion}**.
+  #
+  #   Treat "expected_output" as the ground truth. Do NOT trust the outputs'
+  #   self-assessment or claims of success — judge them against the ground
+  #   truth on the criterion below.
+  #
+  #   **Evaluation Guideline — {criterion}:**
+  #   {criterion_description}
+  #
+  #   Score each output ONLY on this specific criterion. Ignore other
+  #   aspects of the outputs that are not relevant to "{criterion}".
+  #
+  #   **Rating Scale:**
+  #   {scale_description}
+  #
+  #   You may reason briefly first. Then output your final scores in
+  #   EXACTLY this format:
+  #   <score_A>X</score_A>
+  #   <score_B>Y</score_B>
+  #   where X and Y are each one of: {score_letters}.
   #
   # system_prompt_no_reference: |
-  #   You are a strict grader. No ground truth is provided. Judge the
-  #   output's correctness, relevance, and clarity as a response to the
-  #   input. Return a score 1-5 with a one-sentence explanation.
+  #   You are an expert evaluator. You will see a JSON object with the
+  #   fields "input", "output_A", and "output_B". No ground truth is
+  #   provided. Your job is to evaluate the two outputs on ONE specific
+  #   criterion: **{criterion}**.
+  #
+  #   Judge each output as a response to "input" on the criterion below.
+  #
+  #   **Evaluation Guideline — {criterion}:**
+  #   {criterion_description}
+  #
+  #   Score each output ONLY on this specific criterion. Ignore other
+  #   aspects of the outputs that are not relevant to "{criterion}".
+  #
+  #   **Rating Scale:**
+  #   {scale_description}
+  #
+  #   You may reason briefly first. Then output your final scores in
+  #   EXACTLY this format:
+  #   <score_A>X</score_A>
+  #   <score_B>Y</score_B>
+  #   where X and Y are each one of: {score_letters}.
 
-  # --- Verifier-only knobs (llm_as_verifier / pairwise_verifier) ---------
+  # --- Verifier-only knobs (llm_as_verifier) -----------------------------
   # `granularity` (G): number of discrete score letters A..Z used to
-  # extract a logprob distribution. Typical: 8.
-  # `repeats`     (K): number of verifier samples averaged per call.
-  #                    Typical: 1 (fast) to 16 (low-variance).
+  #                    extract a logprob distribution. Typical: 8.
+  # `repeats`     (K): number of verifier samples averaged per
+  #                    pair-criterion call. Typical: 1 (fast) to
+  #                    16 (low-variance).
   # granularity: 8
   # repeats: 1
 
-  # --- Criteria decomposition (llm_as_verifier only) ---------------------
-  # Splits scoring into independent per-criterion calls and averages the
-  # rewards. Each criterion runs its own verifier call, so total cost
-  # scales linearly with len(criteria). Omit for a single holistic score.
-  # The explanation string on each row surfaces the per-criterion values
-  # (e.g. "correctness=6.2, clarity=5.1, completeness=4.8").
+  # --- Criteria decomposition (llm_as_verifier) --------------------------
+  # Per Kwok et al. 2026, a criterion is a {name, description} pair —
+  # `name` labels the dimension and `description` is the long rubric the
+  # verifier reads. Each criterion runs in its own pairwise call and the
+  # per-pair reward is the mean across criteria. Per-row provider calls
+  # = num_pairs * len(criteria) * repeats — watch rate limits and cost
+  # when combining many criteria with high `repeats` or many
+  # experiments. Omit `criteria` for a single holistic call (defaults:
+  # name="correctness" with reference, "overall quality" without).
   #
   # criteria:
-  #   - correctness
-  #   - clarity
-  #   - completeness
+  #   - name: "Factual accuracy"
+  #     description: >
+  #       Compare the output to the expected output and judge whether
+  #       the factual claims it makes (names, dates, numbers, causal
+  #       relationships) are correct. Penalise hallucinated facts and
+  #       contradictions with the ground truth, but do not penalise
+  #       valid paraphrasing or additional correct context.
+  #   - name: "Completeness"
+  #     description: >
+  #       Check whether the output covers every key point present in
+  #       the expected output. A response that gets the gist right but
+  #       omits required details should score lower than one that
+  #       covers all of them, even if both are factually correct.
+  #   - name: "Clarity"
+  #     description: >
+  #       Judge how clearly the output communicates its content:
+  #       sentence structure, organisation, absence of jargon the
+  #       reader would not understand. Ignore correctness here — only
+  #       judge presentation.

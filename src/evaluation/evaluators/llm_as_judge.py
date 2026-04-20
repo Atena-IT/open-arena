@@ -9,7 +9,6 @@ _RETRY_EXCEPTIONS = (OutputParserException,)
 
 from dataclasses import asdict
 
-from src import default_prompts
 from src.evaluation.base import PointwiseEvaluator
 from src.evaluation.types import JudgeResponse
 from src.execution import ExecutionResult
@@ -34,8 +33,8 @@ class LLMAsJudgeEvaluator(PointwiseEvaluator):
         self,
         results: list[ExecutionResult],
         llm_config: dict[str, Any],
-        system_prompt: str = default_prompts["evaluation"]["llm_as_judge"],
-        system_prompt_no_reference: str = default_prompts["evaluation"]["llm_as_judge_no_reference"],
+        system_prompt: str,
+        system_prompt_no_reference: str,
         score_name: str = "evaluation_score",
         max_concurrency: int = 10,
         max_retries: int = 3,

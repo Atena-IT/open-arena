@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
 class DatasetConfig(BaseModel):
@@ -46,23 +46,40 @@ class ExperimentConfig(BaseModel):
     mcp: list[MCPServer] | None = Field(default=None)
 
 
+class CriterionConfig(BaseModel):
+    """A single evaluation criterion as in Kwok et al. 2026.
+
+    `name` is the short label (e.g. "Root Cause Analysis") shown in the
+    prompt header. `description` is the long rubric paragraph the verifier
+    reads to decide how to score along this dimension.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+
+
 class EvaluationConfig(BaseModel):
     method: str = Field(..., min_length=1)
     litellm: LiteLLMConfig = Field(...)
     score_name: str | None = Field(default="evaluation_score")
     max_concurrency: int | None = Field(default=10, ge=1)
-    system_prompt: str | None = Field(
-        default=None,
+    system_prompt: str = Field(
+        ...,
+        min_length=1,
         description=(
-            "Override the judge system prompt (reference mode). If omitted, "
-            "the evaluator's default from src/prompts.default.yaml is used."
+            "System prompt used in reference mode (when the row has a "
+            "non-empty expected_output). Required — see config.example.yaml "
+            "for ready-to-copy templates per evaluator method."
         ),
     )
-    system_prompt_no_reference: str | None = Field(
-        default=None,
+    system_prompt_no_reference: str = Field(
+        ...,
+        min_length=1,
         description=(
-            "Override the judge system prompt used when a row has no "
-            "expected_output. If omitted, the evaluator's default is used."
+            "System prompt used when the row has no expected_output. "
+            "Required — see config.example.yaml for ready-to-copy templates."
         ),
     )
     granularity: int | None = Field(
@@ -70,31 +87,51 @@ class EvaluationConfig(BaseModel):
         ge=2,
         le=26,
         description=(
-            "Verifier methods only ('llm_as_verifier', 'pairwise_verifier'): "
-            "number of score letters (A..) used for logprob-based scoring. "
-            "Typical: 8."
+            "'llm_as_verifier' only: number of score letters (A..) used "
+            "for logprob-based scoring (G). Typical: 8."
         ),
     )
     repeats: int | None = Field(
         default=None,
         ge=1,
         description=(
-            "Verifier methods only ('llm_as_verifier', 'pairwise_verifier'): "
-            "number of repeated verification samples to average (K). "
-            "Typical: 1-16."
+            "'llm_as_verifier' only: number of repeated verification "
+            "samples to average per pair-criterion call (K). Typical: 1-16."
         ),
     )
-    criteria: list[str] | None = Field(
+    criteria: list[CriterionConfig] | None = Field(
         default=None,
         min_length=1,
         description=(
-            "Verifier method only ('llm_as_verifier'): criterion names to "
-            "decompose scoring over (C). Each criterion is scored in its "
-            "own verifier call; the final reward is the arithmetic mean "
-            "across criteria. Omit for a single holistic score. "
-            "Example: ['correctness', 'clarity', 'completeness']."
+            "'llm_as_verifier' only: list of criteria to decompose scoring "
+            "over (C). Each item is {name, description} where `description` "
+            "is the long rubric paragraph the verifier reads (Kwok et al. "
+            "2026). Each criterion is scored in its own pairwise call and "
+            "the per-pair reward is the mean across criteria. Omit for a "
+            "single holistic call."
         ),
     )
+    max_retries: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "'llm_as_judge' only: retry budget on structured-output parse "
+            "failures (OutputParserException). Default: 3."
+        ),
+    )
+
+    @field_validator("criteria", mode="before")
+    @classmethod
+    def _reject_string_criteria(cls, v):
+        # Catch the common foot-gun of `criteria: ["correctness", "clarity"]`
+        # left over from the pre-decomposition format and surface a clear
+        # error instead of an opaque pydantic validation message.
+        if isinstance(v, list) and any(isinstance(item, str) for item in v):
+            raise ValueError(
+                "criteria entries must be objects with `name` and `description` "
+                "fields (not bare strings). See config.example.yaml."
+            )
+        return v
 
 
 class ExperimentsFile(BaseModel):

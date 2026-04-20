@@ -58,7 +58,7 @@ The runtime configuration lives in a single YAML file (see `config.example.yaml`
 - the dataset source and Jinja2 templates that shape each row
 - the system prompt applied to every experiment
 - the list of experiments (LiteLLM model config + optional MCP tool servers)
-- the evaluator (e.g. `llm_as_judge`, `pairwise_judge`) and judge model
+- the evaluator (`llm_as_judge` or `llm_as_verifier`) and grader model
 
 The YAML schema is validated against the Pydantic models in `src/config/types.py`.
 
@@ -137,7 +137,7 @@ open-arena/
 │   │   ├── base.py
 │   │   ├── dataset_adapters/        # one file per provider
 │   │   └── langfuse_upload.py
-│   ├── evaluation/                  # evaluators (llm_as_judge, pairwise_judge)
+│   ├── evaluation/                  # evaluators (llm_as_judge, llm_as_verifier)
 │   ├── execution/                   # experiment executor
 │   ├── llms/                        # SimpleCaller + AgentCaller
 │   └── main_cli.py                  # `arena` entrypoint

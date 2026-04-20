@@ -93,17 +93,18 @@ async def _run_evaluations(
         max_concurrency=config.evaluation.max_concurrency or 10,
         callbacks=[CallbackHandler()],
     )
-    if config.evaluation.system_prompt:
-        common_kwargs["system_prompt"] = config.evaluation.system_prompt
-    if config.evaluation.system_prompt_no_reference:
-        common_kwargs["system_prompt_no_reference"] = config.evaluation.system_prompt_no_reference
-    if config.evaluation.method in ("llm_as_verifier", "pairwise_verifier"):
+    common_kwargs["system_prompt"] = config.evaluation.system_prompt
+    common_kwargs["system_prompt_no_reference"] = config.evaluation.system_prompt_no_reference
+    if config.evaluation.method == "llm_as_verifier":
         if config.evaluation.granularity is not None:
             common_kwargs["granularity"] = config.evaluation.granularity
         if config.evaluation.repeats is not None:
             common_kwargs["repeats"] = config.evaluation.repeats
-    if config.evaluation.method == "llm_as_verifier" and config.evaluation.criteria:
-        common_kwargs["criteria"] = config.evaluation.criteria
+        if config.evaluation.criteria:
+            common_kwargs["criteria"] = config.evaluation.criteria
+    elif config.evaluation.method == "llm_as_judge":
+        if config.evaluation.max_retries is not None:
+            common_kwargs["max_retries"] = config.evaluation.max_retries
     all_evals: list[list[EvaluationResult]] = []
 
     if mode == "pointwise":
@@ -136,19 +137,22 @@ def _group_by_item(
     groups: dict[str, dict[str, ExecutionResult]] = {}
     for exp_config, results in zip(experiments, all_results):
         for r in results:
-            key = r.metadata.get("lf_item_id") or r.input
-            groups.setdefault(key, {})[exp_config.name] = r
+            groups.setdefault(r.metadata["lf_item_id"], {})[exp_config.name] = r
     return list(groups.values())
 
 
 def _log_summary(name: str, eval_results: list[EvaluationResult]) -> None:
     scored = sum(1 for r in eval_results if r.score is not None)
     errors = sum(1 for r in eval_results if r.error is not None)
-    avg = sum(r.score for r in eval_results if r.score is not None) / scored if scored else 0
-    if errors:
-        _logger.warning(f"'{name}': {scored} scored (avg: {avg:.2f}), {errors} errors")
+    if scored:
+        avg = sum(r.score for r in eval_results if r.score is not None) / scored
+        msg = f"'{name}': {scored} scored (avg: {avg:.2f})"
     else:
-        _logger.info(f"'{name}': {scored} scored (avg: {avg:.2f})")
+        msg = f"'{name}': 0 scored"
+    if errors:
+        _logger.warning(f"{msg}, {errors} errors")
+    else:
+        _logger.info(msg)
 
 
 @click.command()

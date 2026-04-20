@@ -18,11 +18,7 @@
 
 ## Running instructions
 
-- Preferred way for this branch:
-  ```sh
-  python -m src.main
-  ```
-- Packaged Open Arena CLI entry point:
+- Preferred invocation (packaged CLI entry point):
   ```sh
   arena --config <config.yaml>
   ```
@@ -41,12 +37,12 @@
 ## Project structure
 
 - `src/main_cli.py`: CLI runner (loads config, uploads the dataset to Langfuse unless `--skip-upload`, runs experiments, runs evaluation).
-- `src/config/types.py`: Pydantic schema for the YAML file (`ExperimentsFile`, dataset types/formats, MCP config).
-- `src/datasets/`: readers + loaders + item models.
-  - `readers/`: dataset readers for different formats (e.g. csv, excel).
-  - `item_models/`: dataset item types (implement `input()` and `expected_output()`).
-  - `loaders/`: load from files and (optionally) upload to Langfuse.
-- `src/llms/`: LiteLLM/LangChain/LangGraph client, optional MCP tool integration.
-- `src/execution/`: executors (generic/in-memory vs Langfuse-backed).
-- `src/evaluation/`: evaluators and scoring methods (e.g., `llm_as_judge`).
-- `src/prompts.default.yaml`: default prompt.
+- `src/config/types.py`: Pydantic schema for the YAML file (`ExperimentsFile`, dataset/experiment/evaluation config, MCP server config).
+- `src/datasets/`:
+  - `base.py`: `Dataset` base class + Jinja2 template rendering into `(input, expected_output, metadata)` rows.
+  - `dataset_adapters/`: one module per provider (`local`, `huggingface`, `langfuse`, `langsmith`, `phoenix`, `opik`, `braintrust`, `weave`, `mlflow`).
+  - `langfuse_upload.py`: upload rows to Langfuse (or attach to an existing dataset via `--skip-upload`).
+- `src/llms/`: `LLMCaller` base plus `SimpleCaller` (ChatLiteLLM) and `AgentCaller` (LangGraph ReAct + MCP tools).
+- `src/execution/`: `Executor` that iterates the dataset, calls the configured LLM per row, and wraps each call in a Langfuse span linked to the uploaded dataset item.
+- `src/evaluation/`: `PointwiseEvaluator` / `GroupEvaluator` base classes plus `llm_as_judge` (pointwise, structured JSON) and `llm_as_verifier` (group, pairwise logprob-based).
+- Evaluator prompts live in the user's `config.yaml` (`evaluation.system_prompt` / `system_prompt_no_reference`); see `config.example.yaml` for ready-to-copy templates.

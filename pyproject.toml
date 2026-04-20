@@ -17,40 +17,31 @@ classifiers = [
     "Environment :: Console",
 ]
 dependencies = [
-    "fastapi",
-    "fastapi-mcp",
-    "fastmcp",
     "langchain",
     "langchain-core",
     "langchain-litellm",
     "langchain-mcp-adapters",
     "arize-phoenix-client",
     "braintrust",
+    # Constrain chardet to the range `requests` certifies (>=3.0.2,<6.0.0):
+    # without this, polyfile-weave (via weave) pulls chardet 7.x, which
+    # triggers a RequestsDependencyWarning on every import of `requests`.
+    "chardet>=5.2,<6",
     "langfuse>=3.10.1",
     "langgraph>=0.6.6",
     "langsmith",
     "litellm>=1.80.15",
     "mlflow>=3.0",
     "opik",
-    "matplotlib",
-    "networkx",
     "openai",
-    "openpyxl",
-    "opentelemetry-api",
-    "opentelemetry-exporter-otlp",
-    "opentelemetry-sdk",
     "datasets",
     "jinja2",
     "polars",
     "fastexcel",
-    "playwright",
     "pydantic>=2",
     "python-dotenv",
     "pyyaml",
-    "streamlit",
     "weave",
-    "uvicorn",
-    "xlsxwriter>=3.2.9",
 ]
 
 [project.scripts]
@@ -67,9 +58,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-
-[tool.setuptools.package-data]
-"src" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -90,7 +90,8 @@ class PointwiseEvaluator(Evaluator):
                 eval_results.append(await self._evaluate_one(result))
                 pbar.update(1)
 
-        await asyncio.gather(*[_worker() for _ in range(self.max_concurrency)])
+        worker_count = min(self.max_concurrency, len(self.results))
+        await asyncio.gather(*[_worker() for _ in range(worker_count)])
         pbar.close()
 
         self.langfuse.flush()
@@ -166,8 +167,6 @@ class GroupEvaluator(Evaluator):
         raise NotImplementedError
 
     async def evaluate(self) -> list[EvaluationResult]:
-        self._judge_semaphore = asyncio.Semaphore(self.max_concurrency)
-
         queue: asyncio.Queue[dict[str, ExecutionResult]] = asyncio.Queue()
         for g in self.groups:
             queue.put_nowait(g)
@@ -184,7 +183,8 @@ class GroupEvaluator(Evaluator):
                 all_results.extend(await self._evaluate_group(group))
                 pbar.update(1)
 
-        await asyncio.gather(*[_worker() for _ in range(self.max_concurrency)])
+        worker_count = min(self.max_concurrency, len(self.groups))
+        await asyncio.gather(*[_worker() for _ in range(worker_count)])
         pbar.close()
 
         self.langfuse.flush()

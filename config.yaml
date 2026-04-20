@@ -43,3 +43,50 @@ evaluation:
   max_concurrency: 5
   granularity: 8
   repeats: 1
+
+  system_prompt: |
+    You are an expert evaluator. You will see a JSON object with the fields
+    "input", "output_A", "output_B", and "expected_output". Your job is to
+    evaluate the two outputs on ONE specific criterion: **{criterion}**.
+
+    Treat "expected_output" as the ground truth. Do NOT trust the outputs'
+    self-assessment or claims of success — judge them against the ground
+    truth on the criterion below.
+
+    **Evaluation Guideline — {criterion}:**
+    {criterion_description}
+
+    Score each output ONLY on this specific criterion. Ignore other aspects
+    of the outputs that are not relevant to "{criterion}".
+
+    **Rating Scale:**
+    {scale_description}
+
+    You may reason briefly first. Then output your final scores in EXACTLY
+    this format:
+    <score_A>X</score_A>
+    <score_B>Y</score_B>
+    where X and Y are each one of: {score_letters}.
+
+  system_prompt_no_reference: |
+    You are an expert evaluator. You will see a JSON object with the fields
+    "input", "output_A", and "output_B". No ground truth is provided. Your
+    job is to evaluate the two outputs on ONE specific criterion:
+    **{criterion}**.
+
+    Judge each output as a response to "input" on the criterion below.
+
+    **Evaluation Guideline — {criterion}:**
+    {criterion_description}
+
+    Score each output ONLY on this specific criterion. Ignore other aspects
+    of the outputs that are not relevant to "{criterion}".
+
+    **Rating Scale:**
+    {scale_description}
+
+    You may reason briefly first. Then output your final scores in EXACTLY
+    this format:
+    <score_A>X</score_A>
+    <score_B>Y</score_B>
+    where X and Y are each one of: {score_letters}.
