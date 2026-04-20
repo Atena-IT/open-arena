@@ -14,6 +14,12 @@
 # unknown fields inside any `litellm:` block are forwarded to LiteLLM via
 # `model_kwargs` (so things like `reasoning_effort`, `seed`,
 # `parallel_tool_calls`, `thinking`, ... just work).
+#
+# CLI flags:
+#   --skip-upload        reuse an existing Langfuse dataset (don't re-upload rows)
+#   --fail-fast          re-raise on the first row/eval failure instead of
+#                        recording the error and continuing
+#   --debug / -v         enable DEBUG-level logging
 # =========================================================================
 
 
@@ -230,6 +236,10 @@ experiments:
       model: "gpt-4o-mini"            # required; LiteLLM model id
       temperature: 0.3                # any standard LiteLLM kwarg is supported
       max_tokens: 256
+    # timeout_s: 60                   # optional per-row wall-clock timeout;
+                                      # rows exceeding it fail with a timeout
+                                      # error (and are re-raised under
+                                      # `arena --fail-fast`)
 
   # ---------------- Local Ollama model -----------------------------------
   - name: "llama3.2-local"
@@ -317,6 +327,11 @@ evaluation:
 
   # Max concurrent judge calls. Tune for rate limits.
   max_concurrency: 5
+
+  # Optional per-item wall-clock timeout for evaluator calls (seconds).
+  # Items that exceed it receive score=None and an "evaluator timeout"
+  # error instead of hanging a worker.
+  # timeout_s: 60
 
   # --- Prompts (both required) -------------------------------------------
   # Both evaluator methods consume two prompts:

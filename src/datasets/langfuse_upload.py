@@ -12,6 +12,19 @@ from src.datasets.base import Row
 
 _logger = logging.getLogger(__name__)
 _MISSING_PREVIEW_LENGTH = 50
+_RESERVED_METADATA_KEYS = ("lf_item_id", "lf_dataset_id", "lf_dataset_name")
+
+
+def _warn_on_reserved_keys(rows: list[Row]) -> None:
+    """Warn if rows already carry keys we will overwrite on upload."""
+    if not rows:
+        return
+    collisions = {k for k in _RESERVED_METADATA_KEYS if k in (rows[0][2] or {})}
+    if collisions:
+        _logger.warning(
+            f"Row metadata contains reserved key(s) {sorted(collisions)}; "
+            "these will be overwritten by Langfuse-assigned ids."
+        )
 
 
 def _ensure_dataset(langfuse, name: str, description: str = "") -> None:
@@ -38,6 +51,7 @@ async def upload_rows(
         _logger.warning("No rows to upload to Langfuse")
         return rows
 
+    _warn_on_reserved_keys(rows)
     langfuse = get_client()
     _ensure_dataset(langfuse, dataset_name, description)
 
@@ -109,6 +123,7 @@ def attach_existing_dataset(rows: Iterable[Row], dataset_name: str) -> list[Row]
     if not rows:
         return rows
 
+    _warn_on_reserved_keys(rows)
     langfuse = get_client()
     _logger.info(f"Loading existing Langfuse dataset: {dataset_name}")
     remote = langfuse.get_dataset(dataset_name)

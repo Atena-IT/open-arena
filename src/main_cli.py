@@ -41,7 +41,9 @@ def _load_rows(config: ExperimentsFile) -> list[Row]:
 
 
 
-async def _run_experiments(config: ExperimentsFile, rows: list[Row]) -> list[list[ExecutionResult]]:
+async def _run_experiments(
+    config: ExperimentsFile, rows: list[Row], fail_fast: bool = False
+) -> list[list[ExecutionResult]]:
     _logger.info(f"Running {len(config.experiments)} experiments")
     all_results: list[list[ExecutionResult]] = []
 
@@ -68,6 +70,8 @@ async def _run_experiments(config: ExperimentsFile, rows: list[Row]) -> list[lis
                 system_prompt=config.system_prompt,
                 experiment_name=exp_config.name,
                 experiment_description=f"Experiment: {exp_config.name} with model {exp_config.litellm.model}",
+                fail_fast=fail_fast,
+                timeout_s=exp_config.timeout_s,
             )
             results = await executor.execute()
 
@@ -95,6 +99,8 @@ async def _run_evaluations(
     )
     common_kwargs["system_prompt"] = config.evaluation.system_prompt
     common_kwargs["system_prompt_no_reference"] = config.evaluation.system_prompt_no_reference
+    if config.evaluation.timeout_s is not None:
+        common_kwargs["timeout_s"] = config.evaluation.timeout_s
     if config.evaluation.method == "llm_as_verifier":
         if config.evaluation.granularity is not None:
             common_kwargs["granularity"] = config.evaluation.granularity
@@ -158,8 +164,12 @@ def _log_summary(name: str, eval_results: list[EvaluationResult]) -> None:
 @click.command()
 @click.option("--config", "-c", "config_path", required=True, type=click.Path(exists=True), help="Path to YAML configuration file")
 @click.option("--skip-upload", is_flag=True, default=False, help="Skip dataset upload (reuse existing Langfuse dataset)")
-def main(config_path: str, skip_upload: bool):
+@click.option("--fail-fast", is_flag=True, default=False, help="Re-raise on the first row failure instead of recording the error and continuing")
+@click.option("--debug", "-v", is_flag=True, default=False, help="Enable DEBUG-level logging")
+def main(config_path: str, skip_upload: bool, fail_fast: bool, debug: bool):
     """Run the Open Arena CLI workflow from a YAML configuration file."""
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     try:
         _logger.info(f"Loading configuration from: {config_path}")
         try:
@@ -179,7 +189,7 @@ def main(config_path: str, skip_upload: bool):
                 rows = attach_existing_dataset(rows, config.dataset.name)
             else:
                 rows = await upload_rows(rows, dataset_name=config.dataset.name, description=config.dataset.description or "")
-            results = await _run_experiments(config, rows)
+            results = await _run_experiments(config, rows, fail_fast=fail_fast)
             await _run_evaluations(config, results)
             get_client().flush()
 

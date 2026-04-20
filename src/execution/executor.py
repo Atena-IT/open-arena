@@ -43,6 +43,8 @@ class Executor:
         experiment_name: str,
         experiment_description: str | None = None,
         max_concurrency: int = 50,
+        fail_fast: bool = False,
+        timeout_s: float | None = None,
     ):
         self.dataset = dataset
         self.client = llm_client
@@ -52,6 +54,8 @@ class Executor:
             experiment_description or f"Experiment with {llm_client.llm_config['model']}"
         )
         self.max_concurrency = max_concurrency
+        self.fail_fast = fail_fast
+        self.timeout_s = timeout_s
         self._langfuse = get_client()
 
     async def execute(self) -> list[ExecutionResult]:
@@ -137,12 +141,15 @@ class Executor:
     async def _call_llm(self, input_: str, expected: str, metadata: dict[str, Any]) -> ExecutionResult:
         model = self.client.llm_config["model"]
         try:
-            output, trajectory = await self.client.achat_with_trajectory(
+            coro = self.client.achat_with_trajectory(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": input_},
                 ]
             )
+            if self.timeout_s is not None:
+                coro = asyncio.wait_for(coro, timeout=self.timeout_s)
+            output, trajectory = await coro
             return ExecutionResult(
                 input=input_,
                 expected_output=expected,
@@ -154,6 +161,8 @@ class Executor:
             )
         except Exception as e:
             _logger.error(f"Execution failed: {e}")
+            if self.fail_fast:
+                raise
             return ExecutionResult(
                 input=input_,
                 expected_output=expected,

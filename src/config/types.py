@@ -44,6 +44,11 @@ class ExperimentConfig(BaseModel):
     name: str = Field(..., min_length=1)
     litellm: LiteLLMConfig = Field(...)
     mcp: list[MCPServer] | None = Field(default=None)
+    timeout_s: float | None = Field(
+        default=None,
+        gt=0,
+        description="Per-row wall-clock timeout for LLM calls. Row fails with a timeout error if exceeded.",
+    )
 
 
 class CriterionConfig(BaseModel):
@@ -118,6 +123,11 @@ class EvaluationConfig(BaseModel):
             "'llm_as_judge' only: retry budget on structured-output parse "
             "failures (OutputParserException). Default: 3."
         ),
+    )
+    timeout_s: float | None = Field(
+        default=None,
+        gt=0,
+        description="Per-item wall-clock timeout for evaluator calls. Item fails with a timeout error if exceeded.",
     )
 
     @field_validator("criteria", mode="before")

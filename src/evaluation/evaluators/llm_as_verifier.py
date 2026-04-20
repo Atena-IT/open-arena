@@ -101,8 +101,14 @@ class LLMAsVerifierEvaluator(GroupEvaluator):
         score_name: str = "verifier_score",
         max_concurrency: int = 10,
         callbacks: list[BaseCallbackHandler] | None = None,
+        timeout_s: float | None = None,
     ):
-        super().__init__(groups=groups, score_name=score_name, max_concurrency=max_concurrency)
+        super().__init__(
+            groups=groups,
+            score_name=score_name,
+            max_concurrency=max_concurrency,
+            timeout_s=timeout_s,
+        )
         # Tools would derail the `<score_A>X</score_A><score_B>Y</score_B>`
         # output contract the extractor depends on, so strip them up front.
         coerced = _coerce_ollama_to_openai_compat(

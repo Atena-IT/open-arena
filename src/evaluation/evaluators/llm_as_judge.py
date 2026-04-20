@@ -39,8 +39,14 @@ class LLMAsJudgeEvaluator(PointwiseEvaluator):
         max_concurrency: int = 10,
         max_retries: int = 3,
         callbacks: list[BaseCallbackHandler] | None = None,
+        timeout_s: float | None = None,
     ):
-        super().__init__(results=results, score_name=score_name, max_concurrency=max_concurrency)
+        super().__init__(
+            results=results,
+            score_name=score_name,
+            max_concurrency=max_concurrency,
+            timeout_s=timeout_s,
+        )
         self.system_prompt = system_prompt
         self.system_prompt_no_reference = system_prompt_no_reference
         self._callbacks = list(callbacks or [])

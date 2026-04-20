@@ -18,13 +18,25 @@ Mode = Literal["pointwise", "group"]
 class Evaluator(ABC):
     """Base evaluator. Subclasses come in two shapes — see `PointwiseEvaluator`
     and `GroupEvaluator`. The `mode` class attribute tells the runner which
-    shape to feed it."""
+    shape to feed it.
+
+    Score contract: `_score` / `_score_group` must return floats in [0, 1]
+    (or `None` on failure). Built-in evaluators normalise to this range so
+    scores are comparable across methods in Langfuse — custom subclasses
+    must follow the same contract.
+    """
 
     mode: ClassVar[Mode]
 
-    def __init__(self, score_name: str = "evaluation_score", max_concurrency: int = 10):
+    def __init__(
+        self,
+        score_name: str = "evaluation_score",
+        max_concurrency: int = 10,
+        timeout_s: float | None = None,
+    ):
         self.score_name = score_name
         self.max_concurrency = max_concurrency
+        self.timeout_s = timeout_s
         self.langfuse = get_client()
 
     @abstractmethod
@@ -59,8 +71,11 @@ class PointwiseEvaluator(Evaluator):
         results: list[ExecutionResult],
         score_name: str = "evaluation_score",
         max_concurrency: int = 10,
+        timeout_s: float | None = None,
     ):
-        super().__init__(score_name=score_name, max_concurrency=max_concurrency)
+        super().__init__(
+            score_name=score_name, max_concurrency=max_concurrency, timeout_s=timeout_s
+        )
         self.results = results
 
     @abstractmethod
@@ -107,12 +122,18 @@ class PointwiseEvaluator(Evaluator):
             name="evaluation-item-run",
             input={"input": result.input, "expected_output": result.expected_output, "output": result.output},
         ) as span:
-            score, explanation, error = await self._score(
-                input=result.input,
-                output=result.output or "",
-                expected_output=result.expected_output or None,
-                trajectory=result.trajectory,
-            )
+            try:
+                coro = self._score(
+                    input=result.input,
+                    output=result.output or "",
+                    expected_output=result.expected_output or None,
+                    trajectory=result.trajectory,
+                )
+                if self.timeout_s is not None:
+                    coro = asyncio.wait_for(coro, timeout=self.timeout_s)
+                score, explanation, error = await coro
+            except asyncio.TimeoutError:
+                score, explanation, error = None, None, f"evaluator timeout after {self.timeout_s}s"
             eval_result = EvaluationResult(
                 input=result.input,
                 expected_output=result.expected_output,
@@ -151,8 +172,11 @@ class GroupEvaluator(Evaluator):
         groups: list[dict[str, ExecutionResult]],
         score_name: str = "evaluation_score",
         max_concurrency: int = 10,
+        timeout_s: float | None = None,
     ):
-        super().__init__(score_name=score_name, max_concurrency=max_concurrency)
+        super().__init__(
+            score_name=score_name, max_concurrency=max_concurrency, timeout_s=timeout_s
+        )
         self.groups = groups
 
     @abstractmethod
@@ -206,12 +230,18 @@ class GroupEvaluator(Evaluator):
             },
         ) as span:
             trajectories = {m: r.trajectory for m, r in group.items() if r.trajectory}
-            scores, explanation, error = await self._score_group(
-                input=input_,
-                outputs={m: (r.output or "") for m, r in group.items()},
-                expected_output=expected,
-                trajectories=trajectories or None,
-            )
+            try:
+                coro = self._score_group(
+                    input=input_,
+                    outputs={m: (r.output or "") for m, r in group.items()},
+                    expected_output=expected,
+                    trajectories=trajectories or None,
+                )
+                if self.timeout_s is not None:
+                    coro = asyncio.wait_for(coro, timeout=self.timeout_s)
+                scores, explanation, error = await coro
+            except asyncio.TimeoutError:
+                scores, explanation, error = None, None, f"evaluator timeout after {self.timeout_s}s"
             if error:
                 _logger.error(f"Group evaluation error: {error}")
             span.update(
