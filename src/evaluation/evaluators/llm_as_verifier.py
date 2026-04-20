@@ -318,6 +318,11 @@ def _coerce_ollama_to_openai_compat(cfg: dict[str, Any]) -> dict[str, Any]:
     (>= 0.12.11) returns them on `/v1/chat/completions`. Rewriting the
     provider prefix to `openai/` with `api_base=<ollama>/v1` lets the
     params flow through untouched.
+
+    The user may have supplied the native Ollama `api_base`
+    (`http://host:11434`) for their experiments; in that case we append
+    `/v1` so the OpenAI-compat dispatcher hits the right path. If the
+    user already supplied a `/v1` base we leave it alone.
     """
     model = cfg.get("model")
     if not isinstance(model, str):
@@ -327,9 +332,13 @@ def _coerce_ollama_to_openai_compat(cfg: dict[str, Any]) -> dict[str, Any]:
             bare = model[len(prefix) :]
             rewritten = dict(cfg)
             rewritten["model"] = f"openai/{bare}"
-            rewritten.setdefault(
-                "api_base", os.getenv("OLLAMA_API_BASE", _DEFAULT_OLLAMA_OPENAI_BASE)
-            )
+            supplied = rewritten.get("api_base")
+            if isinstance(supplied, str) and supplied:
+                rewritten["api_base"] = _ensure_openai_compat_base(supplied)
+            else:
+                rewritten["api_base"] = os.getenv(
+                    "OLLAMA_API_BASE", _DEFAULT_OLLAMA_OPENAI_BASE
+                )
             rewritten.setdefault("api_key", "ollama")
             _logger.info(
                 "verifier: routing %s via OpenAI-compat endpoint %s (logprobs support)",
@@ -338,6 +347,15 @@ def _coerce_ollama_to_openai_compat(cfg: dict[str, Any]) -> dict[str, Any]:
             )
             return rewritten
     return cfg
+
+
+def _ensure_openai_compat_base(base: str) -> str:
+    """Append `/v1` to a bare Ollama host URL; leave `/v1`-suffixed URLs
+    alone. Trailing slashes are tolerated on either side."""
+    trimmed = base.rstrip("/")
+    if trimmed.endswith("/v1") or trimmed.endswith("/v1/"):
+        return base
+    return f"{trimmed}/v1"
 
 
 async def _pairwise_reward(

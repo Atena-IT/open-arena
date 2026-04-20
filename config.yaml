@@ -25,9 +25,9 @@ experiments:
       api_base: "http://localhost:11434"
       max_tokens: 256
       temperature: 0.3
-  - name: "qwen3-8b"
+  - name: "qwen3-0.6b"
     litellm:
-      model: "ollama_chat/qwen3:8b"
+      model: "ollama_chat/qwen3:0.6b"
       api_base: "http://localhost:11434"
       max_tokens: 256
       temperature: 0.3
@@ -35,7 +35,7 @@ experiments:
 evaluation:
   method: "llm_as_verifier"
   litellm:
-    model: "ollama_chat/qwen3:8b"
+    model: "ollama_chat/llama3.2:latest"
     api_base: "http://localhost:11434"
     max_tokens: 2048
     temperature: 0.0

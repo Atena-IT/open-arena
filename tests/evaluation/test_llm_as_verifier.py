@@ -283,6 +283,21 @@ def test_coerce_preserves_user_supplied_api_base_and_key():
     assert out["api_key"] == "secret"
 
 
+def test_coerce_appends_v1_when_user_supplies_native_ollama_base():
+    """User-supplied `api_base: http://host:11434` (the native Ollama
+    endpoint) must be rewritten to `.../v1` so OpenAI-compat dispatch
+    hits the right path."""
+    cfg = {"model": "ollama_chat/qwen3:8b", "api_base": "http://localhost:11434"}
+    out = _coerce_ollama_to_openai_compat(cfg)
+    assert out["api_base"] == "http://localhost:11434/v1"
+
+
+def test_coerce_tolerates_trailing_slash_on_user_supplied_base():
+    cfg = {"model": "ollama/llama3", "api_base": "http://localhost:11434/"}
+    out = _coerce_ollama_to_openai_compat(cfg)
+    assert out["api_base"] == "http://localhost:11434/v1"
+
+
 def test_coerce_passes_through_non_ollama_models():
     cfg = {"model": "openai/gpt-4o-mini", "temperature": 0.2}
     assert _coerce_ollama_to_openai_compat(cfg) == cfg
