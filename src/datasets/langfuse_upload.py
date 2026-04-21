@@ -17,9 +17,12 @@ _RESERVED_METADATA_KEYS = ("lf_item_id", "lf_dataset_id", "lf_dataset_name")
 
 def _warn_on_reserved_keys(rows: list[Row]) -> None:
     """Warn if rows already carry keys we will overwrite on upload."""
-    if not rows:
-        return
-    collisions = {k for k in _RESERVED_METADATA_KEYS if k in (rows[0][2] or {})}
+    collisions = {
+        key
+        for _, _, metadata in rows
+        for key in _RESERVED_METADATA_KEYS
+        if key in (metadata or {})
+    }
     if collisions:
         _logger.warning(
             f"Row metadata contains reserved key(s) {sorted(collisions)}; "

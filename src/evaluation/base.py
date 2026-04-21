@@ -113,6 +113,17 @@ class PointwiseEvaluator(Evaluator):
         return eval_results
 
     async def _evaluate_one(self, result: ExecutionResult) -> EvaluationResult:
+        if result.error:
+            return EvaluationResult(
+                input=result.input,
+                expected_output=result.expected_output,
+                output=result.output or "",
+                model_name=result.model_name,
+                experiment_name=result.experiment_name,
+                error=result.error,
+                metadata=dict(result.metadata),
+            )
+
         trace_id = result.metadata.get("lf_trace_id")
         if not trace_id:
             _logger.warning("Result missing 'lf_trace_id' in metadata")

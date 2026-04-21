@@ -41,6 +41,8 @@ class LiteLLMConfig(BaseModel):
 
 
 class ExperimentConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(..., min_length=1)
     litellm: LiteLLMConfig = Field(...)
     mcp: list[MCPServer] | None = Field(default=None)
@@ -66,6 +68,8 @@ class CriterionConfig(BaseModel):
 
 
 class EvaluationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     method: str = Field(..., min_length=1)
     litellm: LiteLLMConfig = Field(...)
     score_name: str | None = Field(default="evaluation_score")
@@ -145,6 +149,8 @@ class EvaluationConfig(BaseModel):
 
 
 class ExperimentsFile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     dataset: DatasetConfig = Field(...)
     system_prompt: str = Field(..., min_length=1)
     experiments: list[ExperimentConfig] = Field(..., min_length=1)

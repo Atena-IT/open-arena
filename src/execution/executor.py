@@ -85,7 +85,8 @@ class Executor:
                 results.append(await self._execute_row(row, run_name, dataset_id))
                 pbar.update(1)
 
-        await asyncio.gather(*[_worker() for _ in range(self.max_concurrency)])
+        worker_count = min(self.max_concurrency, len(self.dataset))
+        await asyncio.gather(*[_worker() for _ in range(worker_count)])
         pbar.close()
         return results
 
@@ -166,7 +167,7 @@ class Executor:
             return ExecutionResult(
                 input=input_,
                 expected_output=expected,
-                output="",
+                output=None,
                 model_name=model,
                 experiment_name=self.experiment_name,
                 error=str(e),
