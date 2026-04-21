@@ -6,7 +6,7 @@ from unittest.mock import patch
 from src.execution import ExecutionResult, Executor
 
 
-_SLOW_LLM_DELAY_S = 0.05
+_SLOW_LLM_DELAY_SECONDS = 0.05
 
 
 class _FailingLLM:
@@ -18,7 +18,7 @@ class _FailingLLM:
 
 
 class _SlowLLM:
-    def __init__(self, delay_s: float = _SLOW_LLM_DELAY_S):
+    def __init__(self, delay_s: float = _SLOW_LLM_DELAY_SECONDS):
         self.llm_config = {"model": "test-model"}
         self.delay_s = delay_s
 
@@ -54,7 +54,7 @@ def test_call_llm_returns_timeout_error_message():
     with patch("src.execution.executor.get_client", return_value=object()):
         executor = Executor(
             dataset=[],
-            llm_client=_SlowLLM(delay_s=_SLOW_LLM_DELAY_S),
+            llm_client=_SlowLLM(delay_s=_SLOW_LLM_DELAY_SECONDS),
             system_prompt="system",
             experiment_name="exp",
             timeout_s=0.01,
