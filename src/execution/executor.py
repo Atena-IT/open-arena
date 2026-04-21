@@ -162,7 +162,7 @@ class Executor:
             )
         except asyncio.TimeoutError:
             error = f"llm timeout after {self.timeout_s}s"
-            _logger.error(error, exc_info=True)
+            _logger.error(error)
             if self.fail_fast:
                 raise
             return ExecutionResult(
