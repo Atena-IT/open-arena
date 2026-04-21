@@ -14,6 +14,15 @@ class _FailingLLM:
         raise RuntimeError("boom")
 
 
+class _SlowLLM:
+    def __init__(self):
+        self.llm_config = {"model": "test-model"}
+
+    async def achat_with_trajectory(self, messages):
+        await asyncio.sleep(0.05)
+        return "ok", []
+
+
 class _DummyProgress:
     def update(self, _count: int) -> None:
         pass
@@ -35,6 +44,22 @@ def test_call_llm_returns_none_output_on_failure():
 
     assert result.output is None
     assert result.error == "boom"
+
+
+def test_call_llm_returns_timeout_error_message():
+    with patch("src.execution.executor.get_client", return_value=object()):
+        executor = Executor(
+            dataset=[],
+            llm_client=_SlowLLM(),
+            system_prompt="system",
+            experiment_name="exp",
+            timeout_s=0.01,
+        )
+
+    result = asyncio.run(executor._call_llm("question", "answer", {"row_id": "1"}))
+
+    assert result.output is None
+    assert result.error == "llm timeout after 0.01s"
 
 
 def test_execute_caps_worker_count_to_dataset_size():

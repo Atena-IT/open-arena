@@ -5,9 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from langfuse import get_client
-from langfuse.api.resources.dataset_run_items.types.create_dataset_run_item_request import (
-    CreateDatasetRunItemRequest,
-)
+from langfuse.api import CreateDatasetRunItemRequest
 from tqdm.asyncio import tqdm as async_tqdm
 
 from src.datasets import Row
@@ -160,6 +158,20 @@ class Executor:
                 model_name=model,
                 experiment_name=self.experiment_name,
                 trajectory=trajectory,
+                metadata=dict(metadata),
+            )
+        except asyncio.TimeoutError:
+            error = f"llm timeout after {self.timeout_s}s"
+            _logger.error(error, exc_info=True)
+            if self.fail_fast:
+                raise
+            return ExecutionResult(
+                input=input_,
+                expected_output=expected,
+                output=None,
+                model_name=model,
+                experiment_name=self.experiment_name,
+                error=error,
                 metadata=dict(metadata),
             )
         except Exception as e:

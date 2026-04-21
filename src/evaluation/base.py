@@ -106,10 +106,11 @@ class PointwiseEvaluator(Evaluator):
                 pbar.update(1)
 
         worker_count = min(self.max_concurrency, len(self.results))
-        await asyncio.gather(*[_worker() for _ in range(worker_count)])
-        pbar.close()
-
-        self.langfuse.flush()
+        try:
+            await asyncio.gather(*[_worker() for _ in range(worker_count)])
+        finally:
+            pbar.close()
+            self.langfuse.flush()
         return eval_results
 
     async def _evaluate_one(self, result: ExecutionResult) -> EvaluationResult:
@@ -219,10 +220,11 @@ class GroupEvaluator(Evaluator):
                 pbar.update(1)
 
         worker_count = min(self.max_concurrency, len(self.groups))
-        await asyncio.gather(*[_worker() for _ in range(worker_count)])
-        pbar.close()
-
-        self.langfuse.flush()
+        try:
+            await asyncio.gather(*[_worker() for _ in range(worker_count)])
+        finally:
+            pbar.close()
+            self.langfuse.flush()
         return all_results
 
     async def _evaluate_group(self, group: dict[str, ExecutionResult]) -> list[EvaluationResult]:
