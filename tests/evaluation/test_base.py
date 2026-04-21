@@ -7,6 +7,10 @@ from src.evaluation.base import GroupEvaluator, PointwiseEvaluator
 from src.execution import ExecutionResult
 
 
+async def _boom(*_args, **_kwargs):
+    raise RuntimeError("boom")
+
+
 class _FakeObservation:
     def update(self, **kwargs) -> None:
         pass
@@ -104,10 +108,7 @@ def test_pointwise_evaluator_closes_progress_and_flushes_on_worker_error():
             )
         ])
 
-    async def boom(_result):
-        raise RuntimeError("boom")
-
-    evaluator._evaluate_one = boom  # type: ignore[method-assign]
+    evaluator._evaluate_one = _boom  # type: ignore[method-assign]
 
     with patch("src.evaluation.base.async_tqdm", return_value=progress):
         try:
@@ -136,10 +137,7 @@ def test_group_evaluator_closes_progress_and_flushes_on_worker_error():
     with patch("src.evaluation.base.get_client", return_value=fake_langfuse):
         evaluator = _CountingGroupEvaluator(groups=[group])
 
-    async def boom(_group):
-        raise RuntimeError("boom")
-
-    evaluator._evaluate_group = boom  # type: ignore[method-assign]
+    evaluator._evaluate_group = _boom  # type: ignore[method-assign]
 
     with patch("src.evaluation.base.async_tqdm", return_value=progress):
         try:
