@@ -86,8 +86,10 @@ class Executor:
                 pbar.update(1)
 
         worker_count = min(self.max_concurrency, len(self.dataset))
-        await asyncio.gather(*[_worker() for _ in range(worker_count)])
-        pbar.close()
+        try:
+            await asyncio.gather(*[_worker() for _ in range(worker_count)])
+        finally:
+            pbar.close()
         return results
 
     async def _execute_row(

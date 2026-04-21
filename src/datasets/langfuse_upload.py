@@ -58,18 +58,15 @@ async def upload_rows(
     langfuse = get_client()
     _ensure_dataset(langfuse, dataset_name, description)
 
-    semaphore = asyncio.Semaphore(max_concurrency)
-
     async def _upload_one(row: Row) -> Row:
         input_, expected, metadata = row
-        async with semaphore:
-            created = await asyncio.to_thread(
-                langfuse.create_dataset_item,
-                dataset_name=dataset_name,
-                input=input_,
-                expected_output=expected,
-                metadata=metadata,
-            )
+        created = await asyncio.to_thread(
+            langfuse.create_dataset_item,
+            dataset_name=dataset_name,
+            input=input_,
+            expected_output=expected,
+            metadata=metadata,
+        )
         return (
             input_,
             expected,
@@ -83,13 +80,38 @@ async def upload_rows(
 
     uploaded: list[Row] = []
     errors: list[str] = []
-    tasks = [_upload_one(r) for r in rows]
-    for coro in async_tqdm.as_completed(tasks, total=len(tasks), desc="Uploading to Langfuse"):
-        try:
-            uploaded.append(await coro)
-        except Exception as e:
-            errors.append(str(e))
-            _logger.error(f"Upload failed for row: {e}")
+    worker_count = min(max_concurrency, len(rows))
+    queue: asyncio.Queue[Row | None] = asyncio.Queue()
+
+    for row in rows:
+        queue.put_nowait(row)
+    for _ in range(worker_count):
+        queue.put_nowait(None)
+
+    progress = async_tqdm(total=len(rows), desc="Uploading to Langfuse")
+
+    async def _worker() -> None:
+        while True:
+            row = await queue.get()
+            try:
+                if row is None:
+                    return
+                try:
+                    uploaded.append(await _upload_one(row))
+                except Exception as e:
+                    errors.append(str(e))
+                    _logger.error(f"Upload failed for row: {e}")
+                finally:
+                    progress.update(1)
+            finally:
+                queue.task_done()
+
+    workers = [asyncio.create_task(_worker()) for _ in range(worker_count)]
+    try:
+        await queue.join()
+        await asyncio.gather(*workers)
+    finally:
+        progress.close()
 
     if errors:
         raise RuntimeError(
