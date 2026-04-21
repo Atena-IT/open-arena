@@ -15,11 +15,12 @@ class _FailingLLM:
 
 
 class _SlowLLM:
-    def __init__(self):
+    def __init__(self, delay_s: float = 0.05):
         self.llm_config = {"model": "test-model"}
+        self.delay_s = delay_s
 
     async def achat_with_trajectory(self, messages):
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(self.delay_s)
         return "ok", []
 
 
@@ -50,7 +51,7 @@ def test_call_llm_returns_timeout_error_message():
     with patch("src.execution.executor.get_client", return_value=object()):
         executor = Executor(
             dataset=[],
-            llm_client=_SlowLLM(),
+            llm_client=_SlowLLM(delay_s=0.05),
             system_prompt="system",
             experiment_name="exp",
             timeout_s=0.01,
