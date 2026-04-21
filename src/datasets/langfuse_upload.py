@@ -88,8 +88,6 @@ async def upload_rows(
     for _ in range(worker_count):
         queue.put_nowait(None)
 
-    progress = async_tqdm(total=len(rows), desc="Uploading to Langfuse")
-
     async def _worker() -> None:
         while True:
             row = await queue.get()
@@ -106,12 +104,19 @@ async def upload_rows(
             finally:
                 queue.task_done()
 
-    workers = [asyncio.create_task(_worker()) for _ in range(worker_count)]
+    workers: list[asyncio.Task] = []
+    progress = None
     try:
+        progress = async_tqdm(total=len(rows), desc="Uploading to Langfuse")
+        workers = [asyncio.create_task(_worker()) for _ in range(worker_count)]
         await queue.join()
         await asyncio.gather(*workers)
     finally:
-        progress.close()
+        for w in workers:
+            if not w.done():
+                w.cancel()
+        if progress is not None:
+            progress.close()
 
     if errors:
         raise RuntimeError(
