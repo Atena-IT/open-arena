@@ -1,92 +1,720 @@
-dataset:
-  name: "MMLU (first 5)"
-  source:
-    provider: "huggingface"
-    repo: "cais/mmlu"
-    config: "all"
-    split: "test"
-  input: |
-    Question: {{ question }}
-    A) {{ choices[0] }}
-    B) {{ choices[1] }}
-    C) {{ choices[2] }}
-    D) {{ choices[3] }}
-    Answer with the letter only.
-  expected_output: "{{ ['A', 'B', 'C', 'D'][answer] }}"
-  limit: 5
+datasets:
+  mmlu_test:
+    type: huggingface
+    path: cais/mmlu
+    name: all
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "MMLUQuestion",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "the question and the four lettered choices"
+          }
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "MMLUAnswer",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": ["A", "B", "C", "D"],
+            "description": "the answer letter"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ ("Question: " ~ question ~ "\nA) " ~ choices[0] ~ "\nB) " ~ choices[1] ~ "\nC) " ~ choices[2] ~ "\nD) " ~ choices[3]) | tojson }}}
+    output_template: |
+      {"answer": {{ ["A", "B", "C", "D"][answer] | tojson }}}
+    generator:
+      temperature: 0.0
+      # Judge-style candidate rewards need the question alongside the
+      # answer to score sensibly; primary `exact_match` masks `question`
+      # back out before comparing.
+      return_inputs: true
+      instructions: |
+        Answer the multiple-choice question. Pick exactly one of A, B, C, or D.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
 
-system_prompt: |
-  You are answering multiple-choice questions. Reply with only a single letter: A, B, C, or D.
+  gsm8k_test:
+    type: huggingface
+    path: gsm8k
+    name: main
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "GSM8KQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the math word problem"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "GSM8KAnswer",
+        "properties": {
+          "answer": {
+            "type": "number",
+            "description": "the final numerical answer (no units, no explanation)"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ question | tojson }}}
+    output_template: |
+      {"answer": {{ (answer.split("####")[-1].strip().replace(",", "") | float) | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Solve the math word problem. Output only the final numerical answer.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # HellaSwag — commonsense continuation, 4-way MCQ.
+  hellaswag_validation:
+    type: huggingface
+    path: Rowan/hellaswag
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "HellaSwagQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the context plus the four lettered endings"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "HellaSwagAnswer",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": ["A", "B", "C", "D"],
+            "description": "the most plausible continuation letter"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (ctx ~ "\nA) " ~ endings[0] ~ "\nB) " ~ endings[1] ~ "\nC) " ~ endings[2] ~ "\nD) " ~ endings[3]) | tojson }}}
+    output_template: |
+      {"answer": {{ ["A", "B", "C", "D"][label | int] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Pick the most plausible continuation. Reply with one letter A, B, C, or D.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # ARC-Challenge — grade-school science MCQ. Choice count varies (3-5),
+  # so we cannot use an enum on the answer field.
+  arc_challenge_test:
+    type: huggingface
+    path: allenai/ai2_arc
+    name: ARC-Challenge
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "ARCQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the science question with lettered choices"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "ARCAnswer",
+        "properties": {
+          "answer": {"type": "string", "description": "the letter or number of the correct choice"}
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {%- set lines = [] -%}
+      {%- for i in range(choices.text | length) -%}
+        {%- set _ = lines.append(choices.label[i] ~ ") " ~ choices.text[i]) -%}
+      {%- endfor -%}
+      {"question": {{ (question ~ "\n" ~ lines | join("\n")) | tojson }}}
+    output_template: |
+      {"answer": {{ answerKey | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Answer the science question. Output only the letter (or number) of the correct choice.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # WinoGrande — pronoun resolution, binary choice.
+  winogrande_validation:
+    type: huggingface
+    path: allenai/winogrande
+    name: winogrande_xl
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "WinoGrandeQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the sentence with a blank `_` and two numbered options"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "WinoGrandeAnswer",
+        "properties": {
+          "answer": {
+            "type": "integer",
+            "enum": [1, 2],
+            "description": "the option that fills the blank"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (sentence ~ "\n1) " ~ option1 ~ "\n2) " ~ option2) | tojson }}}
+    output_template: |
+      {"answer": {{ (answer | int) | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Choose which option fills the blank (marked `_`). Reply with "1" or "2".
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # BoolQ — yes/no reading comprehension.
+  boolq_validation:
+    type: huggingface
+    path: google/boolq
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BoolQQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the passage followed by the yes/no question"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BoolQAnswer",
+        "properties": {
+          "answer": {
+            "type": "boolean",
+            "description": "true for yes, false for no"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (passage ~ "\n\nQuestion: " ~ question ~ "?") | tojson }}}
+    output_template: |
+      {"answer": {{ answer | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Read the passage and answer the question. Reply with "yes" or "no".
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # BIG-Bench Hard (boolean_expressions task — swap `name:` for any of the 23 tasks).
+  bbh_boolean_expressions:
+    type: huggingface
+    path: lukaemon/bbh
+    name: boolean_expressions
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BBHBooleanQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the boolean expression to evaluate"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BBHBooleanAnswer",
+        "properties": {
+          "answer": {
+            "type": "boolean",
+            "description": "the truth value of the boolean expression"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ input | tojson }}}
+    output_template: |
+      {"answer": {{ (target == "True") | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Evaluate the boolean expression. Reply with `True` or `False`.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # DROP — discrete reasoning over paragraphs.
+  drop_validation:
+    type: huggingface
+    path: ucinlp/drop
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "DROPQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the passage followed by the question"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "DROPAnswer",
+        "properties": {
+          "answer": {"type": "string", "description": "a short span (number, date, or phrase) from the passage"}
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (passage ~ "\n\nQuestion: " ~ question) | tojson }}}
+    output_template: |
+      {"answer": {{ answers_spans.spans[0] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Answer with a short span from the passage (a number, date, or short phrase).
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # TruthfulQA (MC1) — pick the single truthful answer; choice count varies.
+  truthfulqa_mc1:
+    type: huggingface
+    path: truthful_qa
+    name: multiple_choice
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "TruthfulQAQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the question and lettered candidate answers"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "TruthfulQAAnswer",
+        "properties": {
+          "answer": {"type": "string", "description": "the letter of the truthful answer"}
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {%- set letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" -%}
+      {%- set lines = [] -%}
+      {%- for i in range(mc1_targets.choices | length) -%}
+        {%- set _ = lines.append(letters[i] ~ ") " ~ mc1_targets.choices[i]) -%}
+      {%- endfor -%}
+      {"question": {{ (question ~ "\n" ~ lines | join("\n")) | tojson }}}
+    output_template: |
+      {%- set letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" -%}
+      {"answer": {{ letters[mc1_targets.labels.index(1)] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Pick the single truthful answer. Reply with the letter only.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # HumanEval — code generation. Real scoring runs unit tests; exact_match is a placeholder.
+  humaneval:
+    type: huggingface
+    path: openai/openai_humaneval
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "HumanEvalQuestion",
+        "properties": {
+          "prompt": {"type": "string", "description": "the function signature and docstring"}
+        },
+        "required": ["prompt"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "HumanEvalAnswer",
+        "properties": {
+          "completion": {"type": "string", "description": "the indented Python function body"}
+        },
+        "required": ["completion"]
+      }
+    input_template: |
+      {"prompt": {{ prompt | tojson }}}
+    output_template: |
+      {"completion": {{ canonical_solution | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Complete the Python function. Output only the indented function body
+        (the code that goes inside the function). Do not repeat the signature
+        or docstring, do not wrap in markdown code fences.
+    reward:
+      name: exact_match
+      out_mask: [prompt, thinking]
+
+  # IFEval — instruction following; rule-based in the original benchmark.
+  ifeval:
+    type: huggingface
+    path: google/IFEval
+    split: train
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "IFEvalQuestion",
+        "properties": {
+          "prompt": {"type": "string", "description": "the original instruction the model must follow"}
+        },
+        "required": ["prompt"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "IFEvalAnswer",
+        "properties": {
+          "response": {"type": "string", "description": "the model's response (gold = the original prompt for reference)"}
+        },
+        "required": ["response"]
+      }
+    input_template: |
+      {"prompt": {{ prompt | tojson }}}
+    output_template: |
+      {"response": {{ prompt | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Follow the instruction exactly as stated.
+    reward:
+      name: lm_as_judge
+      language_model: ollama/llama3.2
+      # Judge sees the full row (prompt + response) and scores constraint compliance.
+      instructions: |
+        Score 0.0–1.0 on how strictly the response satisfies every constraint
+        in the original instruction. The "response" field is gold-prefixed
+        with the original instruction for reference.
+
+  # SQuAD v1.1 — extractive reading comprehension.
+  squad_validation:
+    type: huggingface
+    path: rajpurkar/squad
+    split: validation
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "SQuADQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the context followed by the question"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "SQuADAnswer",
+        "properties": {
+          "answer": {"type": "string", "description": "a short span from the context"}
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (context ~ "\n\nQuestion: " ~ question) | tojson }}}
+    output_template: |
+      {"answer": {{ answers.text[0] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Answer using a short span from the context. Output only the span.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # LogiQA — logical reasoning, 4-way MCQ. `options` strings already include
+  # "A." / "B." / ... prefixes. The dataset's `answer` field is the literal
+  # letter answer.
+  logiqa_test:
+    type: huggingface
+    path: fireworks-ai/logiqa
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "LogiQAQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "context, question and lettered options"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "LogiQAAnswer",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": ["A", "B", "C", "D"],
+            "description": "the answer letter"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (context ~ "\n\nQuestion: " ~ question ~ "\n" ~ options | join("\n")) | tojson }}}
+    output_template: |
+      {"answer": {{ answer | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Read the context and answer with one letter A, B, C, or D.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # BBQ — Bias Benchmark for QA (Age subset; swap `split:` for other
+  # categories: gender_identity, race_ethnicity, religion, ses, ...).
+  bbq_age:
+    type: huggingface
+    path: walledai/BBQ
+    split: age
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BBQQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the context, question and three lettered choices"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "BBQAnswer",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": ["A", "B", "C"],
+            "description": "the answer letter"
+          }
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {"question": {{ (context ~ "\n" ~ question ~ "\nA) " ~ choices[0] ~ "\nB) " ~ choices[1] ~ "\nC) " ~ choices[2]) | tojson }}}
+    output_template: |
+      {"answer": {{ ["A", "B", "C"][answer] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Answer with one letter A, B, or C.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+  # LAMBADA — predict the last word of a passage.
+  lambada_test:
+    type: huggingface
+    path: EleutherAI/lambada_openai
+    name: en
+    split: test
+    streaming: true
+    limit: 5
+    batch_size: 1
+    input_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "LAMBADAQuestion",
+        "properties": {
+          "question": {"type": "string", "description": "the passage with a `___` blank for the missing final word"}
+        },
+        "required": ["question"]
+      }
+    output_schema: |
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "title": "LAMBADAAnswer",
+        "properties": {
+          "answer": {"type": "string", "description": "the missing final word"}
+        },
+        "required": ["answer"]
+      }
+    input_template: |
+      {%- set words = text.split() -%}
+      {"question": {{ ((words[:-1] | join(" ")) ~ " ___") | tojson }}}
+    output_template: |
+      {"answer": {{ text.split()[-1] | tojson }}}
+    generator:
+      temperature: 0.0
+      return_inputs: true
+      instructions: |
+        Predict the missing final word that fills the blank `___`. Reply with one word.
+    reward:
+      name: exact_match
+      out_mask: [question, thinking]
+
+default: mmlu_test
 
 experiments:
-  - name: "llama3.2"
-    litellm:
-      model: "ollama_chat/llama3.2:latest"
-      api_base: "http://localhost:11434"
-      max_tokens: 256
-      temperature: 0.3
-  - name: "qwen3-0.6b"
-    litellm:
-      model: "ollama_chat/qwen3:0.6b"
-      api_base: "http://localhost:11434"
-      max_tokens: 256
-      temperature: 0.3
+  primary_direction: max          # higher reward = better (default)
+  language_models:
+    - ollama/mistral
+    - ollama/llama3.2
+  datasets:
+    - mmlu_test
+    - gsm8k_test
+    - hellaswag_validation
+    - arc_challenge_test
+    - winogrande_validation
+    - boolq_validation
+    - bbh_boolean_expressions
+    - drop_validation
+    - truthfulqa_mc1
+    - humaneval
+    - ifeval
+    - squad_validation
+    - logiqa_test
+    - bbq_age
+    - lambada_test
 
-evaluation:
-  method: "llm_as_verifier"
-  litellm:
-    model: "ollama_chat/llama3.2:latest"
-    api_base: "http://localhost:11434"
-    max_tokens: 2048
-    temperature: 0.0
-  score_name: "verifier_score"
-  max_concurrency: 5
-  granularity: 8
-  repeats: 1
-
-  system_prompt: |
-    You are an expert evaluator. You will see a JSON object with the fields
-    "input", "output_A", "output_B", and "expected_output". Your job is to
-    evaluate the two outputs on ONE specific criterion: **{criterion}**.
-
-    Treat "expected_output" as the ground truth. Do NOT trust the outputs'
-    self-assessment or claims of success — judge them against the ground
-    truth on the criterion below.
-
-    **Evaluation Guideline — {criterion}:**
-    {criterion_description}
-
-    Score each output ONLY on this specific criterion. Ignore other aspects
-    of the outputs that are not relevant to "{criterion}".
-
-    **Rating Scale:**
-    {scale_description}
-
-    You may reason briefly first. Then output your final scores in EXACTLY
-    this format:
-    <score_A>X</score_A>
-    <score_B>Y</score_B>
-    where X and Y are each one of: {score_letters}.
-
-  system_prompt_no_reference: |
-    You are an expert evaluator. You will see a JSON object with the fields
-    "input", "output_A", and "output_B". No ground truth is provided. Your
-    job is to evaluate the two outputs on ONE specific criterion:
-    **{criterion}**.
-
-    Judge each output as a response to "input" on the criterion below.
-
-    **Evaluation Guideline — {criterion}:**
-    {criterion_description}
-
-    Score each output ONLY on this specific criterion. Ignore other aspects
-    of the outputs that are not relevant to "{criterion}".
-
-    **Rating Scale:**
-    {scale_description}
-
-    You may reason briefly first. Then output your final scores in EXACTLY
-    this format:
-    <score_A>X</score_A>
-    <score_B>Y</score_B>
-    where X and Y are each one of: {score_letters}.
+  rewards:
+    # LM-as-judge for semantic correctness — complements the per-dataset
+    # `exact_match` primaries, which are strict on surface form. Catches
+    # cases where the model is right but uses a different formatting
+    # ("twenty" vs `20`, "yes" vs `true`, trailing period, etc.). Adds one
+    # full evaluate() pass per trial, so cost = 2× the primary's LM calls.
+    - name: lm_as_judge
+      alias: lm_correctness
+      language_model: ollama/llama3.2
+      # Keep both `question` and `answer` (judge needs the prompt for context);
+      # drop `thinking` so CoT noise doesn't bias the score.
+      out_mask: [thinking]
+      instructions: |
+        Score 0.0–1.0 on whether the candidate response is correct given the
+        expected response. Ignore formatting, capitalization, units, and
+        surface-form differences — judge only the underlying meaning or
+        value. Return 1.0 for fully correct, 0.0 for clearly wrong, and a
+        partial score in between when the answer is partially right.

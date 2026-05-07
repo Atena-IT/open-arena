@@ -1,185 +1,257 @@
-# Open Arena 🚀
+# Open Arena
 
 <img src="open-arena.png" width="28%" align="right" alt="Open Arena logo">
 
-Open Arena is a lightweight evaluation framework for benchmarking LLMs and tool-enabled workflows against curated datasets. It combines LiteLLM, Langfuse, LangChain, and optional MCP integrations so experiments can be executed, traced, and scored from a single Python project.
+Autoresearch loop for reward-R&D and model selection in the modern
+LM ops stack — between post-training evals and the next round of
+fine-tuning / RL. An agent iterates on candidate rewards built-ins 
+(`exact_match`, `cosine_similarity`, `lm_as_judge`), custom rewards
+under `src/rewards/` (`judge_panel`, `recursive_lm_as_judge`),
+and any `deepeval.metrics` class via the `deep_eval` wrapper.
+Validates them by running an evaluation sweep across a (model ×
+dataset) grid, and keeps the rewards whose rankings best agree with
+each dataset's task-specific primary reward. **Configured entirely
+from YAML**; experiment management on top of `keras-tuner`.
 
-## ✨ Key Features
+Plugs into every major LM provider — OpenAI, Anthropic, Gemini,
+Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure,
+AWS Bedrock, Doubleword, plus self-hosted Ollama / vLLM — and pulls
+eval datasets from Langfuse, LangSmith, Opik, Arize Phoenix, and
+Braintrust (or any HF / local / folder source). Each dataset can run
+as a single-shot `Generator` eval or as a multi-step
+`FunctionCallingAgent` driven by MCP tools.
 
-- **Experiment orchestration**: run multiple model configurations against the same dataset and compare their outputs consistently.
-- **Tool-enabled evaluation**: support MCP-backed tool calling alongside standard LLM completions.
-- **Langfuse observability**: capture dataset uploads, execution traces, experiment runs, and evaluation scores in one place.
-- **Pluggable dataset sources**: fetch evaluation items from local CSV/Excel, HuggingFace, Langfuse, LangSmith, Arize Phoenix, Opik (Comet), Braintrust, Weave, or MLflow — shaped into `(input, expected_output, metadata)` via Jinja2 templates.
-- **Config-driven workflows**: a single `config.yaml` describes the dataset source, templates, experiments, and evaluation in one document.
-- **Extensible Python architecture**: add a new dataset source by dropping a module in `src/datasets/dataset_adapters/`; evaluators and LLM clients are similarly modular.
+## Install
 
-## ⚡ Quickstart
+Requires Python 3.10+ and [`uv`](https://github.com/astral-sh/uv).
 
-### Prerequisites
-
-- Python 3.12+
-- Access to the LLM providers and Langfuse instance you want to use
-- `uv` recommended for environment management
-
-### Install
-
-```sh
-git clone https://github.com/Atena-IT/open-arena.git
-cd open-arena
-uv sync
+```bash
+git clone <this repo> && cd open-arena
+uv sync                # installs deps + the `arena` console script
+cp .env.example .env   # fill in only the providers you actually use
+cp config.example.yaml config.yaml
 ```
 
-For local development, install the project in editable mode so module and entrypoint changes are picked up immediately:
+For local LLMs, point `OLLAMA_API_BASE` at your Ollama server (defaults to
+`http://localhost:11434`). Cloud providers are routed through litellm — any
+`*_API_KEY` variable from `.env.example` works (OpenAI, Anthropic, Gemini,
+Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure, AWS).
 
-```sh
-uv pip install -e .
+## Run
+
+```bash
+arena                          # uses ./config.yaml
+arena -c configs/eval.yaml     # different config
+arena --no-cache               # discard the .kt/ trial cache and start over
 ```
 
-To verify the Open Arena CLI entry point is available:
+`arena --help` for the full option list.
 
-```sh
-arena --help
-```
+## Launch the autoresearch agent
 
-### Configure secrets
+A coding agent (Claude Code, Codex, Cursor, etc.) reads `AGENTS.md` /
+`CLAUDE.md` on startup. Both files instruct the agent: when the user
+asks to **start the research loop**, the agent should open
+`AUTORESEARCH.md`, walk through Setup with you (run tag, branch,
+smoke-tests, baseline `results.tsv`), wait for confirmation, then enter
+the autonomous experiment loop and not stop until you interrupt it.
 
-Copy the example environment file and fill in the required keys:
+Trigger phrases (any of these, or an obvious paraphrase, kicks it off):
 
-```sh
-cp .env.example .env
-```
+- "start the research loop"
+- "begin autoresearch"
+- "run autoresearch"
+- "kick off the autoresearch loop"
 
-At minimum, configure the Langfuse values plus any provider credentials required by the models defined in `config.yaml` or `config.example.yaml`.
+After confirmation, the agent edits `src/rewards/`, commits, runs
+`uv run python -u evaluate.py > .kt/run.log 2>&1`, scores the sweep
+with `analyze.py`, logs to `results.tsv`, and either advances or
+reverts the branch — repeating indefinitely. See `AUTORESEARCH.md` for
+the full protocol.
 
-### Configure experiments
+## Configure
 
-The runtime configuration lives in a single YAML file (see `config.example.yaml` for a fully annotated example). It defines:
-
-- the dataset source and Jinja2 templates that shape each row
-- the system prompt applied to every experiment
-- the list of experiments (LiteLLM model config + optional MCP tool servers)
-- the evaluator (`llm_as_judge` or `llm_as_verifier`) and grader model
-
-The YAML schema is validated against the Pydantic models in `src/config/types.py`.
-
-### Run the pipeline
-
-```sh
-arena --config config.yaml
-```
-
-To reuse an existing Langfuse dataset (skip the upload step):
-
-```sh
-arena --config config.yaml --skip-upload
-```
-
-When `dataset.source.provider` is `"langfuse"`, the upload is skipped automatically — items already live in Langfuse.
-
-## 📚 Dataset Sources
-
-The `dataset.source.provider` field selects which adapter fetches raw rows. Every adapter produces a stream of dicts; two Jinja2 templates (`input` and `expected_output`) turn each dict into a Record. Columns not referenced by a template flow through as metadata.
-
-| Provider | Fetches from | Notes |
-|----------|--------------|-------|
-| `local` | CSV / Excel file on disk | `path`, `format` (`csv` \| `excel`) |
-| `huggingface` | `datasets.load_dataset(repo, config, split)` | Streaming by default; supports `revision` pinning |
-| `langfuse` | `get_client().get_dataset(name).items` | Upload is skipped automatically (items already in Langfuse) |
-| `langsmith` | `Client().list_examples(dataset_name=...)` | Server-side `limit` push-down |
-| `phoenix` | Arize Phoenix `datasets.get_dataset(...)` | Works against self-hosted or cloud; optional `version_id` pin |
-| `opik` | `Opik().get_dataset(name).get_items()` | Comet Opik; server-side `nb_samples` push-down |
-| `braintrust` | `init_dataset(project, name).fetch()` | Requires `project`; optional `version` pin |
-| `weave` | `weave.ref("<name>:<version>").get()` | W&B Weave; requires `project="entity/project"` |
-| `mlflow` | `mlflow.genai.datasets.get_dataset(name=...)` | Requires MLflow 3 with GenAI datasets |
-
-Each adapter supports `limit: N` to cap the number of rows processed — useful for smoke tests. A source config looks like:
+A minimal `config.yaml`:
 
 ```yaml
-dataset:
-  name: "MMLU Anatomy"
-  source:
-    provider: "huggingface"
-    repo: "cais/mmlu"
-    config: "anatomy"
-    split: "test"
-  input: "{{ question }}\nA) {{ choices[0] }}\nB) {{ choices[1] }}..."
-  expected_output: "{{ ['A','B','C','D'][answer] }}"
-  limit: 100
+datasets:
+  mmlu_test:
+    type: huggingface
+    path: cais/mmlu
+    name: all
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages": [{"role": "user", "content": {{ ("Q: " ~ question ~ "\nA) " ~ choices[0] ~ " B) " ~ choices[1] ~ " C) " ~ choices[2] ~ " D) " ~ choices[3]) | tojson }}}]}
+    output_template: |
+      {"role": "assistant", "content": {{ ["A","B","C","D"][answer] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: "Reply with one letter: A, B, C, or D."
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+default: mmlu_test
+
+experiments:
+  language_models:
+    - ollama/mistral
+    - ollama/llama3.2
+  datasets:
+    - mmlu_test
 ```
 
-See `config.example.yaml` for per-provider snippets.
+Each `datasets:` entry carries its own `generator:` (instructions,
+temperature, etc.) and `reward:` because both are task-dependent. The
+sweep iterates the cross product `experiments.language_models ×
+experiments.datasets`.
 
-## 👁️ Observability
+`config.example.yaml` is the full menu — every dataset provider and
+reward type with annotated examples.
 
-Langfuse is used to capture experiment execution and evaluation metadata so model runs can be inspected and compared more easily. Depending on the workflow you use, Open Arena can track:
+### Dataset providers
 
-- uploaded dataset items
-- experiment traces and model outputs
-- evaluation results and judge scores
-- metadata for MCP-enabled executions
+| `type:` | Source |
+|---|---|
+| `huggingface` | HuggingFace `datasets` library |
+| `local` | JSONL / CSV / Parquet on disk |
+| `folder` | Folder of files, one record per file (JSON / YAML / text / markdown) |
+| `langfuse` | [Langfuse](https://langfuse.com) datasets |
+| `langsmith` | [LangSmith](https://smith.langchain.com) datasets |
+| `opik` | [Comet Opik](https://www.comet.com/docs/opik/) datasets |
+| `phoenix` | [Arize Phoenix](https://arize.com/docs/phoenix) datasets |
+| `braintrust` | [Braintrust](https://www.braintrust.dev) datasets |
 
-## ⚠️ Limitations
+All providers stream rows through Jinja2 templates that render to JSON
+matching the input/output data models (the defaults are chat-message
+shapes — a list of `{role, content}` for inputs, a single message for
+outputs).
 
-- **Tracing is Langfuse-only**: experiment traces and evaluation scores are written to Langfuse regardless of which dataset source you use. A Langfuse instance (self-hosted or cloud) is therefore required.
-- **Single dataset per run**: each `config.yaml` describes one dataset. Running multiple datasets means multiple invocations.
+### Rewards
 
-## 🧱 Project Layout
+| `name:` | What it does |
+|---|---|
+| `exact_match` | String-equality on the masked fields |
+| `cosine_similarity` | Cosine over `embedding_model` outputs |
+| `lm_as_judge` | Single-LM judge |
+| `recursive_lm_as_judge` | RLM agent inside a `ProgramAsJudge` — inspects the (gold, prediction) pair with code, recursively delegates semantic comparisons to a sub-LM |
+| `judge_panel` | M small LMs vote in parallel; on disagreement (max-min spread > `agreement_threshold`) a smart LM breaks the tie |
+| `deep_eval` | Wraps any `deepeval.metrics` class (`GEval`, `FaithfulnessMetric`, `ToolCorrectnessMetric`, `PIILeakageMetric`, …). Per-slot mask routing maps `LLMTestCase` slots (input / actual_output / expected_output / context / retrieval_context / tools_called / expected_tools) to data-model fields independently. Install with `uv sync --extra deepeval`. |
 
-```text
-open-arena/
-├── config.yaml
-├── config.example.yaml
-├── pyproject.toml
-├── resources/
-├── src/
-│   ├── config/
-│   ├── datasets/
-│   │   ├── base.py
-│   │   ├── dataset_adapters/        # one file per provider
-│   │   └── langfuse_upload.py
-│   ├── evaluation/                  # evaluators (llm_as_judge, llm_as_verifier)
-│   ├── execution/                   # experiment executor
-│   ├── llms/                        # SimpleCaller + AgentCaller
-│   └── main_cli.py                  # `arena` entrypoint
-└── tests/
-    └── datasets/                    # offline adapter tests (mocked clients)
+**Masking — different rule for comparison vs judge rewards:**
+
+- **Comparison rewards** (`exact_match`, `cosine_similarity`, regex / length
+  checks): pass `in_mask: [content]` so the comparison only sees the answer
+  field — `role` and friends would otherwise drive the score to 0.
+- **Judge rewards** (`lm_as_judge`, `recursive_lm_as_judge`, `judge_panel`,
+  `deep_eval`): leave `in_mask` *unset*. The harness builds the eval
+  program with `Generator(return_inputs=True, …)`, so `y_pred` carries the
+  original input `messages` alongside the answer; the judge needs that
+  prompt to score whether the answer addresses the task. `in_mask: [content]`
+  would discard `messages` and leave the judge grading in a vacuum. See
+  `REWARDS_BUILDING.md` for the full rationale.
+
+### Agent mode (function-calling + MCP)
+
+A dataset that declares an `agent:` block runs as a multi-step
+`FunctionCallingAgent` instead of a single Generator call.
+MCP servers are declared once in a top-level `mcp_servers:` registry
+and referenced by name from each agentic dataset:
+
+```yaml
+mcp_servers:
+  math:
+    transport: stdio
+    command: python
+    args: ["/abs/path/to/math_server.py"]
+  weather:
+    transport: streamable_http
+    url: http://localhost:8000/mcp
+
+datasets:
+  agentic_math_eval:
+    type: folder
+    path: data/agent_cases
+    pattern: "*.json"
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content":{{ question | tojson }}}]}
+    agent:
+      type: function_calling          # only supported value
+      mcp_servers: [math]             # references the registry above
+      max_iterations: 5
+      autonomous: true
+      use_chain_of_thought: true
+      instructions: "Solve step by step using the available tools."
+    reward:
+      name: deep_eval
+      metric: ToolCorrectnessMetric
 ```
 
-## 🧪 Validation
+`agent:` and `generator:` are mutually exclusive on a dataset. Tools
+are loaded from the listed MCP servers at trial-build time via
+`MultiServerMCPClient.get_tools()` so a misconfigured server fails the
+trial fast rather than producing a tool-less agent. Any
+`FunctionCallingAgent` constructor kwarg can be set under `agent:`
+except `language_model`/`tools`/`data_model`/`schema`, which are wired
+from the model and the dataset.
 
-Run the offline test suite (no credentials required — all provider clients are mocked):
+### Experiment-level rewards
 
-```sh
-uv run --with pytest pytest
+Generic rewards that apply to every `(model, dataset)` trial, on top of
+that dataset's primary reward:
+
+```yaml
+experiments:
+  rewards:
+    - name: lm_as_judge
+      alias: lm_judge
+      language_model: ollama/llama3.2
+      # No `in_mask` — judges need the input `messages` (injected via
+      # `return_inputs=True`) alongside the answer to score relevance.
+      instructions: "Score 0.0–1.0 on factual correctness."
+    - name: recursive_lm_as_judge
+      alias: rlm_judge
+      # `language_model` drives code generation + structured submit, so it
+      # must be a capable model — small Ollama models can't do this
+      # reliably. `sub_language_model` (used for `llm_query`) can be cheap.
+      language_model: openai/gpt-4o
+      sub_language_model: openai/gpt-4o-mini
+      max_iterations: 8
+      max_llm_calls: 10
+      instructions: "Score 0.0–1.0 on factual correctness."
 ```
 
-For a quick syntax check:
+Each one renders an extra matrix at the end of the run. Each one also
+costs an additional evaluation pass per trial (the underlying program
+only accepts one reward at compile time), so K experiment rewards = K×
+the model calls of the primary run.
 
-```sh
-uv run python -m compileall src
+The purpose is to test generic open-ended rewards.
+
+## Layout
+
+```
+evaluate.py                           `arena` entrypoint — sweep + result matrices
+program.py                            Editable program graphs: build_program / build_agent
+analyze.py                            Reward-vs-primary diagnostics over the sweep
+src/
+  keras_stub.py                       Lets keras-tuner import without a real keras backend
+  datasets/                           One file per provider + the registry
+  rewards/
+    deep_eval.py                      Wraps any DeepEval metric (per-slot mask routing)
+    judge_panel.py
+    recursive_language_model_reward.py
+config.yaml                           Active config
+config.example.yaml                   Reference config (every provider / reward / agent example)
+.env.example                          Provider env vars
+AGENTS.md / CLAUDE.md                 Notes for AI coding agents
+AUTORESEARCH.md                       Autonomous experiment-loop protocol
 ```
 
-The YAML configuration is validated against `src/config/types.py` at load time, so bad shapes fail fast before any model call is made.
+## License
 
-## 🤝 Contributing
-
-Open issues and pull requests are welcome. Please keep documentation and configuration examples aligned with the current runtime behavior when changing the evaluation pipeline.
-
-Suggested workflow:
-
-1. Fork the repository and create a focused branch from `develop`.
-2. Install dependencies with `uv sync` and configure `.env` from `.env.example`.
-3. Make the smallest possible change that solves the issue.
-4. Run the relevant validation for the area you touched.
-5. Update documentation or examples when behavior changes.
-6. Open a pull request with a clear description of the change.
-
-### Commit Convention
-
-This repository follows **Conventional Commits**. Please use commit messages such as:
-
-- `feat: add structured dataset validation`
-- `fix: handle missing Langfuse dataset items`
-- `docs: expand README contribution guidance`
-
-Using the convention keeps the history easier to scan and makes release or changelog automation more reliable.
+Apache 2.0 — see file headers.

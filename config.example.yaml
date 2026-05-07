@@ -1,468 +1,826 @@
-# =========================================================================
-# Open Arena — example configuration
-# =========================================================================
-# One YAML document describes a single run:
-#   1. fetch a dataset from a provider adapter,
-#   2. shape each row into (input, expected_output, metadata) via two Jinja2
-#      templates,
-#   3. run every experiment (one LLM config + optional MCP tools) over the
-#      dataset,
-#   4. evaluate the results using the configured evaluator.
+# Example configuration for open-arena.
+# Copy to config.yaml, then edit / remove the entries you don't need.
+
+# --- Datasets ---------------------------------------------------------------
+# Each entry under `datasets:` is a named source. The `type:` field selects a
+# provider (see src/datasets/__init__.py:_DATASET_TYPES); every other key is
+# forwarded to that provider's constructor as a kwarg, except for the
+# special keys below which are consumed by evaluate.py.
 #
-# Everything is validated at load via Pydantic. Unknown fields inside the
-# `dataset.source` block are forwarded to the chosen provider adapter;
-# unknown fields inside any `litellm:` block are forwarded to LiteLLM via
-# `model_kwargs` (so things like `reasoning_effort`, `seed`,
-# `parallel_tool_calls`, `thinking`, ... just work).
+# Templates render to JSON. `input_template` builds the program's input
+# (defaults to synalinks.ChatMessages); `output_template` builds the target
+# (defaults to synalinks.ChatMessage — the Generator's default output type).
+# Omitting `output_template` makes the dataset inputs-only; rewards then see
+# `y_true=None` and must handle that case (lm_as_judge does, exact_match
+# doesn't).
 #
-# CLI flags:
-#   --skip-upload        reuse an existing Langfuse dataset (don't re-upload rows)
-#   --fail-fast          re-raise on the first row/eval failure instead of
-#                        recording the error and continuing
-#   --debug / -v         enable DEBUG-level logging
-# =========================================================================
-
-
-# -------------------------------------------------------------------------
-# dataset  (required, single object — only one dataset per run for now)
-# -------------------------------------------------------------------------
-dataset:
-  # Logical name. Used as the Langfuse dataset name; a dataset with this
-  # name is created on first upload and reused on subsequent runs.
-  name: "MMLU Anatomy"
-
-  # Optional human-readable description attached to the Langfuse dataset.
-  description: "MMLU anatomy subset — multiple choice medical QA"
-
-  # --- source: which provider adapter fetches raw rows. --------------------
-  # Dispatch is keyed on `provider`; remaining fields are adapter-specific.
-  # See src/datasets/dataset_adapters/ for all options.
-  source:
-    # "local"        — read a file on disk (csv / excel)
-    # "huggingface"  — load_dataset(repo, config, split[, revision, streaming])
-    # "langfuse"     — fetch items from an existing Langfuse dataset (skips upload)
-    # "langsmith"    — fetch items from an existing LangSmith dataset
-    # "phoenix"      — fetch items from an existing Arize Phoenix dataset
-    # "opik"         — fetch items from an existing Opik (Comet) dataset
-    # "braintrust"   — fetch records from an existing Braintrust dataset
-    # "weave"        — fetch rows from an existing W&B Weave dataset
-    # "mlflow"       — fetch records from an MLflow GenAI evaluation dataset
-    provider: "huggingface"
-
-    # huggingface adapter fields:
-    repo: "cais/mmlu"                 # HF repo id
-    config: "anatomy"                 # subset/config name (omit if the repo has none)
-    split: "test"                     # default: "test"
-    # revision: "main"                # optional; pin to avoid silent upstream changes
-    # streaming: true                 # default true; set false to materialize in memory
-
-  # --- input: Jinja2 template rendered per row. ----------------------------
-  # Any column referenced here is "consumed" as part of the model input.
-  # The rendered string is passed to the model as the user turn.
-  input: |
-    Question: {{ question }}
-    A) {{ choices[0] }}
-    B) {{ choices[1] }}
-    C) {{ choices[2] }}
-    D) {{ choices[3] }}
-    Answer with the letter only.
-
-  # --- expected_output: Jinja2 template rendered per row. ------------------
-  # Produces the ground-truth string used by reference-based evaluators
-  # (`llm_as_judge`, `llm_as_verifier`). Set this to the empty string ("")
-  # to signal "no ground truth" — no-reference prompts will be used
-  # automatically.
-  expected_output: "{{ ['A', 'B', 'C', 'D'][answer] }}"
-
-  # Optional cap on the number of rows processed (useful for smoke tests).
-  limit: 100
-
-# Any dataset column not referenced by either template automatically flows
-# through as metadata on the Langfuse trace (not shown to the model/judge).
-
-# --- Alternative: local CSV / Excel --------------------------------------
-# dataset:
-#   name: "QA Sample"
-#   source:
-#     provider: "local"
-#     path: "resources/data/QA_sample.csv"
-#     format: "csv"                   # "csv" | "excel"
-#   # Local file column headers are exposed using their original names.
-#   # For headers with spaces/case, use bracket access (for example:
-#   # row["Question"], row["Option A"], row["Answer"]). If you prefer
-#   # {{ question }}-style access, use snake_case column headers in the file.
-#   input: |
-#     {{ row["Question"] }}
-#     A) {{ row["Option A"] }}
-#     B) {{ row["Option B"] }}
-#     C) {{ row["Option C"] }}
-#     D) {{ row["Option D"] }}
-#   expected_output: "{{ row["Answer"] }}"
-
-# --- Alternative: existing Langfuse dataset ------------------------------
-# Items come from Langfuse already, so no upload happens. Item fields are
-# exposed to the templates as top-level variables:
-#   - {{ input }}            — whatever was stored (str, dict, list, ...)
-#   - {{ expected_output }}  — same
-#   - metadata keys are spread at the top level (e.g. {{ category }})
-# dataset:
-#   name: "My Eval Run"
-#   source:
-#     provider: "langfuse"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#   input: "{{ input.question }}"     # if input was stored as a dict
-#   expected_output: "{{ expected_output }}"
-
-# --- Alternative: existing LangSmith dataset -----------------------------
-# Items are fetched from LangSmith and then uploaded to Langfuse for
-# tracing. Requires LANGSMITH_API_KEY (and optionally LANGSMITH_ENDPOINT)
-# in the environment. Each example exposes:
-#   - {{ inputs.<key> }}     — inputs dict
-#   - {{ outputs.<key> }}    — outputs dict (may be None)
-#   - metadata keys are spread at the top level
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "langsmith"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#   input: "{{ inputs.question }}"
-#   expected_output: "{{ outputs.answer }}"
-
-# --- Alternative: existing Arize Phoenix dataset -------------------------
-# Fetched via the phoenix client; base_url / api_key fall back to
-# PHOENIX_COLLECTOR_ENDPOINT and PHOENIX_CLIENT_HEADERS when omitted.
-# Each example exposes:
-#   - {{ input.<key> }}      — input dict
-#   - {{ output.<key> }}     — output dict (may be None)
-#   - metadata keys are spread at the top level
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "phoenix"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#     # version_id: "v1"              # optional; pin a dataset version
-#     # base_url: "http://localhost:6006"
-#     # api_key: "..."                # only for Phoenix Cloud
-#   input: "{{ input.question }}"
-#   expected_output: "{{ output.answer }}"
-
-# --- Alternative: existing Opik (Comet) dataset --------------------------
-# Opik dataset items are free-form dicts — reference whatever fields you
-# stored directly (no wrapping `input`/`output` layer). Auth falls back to
-# OPIK_URL_OVERRIDE / OPIK_API_KEY / OPIK_WORKSPACE when omitted.
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "opik"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#     # host: "https://www.comet.com/opik/api"
-#     # api_key: "..."
-#     # workspace: "my-workspace"
-#     # project_name: "my-project"
-#   input: "{{ question }}"            # however you stored it in Opik
-#   expected_output: "{{ expected_output }}"
-
-# --- Alternative: existing Braintrust dataset ----------------------------
-# Braintrust records expose `input`, `expected`, `tags`, and `metadata`.
-# Auth falls back to BRAINTRUST_API_KEY / BRAINTRUST_APP_URL env vars.
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "braintrust"
-#     project: "my-project"           # required; Braintrust project name
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#     # version: "1234"               # optional; pin to a dataset version
-#     # api_key: "..."
-#     # app_url: "https://www.braintrust.dev"
-#     # org_name: "my-org"
-#   input: "{{ input.question }}"     # if input was stored as a dict
-#   expected_output: "{{ expected }}"
-
-# --- Alternative: existing W&B Weave dataset -----------------------------
-# Weave rows are free-form dicts — reference whatever fields you stored.
-# Requires WANDB_API_KEY in the environment.
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "weave"
-#     project: "my-entity/my-project" # required; "<entity>/<project>"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#     # version: "v3"                 # default "latest"; digest or version tag
-#   input: "{{ question }}"           # however you stored it in Weave
-#   expected_output: "{{ answer }}"
-
-# --- Alternative: existing MLflow GenAI evaluation dataset ---------------
-# Requires MLflow 3 with GenAI datasets (Databricks or self-hosted).
-# Records expose `inputs`, `expectations`, and `tags` dicts.
-# Auth falls back to MLFLOW_TRACKING_URI / MLFLOW_REGISTRY_URI env vars.
-# dataset:
-#   name: "MMLU Anatomy"
-#   source:
-#     provider: "mlflow"
-#     dataset_name: "mmlu-anatomy"    # optional; defaults to `name` above
-#     # dataset_id: "..."             # fetch by id instead of name
-#     # tracking_uri: "databricks"
-#     # registry_uri: "databricks-uc"
-#   input: "{{ inputs.question }}"
-#   expected_output: "{{ expectations.answer }}"
-
-
-# -------------------------------------------------------------------------
-# system_prompt  (required)
-# -------------------------------------------------------------------------
-# Applied to every experiment. Not used by evaluators (the evaluator
-# uses the `system_prompt` / `system_prompt_no_reference` defined under
-# `evaluation:` below).
-system_prompt: |
-  You are answering multiple-choice questions. Reply with a single letter: A, B, C, or D.
-
-
-# -------------------------------------------------------------------------
-# experiments  (required, list, min 1)
-# -------------------------------------------------------------------------
-# Each experiment runs the whole dataset once. Two modes are available
-# and chosen automatically:
-#   - SimpleCaller (no tools)    — experiment has no `mcp:` block
-#   - AgentCaller  (tool loop)   — experiment has a non-empty `mcp:` list
+# `generator:` and `agent:` are mutually exclusive — pick the program graph
+# the trial runs:
 #
-# Both modes go through LangChain's ChatLiteLLM, so Langfuse callbacks and
-# extra LiteLLM kwargs (reasoning_effort, parallel_tool_calls, seed,
-# thinking, ...) work identically in both.
+# - `generator:` (per-dataset, optional) is forwarded as kwargs to
+#   `synalinks.Generator(...)` — one LM call per row. Common knobs:
+#   temperature, reasoning_effort, instructions, prompt_template, examples,
+#   use_inputs_schema, use_outputs_schema.
+#
+# - `agent:` (per-dataset, optional) turns the trial into a
+#   `synalinks.FunctionCallingAgent` driven by MCP tools — multi-step
+#   tool/observe/decide loop per row. Servers are declared once under the
+#   top-level `mcp_servers:` registry and referenced by name from each
+#   agentic dataset's `agent.mcp_servers:` list. See the `agentic_math_eval`
+#   example below.
+#
+# `reward:` (per-dataset, required) is the scoring function for this dataset.
+# Either a string (snake_case name of a synalinks.rewards.Reward subclass) or
+# a dict with `name:` plus constructor kwargs. `language_model:` and
+# `embedding_model:` strings are auto-resolved into synalinks instances.
+# Add `direction: min | max` (keras-tuner convention, default `max`) under
+# the dict form when the dataset's primary metric is loss-style — analyze.py
+# and the trial canonicaliser then pick the winning model in the right
+# direction. Per-dataset, so different datasets in the same sweep can mix
+# loss-style and reward-style primaries freely.
+#
+# `repeat:` (per-dataset, optional, default 1) emits each raw example N times
+# in a row before moving on. Setting `repeat == batch_size` makes every batch
+# a group of N rollouts of the same prompt — the GRPO-style RL layout where
+# reward statistics are computed across rollouts of one input.
+
+# --- MCP server registry ----------------------------------------------------
+# Top-level map of {server_name: connection_dict}. Each connection follows
+# one of the synalinks `Connection` TypedDicts — `stdio`,
+# `streamable_http`, `sse`, or `websocket` — discriminated by `transport:`.
+# Servers declared here are not started automatically; they must already
+# be reachable when an agentic trial runs. Datasets opt in via
+# `agent.mcp_servers: [name1, name2]`.
+#
+# Commented out: this section is dormant unless at least one dataset
+# references it. Uncomment alongside the matching dataset block below.
+# mcp_servers:
+#   math:
+#     transport: stdio
+#     command: python
+#     args: ["/abs/path/to/math_server.py"]
+#   weather:
+#     transport: streamable_http
+#     url: http://localhost:8000/mcp
+
+datasets:
+
+  # MMLU multiple-choice via HuggingFace, streamed, capped at 50 items.
+  mmlu_test:
+    type: huggingface
+    path: cais/mmlu
+    name: all                 # HF config name (not the dataset selector)
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": {{ ("Question: " ~ question ~ "\nA) " ~ choices[0] ~ "\nB) " ~ choices[1] ~ "\nC) " ~ choices[2] ~ "\nD) " ~ choices[3] ~ "\n\nAnswer with a single letter A, B, C, or D.") | tojson }}
+          }
+        ]
+      }
+    output_template: |
+      {
+        "role": "assistant",
+        "content": {{ ["A", "B", "C", "D"][answer] | tojson }}
+      }
+    generator:
+      temperature: 0.0
+      instructions: |
+        You are answering a multiple-choice question. Reply with exactly one letter:
+        A, B, C, or D. Do not include any explanation, punctuation, or extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+      # `direction:` (default `max`) is the keras-tuner convention for
+      # ranking. Add `direction: min` to a dataset whose primary metric is
+      # loss-style (cross-entropy, edit distance, harm rate, ...). The
+      # canonical-trial picker and analyze.py both honor it per-dataset,
+      # so a single sweep can mix max-direction and min-direction primaries.
+      # direction: max
+
+  # GSM8K math word problems via HuggingFace (illustrates a different schema
+  # AND a task-specific generator prompt).
+  gsm8k_train:
+    type: huggingface
+    path: gsm8k
+    name: main
+    split: train
+    streaming: true
+    limit: 100
+    batch_size: 4
+    input_template: |
+      {
+        "messages": [
+          {"role": "user", "content": {{ question | tojson }}}
+        ]
+      }
+    output_template: |
+      {
+        "role": "assistant",
+        "content": {{ answer.split("####")[-1].strip() | tojson }}
+      }
+    generator:
+      temperature: 0.0
+      instructions: |
+        Solve the math word problem. Reply with only the final numerical answer —
+        no units, no explanation, no extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # HellaSwag — commonsense continuation, 4-way MCQ.
+  hellaswag_validation:
+    type: huggingface
+    path: Rowan/hellaswag
+    split: validation               # `test` labels are hidden
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": {{ (ctx ~ "\nA) " ~ endings[0] ~ "\nB) " ~ endings[1] ~ "\nC) " ~ endings[2] ~ "\nD) " ~ endings[3]) | tojson }}
+          }
+        ]
+      }
+    output_template: |
+      {"role": "assistant", "content": {{ ["A", "B", "C", "D"][label | int] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Pick the most plausible continuation. Reply with exactly one letter:
+        A, B, C, or D. No explanation, no extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # ARC-Challenge — grade-school science MCQ. Choice count varies (3–5),
+  # so the input template loops over `choices.text` / `choices.label`.
+  arc_challenge_test:
+    type: huggingface
+    path: allenai/ai2_arc
+    name: ARC-Challenge
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {%- set lines = [] -%}
+      {%- for i in range(choices.text | length) -%}
+        {%- set _ = lines.append(choices.label[i] ~ ") " ~ choices.text[i]) -%}
+      {%- endfor -%}
+      {
+        "messages": [
+          {"role": "user", "content": {{ (question ~ "\n" ~ lines | join("\n")) | tojson }}}
+        ]
+      }
+    output_template: |
+      {"role": "assistant", "content": {{ answerKey | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Answer the science question. Reply with only the letter (or number) of the
+        correct choice — no explanation, no extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # WinoGrande — pronoun resolution, binary choice. Answer is "1" or "2".
+  winogrande_validation:
+    type: huggingface
+    path: allenai/winogrande
+    name: winogrande_xl             # other configs: winogrande_{xs,s,m,l}, winogrande_debiased
+    split: validation
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {"role": "user", "content": {{ (sentence ~ "\n1) " ~ option1 ~ "\n2) " ~ option2) | tojson }}}
+        ]
+      }
+    output_template: |
+      {"role": "assistant", "content": {{ answer | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Choose which option fills the blank (marked `_`) in the sentence. Reply
+        with only "1" or "2" — no explanation, no extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # BoolQ — yes/no reading comprehension.
+  boolq_validation:
+    type: huggingface
+    path: google/boolq
+    split: validation
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {"role": "user", "content": {{ (passage ~ "\n\nQuestion: " ~ question ~ "?") | tojson }}}
+        ]
+      }
+    output_template: |
+      {"role": "assistant", "content": {{ ("yes" if answer else "no") | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Read the passage and answer the question. Reply with exactly one word:
+        "yes" or "no" — no explanation, no extra text.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # BIG-Bench Hard — 23 challenging tasks. `lukaemon/bbh` exposes one config
+  # per task; here we sample `boolean_expressions`. Swap `name:` for any of
+  # the other 22 (e.g. `date_understanding`, `causal_judgement`, ...).
+  bbh_boolean_expressions:
+    type: huggingface
+    path: lukaemon/bbh
+    name: boolean_expressions
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content": {{ input | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ target | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Evaluate the boolean expression. Reply with exactly one word — `True` or
+        `False`, with that capitalization — and nothing else.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # DROP — discrete reasoning over paragraphs. Answer is a span/number/date.
+  drop_validation:
+    type: huggingface
+    path: ucinlp/drop
+    split: validation
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content": {{ (passage ~ "\n\nQuestion: " ~ question) | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ answers_spans.spans[0] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Answer the question using a short span from the passage (a number, date, or short
+        phrase). Reply with only the answer — no explanation, no extra text.
+    # NOTE: Official DROP scoring is F1 over normalized spans; `exact_match` is a
+    # stricter approximation. Swap for a custom reward to reproduce the headline metric.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # TruthfulQA (MC1) — pick the single truthful answer. Choice count varies (4–13).
+  truthfulqa_mc1:
+    type: huggingface
+    path: truthful_qa
+    name: multiple_choice
+    split: validation
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {%- set letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" -%}
+      {%- set lines = [] -%}
+      {%- for i in range(mc1_targets.choices | length) -%}
+        {%- set _ = lines.append(letters[i] ~ ") " ~ mc1_targets.choices[i]) -%}
+      {%- endfor -%}
+      {"messages":[{"role":"user","content": {{ (question ~ "\n" ~ lines | join("\n")) | tojson }}}]}
+    output_template: |
+      {%- set letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" -%}
+      {"role":"assistant","content": {{ letters[mc1_targets.labels.index(1)] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Pick the single truthful answer. Reply with exactly one letter — no explanation.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # HumanEval — code generation. Real scoring runs the candidate against unit
+  # tests; `exact_match` here is just a placeholder to wire the dataset up.
+  humaneval:
+    type: huggingface
+    path: openai/openai_humaneval
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content": {{ prompt | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ canonical_solution | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Complete the Python function. Output only the indented function body
+        (the code that goes inside the function). Do not repeat the signature or
+        docstring, do not wrap the output in markdown code fences, do not add
+        any explanation.
+    # NOTE: Use a code-execution reward for the real pass@k metric.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # IFEval — instruction following. Scored by rule-based verifiers in the
+  # original benchmark; we use lm_as_judge here as a rough approximation.
+  ifeval:
+    type: huggingface
+    path: google/IFEval
+    split: train
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content": {{ prompt | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ prompt | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Follow the instruction exactly as stated.
+    reward:
+      name: lm_as_judge
+      language_model: ollama/llama3.2
+      in_mask: [content]
+      instructions: |
+        Score 0.0–1.0 on how strictly the response satisfies every constraint
+        in the original instruction. The "expected" field contains the original
+        instruction for reference.
+
+  # SQuAD v1.1 — extractive reading comprehension.
+  squad_validation:
+    type: huggingface
+    path: rajpurkar/squad
+    split: validation
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {"messages":[{"role":"user","content": {{ (context ~ "\n\nQuestion: " ~ question) | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ answers.text[0] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Answer using a short span from the context. Reply with only the answer span.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # LogiQA — logical reasoning, 4-way MCQ. Using fireworks-ai's Parquet
+  # mirror; `options` strings already include "A." / "B." / ... prefixes.
+  logiqa_test:
+    type: huggingface
+    path: fireworks-ai/logiqa
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": {{ (context ~ "\n\nQuestion: " ~ question ~ "\n" ~ options | join("\n")) | tojson }}
+          }
+        ]
+      }
+    output_template: |
+      {"role":"assistant","content": {{ answer | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Read the context and answer with exactly one letter: A, B, C, or D.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # BBQ — Bias Benchmark for QA. walledai/BBQ is a clean Parquet mirror with
+  # one split per category (lowercase: age, gender_identity, race_ethnicity,
+  # religion, ses, ...). Each example is a 3-way MCQ.
+  bbq_age:
+    type: huggingface
+    path: walledai/BBQ
+    split: age
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": {{ (context ~ "\n" ~ question ~ "\nA) " ~ choices[0] ~ "\nB) " ~ choices[1] ~ "\nC) " ~ choices[2]) | tojson }}
+          }
+        ]
+      }
+    output_template: |
+      {"role":"assistant","content": {{ ["A", "B", "C"][answer] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Answer with exactly one letter: A, B, or C. No explanation.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # LAMBADA — predict the last word of a passage. We strip the final word from
+  # `text` to form the prompt, and use it as the target.
+  lambada_test:
+    type: huggingface
+    path: EleutherAI/lambada_openai
+    name: en
+    split: test
+    streaming: true
+    limit: 50
+    batch_size: 1
+    input_template: |
+      {%- set words = text.split() -%}
+      {"messages":[{"role":"user","content": {{ ((words[:-1] | join(" ")) ~ " ___") | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ text.split()[-1] | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Predict the missing final word that fills the blank (marked `___`).
+        Reply with exactly one word — no punctuation, no explanation.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # Folder dataset — one record per file. Use this for hand-curated test cases
+  # checked into the repo, or for ad-hoc evaluations where each example lives
+  # in its own JSON / YAML / text / markdown file. Format is auto-detected per
+  # file from the extension; dict-shaped records (`.json` / `.yaml` / `.yml`)
+  # spread their keys at the top level. Plain text (`.txt` / `.md`) is exposed
+  # as `text`. All records additionally expose `_filename`, `_stem`, `_path`.
+  folder_eval:
+    type: folder
+    path: data/cases
+    pattern: "*.json"             # glob; combine with `recursive: true` for nested folders
+    # format: json                # override per-file auto-detection (json | yaml | text)
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ question | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ answer | tojson }}}
+    generator:
+      temperature: 0.0
+      instructions: |
+        Answer the question concisely.
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # Agentic dataset — uses a `synalinks.FunctionCallingAgent` driven by MCP
+  # tools instead of a single Generator call. The agent runs its own
+  # call-tool / observe / decide loop per row (capped by `max_iterations`)
+  # and returns either a free-form chat answer (no output_template) or a
+  # structured final answer (output_template + matching schema/data_model).
+  #
+  # `agent:` and `generator:` are mutually exclusive on a dataset.
+  # Commented out by default — to enable: (1) uncomment this block,
+  # (2) uncomment the matching `mcp_servers:` block at the top of the
+  # file, and (3) add `agentic_math_eval` to `experiments.datasets:`.
+  # agentic_math_eval:
+  #   type: folder
+  #   path: data/agent_cases
+  #   pattern: "*.json"
+  #   batch_size: 1
+  #   input_template: |
+  #     {"messages":[{"role":"user","content": {{ question | tojson }}}]}
+  #   # No output_template → inputs-only, agent returns a free-form chat answer.
+  #   # Add an output_template + output_schema if you want structured answers.
+  #   agent:
+  #     type: function_calling          # only supported value
+  #     mcp_servers: [math]             # references top-level `mcp_servers:` registry
+  #     max_iterations: 5
+  #     autonomous: true
+  #     use_chain_of_thought: true
+  #     temperature: 0.0
+  #     instructions: |
+  #       Solve the user's problem by calling the available tools. Reason
+  #       step by step, call tools when you need them, and stop when you
+  #       have enough information to answer.
+  #     # Any other FunctionCallingAgent kwarg (final_instructions,
+  #     # use_inputs_schema, examples, prompt_template, ...) can also be
+  #     # set here. `language_model`, `tools`, `data_model`, `schema` are
+  #     # set automatically and rejected if also present.
+  #   reward:
+  #     # Idiomatic for the inputs-only autonomous agent above: lm_as_judge
+  #     # scores the final assistant content on its own merits (y_true=None).
+  #     name: lm_as_judge
+  #     language_model: ollama/llama3.2
+  #     instructions: |
+  #       Score 0.0–1.0 on whether the agent solved the user's problem,
+  #       used the available tools sensibly, and stopped when it had
+  #       enough information.
+  #     in_mask: [content]
+  #     # For DeepEval `ToolCorrectnessMetric` you need top-level `tool_calls`
+  #     # on y_pred (the default mask is `recursive=False`). That requires an
+  #     # `output_template` + `output_schema` on the dataset that surfaces
+  #     # tool_calls at the root, plus a y_true with the gold tool calls.
+  #     # Without that wiring the default mask returns no fields and the
+  #     # reward fails-fast at runtime.
+
+  # Langfuse-managed evaluation set, pinned to a UTC snapshot.
+  # Auth comes from LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY / LANGFUSE_HOST.
+  langfuse_eval:
+    type: langfuse
+    dataset_name: my_eval_set
+    version: "2026-04-15T00:00:00Z"   # omit for latest
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ input | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ expected_output | tojson }}}
+    # LM-as-judge: a different reward shape per dataset is fine and expected.
+    reward:
+      name: lm_as_judge
+      language_model: ollama/llama3.2
+      instructions: |
+        Score the assistant's answer 0.0–1.0 based on factual correctness.
+      in_mask: [content]            # only compare these fields, ignore others
+      # out_mask: [thinking]        # ...or strip these fields before comparing
+    # Alternative — cosine similarity against an embedding model:
+    # reward:
+    #   name: cosine_similarity
+    #   embedding_model: ollama/mxbai-embed-large
+
+  # LangSmith dataset. `inputs` / `outputs` are dicts on each Example, so
+  # templates dot-access fields. Auth comes from LANGSMITH_API_KEY (and
+  # optionally LANGSMITH_ENDPOINT for self-hosted).
+  langsmith_eval:
+    type: langsmith
+    dataset_name: my_eval_set
+    as_of: "prod"                   # version tag — or a UTC datetime, or omit for latest
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ inputs.question | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ outputs.answer | tojson }}}
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # Opik (Comet) dataset. Standard fields are `input` / `expected_output` /
+  # `metadata` / `id`; any custom fields you inserted are passed through as
+  # extra Jinja variables. Auth: OPIK_API_KEY + OPIK_WORKSPACE (cloud) or
+  # OPIK_URL_OVERRIDE (self-hosted).
+  opik_eval:
+    type: opik
+    dataset_name: my_eval_set
+    version: v1                     # Opik named version — omit for latest
+    # filter_string: 'tags contains "regression"'
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ input.question | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ expected_output.answer | tojson }}}
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # Arize Phoenix dataset. Each example exposes `input` / `output` /
+  # `metadata` / `id` (all dicts). Auth: PHOENIX_API_KEY (cloud) and/or
+  # PHOENIX_COLLECTOR_ENDPOINT (self-hosted; defaults to localhost:6006).
+  phoenix_eval:
+    type: phoenix
+    dataset_name: my_eval_set
+    # version_id: "abc123..."       # pin to a specific version (omit for latest)
+    # splits: [test]                # restrict to named splits
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ input.question | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ output.answer | tojson }}}
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+  # Braintrust dataset. Records expose `id` / `input` / `expected` /
+  # `metadata` (input/expected are arbitrary JSON, dot-access if dict).
+  # Auth: BRAINTRUST_API_KEY (+ optional BRAINTRUST_ORG_NAME).
+  braintrust_eval:
+    type: braintrust
+    project: my-project
+    dataset_name: my_eval_set
+    # version: "1000000000000"      # transaction id snapshot — omit for latest
+    batch_size: 1
+    limit: 20
+    input_template: |
+      {"messages":[{"role":"user","content": {{ input.question | tojson }}}]}
+    output_template: |
+      {"role":"assistant","content": {{ expected.answer | tojson }}}
+    reward:
+      name: exact_match
+      in_mask: [content]
+
+# Which dataset to use when no name is passed to load_dataset_from_yaml().
+default: mmlu_test
+
+# --- Experiments ------------------------------------------------------------
+# evaluate.py runs a keras-tuner GridSearch over the cross product of
+# `language_models:` × `datasets:` — one trial per (model, dataset) pair —
+# and prints one model × dataset matrix per metric at the end.
+#
+# `datasets:` is optional; when omitted, the single dataset named by the
+# top-level `default:` key is used (1xN matrix).
+#
+# Direction (max | min, the keras-tuner convention) is per-reward,
+# everywhere it appears:
+#   - For each dataset's primary `reward:`, set `direction:` inside the
+#     `reward:` block (default `max`).
+#   - For each entry under `experiments.rewards:`, set `direction:` at
+#     the entry root (also default `max`).
+# This lets a sweep mix reward-style (max) and loss-style (min) primaries
+# across datasets — each dataset's column is ranked in its own direction.
+#
+# `rewards:` is optional. Each entry is a generic reward applied to every
+# (model, dataset) trial in addition to that dataset's primary reward —
+# use it for cross-cutting checks (conciseness, format compliance, length,
+# safety, ...) that should hold regardless of the task. Each entry has the
+# same shape as a dataset `reward:` plus:
+#   - `alias:` (optional) — column name in the result matrix; defaults to
+#     the reward's `name`. Must not collide with `"reward"`.
+#   - `direction:` (optional, `max` | `min`, default `max`) — whether higher
+#     or lower is better for this metric. Use `min` for losses / distances.
+# Each extra reward triggers another full program.evaluate() pass — K
+# extras = K× the model calls per trial.
 experiments:
+  language_models:
+    - ollama/mistral
+    - ollama/llama3.2
+    - ollama/qwen3:0.6b
+  datasets:
+    - mmlu_test
+    - gsm8k_train
+  rewards:
+    - name: lm_as_judge
+      alias: conciseness               # higher is more concise — default direction `max`
+      language_model: ollama/llama3.2
+      in_mask: [content]
+      instructions: |
+        Score 0.0–1.0 on whether the response is concise — only the answer
+        requested, with no extra explanation, padding, or preamble.
 
-  # ---------------- Minimal experiment -----------------------------------
-  - name: "gpt-4o-mini"
-    litellm:
-      model: "gpt-4o-mini"            # required; LiteLLM model id
-      temperature: 0.3                # any standard LiteLLM kwarg is supported
-      max_tokens: 256
-    # timeout_s: 60                   # optional per-row wall-clock timeout;
-                                      # rows exceeding it fail with a timeout
-                                      # error (and are re-raised under
-                                      # `arena --fail-fast`)
+    # --- DeepEval rewards ---------------------------------------------------
+    # `deep_eval` wraps any class from `deepeval.metrics`. Install the extra
+    # to enable: `uv sync --extra deepeval`. Each metric class declares which
+    # `LLMTestCase` slots it consumes (introspected from `_required_params`);
+    # the reward fails fast at YAML-load time if a required slot has no
+    # config and no default.
+    #
+    # Shape: each `testcase.<slot>` entry routes one slot from y_true or
+    # y_pred via its own mask. Slots and their defaults (used when omitted):
+    #   - input             → y_pred.messages, extract: chat_user
+    #   - actual_output     → y_pred.content,  extract: scalar
+    #   - expected_output   → y_true.content,  extract: scalar
+    #   - context           → y_true.context,           extract: list
+    #   - retrieval_context → y_pred.retrieval_context, extract: list
+    #   - tools_called      → y_pred.tool_calls,        extract: list
+    #   - expected_tools    → y_true.tool_calls,        extract: list
+    # Supply a `testcase:` block to override any default (e.g. point a slot
+    # at a different field, switch sides, or change extraction mode).
+    # Commented out by default — uncomment after `uv sync --extra deepeval`.
 
-  # ---------------- Local Ollama model -----------------------------------
-  - name: "llama3.2-local"
-    litellm:
-      model: "ollama_chat/llama3.2:latest"
-      api_base: "http://localhost:11434"
-      temperature: 0.3
-      max_tokens: 256
+    # GEval — generic LM-judge with custom criteria. Slots come from
+    # `evaluation_params`. The most flexible DeepEval metric.
+    # - name: deep_eval
+    #   alias: deep_eval_correctness
+    #   metric: GEval
+    #   metric_kwargs:
+    #     name: Correctness
+    #     criteria: |
+    #       Determine whether the actual output matches the expected output
+    #       in meaning, ignoring formatting differences.
+    #     evaluation_params: [input, actual_output, expected_output]
+    #     model: gpt-4o
+    #     threshold: 0.5
+    #   # `testcase:` omitted → defaults route input from y_pred.messages,
+    #   # actual_output from y_pred.content, expected_output from y_true.content.
 
-  # ---------------- Reasoning / thinking model ---------------------------
-  # `reasoning_effort` tells LiteLLM the model emits reasoning separately;
-  # values accepted by the provider include "low" / "medium" / "high" /
-  # "disable". LiteLLM puts the reasoning in `reasoning_content` and keeps
-  # `content` clean — no manual <think> parsing needed.
-  # See https://docs.litellm.ai/docs/reasoning_content
-  - name: "qwen3-thinking"
-    litellm:
-      model: "ollama_chat/qwen3:8b"
-      api_base: "http://localhost:11434"
-      reasoning_effort: "medium"
-      max_tokens: 2048
+    # AnswerRelevancyMetric — slots: [input, actual_output]. Same slot set
+    # as BiasMetric, ToxicityMetric, SummarizationMetric,
+    # PromptAlignmentMetric, PIILeakageMetric, NonAdviceMetric,
+    # MisuseMetric, RoleViolationMetric, JsonCorrectnessMetric,
+    # TaskCompletionMetric — swap `metric:` for any of those.
+    # - name: deep_eval
+    #   alias: deep_eval_relevancy
+    #   metric: AnswerRelevancyMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.5
 
-  # ---------------- Agent with MCP tools ---------------------------------
-  # Presence of a non-empty `mcp:` list switches this experiment to agent
-  # mode: langgraph's create_react_agent wraps the model and runs the
-  # tool-calling loop. Parallel function calling is supported natively
-  # when the model emits multiple tool_calls per turn — enable via
-  # `parallel_tool_calls: true` under `litellm:`.
-  - name: "gpt-4o-with-tools"
-    litellm:
-      model: "gpt-4o"
-      temperature: 0.2
-      # parallel_tool_calls: true
-    mcp:
-      - name: "knowledge_base"        # free-form identifier
-        url: "https://mcp.example.com/sse"    # SSE endpoint of the MCP server
-      - name: "calculator"
-        url: "https://calc.example.com/sse"
+    # FaithfulnessMetric — RAG. Slots: [input, actual_output, retrieval_context].
+    # Requires the dataset's `output_template` to expose `retrieval_context`
+    # on y_pred (e.g. via a Generator that returns retrieved chunks).
+    # - name: deep_eval
+    #   alias: deep_eval_faithfulness
+    #   metric: FaithfulnessMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.7
+    #   testcase:
+    #     retrieval_context:
+    #       from: y_pred
+    #       in_mask: [retrieved_chunks]   # rename to match your data model's field
+    #       extract: list
 
+    # ContextualPrecisionMetric — RAG. Slots: [input, retrieval_context, expected_output].
+    # ContextualRecallMetric has the same slot set — swap `metric:`.
+    # - name: deep_eval
+    #   alias: deep_eval_context_precision
+    #   metric: ContextualPrecisionMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.7
+    #   testcase:
+    #     retrieval_context: {from: y_pred, in_mask: [retrieved_chunks], extract: list}
+    #     expected_output:   {from: y_true, in_mask: [content]}
 
-# -------------------------------------------------------------------------
-# evaluation  (required)
-# -------------------------------------------------------------------------
-# One evaluator is run after all experiments complete. Two evaluators
-# ship today:
-#   - llm_as_judge    (pointwise) — scores each output independently
-#                                   against expected_output (or without
-#                                   reference if none was produced).
-#                                   The judge returns a 1-5 rating, which
-#                                   is normalised to a 0-1 Langfuse score.
-#                                   Uses ChatLiteLLM.with_structured_output
-#                                   for validated JSON.
-#   - llm_as_verifier (group)     — round-robin pairwise verifier across
-#                                   experiments. For each unordered pair
-#                                   (A, B) the model emits
-#                                   <score_A>X</score_A><score_B>Y</score_B>;
-#                                   the reward at each tag is the expected
-#                                   value under the model's top_logprobs
-#                                   distribution over score letters. Each
-#                                   pair is sampled K times and the
-#                                   rewards are averaged (faithful to
-#                                   Kwok et al. 2026 — pairs are not
-#                                   position-swapped; variance reduction
-#                                   comes from K and from criterion
-#                                   decomposition). Optionally split
-#                                   across C criteria (per-pair reward =
-#                                   mean across criteria). Each model's
-#                                   Langfuse score is the mean reward
-#                                   over all pairs it appears in,
-#                                   normalised to [0, 1].
-evaluation:
-  # "llm_as_judge" | "llm_as_verifier"
-  method: "llm_as_judge"
+    # ContextualRelevancyMetric — RAG. Slots: [input, retrieval_context].
+    # Judges retrieval quality without needing a gold answer.
+    # - name: deep_eval
+    #   alias: deep_eval_context_relevancy
+    #   metric: ContextualRelevancyMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.7
+    #   testcase:
+    #     retrieval_context: {from: y_pred, in_mask: [retrieved_chunks], extract: list}
 
-  # LiteLLM config for the judge model. Same extras mechanism as
-  # experiments (reasoning_effort, seed, thinking, ...).
-  litellm:
-    model: "gpt-4o-mini"
-    temperature: 0.0
-    # reasoning_effort: "medium"      # for reasoning-capable judges
+    # HallucinationMetric — slots: [input, actual_output, context].
+    # `context` is the GROUND TRUTH the answer is checked against (note: this
+    # is `context`, not `retrieval_context` — distinct DeepEval slots).
+    # NOTE: HallucinationMetric reports a HALLUCINATION RATE (lower = better).
+    # The reward returns the raw rate; set `direction: min` so the sweep
+    # ranks it correctly. Same applies to BiasMetric / ToxicityMetric /
+    # MisuseMetric (also lower-is-better).
+    # - name: deep_eval
+    #   alias: deep_eval_hallucination
+    #   direction: min              # required — HallucinationMetric reports harm rate
+    #   metric: HallucinationMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.5
+    #   testcase:
+    #     context: {from: y_true, in_mask: [reference_text], extract: list}
 
-  # Name written to Langfuse's Scores API. Appears as a column on each
-  # trace and lets you sort/filter in the Langfuse UI.
-  score_name: "quality_score"
+    # ToolCorrectnessMetric — agents. Slots: [input, tools_called, expected_tools].
+    # Requires y_pred to expose `tool_calls` (synalinks ChatMessage default)
+    # and y_true to carry the gold tool calls.
+    # - name: deep_eval
+    #   alias: deep_eval_tool_correctness
+    #   metric: ToolCorrectnessMetric
+    #   metric_kwargs:
+    #     threshold: 1.0            # exact match by default
+    #   # Defaults already point tools_called → y_pred.tool_calls and
+    #   # expected_tools → y_true.tool_calls.
 
-  # Max concurrent judge calls. Tune for rate limits.
-  max_concurrency: 5
+    # ArgumentCorrectnessMetric — agents. Slots: [input, tools_called].
+    # Judges whether tool arguments are well-formed for the input prompt.
+    # - name: deep_eval
+    #   alias: deep_eval_arg_correctness
+    #   metric: ArgumentCorrectnessMetric
+    #   metric_kwargs:
+    #     model: gpt-4o
+    #     threshold: 0.7
 
-  # Optional per-item wall-clock timeout for evaluator calls (seconds).
-  # Items that exceed it receive score=None and an "evaluator timeout"
-  # error instead of hanging a worker.
-  # timeout_s: 60
+    # ExactMatchMetric — slots: [input, actual_output, expected_output].
+    # Native DeepEval string match (vs `synalinks.exact_match` which compares
+    # the whole JSON). Use when you want DeepEval's normalization behavior.
+    # - name: deep_eval
+    #   alias: deep_eval_exact_match
+    #   metric: ExactMatchMetric
 
-  # --- Prompts (both required) -------------------------------------------
-  # Both evaluator methods consume two prompts:
-  #   system_prompt               — used when the row has a non-empty
-  #                                 expected_output (reference mode).
-  #   system_prompt_no_reference  — used when expected_output is empty
-  #                                 (reference-free mode).
-  #
-  # The model receives a JSON object on the user turn; the exact fields
-  # depend on the evaluator:
-  #   llm_as_judge    → {"input", "output", "expected_output"?}
-  #   llm_as_verifier → {"input", "output_A", "output_B", "expected_output"?}
-  # llm_as_judge prompts MUST instruct the model to return JSON matching
-  # the evaluator's schema (structured output is enforced via LangChain).
-  # llm_as_verifier prompts MUST end with EXACTLY two score tags
-  # (<score_A>X</score_A><score_B>Y</score_B>) and may use the
-  # placeholders {granularity}, {score_letters}, {best_letter},
-  # {worst_letter}, {criterion}, {criterion_description},
-  # {scale_description}.
-  #
-  # The example below is for the `llm_as_judge` method selected above.
-  # If you switch to `llm_as_verifier`, see the verifier prompts shown
-  # at the bottom of this section.
-  system_prompt: >
-    You're an expert judge.
-    Given a JSON object with the fields "input", "output" and "expected_output",
-    rate how similar "output" is to "expected_output".
-    Return ONLY a JSON object with the following format:
-
-    {"thinking": "The output correctly identifies the main concept but misses two key details from the expected output.", "score": 4}
-
-    "thinking" must come first: a short step-by-step reasoning explaining your assessment.
-    "score" must be an integer from 1 to 5 (1 = completely wrong, 5 = perfect match).
-
-  system_prompt_no_reference: >
-    You're an expert judge. No ground truth is provided.
-    Given a JSON object with the fields "input" and "output",
-    judge the output's overall quality (correctness, relevance, clarity) as a response to the input.
-    Return ONLY a JSON object with the following format:
-
-    {"thinking": "The output is relevant but lacks depth and contains a minor inaccuracy.", "score": 3}
-
-    "thinking" must come first: a short step-by-step reasoning explaining your assessment.
-    "score" must be an integer from 1 to 5 (1 = poor, 5 = excellent).
-
-  # --- llm_as_verifier prompts (drop in if you switch `method` above) ----
-  #
-  # system_prompt: |
-  #   You are an expert evaluator. You will see a JSON object with the
-  #   fields "input", "output_A", "output_B", and "expected_output". Your
-  #   job is to evaluate the two outputs on ONE specific criterion:
-  #   **{criterion}**.
-  #
-  #   Treat "expected_output" as the ground truth. Do NOT trust the outputs'
-  #   self-assessment or claims of success — judge them against the ground
-  #   truth on the criterion below.
-  #
-  #   **Evaluation Guideline — {criterion}:**
-  #   {criterion_description}
-  #
-  #   Score each output ONLY on this specific criterion. Ignore other
-  #   aspects of the outputs that are not relevant to "{criterion}".
-  #
-  #   **Rating Scale:**
-  #   {scale_description}
-  #
-  #   You may reason briefly first. Then output your final scores in
-  #   EXACTLY this format:
-  #   <score_A>X</score_A>
-  #   <score_B>Y</score_B>
-  #   where X and Y are each one of: {score_letters}.
-  #
-  # system_prompt_no_reference: |
-  #   You are an expert evaluator. You will see a JSON object with the
-  #   fields "input", "output_A", and "output_B". No ground truth is
-  #   provided. Your job is to evaluate the two outputs on ONE specific
-  #   criterion: **{criterion}**.
-  #
-  #   Judge each output as a response to "input" on the criterion below.
-  #
-  #   **Evaluation Guideline — {criterion}:**
-  #   {criterion_description}
-  #
-  #   Score each output ONLY on this specific criterion. Ignore other
-  #   aspects of the outputs that are not relevant to "{criterion}".
-  #
-  #   **Rating Scale:**
-  #   {scale_description}
-  #
-  #   You may reason briefly first. Then output your final scores in
-  #   EXACTLY this format:
-  #   <score_A>X</score_A>
-  #   <score_B>Y</score_B>
-  #   where X and Y are each one of: {score_letters}.
-
-  # --- Verifier-only knobs (llm_as_verifier) -----------------------------
-  # `granularity` (G): number of discrete score letters A..Z used to
-  #                    extract a logprob distribution. Typical: 8.
-  # `repeats`     (K): number of verifier samples averaged per
-  #                    pair-criterion call. Typical: 1 (fast) to
-  #                    16 (low-variance).
-  # granularity: 8
-  # repeats: 1
-
-  # --- Criteria decomposition (llm_as_verifier) --------------------------
-  # Per Kwok et al. 2026, a criterion is a {name, description} pair —
-  # `name` labels the dimension and `description` is the long rubric the
-  # verifier reads. Each criterion runs in its own pairwise call and the
-  # per-pair reward is the mean across criteria. Per-row provider calls
-  # = num_pairs * len(criteria) * repeats — watch rate limits and cost
-  # when combining many criteria with high `repeats` or many
-  # experiments. Omit `criteria` for a single holistic call (defaults:
-  # name="correctness" with reference, "overall quality" without).
-  #
-  # criteria:
-  #   - name: "Factual accuracy"
-  #     description: >
-  #       Compare the output to the expected output and judge whether
-  #       the factual claims it makes (names, dates, numbers, causal
-  #       relationships) are correct. Penalise hallucinated facts and
-  #       contradictions with the ground truth, but do not penalise
-  #       valid paraphrasing or additional correct context.
-  #   - name: "Completeness"
-  #     description: >
-  #       Check whether the output covers every key point present in
-  #       the expected output. A response that gets the gist right but
-  #       omits required details should score lower than one that
-  #       covers all of them, even if both are factually correct.
-  #   - name: "Clarity"
-  #     description: >
-  #       Judge how clearly the output communicates its content:
-  #       sentence structure, organisation, absence of jargon the
-  #       reader would not understand. Ignore correctness here — only
-  #       judge presentation.
+    # Any DeepEval metric not listed above follows the same recipe: read its
+    # `_required_params` (or `evaluation_params` for GEval/DAG-style metrics),
+    # then fill the matching slots in `testcase:`. The reward will refuse to
+    # construct if a required slot has no source.
