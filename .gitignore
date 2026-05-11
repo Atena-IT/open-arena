@@ -208,3 +208,8 @@ __marimo__/
 
 # Claude Code local state
 .claude/
+
+# Local frontend dependencies and test artifacts
+node_modules/
+test-results/
+.DS_Store

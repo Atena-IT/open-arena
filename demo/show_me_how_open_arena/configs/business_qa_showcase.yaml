@@ -1,0 +1,116 @@
+dataset:
+  name: "Vanguard Research Missions Showcase"
+  description: "Slide-friendly multi-vendor showcase config for the show-me-how notebook"
+  source:
+    provider: "local"
+    path: "demo/show_me_how_open_arena/data/business_qa_demo.csv"
+    format: "csv"
+  input: |
+    Mission title: {{ mission_title }}
+    Research domain: {{ research_domain }}
+    Topic cluster: {{ topic_cluster }}
+    Time window: {{ timeframe_start }} to {{ timeframe_end }}
+    Allowed domains: {{ allowed_domains }}
+    Focus semantics: {{ focus_semantics }}
+    Output type: {{ output_type }}
+    Audience: {{ audience }}
+    Difficulty: {{ difficulty }}
+    SME owner: {{ sme_owner }}
+
+    Mission:
+    {{ question }}
+  expected_output: "{{ expected_answer }}"
+  limit: 20
+
+system_prompt: |
+  You are a constrained research memo assistant used in a vendor-showcase demo.
+  Produce a compact report with these sections:
+  1. Executive summary
+  2. Key signals
+  3. Implications for the audience
+  4. Sources or verification notes
+
+  Stay inside the requested topic, time window, and allowed domains.
+  If the evidence is uncertain, say so clearly instead of inventing specifics.
+
+experiments:
+  - name: "Gemini 3.1 Flash Lite"
+    litellm:
+      model: "gemini-3.1-flash-lite-preview"
+      temperature: 0.10
+      max_tokens: 640
+  - name: "Gemini 2.5 Flash Lite"
+    litellm:
+      model: "gemini-2.5-flash-lite"
+      temperature: 0.15
+      max_tokens: 640
+  - name: "Claude Haiku 4.5"
+    litellm:
+      model: "claude-haiku-4-5-20251001"
+      temperature: 0.10
+      max_tokens: 640
+  - name: "Claude Sonnet 4.6"
+    litellm:
+      model: "claude-sonnet-4-6"
+      temperature: 0.12
+      max_tokens: 768
+  - name: "HuggingFace SmolLM3 3B"
+    litellm:
+      model: "HuggingFaceTB/SmolLM3-3B"
+      temperature: 0.25
+      max_tokens: 512
+  - name: "HuggingFace Qwen3 4B"
+    litellm:
+      model: "Qwen/Qwen3-4B"
+      temperature: 0.20
+      max_tokens: 640
+  - name: "OpenAI GPT-5.4 Mini"
+    litellm:
+      model: "gpt-5.4-mini"
+      temperature: 0.10
+      max_tokens: 768
+  - name: "OpenAI GPT-5.4 Nano"
+    litellm:
+      model: "gpt-5.4-nano"
+      temperature: 0.10
+      max_tokens: 640
+
+evaluation:
+  method: "llm_as_judge"
+  litellm:
+    model: "gpt-5.4-nano"
+    temperature: 0.0
+    max_tokens: 1024
+  score_name: "mission_report_quality_score"
+  max_concurrency: 5
+  max_retries: 5
+  system_prompt: >
+    You are scoring a demo research memo on a 1-5 scale.
+    Reward topic discipline, report structure, decision usefulness, and explicit uncertainty.
+    Use this rubric:
+    1 = off-topic or unusable,
+    2 = weak and confusing,
+    3 = acceptable but generic or incomplete,
+    4 = solid demo memo that stays on topic, is clearly structured, and is useful for discussion,
+    5 = unusually strong and polished for a lightweight demo.
+    Default to 4 when the output stays on topic, follows the requested memo structure, and avoids unsupported certainty.
+    Use 3 only when the memo is clearly generic or partially incomplete.
+    Use 1-2 only for clear failures.
+    Return ONLY a JSON object with this format:
+    {"thinking": "Short reasoning.", "score": 4}
+    The score must be an integer from 1 to 5.
+  system_prompt_no_reference: >
+    You are scoring a demo research memo on a 1-5 scale without a reference answer.
+    Reward topic discipline, report structure, decision usefulness, and explicit uncertainty.
+    Use this rubric:
+    1 = off-topic or unusable,
+    2 = weak and confusing,
+    3 = acceptable but generic or incomplete,
+    4 = solid demo memo that stays on topic, is clearly structured, and is useful for discussion,
+    5 = unusually strong and polished for a lightweight demo.
+    Default to 4 when the output stays on topic, follows the requested memo structure, and avoids unsupported certainty.
+    Use 3 only when the memo is clearly generic or partially incomplete.
+    Use 1-2 only for clear failures.
+    Return ONLY a JSON object with this format:
+    {"thinking": "Short reasoning.", "score": 4}
+    The score must be an integer from 1 to 5.

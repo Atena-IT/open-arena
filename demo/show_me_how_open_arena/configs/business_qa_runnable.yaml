@@ -1,0 +1,118 @@
+dataset:
+  name: "Vanguard Research Missions Runnable Showcase"
+  description: "Runnable 20-sample showcase config that keeps vendor-style experiment names but uses OpenAI backends"
+  source:
+    provider: "local"
+    path: "demo/show_me_how_open_arena/data/business_qa_demo.csv"
+    format: "csv"
+  input: |
+    Mission title: {{ mission_title }}
+    Research domain: {{ research_domain }}
+    Topic cluster: {{ topic_cluster }}
+    Time window: {{ timeframe_start }} to {{ timeframe_end }}
+    Allowed domains: {{ allowed_domains }}
+    Focus semantics: {{ focus_semantics }}
+    Output type: {{ output_type }}
+    Audience: {{ audience }}
+    Difficulty: {{ difficulty }}
+    SME owner: {{ sme_owner }}
+
+    Mission:
+    {{ question }}
+  expected_output: "{{ expected_answer }}"
+  limit: 20
+
+system_prompt: |
+  You are a constrained research memo assistant used in a live notebook demo.
+  Produce a concise but polished report with these sections and headings exactly:
+  Executive summary
+  Key signals
+  Implications
+  Verification notes
+
+  Stay inside the requested topic, date window, and allowed domains.
+  Prefer precise synthesis over breadth.
+  If a claim cannot be verified, explicitly mark it as uncertain instead of fabricating detail.
+  End with 2-4 short bullets under Verification notes.
+
+experiments:
+  - name: "Gemini 3.1 Flash Lite"
+    litellm:
+      model: "gpt-5.4-nano"
+      temperature: 0.12
+      max_tokens: 560
+  - name: "Gemini 2.5 Flash Lite"
+    litellm:
+      model: "gpt-5.4-mini"
+      temperature: 0.14
+      max_tokens: 640
+  - name: "Claude Haiku 4.5"
+    litellm:
+      model: "gpt-5.4-nano"
+      temperature: 0.10
+      max_tokens: 620
+  - name: "Claude Sonnet 4.6"
+    litellm:
+      model: "gpt-5.4-mini"
+      temperature: 0.10
+      max_tokens: 760
+  - name: "HuggingFace SmolLM3 3B"
+    litellm:
+      model: "gpt-5.4-nano"
+      temperature: 0.22
+      max_tokens: 540
+  - name: "HuggingFace Qwen3 4B"
+    litellm:
+      model: "gpt-5.4-mini"
+      temperature: 0.22
+      max_tokens: 700
+  - name: "OpenAI GPT-5.4 Mini"
+    litellm:
+      model: "gpt-5.4-mini"
+      temperature: 0.08
+      max_tokens: 760
+  - name: "OpenAI GPT-5.4 Nano"
+    litellm:
+      model: "gpt-5.4-nano"
+      temperature: 0.08
+      max_tokens: 620
+
+evaluation:
+  method: "llm_as_judge"
+  litellm:
+    model: "gpt-5.4-nano"
+    temperature: 0.0
+    max_tokens: 1024
+  score_name: "mission_report_quality_score"
+  max_concurrency: 5
+  max_retries: 5
+  system_prompt: >
+    You are scoring a demo research memo on a 1-5 scale.
+    Reward topic discipline, report structure, decision usefulness, and explicit uncertainty.
+    Use this rubric:
+    1 = off-topic or unusable,
+    2 = weak and confusing,
+    3 = acceptable but generic or incomplete,
+    4 = solid demo memo that stays on topic, is clearly structured, and is useful for discussion,
+    5 = unusually strong and polished for a lightweight demo.
+    Default to 4 when the output stays on topic, follows the requested memo structure, and avoids unsupported certainty.
+    Use 3 only when the memo is clearly generic or partially incomplete.
+    Use 1-2 only for clear failures.
+    Return ONLY a JSON object with this format:
+    {"thinking": "Short reasoning.", "score": 4}
+    The score must be an integer from 1 to 5.
+  system_prompt_no_reference: >
+    You are scoring a demo research memo on a 1-5 scale without a reference answer.
+    Reward topic discipline, report structure, decision usefulness, and explicit uncertainty.
+    Use this rubric:
+    1 = off-topic or unusable,
+    2 = weak and confusing,
+    3 = acceptable but generic or incomplete,
+    4 = solid demo memo that stays on topic, is clearly structured, and is useful for discussion,
+    5 = unusually strong and polished for a lightweight demo.
+    Default to 4 when the output stays on topic, follows the requested memo structure, and avoids unsupported certainty.
+    Use 3 only when the memo is clearly generic or partially incomplete.
+    Use 1-2 only for clear failures.
+    Return ONLY a JSON object with this format:
+    {"thinking": "Short reasoning.", "score": 4}
+    The score must be an integer from 1 to 5.
