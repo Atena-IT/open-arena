@@ -3180,6 +3180,7 @@ dependencies = [
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "opik" },
     { name = "pyarrow" },
+    { name = "pydantic" },
     { name = "pyyaml" },
     { name = "synalinks" },
 ]
@@ -3203,8 +3204,9 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.0" },
     { name = "opik", specifier = ">=2.0.20" },
     { name = "pyarrow", specifier = ">=23.0.1" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "synalinks", specifier = ">=0.8.11" },
+    { name = "synalinks", specifier = ">=0.8.30" },
 ]
 provides-extras = ["deepeval"]
 
@@ -5417,7 +5419,7 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.8.11"
+version = "0.8.30"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -5448,9 +5450,9 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/f6/16d519677ef88b08d9036aed39cf5cd0ed32744d960bedb26197e4dca386/synalinks-0.8.11.tar.gz", hash = "sha256:8a816ac9e5fc7cdec95a76b5784be81a15d795b5a8b91038902f41d59e064f22", size = 376787 }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/f3/8614579a879063bc3936475d117a2aa7e8e3c8eeb04d81f5474574f6a200/synalinks-0.8.30.tar.gz", hash = "sha256:05280dca306c9df17b6ce46502606c99b4c2fde0ce2c4a756e79d5abb077ca21", size = 554261 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/50/5232027a5ca6b470d47f4e964f3e522b042f78424aadd9d1fc95724d5d42/synalinks-0.8.11-py3-none-any.whl", hash = "sha256:52c80d352f2534eb45e8f12af66f6d767aadbdcf2fcd51559321e403de0cb9e0", size = 492321 },
+    { url = "https://files.pythonhosted.org/packages/a1/1f/91afb13d33498e6715d73daa2964d39a31b69bb786f486c6f850ad540ef5/synalinks-0.8.30-py3-none-any.whl", hash = "sha256:7263a7b3ce3ebdcfb959a3a23b2b96f5482dafe694fd5f8e53bc66ea5113c0e4", size = 711756 },
 ]
 
 [[package]]

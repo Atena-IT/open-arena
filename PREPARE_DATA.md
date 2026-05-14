@@ -12,12 +12,12 @@
 2. **`src/datasets/`** — Jinja2-templated streaming loaders, declared
    in `config.yaml` and instantiated by `load_dataset_from_yaml`. The
    loaders are the bridge between the on-disk files (or remote
-   service) and `evaluate.py`.
+   service) and `src/evaluate.py`.
 
 End-to-end flow:
 
 ```
-prepare_data.py  ──►  raw_data/<name>.jsonl  ──►  config.yaml (local/folder/...)  ──►  evaluate.py
+prepare_data.py  ──►  raw_data/<name>.jsonl  ──►  config.yaml (local/folder/...)  ──►  src/evaluate.py
 ```
 
 ## `prepare_data.py`
@@ -64,7 +64,7 @@ change to the human before touching it.
 ## Using synalinks inside `prepare_data.py`
 
 Synalinks isn't only the eval runtime — the same `Generator` /
-`Program` primitives that `evaluate.py:build_program` uses for the
+`Program` primitives that `src/program.py:build_program` uses for the
 sweep work just as well for *producing* rows offline. The typical use
 cases are synthetic question generation, paraphrase / augmentation,
 LM-assisted filtering, and labeling unlabeled corpora into the
@@ -72,7 +72,7 @@ LM-assisted filtering, and labeling unlabeled corpora into the
 
 The idiomatic pattern: declare the input and output as `DataModel`
 classes, chain `Input` → `Generator` → `Program`, then `await
-program(input_instance)` per row. Same primitives `evaluate.py` uses,
+program(input_instance)` per row. Same primitives `src/evaluate.py` uses,
 called offline.
 
 ```python
@@ -130,7 +130,7 @@ Notes:
   **not** the prompt — the prompt comes from the `instructions=`
   param on the `Generator`. `await program(...)` returns an instance
   you can `.get_json()` on. (Raw `schema={...}` dicts also work —
-  that's the pattern `program.py` uses when the dataset declares its
+  that's the pattern `src/program.py` uses when the dataset declares its
   schema in YAML — but for a one-off prep script, the `DataModel` is
   shorter and self-documenting.)
 - **Always `asyncio.run` at the top.** Synalinks programs are async;
@@ -215,9 +215,10 @@ structured-output constraints.
 ## Wiring into `config.yaml`
 
 Each entry under `datasets:` becomes a kwargs bag for the chosen
-loader. `type:` is consumed by the dispatcher; `generator:` and
-`reward:` are consumed by `evaluate.py`; everything else is forwarded
-verbatim to the loader's constructor.
+loader. `type:` is consumed by the dispatcher; `generator:`, `agent:`,
+`reward:`, and `metrics:` are consumed by `src/evaluate.py` (via
+`src/config.py`); everything else is forwarded verbatim to the
+loader's constructor.
 
 ### Local file (typical `prepare_data.py` output)
 
@@ -364,8 +365,8 @@ autoresearch loop. Add new providers outside the loop.
   pre-`repeat` rows. Final batch count is
   `ceil(limit * repeat / batch_size)`.
 - **Cache invalidation**. Changing the dataset list in `config.yaml`
-  invalidates the keras-tuner cache at `.kt/open_arena/`. Run with
-  `--no-cache` or `rm -rf .kt/open_arena` after edits.
+  invalidates the per-dataset keras-tuner caches under `.open-arena/`.
+  Run with `--no-cache` or `rm -rf .open-arena/*/` after edits.
 - **CSV / JSONL row counts are unknown without a scan**. `LocalDataset`
   raises `NotImplementedError` from `__len__` for those formats unless
   you set `limit:`. Parquet metadata gives the count for free.

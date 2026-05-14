@@ -1,6 +1,6 @@
 # License Apache 2.0: (c) 2026 Athena-Reply
 
-"""Judge-panel reward.
+"""Multi Judge Panel reward.
 
 Multiple small `LanguageModel`s judge each (y_true, y_pred) pair in parallel.
 If the panelists agree (max-min reward spread within `agreement_threshold`),
@@ -30,8 +30,8 @@ from synalinks.src.saving import serialization_lib
 # schema-aligned and inherits Score-enum [0, 1] enforcement for free.
 
 
-class JudgePanelProgram(Program):
-    """Inner judge program backing `JudgePanel`.
+class MultiJudgePanelProgram(Program):
+    """Inner judge program backing `MultiJudgePanel`.
 
     Builds one `SelfCritique` per panelist plus one for the smart
     escalator. In `call`, prefixes the gold side with `gold_`, concats it
@@ -50,7 +50,7 @@ class JudgePanelProgram(Program):
     Example:
 
     ```python
-    program = JudgePanelProgram(
+    program = MultiJudgePanelProgram(
         panel_language_models=["ollama/llama3.2", "ollama/mistral"],
         smart_language_model="openai/gpt-4o",
         agreement_threshold=0.2,
@@ -224,7 +224,7 @@ class JudgePanelProgram(Program):
         return cls(**config)
 
 
-class JudgePanel(ProgramAsJudge):
+class MultiJudgePanel(ProgramAsJudge):
     """Judge panel: multiple small LMs vote, smart LM breaks ties.
 
     Each (y_true, y_pred) is scored in parallel by every model in
@@ -238,7 +238,7 @@ class JudgePanel(ProgramAsJudge):
 
     ```python
     program.compile(
-        reward=JudgePanel(
+        reward=MultiJudgePanel(
             panel_language_models=[
                 "ollama/llama3.2",
                 "ollama/mistral",
@@ -266,7 +266,7 @@ class JudgePanel(ProgramAsJudge):
         instructions (str): The default judging-task instructions
             forwarded to every judge (same prompt, different LMs).
         name (str): Optional. string name of the reward instance
-            (default `"judge_panel"`).
+            (default `"multi_judge_panel"`).
         in_mask (list): Optional. list of keys to keep to compute the
             reward.
         out_mask (list): Optional. list of keys to remove to compute the
@@ -281,11 +281,11 @@ class JudgePanel(ProgramAsJudge):
         prompt_template=None,
         examples=None,
         instructions=None,
-        name="judge_panel",
+        name="multi_judge_panel",
         in_mask=None,
         out_mask=None,
     ):
-        program = JudgePanelProgram(
+        program = MultiJudgePanelProgram(
             panel_language_models=panel_language_models,
             smart_language_model=smart_language_model,
             agreement_threshold=agreement_threshold,

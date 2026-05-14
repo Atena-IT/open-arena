@@ -2,7 +2,7 @@
 
 """The editable program graphs.
 
-Two entry points the trial runner in `evaluate.py` calls:
+Two entry points the trial runner in `src/evaluate.py` calls:
 
 - `build_program(...)` — Generator-based eval (Q&A, classification,
   summarization, ...). One LM call per row.
@@ -19,8 +19,13 @@ reward computation, reduction) treats both as opaque
 import synalinks
 
 
-async def build_program(model_id: str, dataset, generator_kwargs: dict, reward):
-    """Build (and compile) a Generator-based synalinks program for one trial."""
+async def build_program(model_id: str, dataset, generator_kwargs: dict, reward, metrics=None):
+    """Build (and compile) a Generator-based synalinks program for one trial.
+
+    `metrics` is an optional list of pre-resolved `synalinks.metrics.Metric`
+    instances forwarded to `program.compile(metrics=...)`. They ride along
+    the primary `program.evaluate()` pass and surface in its return dict.
+    """
     inputs = synalinks.Input(
         schema=dataset.input_schema,
         data_model=dataset.input_data_model if dataset.input_schema is None else None,
@@ -40,16 +45,16 @@ async def build_program(model_id: str, dataset, generator_kwargs: dict, reward):
         outputs=outputs,
         name=f"eval_{_safe_name(model_id)}",
     )
-    program.compile(reward=reward)
+    program.compile(reward=reward, metrics=metrics or None)
     return program
 
 
-async def build_agent(model_id: str, dataset, agent_config: dict, reward):
+async def build_agent(model_id: str, dataset, agent_config: dict, reward, metrics=None):
     """Build (and compile) an agent-based program for one trial.
 
     `agent_config` is the per-dataset `agent:` block from YAML, with
     `mcp_servers` already resolved to a name → connection-config dict
-    (the registry lookup is done in evaluate.py before this call).
+    (the registry lookup is done in `src/config.py` before this call).
 
     Recognised keys consumed here:
       - `type` (str): only `"function_calling"` is supported today.
@@ -120,7 +125,7 @@ async def build_agent(model_id: str, dataset, agent_config: dict, reward):
         outputs=outputs,
         name=f"agent_{_safe_name(model_id)}",
     )
-    program.compile(reward=reward)
+    program.compile(reward=reward, metrics=metrics or None)
     return program
 
 

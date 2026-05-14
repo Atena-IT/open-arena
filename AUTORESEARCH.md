@@ -7,7 +7,7 @@ the (model × dataset) sweep.
 ## What "good" looks like
 
 The project's goal: a small library of *general* rewards
-(`lm_as_judge`, `recursive_lm_as_judge`, `judge_panel`, …) that are not
+(`lm_as_judge`, `recursive_lm_as_judge`, `multi_judge_panel`, …) that are not
 task-specific yet still rank models on a given dataset the same way
 that dataset's *primary* (task-specific) reward does. If a general
 reward agrees with the primary reward on **which model wins each
@@ -44,11 +44,15 @@ To set up a new experiment, work with the user to:
    context:
    - `README.md` — repository overview.
    - `AGENTS.md` / `CLAUDE.md` — notes for AI coding agents (read this).
-   - `evaluate.py` — sweep entrypoint and harness (oracle, trial loop,
-     matrix rendering) plus the editable `build_program()` that
-     describes the program graph. Do not modify.
-   - `analyze.py` — post-sweep scoring (agreement + Spearman). Do not
-     modify.
+   - `src/evaluate.py` — sweep entrypoint and harness (oracle, trial
+     loop, TSV / JSON output). Do not modify.
+   - `src/program.py` — editable `build_program()` / `build_agent()`
+     graph builders. Edit when changing the trial program shape.
+   - `src/config.py` — Pydantic schema + validators for `config.yaml`.
+     Do not modify unless changing the YAML surface.
+   - `.open-arena/last_run.tsv` — long-form sweep output you read directly to
+     score iterations (no `analyze.py` script — you compute whatever
+     agreement / correlation / trade-off stats fit the change).
    - `prepare_data.py` — data-prep entrypoint. Do not modify
      autonomously; edits require explicit human approval first.
    - `src/datasets/` — dataset loaders. Do not modify.
@@ -56,7 +60,7 @@ To set up a new experiment, work with the user to:
      edit allowed here is registering a new project-local reward you
      just added.
    - `src/rewards/recursive_language_model_reward.py`,
-     `src/rewards/judge_panel.py` — existing project-local rewards.
+     `src/rewards/multi_judge_panel.py` — existing project-local rewards.
      **These are the files you iterate on**, plus any new
      `src/rewards/<name>.py` you add.
    - `REWARDS_BUILDING.md` — how-to for adding a new reward
@@ -65,7 +69,9 @@ To set up a new experiment, work with the user to:
    - `config.example.yaml` — full menu of provider / reward options.
      Reference only.
    - `config.yaml` — read-mostly; the only edits allowed are inside
-     `experiments.rewards` (wiring in / tuning the candidate reward).
+     the top-level `metrics:` block (wiring in / tuning the candidate
+     reward — any reward identifier listed there is auto-wrapped in
+     `MeanMetricWrapper` and rides the primary `evaluate()` pass).
      Do not touch the `datasets:` block or `experiments.language_models`
      / `experiments.datasets` — those define the validation harness and
      must stay fixed across the run.
@@ -95,10 +101,11 @@ Once you get confirmation, kick off the experimentation.
 ## Experimentation
 
 Each experiment runs the full sweep on a single host. The runner is
-`uv run evaluate.py` (or the installed `arena` console script — same
-thing, post `uv sync`). Plain `python evaluate.py` will fail with
-`ModuleNotFoundError: keras_tuner` outside the project venv, so always
-prefix with `uv run`. Cap runtime by tightening per-dataset `limit:` so
+the `arena` console script (installed by `uv sync`). Plain
+`python -m src.evaluate` will fail with `ModuleNotFoundError:
+keras_tuner` outside the project venv, so always invoke it via
+`uv run arena` (or activate the venv first). Cap runtime by tightening
+per-dataset `limit:` so
 one full sweep finishes in **~5 minutes** wall clock. The grid (models × datasets) and the
 per-dataset primary rewards are fixed for the duration of the run —
 that's the validation harness; changing it would invalidate the
@@ -106,17 +113,19 @@ comparison against earlier results.
 
 **What you CAN do:**
 - Modify existing project-local rewards under `src/rewards/`
-  (`recursive_language_model_reward.py`, `judge_panel.py`).
+  (`recursive_language_model_reward.py`, `multi_judge_panel.py`).
 - Add new project-local rewards as `src/rewards/<name>.py` and register
   them in `src/rewards/__init__.py:_LOCAL_REWARDS`.
-- Edit `experiments.rewards` in `config.yaml`: which candidate rewards
-  to score, their hyperparameters (judge model, panel members,
+- Edit the top-level `metrics:` block in `config.yaml`: which candidate
+  rewards to score, their hyperparameters (judge model, panel members,
   agreement threshold, instructions, max_iterations, max_llm_calls,
-  in_mask / out_mask, etc.), and the alias used as the matrix column
-  header.
+  in_mask / out_mask, etc.), and the `alias:` used as the column
+  header. Reward identifiers there are auto-wrapped in
+  `synalinks.metrics.MeanMetricWrapper` so they ride the primary
+  `evaluate()` pass — no extra LM calls per "candidate reward".
 
 **What you CANNOT do:**
-- Modify `evaluate.py`, `src/datasets/`, or `src/keras_stub.py`. The
+- Modify `src/evaluate.py`, `src/config.py`, or `src/datasets/`. The
   harness is fixed.
 - Modify `prepare_data.py` autonomously. It is editable, but only with
   prior agreement from the human — pause the loop, propose the change,
@@ -131,18 +140,20 @@ comparison against earlier results.
 - Modify upstream synalinks built-ins (the reward bases, judge
   programs, etc.). Subclass and add locally instead.
 
-**VRAM / cost** is a soft constraint. Each experiment-level reward adds
-a full `program.evaluate()` pass per trial (K extras = K× the model
-calls), so be mindful when wiring in a heavy reward like
-`recursive_lm_as_judge` against a long matrix. If you're using cloud
-LMs through litellm, watch token spend.
+**VRAM / cost** is a soft constraint. Candidate rewards listed under
+top-level `metrics:` are auto-wrapped in `MeanMetricWrapper` and ride
+the primary `evaluate()` pass — *no* extra model calls per candidate.
+The cost worry is only inside the candidate reward itself (e.g.
+`recursive_lm_as_judge` makes many LM calls per example to score that
+one cell); against a long matrix that still adds up. If you're using
+cloud LMs through litellm, watch token spend.
 
 **Cache invalidation**: whenever the HP space changes (you add or rename
-an experiment-level reward, change its alias, change the model list,
-or change the dataset list) the on-disk trial state in
-`.kt/open_arena/` is stale. Either pass `--no-cache` or
-`rm -rf .kt/open_arena` before the run. Don't delete `.kt` casually
-otherwise — completed trials are reused on resume.
+a candidate reward under `metrics:`, change its alias, change the model
+list, or change the dataset list) the on-disk trial state in
+`.open-arena/<dataset>/` is stale. Either pass `--no-cache` or
+`rm -rf .open-arena/<dataset>` before the run. Don't delete `.open-arena/`
+casually otherwise — completed trials are reused on resume.
 
 **Simplicity criterion**: All else being equal, simpler is better. A
 reward that lifts agreement by 0.01 but adds 200 lines of
@@ -152,40 +163,30 @@ keeping the score is a great outcome.
 
 **The first run**: your very first run establishes the baseline. Wire
 in one or two cheap candidate rewards (e.g. a plain `lm_as_judge` with
-default instructions) under `experiments.rewards` and run the sweep
-unmodified. Compute baseline best-model agreement and mean Spearman.
+default instructions) under the top-level `metrics:` block and run the
+sweep unmodified. Compute baseline best-model agreement and mean
+Spearman.
 
 ## Output format
 
-`uv run evaluate.py` prints one markdown table per metric — the primary
-(`reward`) plus one per `experiment_rewards` alias:
+`uv run arena` writes the sweep to `.open-arena/last_run.tsv` — long format, one
+row per `(model, dataset, metric, value)` cell, plus a `direction`
+column for the metric's optimization direction:
 
 ```
-## Reward (primary)
-
-| language_model  | mmlu_test | gsm8k_test |
-| --------------- | --------: | ---------: |
-| ollama/mistral  |    0.4400 |     0.1800 |
-| ollama/llama3.2 |    0.5200 |     0.4200 |
-
-## panel_judge
-
-| language_model  | ...
-```
-
-Stdout is grep-able (`grep '^| ' .kt/run.log`), but for programmatic use
-read `.kt/last_run.tsv` — long format, one row per
-`(model, dataset, metric, value)` cell:
-
-```
-model	dataset	metric	value
-ollama/mistral	mmlu_test	reward	0.440000
-ollama/mistral	mmlu_test	panel_judge	0.612000
-ollama/llama3.2	mmlu_test	reward	0.520000
+model	dataset	metric	value	direction
+ollama/mistral	mmlu_test	reward	0.440000	max
+ollama/mistral	mmlu_test	panel_judge	0.612000	max
+ollama/llama3.2	mmlu_test	reward	0.520000	max
 ...
 ```
 
-Pivot to matrices in your head (or `python -c`) and compute:
+For multi-objective datasets, the Pareto frontier is printed to stdout
+as a markdown table and written to `.open-arena/frontier.tsv`. Pass `--json
+<path>` to additionally dump the full result (meta + rows) as JSON, or
+`--json -` to emit JSON on stdout and skip the TSV / markdown entirely.
+
+Pivot the TSV to matrices in your head (or `python -c`) and compute:
 
 - per-dataset argmax for `reward` (primary) and for the candidate
   alias; the agreement is `(matches / num_datasets)`,
@@ -195,7 +196,7 @@ Pivot to matrices in your head (or `python -c`) and compute:
 ## Logging results
 
 When an experiment is done, log it to `results.tsv` (tab-separated, NOT
-comma-separated — commas break in descriptions and matrix cells).
+comma-separated — commas break in descriptions and cells).
 
 The TSV has a header row and 10 columns:
 
@@ -204,9 +205,9 @@ commit    candidate    top1    pairwise    sp_min    sp_med    sp_max    n_usabl
 ```
 
 1. git commit hash (short, 7 chars).
-2. candidate alias being evaluated (the `alias:` from
-   `experiments.rewards`, e.g. `panel_judge`). If the run scored
-   multiple candidates, log one row per candidate with the same commit.
+2. candidate alias being evaluated (the `alias:` from the top-level
+   `metrics:` entry, e.g. `panel_judge`). If the run scored multiple
+   candidates, log one row per candidate with the same commit.
 3. **top1** — fraction of usable datasets where the candidate's #1
    model matches the primary's #1, in [0,1], 6 decimals. `0.000000`
    for crashes.
@@ -263,8 +264,9 @@ LOOP FOREVER:
    - bump `max_iterations` / `max_llm_calls` on the recursive judge,
    - add a new project-local reward in `src/rewards/<name>.py` and
      register it in `src/rewards/__init__.py:_LOCAL_REWARDS`,
-   - re-wire `experiments.rewards` in `config.yaml` to score the
-     candidate.
+   - re-wire the top-level `metrics:` block in `config.yaml` to score
+     the candidate (reward identifiers there are auto-wrapped in
+     `MeanMetricWrapper`).
 
 3. **Commit the change**:
    ```bash
@@ -272,71 +274,61 @@ LOOP FOREVER:
    ```
 
 4. **Clear the stale tuner cache** when the metric set changed (added
-   / renamed / removed an experiment-level reward):
+   / renamed / removed a candidate reward under `metrics:`). Either
+   pass `--no-cache` to the sweep, or delete the per-dataset caches:
    ```bash
-   rm -rf .kt/open_arena
+   rm -rf .open-arena/*/
    ```
 
 5. **Run the sweep** — redirect everything; do NOT use `tee` or let
    raw output flood your context:
    ```bash
-   uv run python -u evaluate.py > .kt/run.log 2>&1
+   uv run arena > .open-arena/run.log 2>&1
    ```
 
-6. **Score the run** with `analyze.py`:
-   ```bash
-   uv run analyze.py
-   ```
-   Stdout: one row per candidate, shape
-   `candidate<TAB>top1<TAB>pairwise<TAB>sp_min<TAB>sp_med<TAB>sp_max<TAB>n_usable`
-   — exactly columns 2–8 of `results.tsv`. (Pass a path argument to
-   score a TSV other than `.kt/last_run.tsv`.)
+6. **Score the run.** Read `.open-arena/last_run.tsv` directly — it's the
+   long-form contract (`model<TAB>dataset<TAB>metric<TAB>value<TAB>direction`).
+   Compute whatever lens fits the change you made: per-candidate
+   argmax-model agreement with the primary `reward` column,
+   per-dataset Spearman ρ, primary-reward deltas per dataset, cost
+   or token trade-offs, disagreement breakdowns, etc. There is no
+   prescribed scoring script — you choose the statistic that
+   actually tests the hypothesis behind the iteration.
 
-   Stderr: a human-readable summary with two sections — the best
-   model per dataset under the primary `reward` metric (for model
-   selection), and an aligned reward-analysis table plus a
-   disagreement breakdown listing the datasets where each candidate
-   would have crowned a different #1 model. Read this when running
-   interactively; pipe `2>` to capture it.
+   For multi-objective datasets, `.open-arena/frontier.tsv` lists the
+   on-Pareto-frontier models per dataset.
 
-   Exits non-zero with a stderr message if the TSV is missing or
-   empty (so you can use it as the crash check in step 7). Exits 0
-   when the TSV has primary scores but no candidate metrics — in
-   that case the model-selection summary still prints to stderr,
-   stdout is empty (no candidate rows to log).
+   The TSV is small and human-readable — `cat`ing it into your
+   reasoning is often enough; pivot with a quick Python snippet
+   when you need real stats (Spearman ρ with tie handling, etc.).
 
-7. **Crash check.** If `.kt/last_run.tsv` is missing or empty, the run
+7. **Crash check.** If `.open-arena/last_run.tsv` is missing or empty, the run
    crashed:
    ```bash
-   test -s .kt/last_run.tsv || tail -n 80 .kt/run.log
+   test -s .open-arena/last_run.tsv || tail -n 80 .open-arena/run.log
    ```
    If the failure is a dumb fix (typo, YAML indent, missing import,
    missing env var) fix and re-run. If the idea is fundamentally
    broken, log `crash` and revert (step 10).
 
-8. **Record results in `results.tsv`** — one row per candidate. Do
-   NOT `git add` it; it stays untracked. For each line printed in
-   step 6:
+8. **Record the iteration.** Append a row to `results.tsv`
+   summarizing what you changed and how it scored. Schema is your
+   call — pick columns that let *future you* compare iterations
+   without re-running. Typical shape:
    ```bash
    COMMIT=$(git rev-parse --short HEAD)
-   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-     "$COMMIT" "<cand>" "<top1>" "<pairwise>" "<sp_min>" "<sp_med>" "<sp_max>" "<n_usable>" "keep" "<description>" >> results.tsv
+   printf '%s\t%s\t%s\t%s\n' \
+     "$COMMIT" "<headline-stat>" "keep" "<one-line description>" >> results.tsv
    ```
-   For crashes:
-   ```bash
-   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-     "$COMMIT" "<cand>" "0.000000" "0.000000" "0.000000" "0.000000" "0.000000" "0" "crash" "<description>" >> results.tsv
-   ```
+   For crashes, use `crash` as the outcome and `0` (or `N/A`) for
+   the headline stat. Do NOT `git add` `results.tsv` — it stays
+   untracked across iterations as a local research log.
 
-9. **If pairwise improved** (or pairwise equal and `sp_med` improved),
-   advance the branch — keep the commit, do nothing. `pairwise` is
-   preferred over `top1` because it stays informative when the sweep
-   has more than two models (top1 is binary on a small model set).
-   `sp_med` (median) is preferred over the arithmetic mean it replaces
-   because it's robust to a single-dataset catastrophic disagreement —
-   if `sp_min` is sharply negative while `sp_med` is high, the
-   candidate is *actively inverted on one dataset* and should be
-   discarded even when other stats look fine.
+9. **If the change improved the sweep**, advance the branch — keep
+   the commit, do nothing. "Improved" is a judgment call from the
+   TSV: did the primary `reward` go up where it matters? Did costs
+   not regress badly? Did rankings shift sensibly? Lean
+   conservative — noise-level improvements should revert.
 
 10. **If equal or worse**, revert:
     ```bash
@@ -350,9 +342,9 @@ gains.
 **Timeout**: each experiment should take ~5 minutes total (+ a few
 seconds for startup). If a run exceeds 10 minutes, kill it, treat it
 as a failure, and lower the dataset `limit:` or drop a heavy candidate
-from `experiments.rewards`. To kill a runaway sweep:
+from the top-level `metrics:` block. To kill a runaway sweep:
 ```bash
-pkill -f 'evaluate.py'
+pkill -f 'src.evaluate'
 ```
 
 **Crashes**: use judgment as above.
