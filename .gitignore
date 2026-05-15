@@ -1,7 +1,7 @@
-# Local autoresearch state — keras-tuner trial cache + ad-hoc debug
-# scripts under .kt/, plus results.tsv (per AUTORESEARCH.md the TSV
-# stays untracked).
-.kt/
+# Local autoresearch state — keras-tuner trial cache + TSV / JSON
+# outputs under .open-arena/, plus results.tsv (per AUTORESEARCH.md the
+# TSV stays untracked).
+.open-arena/
 results.tsv
 
 # Byte-compiled / optimized / DLL files

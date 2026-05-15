@@ -6,7 +6,7 @@ Autoresearch loop for reward-R&D and model selection in the modern
 LM ops stack — between post-training evals and the next round of
 fine-tuning / RL. An agent iterates on candidate rewards built-ins 
 (`exact_match`, `cosine_similarity`, `lm_as_judge`), custom rewards
-under `src/rewards/` (`judge_panel`, `recursive_lm_as_judge`),
+under `src/rewards/` (`multi_judge_panel`, `recursive_lm_as_judge`),
 and any `deepeval.metrics` class via the `deep_eval` wrapper.
 Validates them by running an evaluation sweep across a (model ×
 dataset) grid, and keeps the rewards whose rankings best agree with
@@ -42,7 +42,7 @@ Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure, AWS).
 ```bash
 arena                          # uses ./config.yaml
 arena -c configs/eval.yaml     # different config
-arena --no-cache               # discard the .kt/ trial cache and start over
+arena --no-cache               # discard the .open-arena/ trial cache and start over
 ```
 
 `arena --help` for the full option list.
@@ -64,10 +64,11 @@ Trigger phrases (any of these, or an obvious paraphrase, kicks it off):
 - "kick off the autoresearch loop"
 
 After confirmation, the agent edits `src/rewards/`, commits, runs
-`uv run python -u evaluate.py > .kt/run.log 2>&1`, scores the sweep
-with `analyze.py`, logs to `results.tsv`, and either advances or
-reverts the branch — repeating indefinitely. See `AUTORESEARCH.md` for
-the full protocol.
+`uv run arena > .open-arena/run.log 2>&1`, reads `.open-arena/last_run.tsv` directly
+to score the sweep (computing whatever agreement / correlation /
+trade-off statistics fit the iteration), and either advances or
+reverts the branch — repeating indefinitely. See `AUTORESEARCH.md`
+for the full protocol.
 
 ## Configure
 
@@ -138,7 +139,7 @@ outputs).
 | `cosine_similarity` | Cosine over `embedding_model` outputs |
 | `lm_as_judge` | Single-LM judge |
 | `recursive_lm_as_judge` | RLM agent inside a `ProgramAsJudge` — inspects the (gold, prediction) pair with code, recursively delegates semantic comparisons to a sub-LM |
-| `judge_panel` | M small LMs vote in parallel; on disagreement (max-min spread > `agreement_threshold`) a smart LM breaks the tie |
+| `multi_judge_panel` | M small LMs vote in parallel; on disagreement (max-min spread > `agreement_threshold`) a smart LM breaks the tie |
 | `deep_eval` | Wraps any `deepeval.metrics` class (`GEval`, `FaithfulnessMetric`, `ToolCorrectnessMetric`, `PIILeakageMetric`, …). Per-slot mask routing maps `LLMTestCase` slots (input / actual_output / expected_output / context / retrieval_context / tools_called / expected_tools) to data-model fields independently. Install with `uv sync --extra deepeval`. |
 
 **Masking — different rule for comparison vs judge rewards:**
@@ -146,7 +147,7 @@ outputs).
 - **Comparison rewards** (`exact_match`, `cosine_similarity`, regex / length
   checks): pass `in_mask: [content]` so the comparison only sees the answer
   field — `role` and friends would otherwise drive the score to 0.
-- **Judge rewards** (`lm_as_judge`, `recursive_lm_as_judge`, `judge_panel`,
+- **Judge rewards** (`lm_as_judge`, `recursive_lm_as_judge`, `multi_judge_panel`,
   `deep_eval`): leave `in_mask` *unset*. The harness builds the eval
   program with `Generator(return_inputs=True, …)`, so `y_pred` carries the
   original input `messages` alongside the answer; the judge needs that
@@ -199,51 +200,50 @@ trial fast rather than producing a tool-less agent. Any
 except `language_model`/`tools`/`data_model`/`schema`, which are wired
 from the model and the dataset.
 
-### Experiment-level rewards
+### Extra scoring functions via top-level `metrics:`
 
-Generic rewards that apply to every `(model, dataset)` trial, on top of
-that dataset's primary reward:
+To score every `(model, dataset)` trial with additional scoring functions
+beyond the dataset's primary `reward:`, list them under the top-level
+`metrics:` block. Any reward identifier (e.g. `lm_as_judge`,
+`cosine_similarity`, `multi_judge_panel`, `recursive_lm_as_judge`,
+`deep_eval`) is auto-wrapped in `synalinks.metrics.MeanMetricWrapper`
+so it rides the primary `evaluate()` pass — no extra K× model-call cost:
 
 ```yaml
-experiments:
-  rewards:
-    - name: lm_as_judge
-      alias: lm_judge
-      language_model: ollama/llama3.2
-      # No `in_mask` — judges need the input `messages` (injected via
-      # `return_inputs=True`) alongside the answer to score relevance.
-      instructions: "Score 0.0–1.0 on factual correctness."
-    - name: recursive_lm_as_judge
-      alias: rlm_judge
-      # `language_model` drives code generation + structured submit, so it
-      # must be a capable model — small Ollama models can't do this
-      # reliably. `sub_language_model` (used for `llm_query`) can be cheap.
-      language_model: openai/gpt-4o
-      sub_language_model: openai/gpt-4o-mini
-      max_iterations: 8
-      max_llm_calls: 10
-      instructions: "Score 0.0–1.0 on factual correctness."
+metrics:
+  - class: lm_as_judge
+    alias: lm_judge
+    objective: true              # promote to oracle objective for ranking
+    language_model: ollama/llama3.2
+    instructions: "Score 0.0–1.0 on factual correctness."
+  - class: recursive_lm_as_judge
+    alias: rlm_judge
+    objective: true
+    # `language_model` drives code generation + structured submit, so it
+    # must be a capable model — small Ollama models can't do this reliably.
+    # `sub_language_model` (used for `llm_query`) can be cheap.
+    language_model: openai/gpt-4o
+    sub_language_model: openai/gpt-4o-mini
+    max_iterations: 8
+    max_llm_calls: 10
+    instructions: "Score 0.0–1.0 on factual correctness."
 ```
 
-Each one renders an extra matrix at the end of the run. Each one also
-costs an additional evaluation pass per trial (the underlying program
-only accepts one reward at compile time), so K experiment rewards = K×
-the model calls of the primary run.
-
-The purpose is to test generic open-ended rewards.
+Each one becomes a column in the result matrix. With `objective: true`,
+the entry joins the dataset's tuner objective list (Pareto-ranked
+alongside the primary `reward:` and any other tagged entries).
 
 ## Layout
 
 ```
-evaluate.py                           `arena` entrypoint — sweep + result matrices
-program.py                            Editable program graphs: build_program / build_agent
-analyze.py                            Reward-vs-primary diagnostics over the sweep
 src/
-  keras_stub.py                       Lets keras-tuner import without a real keras backend
+  evaluate.py                         `arena` entrypoint — sweep runner, writes .open-arena/last_run.tsv (+ optional --json)
+  program.py                          Editable program graphs: build_program / build_agent
+  config.py                           Pydantic schema + validators for config.yaml
   datasets/                           One file per provider + the registry
   rewards/
     deep_eval.py                      Wraps any DeepEval metric (per-slot mask routing)
-    judge_panel.py
+    multi_judge_panel.py
     recursive_language_model_reward.py
 config.yaml                           Active config
 config.example.yaml                   Reference config (every provider / reward / agent example)

@@ -1,8 +1,8 @@
 # Building rewards
 
 How to add a new project-local reward to `src/rewards/` so it can be
-selected from `config.yaml` (per-dataset primary or experiment-level
-candidate).
+selected from `config.yaml` (per-dataset primary or candidate scoring
+function under the top-level `metrics:` block).
 
 ## Background: how rewards are wired
 
@@ -14,7 +14,7 @@ union-ing two sources:
   (auto-discovered from `synalinks.src.rewards.ALL_OBJECTS`).
   Examples: `exact_match`, `cosine_similarity`, `lm_as_judge`.
 - **project-local** — classes listed in `_LOCAL_REWARDS`. Today:
-  `JudgePanel`, `RecursiveLMAsJudge`, `DeepEval`. This is what you
+  `MultiJudgePanel`, `RecursiveLMAsJudge`, `DeepEval`. This is what you
   extend.
 
 Lookup is by `to_snake_case(cls.__name__)`, so `MyClassName` becomes
@@ -40,7 +40,7 @@ pick from depend on what you need:
 - **`ProgramAsJudge`** (`synalinks.src.rewards.reward_wrappers`) — wraps
   an inner `Program` that judges `[y_true, y_pred]` and returns
   something with a `reward` field. Use this when the reward needs an LM
-  in the loop. `JudgePanel` and `RecursiveLMAsJudge` both follow this
+  in the loop. `MultiJudgePanel` and `RecursiveLMAsJudge` both follow this
   pattern.
 - **`RewardFunctionWrapper`** — wraps a plain async function. Lighter
   than a `Program` when you don't need parameters or training.
@@ -53,7 +53,7 @@ fields of the chat message (e.g. `in_mask=[content]` to ignore
 ## What `y_pred` actually contains
 
 The harness builds the eval program with `synalinks.Generator(
-return_inputs=True, …)` (see `evaluate.py:build_program`). That means
+return_inputs=True, …)` (see `src/program.py:build_program`). That means
 `y_pred` is the **input prompt concatenated with the prediction**, not
 just the prediction.
 
@@ -84,7 +84,7 @@ For a default chat-message dataset (no `input_schema` /
 ```
 
 This is deliberate: judge-style rewards (`lm_as_judge`,
-`recursive_lm_as_judge`, `judge_panel`, `deep_eval`, custom LM judges)
+`recursive_lm_as_judge`, `multi_judge_panel`, `deep_eval`, custom LM judges)
 need to see the original prompt to score whether the response actually
 addresses the task. Without it the judge is grading an answer against a
 gold reference in a vacuum.
@@ -170,7 +170,7 @@ calls to a deterministic library) belong here.
 
 ## The `LMAsJudgeProgram` pattern
 
-`JudgePanel` and `RecursiveLMAsJudge` both follow the same shape
+`MultiJudgePanel` and `RecursiveLMAsJudge` both follow the same shape
 (`DeepEval` is a thinner wrapper around an external library and is
 not a `LMAsJudgeProgram`):
 
@@ -182,8 +182,8 @@ not a `LMAsJudgeProgram`):
    exposes the user-facing constructor signature.
 
 Reference implementation:
-[`src/rewards/judge_panel.py`](src/rewards/judge_panel.py) —
-`JudgePanelProgram` (the program) and `JudgePanel` (the
+[`src/rewards/multi_judge_panel.py`](src/rewards/multi_judge_panel.py) —
+`MultiJudgePanelProgram` (the program) and `MultiJudgePanel` (the
 `ProgramAsJudge` wrapper).
 
 The skeleton:
@@ -235,7 +235,7 @@ class MyJudge(ProgramAsJudge):
 
 If your reward needs serialization (so trained variables round-trip),
 also implement `get_config` / `from_config` on the inner `Program` —
-again, see `JudgePanelProgram` for an example using
+again, see `MultiJudgePanelProgram` for an example using
 `serialization_lib`.
 
 ## Step-by-step: adding a new reward
@@ -267,26 +267,27 @@ Edit `src/rewards/__init__.py:_LOCAL_REWARDS`:
 ```python
 from src.rewards.my_judge import MyJudge
 
-_LOCAL_REWARDS = (JudgePanel, RecursiveLMAsJudge, MyJudge)
+_LOCAL_REWARDS = (MultiJudgePanel, RecursiveLMAsJudge, MyJudge)
 ```
 
 That's it — the registry rebuilds on import.
 
 ### 4. Wire it into `config.yaml`
 
-As an experiment-level candidate (the typical autoresearch case):
+As a candidate under the top-level `metrics:` block (the typical
+autoresearch case — `MeanMetricWrapper` auto-wraps it so it rides the
+primary `evaluate()` pass with no extra LM calls per trial):
 
 ```yaml
-experiments:
-  rewards:
-    - name: my_judge
-      alias: my_judge          # column header in matrices and TSV
-      language_model: ollama/llama3.2
-      # No `in_mask` for judges — they need to see the input messages
-      # the CoT concatenated onto the prediction. See
-      # "What `y_pred` actually contains" above.
-      instructions: |
-        Score 0.0–1.0 on whether the prediction matches the gold answer.
+metrics:
+  - class: my_judge
+    alias: my_judge            # column header in the TSV
+    language_model: ollama/llama3.2
+    # No `in_mask` for judges — they need to see the input messages
+    # the CoT concatenated onto the prediction. See
+    # "What `y_pred` actually contains" above.
+    instructions: |
+      Score 0.0–1.0 on whether the prediction matches the gold answer.
 ```
 
 Or as a per-dataset primary reward:
@@ -307,19 +308,21 @@ datasets:
 The HP space changed (a new metric alias was added):
 
 ```bash
-rm -rf .kt/open_arena
-uv run python -u evaluate.py > .kt/run.log 2>&1
+rm -rf .open-arena/*/
+uv run arena > .open-arena/run.log 2>&1
 ```
 
 ### 6. Score it
 
 ```bash
-uv run analyze.py
+cat .open-arena/last_run.tsv
 ```
 
-Output is `<alias>\t<agreement>\t<spearman>` per candidate, where
-agreement is the fraction of datasets on which the candidate's
-argmax-model matches the primary's argmax-model.
+The TSV is long-format (`model<TAB>dataset<TAB>metric<TAB>value<TAB>direction`).
+Compute whatever lens fits the change — argmax-model agreement against the
+primary, per-dataset Spearman ρ, primary-reward deltas, cost/token trade-offs,
+disagreement breakdowns. For multi-objective datasets, `.open-arena/frontier.tsv`
+lists the on-Pareto-frontier models.
 
 ### 7. Iterate
 
@@ -341,15 +344,23 @@ re-score. The autoresearch loop in `AUTORESEARCH.md` automates this.
 - **Reward not in `[0, 1]`** — break the agreement / Spearman analysis,
   which assumes higher is better and bounded. Clamp or normalize inside
   the reward.
-- **Heavy reward × big sweep** — every experiment-level reward triggers
-  another full `program.evaluate()` pass per trial (synalinks
-  `compile(reward=...)` only takes one). K extras = K× the model calls.
-  Cap dataset `limit:` accordingly.
+- **Heavy reward × big sweep** — candidate rewards listed under
+  top-level `metrics:` are auto-wrapped in `MeanMetricWrapper` and ride
+  the primary `evaluate()` pass, so adding one does *not* cost an extra
+  full pass per trial. The cost worry is inside the reward itself: a
+  judge like `recursive_lm_as_judge` makes many LM calls per example to
+  score one cell, and that still adds up across the matrix. Cap dataset
+  `limit:` accordingly.
 - **Alias collision with `reward`** — the primary metric's alias is
-  hardcoded as `reward`; setting `alias: reward` raises in
-  `_parse_experiment_rewards`.
-- **Same alias twice** — keras-tuner registers each alias once. If two
-  candidates share an alias, the second silently overwrites the first.
+  hardcoded as `reward`; setting `alias: reward` on a `metrics:` entry
+  raises in `_instantiate_metrics` (`src/evaluate.py`).
+- **Same alias twice** — `_merge_metrics` (`src/evaluate.py`) dedupes
+  by alias across the per-dataset `metrics:` list and the top-level
+  `metrics:` list, with per-dataset winning on collision. Within a
+  single list, duplicate aliases reach `program.compile(metrics=...)`
+  and one will silently shadow the other in synalinks' result dict
+  (whichever the metric runner sees last) — keep aliases unique inside
+  each list.
 - **Cache staleness** — adding / renaming / removing an alias changes
-  the HP space. `rm -rf .kt/open_arena` (or pass `--no-cache`) before
+  the HP space. `rm -rf .open-arena/*/` (or pass `--no-cache`) before
   the next run, otherwise resumed trials won't have the new metric.

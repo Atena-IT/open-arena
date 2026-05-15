@@ -117,11 +117,12 @@ def load_dataset_from_yaml(yaml_path: str, name: str | None = None) -> Dataset:
     if type_name is None:
         raise ValueError(f"{yaml_path}: dataset {name!r} is missing a `type` field.")
 
-    # `generator:` and `reward:` are consumed by main.py (per-dataset
-    # Generator kwargs and Reward spec), not by the Dataset constructor —
-    # strip them before forwarding kwargs.
-    entry.pop("generator", None)
-    entry.pop("reward", None)
+    # Arena-level keys are consumed by src/evaluate.py / src/program.py,
+    # not by the Dataset constructor — strip them before forwarding kwargs
+    # so providers don't see unknown keywords (HuggingFace's `load_dataset`
+    # raises on unknown BuilderConfig keys, for instance).
+    for k in ("generator", "agent", "reward", "metrics"):
+        entry.pop(k, None)
 
     try:
         cls = get(type_name)

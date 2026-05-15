@@ -5,8 +5,8 @@ datasets:
     name: all
     split: test
     streaming: true
-    limit: 5
-    batch_size: 1
+    limit: 10
+    batch_size: 2
     input_schema: |
       {
         "type": "object",
@@ -39,7 +39,7 @@ datasets:
     output_template: |
       {"answer": {{ ["A", "B", "C", "D"][answer] | tojson }}}
     generator:
-      temperature: 0.0
+      temperature: 0.7               # >0 so rollouts of the same prompt diverge
       # Judge-style candidate rewards need the question alongside the
       # answer to score sensibly; primary `exact_match` masks `question`
       # back out before comparing.
@@ -49,6 +49,28 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      # MCQ with a single enum-typed answer field → categorical
+      # accuracy + precision + recall. Same mask as the reward so the
+      # metric doesn't compare the regurgitated input (Generator runs
+      # with `return_inputs: true`).
+      - class: categorical_accuracy
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+        objective: true                  # → 2nd objective on mmlu only (paired with reward)
 
   gsm8k_test:
     type: huggingface
@@ -57,7 +79,8 @@ datasets:
     split: test
     streaming: true
     limit: 5
-    batch_size: 1
+    batch_size: 2
+    repeat: 1
     input_schema: |
       {
         "type": "object",
@@ -86,13 +109,16 @@ datasets:
     output_template: |
       {"answer": {{ (answer.split("####")[-1].strip().replace(",", "") | float) | tojson }}}
     generator:
-      temperature: 0.0
+      temperature: 0.7               # >0 so rollouts of the same prompt diverge
       return_inputs: true
       instructions: |
         Solve the math word problem. Output only the final numerical answer.
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    # Numeric scalar answer — `exact_match` is the right primary; no
+    # per-dataset classification metrics (they'd just duplicate the reward
+    # on single-scalar fields).
 
   # HellaSwag — commonsense continuation, 4-way MCQ.
   hellaswag_validation:
@@ -138,6 +164,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # 4-way MCQ — accuracy + precision + recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # ARC-Challenge — grade-school science MCQ. Choice count varies (3-5),
   # so we cannot use an enum on the answer field.
@@ -185,6 +228,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # 3- to 5-way MCQ (letter or number)
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # WinoGrande — pronoun resolution, binary choice.
   winogrande_validation:
@@ -231,6 +291,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # binary choice (integer 1 or 2)
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # BoolQ — yes/no reading comprehension.
   boolq_validation:
@@ -275,6 +352,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: binary_accuracy        # yes/no — boolean answer schema
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # BIG-Bench Hard (boolean_expressions task — swap `name:` for any of the 23 tasks).
   bbh_boolean_expressions:
@@ -320,6 +414,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: binary_accuracy        # True/False boolean answer
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: binary_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # DROP — discrete reasoning over paragraphs.
   drop_validation:
@@ -361,6 +472,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: accuracy               # token-level Jaccard over short spans
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # TruthfulQA (MC1) — pick the single truthful answer; choice count varies.
   truthfulqa_mc1:
@@ -409,6 +537,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # letter pick — variable choice count
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # HumanEval — code generation. Real scoring runs unit tests; exact_match is a placeholder.
   humaneval:
@@ -539,6 +684,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: accuracy               # span-style extractive answer
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # LogiQA — logical reasoning, 4-way MCQ. `options` strings already include
   # "A." / "B." / ... prefixes. The dataset's `answer` field is the literal
@@ -586,6 +748,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # 4-way MCQ — accuracy + precision + recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # BBQ — Bias Benchmark for QA (Age subset; swap `split:` for other
   # categories: gender_identity, race_ethnicity, religion, ses, ...).
@@ -632,6 +811,23 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: categorical_accuracy   # 3-way MCQ (A/B/C)
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: categorical_f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
   # LAMBADA — predict the last word of a passage.
   lambada_test:
@@ -675,46 +871,76 @@ datasets:
     reward:
       name: exact_match
       out_mask: [question, thinking]
+    metrics:
+      - class: accuracy               # token-level — single missing word
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: precision
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: recall
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
+      - class: f1_score
+        average: micro
+        out_mask: [question, thinking]
+        direction: max
 
 default: mmlu_test
 
+# Top-level operational metrics — always-on instrumentation applied to
+# every (model, dataset) trial. Lives at config root (not under
+# `experiments:`) because operational metrics aren't an axis of the
+# experiment; they're passive observers, like the dataset registry.
+# Ride along the primary evaluate() pass — no extra LM calls. Identifiers
+# are snake_case (same convention as rewards). Per-dataset `metrics:` lists
+# (typically classification metrics — see each dataset's block) extend
+# this set; same alias → per-dataset wins.
+#
+# All operational categories are enabled here on purpose: zero-valued
+# columns are still signal (they tell you the workload made no LM-judge
+# calls / no embedding calls / no cached reads / etc.). The only family
+# deliberately skipped is `optimizer_*` — those tick during
+# `program.fit()` only, and the arena is evaluate-only.
+metrics:
+
+  # --- Language-model usage (inference / generator phase) -----------------
+  - class: input_tokens
+    direction: min
+  - class: output_tokens
+    direction: min
+  - class: total_tokens                # informational cost column, not a research axis
+    direction: min
+  - class: avg_input_tokens_per_call
+    direction: min
+  - class: avg_output_tokens_per_call
+    direction: min
+  - class: tokens_per_second
+    direction: max
+  - class: throughput
+    direction: max
+  - class: cost
+    direction: min
+  - class: avg_cost_per_call
+    direction: min
+  - class: cached_tokens
+    direction: max
+  - class: cache_creation_tokens
+    direction: min
+  - class: cache_hit_rate
+    direction: max
+  - class: reasoning_tokens
+    direction: min
+  - class: reasoning_token_share
+    direction: max
+
 experiments:
-  primary_direction: max          # higher reward = better (default)
   language_models:
-    - ollama/mistral
     - ollama/llama3.2
+    - ollama/mistral
   datasets:
     - mmlu_test
     - gsm8k_test
-    - hellaswag_validation
-    - arc_challenge_test
-    - winogrande_validation
-    - boolq_validation
-    - bbh_boolean_expressions
-    - drop_validation
-    - truthfulqa_mc1
-    - humaneval
-    - ifeval
-    - squad_validation
-    - logiqa_test
-    - bbq_age
-    - lambada_test
-
-  rewards:
-    # LM-as-judge for semantic correctness — complements the per-dataset
-    # `exact_match` primaries, which are strict on surface form. Catches
-    # cases where the model is right but uses a different formatting
-    # ("twenty" vs `20`, "yes" vs `true`, trailing period, etc.). Adds one
-    # full evaluate() pass per trial, so cost = 2× the primary's LM calls.
-    - name: lm_as_judge
-      alias: lm_correctness
-      language_model: ollama/llama3.2
-      # Keep both `question` and `answer` (judge needs the prompt for context);
-      # drop `thinking` so CoT noise doesn't bias the score.
-      out_mask: [thinking]
-      instructions: |
-        Score 0.0–1.0 on whether the candidate response is correct given the
-        expected response. Ignore formatting, capitalization, units, and
-        surface-form differences — judge only the underlying meaning or
-        value. Return 1.0 for fully correct, 0.0 for clearly wrong, and a
-        partial score in between when the answer is partially right.

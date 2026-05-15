@@ -1,6 +1,21 @@
 # Example configuration for open-arena.
 # Copy to config.yaml, then edit / remove the entries you don't need.
 
+# --- Synalinks defaults (optional) -----------------------------------------
+# Process-wide fallbacks applied via `synalinks.set_default_language_model()`
+# / `synalinks.set_default_embedding_model()` at sweep boot. Reward specs
+# that omit `language_model:` / `embedding_model:` pick these up — handy
+# when many rewards share the same judge / embedder. Synalinks persists
+# the identifier to `~/.synalinks/synalinks.json` as a side effect (its
+# documented behavior for string identifiers).
+# default_language_model: ollama/llama3.2
+# default_embedding_model: ollama/mxbai-embed-large
+
+# Reproducibility seed for `numpy.random` and `random` (applied via
+# `synalinks.set_seed`). Does not seed LM provider sampling — that's
+# governed by the provider's own RNG and `temperature:`.
+# seed: 42
+
 # --- Datasets ---------------------------------------------------------------
 # Each entry under `datasets:` is a named source. The `type:` field selects a
 # provider (see src/datasets/__init__.py:_DATASET_TYPES); every other key is
@@ -34,15 +49,35 @@
 # a dict with `name:` plus constructor kwargs. `language_model:` and
 # `embedding_model:` strings are auto-resolved into synalinks instances.
 # Add `direction: min | max` (keras-tuner convention, default `max`) under
-# the dict form when the dataset's primary metric is loss-style — analyze.py
-# and the trial canonicaliser then pick the winning model in the right
-# direction. Per-dataset, so different datasets in the same sweep can mix
-# loss-style and reward-style primaries freely.
+# the dict form when the dataset's primary metric is loss-style — the
+# per-dataset tuner uses it to rank trials in the right direction.
+# Per-dataset, so different datasets in the same sweep can mix loss-style
+# and reward-style primaries freely.
 #
 # `repeat:` (per-dataset, optional, default 1) emits each raw example N times
 # in a row before moving on. Setting `repeat == batch_size` makes every batch
 # a group of N rollouts of the same prompt — the GRPO-style RL layout where
 # reward statistics are computed across rollouts of one input.
+#
+# `metrics:` (per-dataset, optional) is a list of metric / reward identifiers
+# forwarded to `program.compile(metrics=...)`. They ride along the primary
+# evaluate() pass (no extra LM calls) and surface as additional columns in
+# the result TSV. Identifiers resolve in two registries: project rewards
+# (auto-wrapped in `synalinks.metrics.MeanMetricWrapper`) and synalinks
+# built-in metrics. Entry shapes:
+#   - String: snake_case identifier (the class name lowercased + underscored),
+#     e.g. `- total_tokens`. Same convention as reward identifiers.
+#   - Dict: `class:` (required) is the identifier. `alias:` overrides the
+#     column header (defaults to the metric's `.name`). `direction:` is the
+#     keras-tuner ranking direction (`max` | `min`, default `max`) — use
+#     `min` for cost / token-style metrics. `objective: true` promotes the
+#     entry to a tuner objective for that dataset (paired with the primary
+#     `reward` on the Pareto frontier). All other keys flow as constructor
+#     kwargs, including `name:` which controls the metric's internal
+#     `.name` (the key synalinks writes into its result dict).
+# A sweep-wide list under the top-level `metrics:` block (see the bottom of
+# this file) is applied to every dataset; per-dataset entries with the same
+# alias take precedence.
 
 # --- MCP server registry ----------------------------------------------------
 # Top-level map of {server_name: connection_dict}. Each connection follows
@@ -99,9 +134,16 @@ datasets:
       # `direction:` (default `max`) is the keras-tuner convention for
       # ranking. Add `direction: min` to a dataset whose primary metric is
       # loss-style (cross-entropy, edit distance, harm rate, ...). The
-      # canonical-trial picker and analyze.py both honor it per-dataset,
-      # so a single sweep can mix max-direction and min-direction primaries.
+      # per-dataset tuner honors it for trial ranking, so a single sweep
+      # can mix max-direction and min-direction primaries.
       # direction: max
+    # Optional per-dataset synalinks metrics (free — share the primary
+    # evaluate() pass). Combined with the top-level `metrics:` block; same
+    # alias on both → this side wins.
+    # metrics:
+    #   - tokens_per_second                # string: snake_case identifier
+    #   - class: avg_cost_per_call         # lower is cheaper
+    #     direction: min
 
   # GSM8K math word problems via HuggingFace (illustrates a different schema
   # AND a task-specific generator prompt).
@@ -645,34 +687,199 @@ datasets:
 # Which dataset to use when no name is passed to load_dataset_from_yaml().
 default: mmlu_test
 
-# --- Experiments ------------------------------------------------------------
-# evaluate.py runs a keras-tuner GridSearch over the cross product of
-# `language_models:` × `datasets:` — one trial per (model, dataset) pair —
-# and prints one model × dataset matrix per metric at the end.
+# --- Top-level metrics ------------------------------------------------------
+# Sweep-wide always-on observability + any extra scoring functions. Each
+# entry is a `synalinks.metrics.Metric` attached to every (model, dataset)
+# trial via `program.compile(metrics=...)`. Metrics ride along the primary
+# `evaluate()` pass — no extra LM calls.
 #
-# `datasets:` is optional; when omitted, the single dataset named by the
-# top-level `default:` key is used (1xN matrix).
+# Identifiers resolve in two registries:
+#   - Synalinks metrics (`total_tokens`, `categorical_f1_score`, ...) —
+#     resolved via `synalinks.metrics.get(...)`.
+#   - Project rewards (`exact_match`, `lm_as_judge`, `cosine_similarity`,
+#     `multi_judge_panel`, `recursive_lm_as_judge`, `deep_eval`) — auto-
+#     wrapped in `MeanMetricWrapper` so they function as metrics. This is
+#     how you add an LM judge or any extra scoring function: it rides the
+#     same evaluate() pass as the primary reward — no extra K× cost.
 #
-# Direction (max | min, the keras-tuner convention) is per-reward,
-# everywhere it appears:
-#   - For each dataset's primary `reward:`, set `direction:` inside the
-#     `reward:` block (default `max`).
-#   - For each entry under `experiments.rewards:`, set `direction:` at
-#     the entry root (also default `max`).
-# This lets a sweep mix reward-style (max) and loss-style (min) primaries
-# across datasets — each dataset's column is ranked in its own direction.
+# Per entry:
+#   - `class:` (required) — the identifier.
+#   - `alias:` (optional) — column name + metric `.name`. Defaults to the
+#     metric's own `.name`.
+#   - `direction:` (optional, `max` | `min`, default `max`) — keras-tuner
+#     ranking direction. Use `min` for counters / losses / distances.
+#   - `objective:` (optional, default `false`) — promote to the per-dataset
+#     tuner's oracle objective. Each tagged entry becomes one axis of a
+#     multi-objective ranking; the primary `reward:` is always an objective.
+#   - All other keys flow to the metric (or wrapped-reward) constructor —
+#     notably `name:` sets the metric's internal `.name` (= result-dict key);
+#     `language_model:` / `embedding_model:` are auto-resolved for rewards.
 #
-# `rewards:` is optional. Each entry is a generic reward applied to every
-# (model, dataset) trial in addition to that dataset's primary reward —
-# use it for cross-cutting checks (conciseness, format compliance, length,
-# safety, ...) that should hold regardless of the task. Each entry has the
-# same shape as a dataset `reward:` plus:
-#   - `alias:` (optional) — column name in the result matrix; defaults to
-#     the reward's `name`. Must not collide with `"reward"`.
-#   - `direction:` (optional, `max` | `min`, default `max`) — whether higher
-#     or lower is better for this metric. Use `min` for losses / distances.
-# Each extra reward triggers another full program.evaluate() pass — K
-# extras = K× the model calls per trial.
+# Per-dataset `metrics:` lists (see "Datasets" section) extend this set;
+# same alias → per-dataset wins.
+metrics:
+
+# --- Language-model usage (inference / generator phase) -----------------
+  # These tick on every LM call the trial program makes — the Generator
+  # in `build_program`, or the FunctionCallingAgent + its tool loop.
+
+  - class: input_tokens                # prompt tokens consumed by this run
+    direction: min
+  - class: output_tokens               # completion tokens generated
+    direction: min
+  - class: total_tokens                # input + output, the headline counter
+    direction: min
+  - class: avg_input_tokens_per_call   # mean prompt length per LM call
+    direction: min
+  - class: avg_output_tokens_per_call  # mean completion length per LM call
+    direction: min
+  - class: tokens_per_second           # throughput, tokens/sec
+    direction: max
+  - class: throughput                  # throughput, LM calls/sec (RPS)
+    direction: max
+  - class: cost                        # USD as reported by litellm
+    direction: min
+  - class: avg_cost_per_call           # mean $/call — useful with bursty traffic
+    direction: min
+  - class: cached_tokens               # prompt tokens served from provider cache
+    direction: max                     # more cache hits → cheaper run
+  - class: cache_creation_tokens       # tokens written to cache (Anthropic) — billed higher
+    direction: min
+  - class: cache_hit_rate              # cached / prompt_tokens; 0.7+ is good
+    direction: max
+  - class: reasoning_tokens            # extended-thinking output (Claude / o-series)
+    direction: min                     # informational; not always loss-style
+  - class: reasoning_token_share       # reasoning / completion ratio
+    direction: max                     # higher = model actually using its thinking budget
+
+  # --- Reward-phase LM usage ----------------------------------------------
+  # Tick only on LM calls made *inside* reward computation — e.g. the
+  # judge in `lm_as_judge`, the sub-LM in `recursive_lm_as_judge`, the
+  # panel members in `multi_judge_panel`, the verifier in `lm_as_verifier`.
+  # Empty when the primary reward is non-LM (exact_match, regex, etc.).
+
+  # - class: reward_input_tokens         # judge / verifier prompt tokens
+  #   direction: min
+  # - class: reward_output_tokens        # judge / verifier completion tokens
+  #   direction: min
+  # - class: reward_total_tokens         # input + output, reward phase
+  #   direction: min
+  # - class: avg_reward_input_tokens_per_call
+  #   direction: min
+  # - class: avg_reward_output_tokens_per_call
+  #   direction: min
+  # - class: reward_tokens_per_second
+  #   direction: max
+  # - class: reward_throughput           # judge calls / sec
+  #   direction: max
+  # - class: reward_cost                 # USD spent on judge / verifier LMs
+  #   direction: min
+  # - class: avg_reward_cost_per_call
+  #   direction: min
+  # - class: reward_cached_tokens
+  #   direction: max
+  # - class: reward_cache_creation_tokens
+  #   direction: min
+  # - class: reward_cache_hit_rate
+  #   direction: max
+  # - class: reward_reasoning_tokens
+  #   direction: min
+  # - class: reward_reasoning_token_share
+  #   direction: max
+
+  # --- Embedding-model usage (inference phase) ----------------------------
+  # Tick when a Generator / agent uses an embedding model — uncommon in
+  # the arena's default Generator path; common for retrieval / RAG setups.
+
+  # - class: embedding_tokens
+  #   direction: min
+  # - class: embedding_vectors           # number of vectors produced (~ batch size × calls)
+  #   direction: min
+  # - class: embedding_cost
+  #   direction: min
+  # - class: embedding_throughput        # embedding calls / sec
+  #   direction: max
+  # - class: embedding_tokens_per_second
+  #   direction: max
+  # - class: embedding_vectors_per_second
+  #   direction: max
+  # - class: avg_embedding_tokens_per_call
+  #   direction: min
+  # - class: avg_embedding_vectors_per_call  # average batch size
+  #   direction: max                     # bigger batches → better amortization
+  # - class: avg_embedding_cost_per_call
+  #   direction: min
+  # - class: embedding_cached_tokens
+  #   direction: max
+  # - class: embedding_cache_hit_rate
+  #   direction: max
+
+  # --- Reward-phase embedding usage ---------------------------------------
+  # Tick only on embedding calls inside the reward — e.g. `cosine_similarity`
+  # against an `embedding_model`. Empty otherwise.
+
+  # - class: reward_embedding_tokens
+  #   direction: min
+  # - class: reward_embedding_vectors
+  #   direction: min
+  # - class: reward_embedding_cost
+  #   direction: min
+  # - class: reward_embedding_throughput
+  #   direction: max
+  # - class: reward_embedding_tokens_per_second
+  #   direction: max
+  # - class: reward_embedding_vectors_per_second
+  #   direction: max
+  # - class: avg_reward_embedding_tokens_per_call
+  #   direction: min
+  # - class: avg_reward_embedding_vectors_per_call
+  #   direction: max
+  # - class: avg_reward_embedding_cost_per_call
+  #   direction: min
+  # - class: reward_embedding_cached_tokens
+  #   direction: max
+  # - class: reward_embedding_cache_hit_rate
+  #   direction: max
+
+  # --- Program-wide -------------------------------------------------------
+  # Aggregate counters at the top-level `program(...)` invocation layer —
+  # cover every LM and embedding call the program makes, in any phase.
+
+  # - class: program_calls               # number of program invocations
+  #   direction: max
+  # - class: program_elapsed_time        # wall-clock seconds inside program()
+  #   direction: min
+  # - class: program_calls_per_second
+  #   direction: max
+  # - class: program_cost                # total $ across every LM + embedder
+  #   direction: min
+  # - class: program_avg_cost_per_invocation
+  #   direction: min
+
+  # --- Custom-named instance ----------------------------------------------
+  # `name:` flows into the constructor and becomes the metric's `.name`
+  # (the key synalinks writes into its evaluate() result dict). `alias:`
+  # is the column header in the result matrix / TSV (defaults to `name`).
+  # - class: total_tokens
+  #   name: prompt_plus_completion
+  #   alias: total_tok
+  #   direction: min
+
+  # --- Reduction wrappers / classification metrics ------------------------
+  # `mean` / `sum` / `mean_metric_wrapper` need a callable to wrap, so they
+  # don't make sense as plain string identifiers here. `accuracy` /
+  # `binary_accuracy` / `categorical_accuracy` / `precision` / `recall` and
+  # their binary/categorical variants apply per-dataset (label semantics
+  # depend on the output schema), so prefer attaching them under a
+  # dataset's `metrics:` block rather than globally.
+
+# --- Experiments ----------------------------------------------------------
+# One `synalinks.tuners.GridSearch` runs per dataset over the cross product
+# of `language_models:`. `datasets:` is optional; when omitted, the single
+# dataset named by the top-level `default:` key is used. The dataset is a
+# fixed search *context* per tuner, not an axis — model is the only HP,
+# ranked by each dataset's own multi-objective (primary `reward:` plus any
+# top-level or per-dataset metric tagged `objective: true`).
 experiments:
   language_models:
     - ollama/mistral
@@ -681,146 +888,3 @@ experiments:
   datasets:
     - mmlu_test
     - gsm8k_train
-  rewards:
-    - name: lm_as_judge
-      alias: conciseness               # higher is more concise — default direction `max`
-      language_model: ollama/llama3.2
-      in_mask: [content]
-      instructions: |
-        Score 0.0–1.0 on whether the response is concise — only the answer
-        requested, with no extra explanation, padding, or preamble.
-
-    # --- DeepEval rewards ---------------------------------------------------
-    # `deep_eval` wraps any class from `deepeval.metrics`. Install the extra
-    # to enable: `uv sync --extra deepeval`. Each metric class declares which
-    # `LLMTestCase` slots it consumes (introspected from `_required_params`);
-    # the reward fails fast at YAML-load time if a required slot has no
-    # config and no default.
-    #
-    # Shape: each `testcase.<slot>` entry routes one slot from y_true or
-    # y_pred via its own mask. Slots and their defaults (used when omitted):
-    #   - input             → y_pred.messages, extract: chat_user
-    #   - actual_output     → y_pred.content,  extract: scalar
-    #   - expected_output   → y_true.content,  extract: scalar
-    #   - context           → y_true.context,           extract: list
-    #   - retrieval_context → y_pred.retrieval_context, extract: list
-    #   - tools_called      → y_pred.tool_calls,        extract: list
-    #   - expected_tools    → y_true.tool_calls,        extract: list
-    # Supply a `testcase:` block to override any default (e.g. point a slot
-    # at a different field, switch sides, or change extraction mode).
-    # Commented out by default — uncomment after `uv sync --extra deepeval`.
-
-    # GEval — generic LM-judge with custom criteria. Slots come from
-    # `evaluation_params`. The most flexible DeepEval metric.
-    # - name: deep_eval
-    #   alias: deep_eval_correctness
-    #   metric: GEval
-    #   metric_kwargs:
-    #     name: Correctness
-    #     criteria: |
-    #       Determine whether the actual output matches the expected output
-    #       in meaning, ignoring formatting differences.
-    #     evaluation_params: [input, actual_output, expected_output]
-    #     model: gpt-4o
-    #     threshold: 0.5
-    #   # `testcase:` omitted → defaults route input from y_pred.messages,
-    #   # actual_output from y_pred.content, expected_output from y_true.content.
-
-    # AnswerRelevancyMetric — slots: [input, actual_output]. Same slot set
-    # as BiasMetric, ToxicityMetric, SummarizationMetric,
-    # PromptAlignmentMetric, PIILeakageMetric, NonAdviceMetric,
-    # MisuseMetric, RoleViolationMetric, JsonCorrectnessMetric,
-    # TaskCompletionMetric — swap `metric:` for any of those.
-    # - name: deep_eval
-    #   alias: deep_eval_relevancy
-    #   metric: AnswerRelevancyMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.5
-
-    # FaithfulnessMetric — RAG. Slots: [input, actual_output, retrieval_context].
-    # Requires the dataset's `output_template` to expose `retrieval_context`
-    # on y_pred (e.g. via a Generator that returns retrieved chunks).
-    # - name: deep_eval
-    #   alias: deep_eval_faithfulness
-    #   metric: FaithfulnessMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.7
-    #   testcase:
-    #     retrieval_context:
-    #       from: y_pred
-    #       in_mask: [retrieved_chunks]   # rename to match your data model's field
-    #       extract: list
-
-    # ContextualPrecisionMetric — RAG. Slots: [input, retrieval_context, expected_output].
-    # ContextualRecallMetric has the same slot set — swap `metric:`.
-    # - name: deep_eval
-    #   alias: deep_eval_context_precision
-    #   metric: ContextualPrecisionMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.7
-    #   testcase:
-    #     retrieval_context: {from: y_pred, in_mask: [retrieved_chunks], extract: list}
-    #     expected_output:   {from: y_true, in_mask: [content]}
-
-    # ContextualRelevancyMetric — RAG. Slots: [input, retrieval_context].
-    # Judges retrieval quality without needing a gold answer.
-    # - name: deep_eval
-    #   alias: deep_eval_context_relevancy
-    #   metric: ContextualRelevancyMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.7
-    #   testcase:
-    #     retrieval_context: {from: y_pred, in_mask: [retrieved_chunks], extract: list}
-
-    # HallucinationMetric — slots: [input, actual_output, context].
-    # `context` is the GROUND TRUTH the answer is checked against (note: this
-    # is `context`, not `retrieval_context` — distinct DeepEval slots).
-    # NOTE: HallucinationMetric reports a HALLUCINATION RATE (lower = better).
-    # The reward returns the raw rate; set `direction: min` so the sweep
-    # ranks it correctly. Same applies to BiasMetric / ToxicityMetric /
-    # MisuseMetric (also lower-is-better).
-    # - name: deep_eval
-    #   alias: deep_eval_hallucination
-    #   direction: min              # required — HallucinationMetric reports harm rate
-    #   metric: HallucinationMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.5
-    #   testcase:
-    #     context: {from: y_true, in_mask: [reference_text], extract: list}
-
-    # ToolCorrectnessMetric — agents. Slots: [input, tools_called, expected_tools].
-    # Requires y_pred to expose `tool_calls` (synalinks ChatMessage default)
-    # and y_true to carry the gold tool calls.
-    # - name: deep_eval
-    #   alias: deep_eval_tool_correctness
-    #   metric: ToolCorrectnessMetric
-    #   metric_kwargs:
-    #     threshold: 1.0            # exact match by default
-    #   # Defaults already point tools_called → y_pred.tool_calls and
-    #   # expected_tools → y_true.tool_calls.
-
-    # ArgumentCorrectnessMetric — agents. Slots: [input, tools_called].
-    # Judges whether tool arguments are well-formed for the input prompt.
-    # - name: deep_eval
-    #   alias: deep_eval_arg_correctness
-    #   metric: ArgumentCorrectnessMetric
-    #   metric_kwargs:
-    #     model: gpt-4o
-    #     threshold: 0.7
-
-    # ExactMatchMetric — slots: [input, actual_output, expected_output].
-    # Native DeepEval string match (vs `synalinks.exact_match` which compares
-    # the whole JSON). Use when you want DeepEval's normalization behavior.
-    # - name: deep_eval
-    #   alias: deep_eval_exact_match
-    #   metric: ExactMatchMetric
-
-    # Any DeepEval metric not listed above follows the same recipe: read its
-    # `_required_params` (or `evaluation_params` for GEval/DAG-style metrics),
-    # then fill the matching slots in `testcase:`. The reward will refuse to
-    # construct if a required slot has no source.

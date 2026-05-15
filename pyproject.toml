@@ -23,8 +23,8 @@ dependencies = [
     "braintrust>=0.18.0",
     "click>=8.1.8",
     "datasets>=4.8.5",
-    # Direct imports in src/datasets/dataset.py + evaluate.py — declared
-    # explicitly so installs don't rely on these being pulled in
+    # Direct imports in src/datasets/dataset.py + src/evaluate.py —
+    # declared explicitly so installs don't rely on these being pulled in
     # transitively (today they ship via synalinks / datasets / langchain,
     # but a future minor version bump elsewhere could drop them).
     "jinja2>=3.1",
@@ -34,8 +34,9 @@ dependencies = [
     "numpy>=2.0",
     "opik>=2.0.20",
     "pyarrow>=23.0.1",
+    "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.8.11",
+    "synalinks>=0.8.30",
 ]
 
 [project.optional-dependencies]
@@ -45,7 +46,7 @@ dependencies = [
 deepeval = ["deepeval>=2.0.0"]
 
 [project.scripts]
-arena = "evaluate:main"
+arena = "src.evaluate:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -53,7 +54,3 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
-# Top-level `evaluate.py` (the sweep entry point used by the `arena`
-# console script) and `program.py` (the editable `build_program()`) are
-# not under `src/`, so force-include them in the wheel.
-force-include = { "evaluate.py" = "evaluate.py", "program.py" = "program.py" }
