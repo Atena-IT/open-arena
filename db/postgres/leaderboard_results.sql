@@ -106,8 +106,9 @@ create table if not exists run_subject (
     environment_id uuid not null references environment_definition(id) on delete restrict,
     model_version text not null,
     environment_version text not null,
-    -- Caller-provided canonical fingerprint of the fully resolved execution payload
-    -- so cache hits can be reused across multiple runs.
+    -- Caller-provided canonical fingerprint of the normalized execution inputs
+    -- (for example model_version, environment_version, and resolved execution
+    -- config) so cache hits can be reused across multiple runs.
     execution_fingerprint text not null,
     cache_status text not null check (cache_status in ('pending', 'miss', 'partial_hit', 'hit', 'bypassed')),
     source_run_id uuid references run_request(id) on delete set null,
