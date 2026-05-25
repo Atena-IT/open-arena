@@ -67,7 +67,7 @@ create table if not exists environment_definition (
     runtime_policy jsonb,
     sandbox_policy jsonb,
     reset_policy jsonb,
-    verifier_suite_id uuid references verifier_suite(id) on delete set null,
+    verifier_suite_id uuid references verifier_suite(id) on delete restrict,
     inline_verifier jsonb,
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
