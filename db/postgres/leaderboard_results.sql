@@ -21,9 +21,12 @@ create table if not exists model_definition (
     provider text not null,
     model_name text not null,
     model_version text not null,
-    -- Caller-provided canonical fingerprint of the normalized runtime payload,
-    -- including the provider/model identity plus endpoint, auth/env wiring,
-    -- and any runtime overrides that affect execution.
+    -- Caller-provided canonical fingerprint of the normalized runtime payload.
+    -- This is the model-definition dedupe key under
+    -- unique (provider, model_name, model_version, runtime_fingerprint), so
+    -- callers must compute it deterministically from the provider/model
+    -- identity plus endpoint, auth/env wiring, and any execution-affecting
+    -- runtime overrides.
     runtime_fingerprint text not null,
     runtime jsonb not null,
     metadata jsonb not null default '{}'::jsonb,
@@ -108,10 +111,11 @@ create table if not exists run_subject (
     environment_id uuid not null references environment_definition(id) on delete restrict,
     model_version text not null,
     environment_version text not null,
-    -- Caller-provided deterministic cache key for the active reuse policy.
-    -- By default this includes model_version, environment_version, mode,
-    -- temperature, and max_tokens, plus any other resolved inputs named in
-    -- reuse_policy.key_fields.
+    -- Caller-provided deterministic cache key for a resolved run_subject
+    -- execution. Unlike runtime_fingerprint, this spans the model/environment
+    -- pairing plus the active reuse_policy.key_fields so cached results can be
+    -- reused across multiple runs. By default this includes model_version,
+    -- environment_version, mode, temperature, and max_tokens.
     execution_fingerprint text not null,
     cache_status text not null check (cache_status in ('pending', 'miss', 'partial_hit', 'hit', 'bypassed')),
     source_run_id uuid references run_request(id) on delete set null,
