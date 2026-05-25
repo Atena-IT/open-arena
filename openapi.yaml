@@ -1033,7 +1033,6 @@ components:
           default: leaderboard-default
         models:
           type: array
-          minItems: 1
           items:
             $ref: '#/components/schemas/ModelDefinitionCreate'
         metadata:
