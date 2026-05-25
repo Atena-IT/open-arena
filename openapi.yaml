@@ -842,6 +842,7 @@ components:
           default: true
         description:
           type: string
+          description: Human-readable note describing the secret's purpose or expected format.
 
     RuntimeAttribute:
       type: object
@@ -1070,7 +1071,7 @@ components:
           type: array
           items:
             type: string
-          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and selected hyperparameter keys.
+          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and selected entries from `ModelExecutionConfig.hyperparameters`.
         metadata:
           type: object
           additionalProperties: true
@@ -1174,7 +1175,7 @@ components:
           default: max
         backbone:
           type: string
-          description: Provider/model/class backing the metric.
+          description: Provider/model/class backing the metric, for example `openai/gpt-4o`, `anthropic/claude-sonnet-4.5`, or `exact_match`.
         config:
           type: object
           additionalProperties: true
@@ -1298,21 +1299,25 @@ components:
       properties:
         kind:
           $ref: '#/components/schemas/EnvironmentSourceKind'
+          description: Source registry for the canonical environment name, such as Hugging Face, a GitHub repo, Prime Intellect Environment Hub, or an inline definition.
         name:
           type: string
-          description: Canonical environment name for lookup and caching.
+          description: Canonical environment name for lookup and caching. When `inline_definition` is present, this should match `inline_definition.name`.
         version:
           type: string
         uri:
           type: string
           format: uri
+          description: Registry or repository URL; for `github_repo` sources this is the repository URL.
         external_id:
           type: string
+          description: Provider-native identifier when the source registry exposes one.
         object_storage_layout:
           type: object
           additionalProperties: true
         git_ref:
           type: string
+          description: Git revision used when `kind` is `github_repo`.
         metadata:
           type: object
           additionalProperties: true
@@ -1752,7 +1757,7 @@ components:
           $ref: '#/components/schemas/TrajectorySummary'
         run_fingerprint:
           type: string
-          description: Deterministic cache key based on model version, environment version, mode, and execution params.
+          description: Deterministic cache key computed from the active `ReusePolicy.key_fields`, typically including model version, environment version, mode, and selected execution parameters.
 
     AggregateMetric:
       type: object

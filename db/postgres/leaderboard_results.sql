@@ -21,6 +21,7 @@ create table if not exists model_definition (
     provider text not null,
     model_name text not null,
     model_version text not null,
+    -- Caller-provided canonical fingerprint of the normalized runtime payload.
     runtime_fingerprint text not null,
     runtime jsonb not null,
     metadata jsonb not null default '{}'::jsonb,
@@ -66,6 +67,7 @@ create table if not exists environment_definition (
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
+    check ((verifier_suite_id is null) <> (inline_verifier is null)),
     unique (source_kind, canonical_name, environment_version)
 );
 
@@ -127,7 +129,7 @@ create table if not exists metric_result (
 create table if not exists leaderboard_entry (
     leaderboard_id uuid not null references leaderboard(id) on delete cascade,
     model_id uuid not null references model_definition(id) on delete restrict,
-    environment_id uuid references environment_definition(id) on delete restrict,
+    environment_id uuid not null references environment_definition(id) on delete restrict,
     last_run_subject_id uuid references run_subject(id) on delete set null,
     score double precision not null,
     rank integer,
