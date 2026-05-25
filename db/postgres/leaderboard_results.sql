@@ -21,11 +21,12 @@ create table if not exists model_definition (
     provider text not null,
     model_name text not null,
     model_version text not null,
+    runtime_fingerprint text not null,
     runtime jsonb not null,
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    unique (provider, model_name, model_version, runtime)
+    unique (provider, model_name, model_version, runtime_fingerprint)
 );
 
 create table if not exists leaderboard_model (
@@ -50,7 +51,7 @@ create table if not exists verifier_suite (
 
 create table if not exists environment_definition (
     id uuid primary key default gen_random_uuid(),
-    source_kind text not null check (source_kind in ('huggingface_hub', 'github_repository', 'prime_environment_hub', 'inline')),
+    source_kind text not null check (source_kind in ('huggingface_hub', 'github_repo', 'prime_environment_hub', 'inline')),
     canonical_name text not null,
     environment_version text not null,
     source_ref text,
@@ -126,7 +127,7 @@ create table if not exists metric_result (
 create table if not exists leaderboard_entry (
     leaderboard_id uuid not null references leaderboard(id) on delete cascade,
     model_id uuid not null references model_definition(id) on delete restrict,
-    environment_id uuid references environment_definition(id) on delete cascade,
+    environment_id uuid references environment_definition(id) on delete restrict,
     last_run_subject_id uuid references run_subject(id) on delete set null,
     score double precision not null,
     rank integer,
@@ -136,7 +137,7 @@ create table if not exists leaderboard_entry (
 );
 
 create table if not exists public_leaderboard_entry (
-    environment_id uuid not null references environment_definition(id) on delete cascade,
+    environment_id uuid not null references environment_definition(id) on delete restrict,
     model_id uuid not null references model_definition(id) on delete restrict,
     last_run_subject_id uuid references run_subject(id) on delete set null,
     score double precision not null,

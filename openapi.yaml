@@ -821,7 +821,7 @@ components:
       type: string
       enum:
         - huggingface_hub
-        - github_repository
+        - github_repo
         - prime_environment_hub
         - inline
 
@@ -1025,7 +1025,7 @@ components:
 
     DatasetBinding:
       type: object
-      description: Dataset/workload definition embedded in an environment.
+      description: Dataset definition embedded in an environment; together with the verifier it becomes the executable environment workload.
       required: [provider]
       properties:
         provider:
@@ -1066,11 +1066,11 @@ components:
         max_concurrency:
           type: integer
           minimum: 1
-        cache_key_fields:
+        reuse_key_fields:
           type: array
           items:
             type: string
-          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and hyperparameters.
+          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and selected hyperparameter keys.
         metadata:
           type: object
           additionalProperties: true
@@ -1574,7 +1574,7 @@ components:
           type: array
           items:
             type: string
-          default: [model_version, environment_version, mode, hyperparameters]
+          default: [model_version, environment_version, mode, temperature, max_tokens]
         allow_partial_cache:
           type: boolean
           default: true
