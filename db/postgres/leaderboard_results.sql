@@ -130,7 +130,7 @@ create table if not exists metric_result (
     metric_name text not null,
     metric_kind text,
     direction text not null check (direction in ('max', 'min')),
-    weight numeric not null default 1,
+    weight numeric not null default 1 check (weight >= 0),
     metric_value double precision not null,
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
@@ -143,7 +143,7 @@ create table if not exists leaderboard_entry (
     environment_id uuid not null references environment_definition(id) on delete restrict,
     last_run_subject_id uuid references run_subject(id) on delete set null,
     score double precision not null,
-    rank integer,
+    rank integer not null check (rank >= 1),
     breakdown jsonb not null default '{}'::jsonb,
     updated_at timestamptz not null default now(),
     primary key (leaderboard_id, model_id, environment_id)
