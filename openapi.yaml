@@ -1600,7 +1600,7 @@ components:
 
     RunSelection:
       type: object
-      anyOf:
+      oneOf:
         - required: [leaderboard_id]
         - required: [direct_pairs]
       properties:

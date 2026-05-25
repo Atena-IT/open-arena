@@ -48,7 +48,7 @@ create table if not exists verifier_suite (
     id uuid primary key default gen_random_uuid(),
     name text not null,
     version text,
-    aggregation text not null default 'weighted_mean' check (aggregation in ('mean', 'weighted_mean', 'pairwise', 'custom')),
+    aggregation text not null default 'weighted_mean' check (aggregation in ('weighted_sum', 'weighted_mean', 'pairwise', 'custom')),
     definition jsonb not null,
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
