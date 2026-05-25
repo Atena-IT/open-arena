@@ -1395,9 +1395,11 @@ components:
       required: [source]
       allOf:
         - if:
+            required: [source]
             properties:
               source:
                 type: object
+                required: [kind]
                 properties:
                   kind:
                     const: inline
