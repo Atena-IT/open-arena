@@ -106,6 +106,8 @@ create table if not exists run_subject (
     environment_id uuid not null references environment_definition(id) on delete restrict,
     model_version text not null,
     environment_version text not null,
+    -- Caller-provided canonical fingerprint of the fully resolved execution payload
+    -- so cache hits can be reused across multiple runs.
     execution_fingerprint text not null,
     cache_status text not null check (cache_status in ('pending', 'miss', 'partial_hit', 'hit', 'bypassed')),
     source_run_id uuid references run_request(id) on delete set null,
@@ -149,7 +151,7 @@ create table if not exists public_leaderboard_entry (
     primary key (environment_id, model_id)
 );
 
-create unique index if not exists idx_run_subject_fingerprint
+create index if not exists idx_run_subject_fingerprint
     on run_subject (execution_fingerprint);
 
 create index if not exists idx_run_request_leaderboard_status

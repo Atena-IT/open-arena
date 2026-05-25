@@ -486,7 +486,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnvironmentRefListResponse'
+                $ref: '#/components/schemas/EnvironmentMembershipListResponse'
         default:
           $ref: '#/components/responses/Error'
     post:
@@ -1855,7 +1855,7 @@ components:
         next_cursor:
           type: string
 
-    EnvironmentRefListResponse:
+    EnvironmentMembershipListResponse:
       type: object
       required: [items]
       properties:
