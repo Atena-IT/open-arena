@@ -26,6 +26,16 @@ info:
       - explicit model × environment slices
       - a direct model/environment pair without a private leaderboard; those runs
         feed the unified public leaderboard.
+
+    In this artifact, `Run` is scoped to evaluation submissions plus their
+    cache-backed result materialization. Job-control primitives (cancel/retry/
+    progress/worker leases) and training or optimization jobs are intentionally
+    out of scope for this version of the spec.
+
+    For any auto-discovered identifier field (for example metric kinds,
+    aggregations, or providers), requests that reference an identifier not
+    advertised by the corresponding discovery endpoint should be rejected with
+    HTTP `400` and the standard `Error` response payload.
 servers:
   - url: https://api.openarena.example
     description: Example production server
@@ -36,6 +46,7 @@ tags:
   - name: Verifiers
   - name: Runs
   - name: Public Leaderboard
+  - name: Discovery
 
 security:
   - bearerAuth: []
@@ -646,10 +657,87 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 
+  /v1/metric-kinds:
+    get:
+      tags: [Discovery]
+      summary: List discovered metric kinds
+      description: |
+        Lists the reward and metric identifiers this server can resolve in
+        `MetricDefinition.metric_kind`. These identifiers are auto-discovered
+        from the server's reward/metric registry and are distinct from the
+        user-managed verifier suite resources.
+      operationId: listMetricKinds
+      responses:
+        '200':
+          description: Supported metric and reward identifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryIdentifierListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/aggregations:
+    get:
+      tags: [Discovery]
+      summary: List discovered aggregation identifiers
+      description: |
+        Lists aggregation identifiers supported by this server for verifier
+        suites, ranking policies, and result aggregates. Use the optional
+        `scopes` metadata on each item to distinguish where a given identifier
+        applies. Every compliant server must expose `weighted_mean` as a
+        baseline identifier because it is the default aggregation in this API.
+      operationId: listAggregations
+      responses:
+        '200':
+          description: Supported aggregation identifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryIdentifierListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/model-providers:
+    get:
+      tags: [Discovery]
+      summary: List discovered model providers
+      description: |
+        Lists provider identifiers that can be used in
+        `ModelExecutionConfig.provider`.
+      operationId: listModelProviders
+      responses:
+        '200':
+          description: Supported model provider identifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryIdentifierListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/dataset-providers:
+    get:
+      tags: [Discovery]
+      summary: List discovered dataset providers
+      description: |
+        Lists provider identifiers that can be used in
+        `DatasetBinding.provider`.
+      operationId: listDatasetProviders
+      responses:
+        '200':
+          description: Supported dataset provider identifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryIdentifierListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
   /v1/runs:
     get:
       tags: [Runs]
-      summary: List runs
+      summary: List evaluation runs
       operationId: listRuns
       parameters:
         - in: query
@@ -682,9 +770,14 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [Runs]
-      summary: Create evaluation run
+      summary: Submit evaluation run
       description: |
-        `selection` defines the execution slice.
+        Create an evaluation submission for the selected slice and materialize
+        cache-backed results for any model/environment pairs that are not
+        already reusable under the supplied `reuse_policy`.
+
+        This resource is intentionally scoped to evaluation execution and cache
+        reuse. It is not a general-purpose job-control or training API.
 
         Supported patterns:
           - leaderboard only: run the full leaderboard
@@ -712,7 +805,7 @@ paths:
   /v1/runs/{run_id}:
     get:
       tags: [Runs]
-      summary: Get run
+      summary: Get evaluation run
       operationId: getRun
       parameters:
         - $ref: '#/components/parameters/RunId'
@@ -729,7 +822,7 @@ paths:
   /v1/runs/{run_id}/results:
     get:
       tags: [Runs]
-      summary: Get run results
+      summary: Get evaluation run results
       operationId: getRunResults
       parameters:
         - $ref: '#/components/parameters/RunId'
@@ -1195,15 +1288,7 @@ components:
           type: string
         metric_kind:
           type: string
-          enum:
-            - exact_match
-            - cosine_similarity
-            - deterministic_rule
-            - lm_as_judge
-            - lm_as_verifier
-            - multi_judge_panel
-            - deep_eval
-            - custom
+          description: Auto-discovered reward/metric identifier, as returned by `GET /v1/metric-kinds`.
         weight:
           type: number
           minimum: 0
@@ -1238,8 +1323,8 @@ components:
           type: string
         aggregation:
           type: string
-          enum: [weighted_sum, weighted_mean, pairwise, custom]
           default: weighted_mean
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`. Compliant servers must expose `weighted_mean`, which is the default value for this field.
         metrics:
           type: array
           minItems: 1
@@ -1258,7 +1343,7 @@ components:
           type: string
         aggregation:
           type: string
-          enum: [weighted_sum, weighted_mean, pairwise, custom]
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`.
         metrics:
           type: array
           minItems: 1
@@ -1281,7 +1366,7 @@ components:
           type: string
         aggregation:
           type: string
-          enum: [weighted_sum, weighted_mean, pairwise, custom]
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`.
         metrics:
           type: array
           minItems: 1
@@ -1329,8 +1414,8 @@ components:
           type: string
         aggregation:
           type: string
-          enum: [weighted_sum, weighted_mean, pairwise, custom]
           default: weighted_mean
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`. Compliant servers must expose `weighted_mean`, which is the default value for this field.
         metrics:
           type: array
           minItems: 1
@@ -1508,8 +1593,8 @@ components:
             type: string
         aggregation:
           type: string
-          enum: [mean, weighted_mean, pairwise, custom]
           default: weighted_mean
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`. Compliant servers must expose `weighted_mean`, which is the default value for this field.
 
     RankingPolicyPatch:
       type: object
@@ -1522,8 +1607,8 @@ components:
             type: string
         aggregation:
           type: string
-          enum: [mean, weighted_mean, pairwise, custom]
           default: weighted_mean
+          description: Auto-discovered aggregation identifier, as returned by `GET /v1/aggregations`. Compliant servers must expose `weighted_mean`, which is the default value for this field.
 
     LeaderboardBootstrap:
       type: object
@@ -1747,6 +1832,7 @@ components:
 
     Run:
       type: object
+      description: Immutable record of an evaluation submission and the cache/result materialization state for its selected slice.
       required: [id, mode, selection, status, cache_status, created_at]
       properties:
         id:
@@ -1782,6 +1868,7 @@ components:
 
     RunStatus:
       type: string
+      description: Evaluation materialization lifecycle state for a run; this is not a full job-control contract.
       enum: [queued, running, succeeded, failed, cancelled]
 
     MetricResult:
@@ -1845,6 +1932,7 @@ components:
           type: number
         aggregation:
           type: string
+          description: Aggregation identifier used for the returned aggregate value.
 
     RunResult:
       type: object
@@ -2013,6 +2101,33 @@ components:
             $ref: '#/components/schemas/Run'
         next_cursor:
           type: string
+
+    DiscoveryIdentifier:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    DiscoveryIdentifierListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscoveryIdentifier'
 
     Error:
       type: object
