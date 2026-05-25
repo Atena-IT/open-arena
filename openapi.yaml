@@ -1,0 +1,1391 @@
+openapi: 3.1.0
+info:
+  title: Open Arena API
+  version: 0.2.0
+  summary: Environment-centric REST API for benchmark, agent, and leaderboard workflows
+  description: |
+    Open Arena is exposed as an environment-centric API.
+
+    The primary artifact is the environment, not the raw dataset. An environment
+    packages the benchmark workload together with verifier logic, context routing,
+    and optional sandbox/reset behavior. Environments may be referenced from an
+    external registry (for example Hugging Face Hub or a Prime Intellect-style
+    Environment Hub) or defined inline through this API.
+
+    The API makes Open Arena's two execution modes explicit:
+      1. generator runs: direct model execution over environment tasks
+      2. agent runs: tool-enabled or remote-agent execution with trajectory capture
+
+    Leaderboards are first-class resources. They define the perimeter of the
+    evaluation by binding a model catalog to one or more environments, and can be
+    updated over time without regenerating the entire API state.
+servers:
+  - url: https://api.openarena.example
+    description: Example production server
+
+tags:
+  - name: Model Catalogs
+  - name: Environments
+  - name: Verifiers
+  - name: Leaderboards
+  - name: Runs
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/model-catalogs:
+    get:
+      tags: [Model Catalogs]
+      summary: List model catalogs
+      operationId: listModelCatalogs
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Model catalogs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalogListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Model Catalogs]
+      summary: Create model catalog
+      operationId: createModelCatalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelCatalogCreate'
+      responses:
+        '201':
+          description: Model catalog created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalog'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/model-catalogs/{model_catalog_id}:
+    get:
+      tags: [Model Catalogs]
+      summary: Get model catalog
+      operationId: getModelCatalog
+      parameters:
+        - $ref: '#/components/parameters/ModelCatalogId'
+      responses:
+        '200':
+          description: Model catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalog'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Model Catalogs]
+      summary: Update model catalog
+      operationId: updateModelCatalog
+      parameters:
+        - $ref: '#/components/parameters/ModelCatalogId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelCatalogPatch'
+      responses:
+        '200':
+          description: Updated model catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalog'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Model Catalogs]
+      summary: Delete model catalog
+      operationId: deleteModelCatalog
+      parameters:
+        - $ref: '#/components/parameters/ModelCatalogId'
+      responses:
+        '204':
+          description: Model catalog deleted
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/verifiers:
+    get:
+      tags: [Verifiers]
+      summary: List reusable verifier suites
+      operationId: listVerifiers
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Verifier suites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifierSuiteListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Verifiers]
+      summary: Create reusable verifier suite
+      operationId: createVerifierSuite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifierSuiteCreate'
+      responses:
+        '201':
+          description: Verifier suite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifierSuite'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/verifiers/{verifier_id}:
+    get:
+      tags: [Verifiers]
+      summary: Get verifier suite
+      operationId: getVerifierSuite
+      parameters:
+        - $ref: '#/components/parameters/VerifierId'
+      responses:
+        '200':
+          description: Verifier suite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifierSuite'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Verifiers]
+      summary: Update verifier suite
+      operationId: updateVerifierSuite
+      parameters:
+        - $ref: '#/components/parameters/VerifierId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifierSuitePatch'
+      responses:
+        '200':
+          description: Updated verifier suite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifierSuite'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Verifiers]
+      summary: Delete verifier suite
+      operationId: deleteVerifierSuite
+      parameters:
+        - $ref: '#/components/parameters/VerifierId'
+      responses:
+        '204':
+          description: Verifier suite deleted
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/environments:
+    get:
+      tags: [Environments]
+      summary: List environments
+      operationId: listEnvironments
+      parameters:
+        - in: query
+          name: source_kind
+          schema:
+            $ref: '#/components/schemas/EnvironmentSourceKind'
+        - in: query
+          name: mode
+          schema:
+            $ref: '#/components/schemas/RunMode'
+          description: Filter by supported execution mode.
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Environments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Environments]
+      summary: Create environment
+      operationId: createEnvironment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnvironmentCreate'
+      responses:
+        '201':
+          description: Environment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/environments/{environment_id}:
+    get:
+      tags: [Environments]
+      summary: Get environment
+      operationId: getEnvironment
+      parameters:
+        - $ref: '#/components/parameters/EnvironmentId'
+      responses:
+        '200':
+          description: Environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Environments]
+      summary: Update environment
+      operationId: updateEnvironment
+      parameters:
+        - $ref: '#/components/parameters/EnvironmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnvironmentPatch'
+      responses:
+        '200':
+          description: Updated environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Environments]
+      summary: Delete environment
+      operationId: deleteEnvironment
+      parameters:
+        - $ref: '#/components/parameters/EnvironmentId'
+      responses:
+        '204':
+          description: Environment deleted
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/leaderboards:
+    get:
+      tags: [Leaderboards]
+      summary: List leaderboards
+      operationId: listLeaderboards
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Leaderboards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Leaderboards]
+      summary: Create leaderboard
+      operationId: createLeaderboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardCreate'
+      responses:
+        '201':
+          description: Leaderboard created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/leaderboards/{leaderboard_id}:
+    get:
+      tags: [Leaderboards]
+      summary: Get leaderboard
+      operationId: getLeaderboard
+      parameters:
+        - $ref: '#/components/parameters/LeaderboardId'
+      responses:
+        '200':
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Leaderboards]
+      summary: Update leaderboard scope or settings
+      operationId: updateLeaderboard
+      parameters:
+        - $ref: '#/components/parameters/LeaderboardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardPatch'
+      responses:
+        '200':
+          description: Updated leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Leaderboards]
+      summary: Delete leaderboard
+      operationId: deleteLeaderboard
+      parameters:
+        - $ref: '#/components/parameters/LeaderboardId'
+      responses:
+        '204':
+          description: Leaderboard deleted
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/leaderboards/{leaderboard_id}/entries:
+    get:
+      tags: [Leaderboards]
+      summary: List leaderboard entries
+      operationId: listLeaderboardEntries
+      parameters:
+        - $ref: '#/components/parameters/LeaderboardId'
+        - in: query
+          name: as_of
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardEntryListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/runs:
+    get:
+      tags: [Runs]
+      summary: List runs
+      operationId: listRuns
+      parameters:
+        - in: query
+          name: leaderboard_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: environment_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/RunStatus'
+        - in: query
+          name: mode
+          schema:
+            $ref: '#/components/schemas/RunMode'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Runs]
+      summary: Create evaluation run
+      operationId: createRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunCreate'
+      responses:
+        '202':
+          description: Run accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/runs/{run_id}:
+    get:
+      tags: [Runs]
+      summary: Get run
+      operationId: getRun
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/runs/{run_id}/results:
+    get:
+      tags: [Runs]
+      summary: Get run results
+      operationId: getRunResults
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunResult'
+        default:
+          $ref: '#/components/responses/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Cursor:
+      in: query
+      name: cursor
+      schema:
+        type: string
+    Limit:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    ModelCatalogId:
+      in: path
+      name: model_catalog_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VerifierId:
+      in: path
+      name: verifier_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EnvironmentId:
+      in: path
+      name: environment_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LeaderboardId:
+      in: path
+      name: leaderboard_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RunId:
+      in: path
+      name: run_id
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    ModelCatalogCreate:
+      type: object
+      required: [name, models]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        models:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ModelTarget'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ModelCatalogPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        models:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ModelTarget'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ModelCatalog:
+      allOf:
+        - type: object
+          required: [id, name, models, created_at, updated_at]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            description:
+              type: string
+            models:
+              type: array
+              items:
+                $ref: '#/components/schemas/ModelTarget'
+            metadata:
+              type: object
+              additionalProperties: true
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    ModelTarget:
+      type: object
+      required: [id, provider, identifier]
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+          description: openai, anthropic, ollama, openrouter, deployment, etc.
+        identifier:
+          type: string
+          description: Model or deployment identifier used by the executor.
+        display_name:
+          type: string
+        execution_defaults:
+          type: object
+          additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    VerifierSuiteCreate:
+      type: object
+      required: [name, metrics]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        metrics:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    VerifierSuitePatch:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        metrics:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    VerifierSuite:
+      type: object
+      required: [id, name, metrics, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EnvironmentSourceKind:
+      type: string
+      enum:
+        - huggingface_hub
+        - prime_environment_hub
+        - api_registry
+        - inline
+
+    RunMode:
+      type: string
+      enum:
+        - generator
+        - agent
+
+    EnvironmentCreate:
+      type: object
+      required: [name, supported_modes, source]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        supported_modes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RunMode'
+        source:
+          $ref: '#/components/schemas/EnvironmentSource'
+        dataset:
+          $ref: '#/components/schemas/DatasetDefinition'
+        verifier_suite:
+          $ref: '#/components/schemas/VerifierSuiteBinding'
+        sandbox:
+          $ref: '#/components/schemas/SandboxPolicy'
+        reset_policy:
+          $ref: '#/components/schemas/ResetPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    EnvironmentPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        supported_modes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RunMode'
+        source:
+          $ref: '#/components/schemas/EnvironmentSource'
+        dataset:
+          $ref: '#/components/schemas/DatasetDefinition'
+        verifier_suite:
+          $ref: '#/components/schemas/VerifierSuiteBinding'
+        sandbox:
+          $ref: '#/components/schemas/SandboxPolicy'
+        reset_policy:
+          $ref: '#/components/schemas/ResetPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Environment:
+      type: object
+      required:
+        - id
+        - name
+        - supported_modes
+        - source
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        supported_modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunMode'
+        source:
+          $ref: '#/components/schemas/EnvironmentSource'
+        dataset:
+          $ref: '#/components/schemas/DatasetDefinition'
+        verifier_suite:
+          $ref: '#/components/schemas/VerifierSuiteBinding'
+        sandbox:
+          $ref: '#/components/schemas/SandboxPolicy'
+        reset_policy:
+          $ref: '#/components/schemas/ResetPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EnvironmentSource:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: '#/components/schemas/EnvironmentSourceKind'
+        uri:
+          type: string
+          format: uri
+        external_id:
+          type: string
+        version:
+          type: string
+        object_storage_layout:
+          type: object
+          additionalProperties: true
+        inline_snapshot:
+          type: object
+          additionalProperties: true
+
+    DatasetDefinition:
+      type: object
+      description: Workload definition used inside an environment.
+      required: [provider]
+      properties:
+        provider:
+          type: string
+          description: huggingface, local, folder, langfuse, langsmith, opik, phoenix, braintrust, etc.
+        selector:
+          type: object
+          additionalProperties: true
+        task_type:
+          type: string
+        input_schema:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string
+        output_schema:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    VerifierSuiteBinding:
+      oneOf:
+        - $ref: '#/components/schemas/VerifierSuiteRef'
+        - $ref: '#/components/schemas/VerifierSuiteInline'
+      discriminator:
+        propertyName: binding_type
+        mapping:
+          ref: '#/components/schemas/VerifierSuiteRef'
+          inline: '#/components/schemas/VerifierSuiteInline'
+
+    VerifierSuiteRef:
+      type: object
+      required: [binding_type, verifier_id]
+      properties:
+        binding_type:
+          type: string
+          const: ref
+        verifier_id:
+          type: string
+          format: uuid
+
+    VerifierSuiteInline:
+      type: object
+      required: [binding_type, name, metrics]
+      properties:
+        binding_type:
+          type: string
+          const: inline
+        name:
+          type: string
+        metrics:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
+
+    MetricDefinition:
+      type: object
+      required: [metric_type, class]
+      properties:
+        metric_type:
+          type: string
+          enum:
+            - exact_match
+            - cosine_similarity
+            - lm_as_judge
+            - lm_as_verifier
+            - multi_judge_panel
+            - recursive_lm_as_judge
+            - deep_eval
+            - custom
+        class:
+          type: string
+          description: Registry key or provider class name.
+        alias:
+          type: string
+        objective:
+          type: boolean
+          default: false
+        direction:
+          type: string
+          enum: [max, min]
+          default: max
+        config:
+          type: object
+          additionalProperties: true
+        context_bindings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContextBinding'
+
+    ContextBinding:
+      type: object
+      required: [slot, source]
+      properties:
+        slot:
+          type: string
+          description: Metric input slot such as input, expected_output, actual_output, trajectory, tools_called.
+        source:
+          type: string
+          enum:
+            - input
+            - reference
+            - trajectory
+            - output
+            - environment
+        selector:
+          $ref: '#/components/schemas/FieldSelector'
+        required:
+          type: boolean
+          default: true
+
+    FieldSelector:
+      type: object
+      properties:
+        in_mask:
+          type: array
+          items:
+            type: string
+        out_mask:
+          type: array
+          items:
+            type: string
+        in_mask_pattern:
+          type: string
+        out_mask_pattern:
+          type: string
+        extract:
+          type: string
+          description: Optional post-mask extraction helper.
+
+    SandboxPolicy:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: false
+        isolation_mode:
+          type: string
+          enum: [none, container, vm, remote]
+        setup:
+          type: object
+          additionalProperties: true
+        teardown:
+          type: object
+          additionalProperties: true
+        limits:
+          type: object
+          additionalProperties: true
+
+    ResetPolicy:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: [per_task, per_run, manual, external]
+        reset_endpoint:
+          type: string
+          format: uri
+        state_snapshot_ref:
+          type: string
+
+    LeaderboardCreate:
+      type: object
+      required: [name, scope]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        scope:
+          $ref: '#/components/schemas/LeaderboardScope'
+        ranking:
+          $ref: '#/components/schemas/RankingPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    LeaderboardPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        scope:
+          $ref: '#/components/schemas/LeaderboardScope'
+        ranking:
+          $ref: '#/components/schemas/RankingPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Leaderboard:
+      type: object
+      required: [id, name, scope, ranking, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        scope:
+          $ref: '#/components/schemas/LeaderboardScope'
+        ranking:
+          $ref: '#/components/schemas/RankingPolicy'
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LeaderboardScope:
+      type: object
+      required: [model_catalog_id, environment_ids]
+      properties:
+        model_catalog_id:
+          type: string
+          format: uuid
+        environment_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+        default_run_mode:
+          $ref: '#/components/schemas/RunMode'
+        evaluation_window:
+          type: object
+          additionalProperties: true
+
+    RankingPolicy:
+      type: object
+      required: [primary_metric]
+      properties:
+        primary_metric:
+          type: string
+        tie_breakers:
+          type: array
+          items:
+            type: string
+        aggregation:
+          type: string
+          enum: [mean, weighted_mean, pairwise, custom]
+          default: mean
+
+    RunCreate:
+      oneOf:
+        - $ref: '#/components/schemas/GeneratorRunCreate'
+        - $ref: '#/components/schemas/AgentRunCreate'
+      discriminator:
+        propertyName: mode
+        mapping:
+          generator: '#/components/schemas/GeneratorRunCreate'
+          agent: '#/components/schemas/AgentRunCreate'
+
+    GeneratorRunCreate:
+      type: object
+      required: [mode, environment_id, targets]
+      properties:
+        mode:
+          type: string
+          const: generator
+        leaderboard_id:
+          type: string
+          format: uuid
+        environment_id:
+          type: string
+          format: uuid
+        targets:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RunTarget'
+        generator_config:
+          type: object
+          additionalProperties: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        idempotency_key:
+          type: string
+
+    AgentRunCreate:
+      type: object
+      required: [mode, environment_id, targets]
+      properties:
+        mode:
+          type: string
+          const: agent
+        leaderboard_id:
+          type: string
+          format: uuid
+        environment_id:
+          type: string
+          format: uuid
+        targets:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RunTarget'
+        agent_config:
+          type: object
+          additionalProperties: true
+          description: Tool-enabled local agent or remote deployed agent config.
+        capture_trajectory:
+          type: boolean
+          default: true
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        idempotency_key:
+          type: string
+
+    RunTarget:
+      type: object
+      required: [model_id]
+      properties:
+        model_id:
+          type: string
+        overrides:
+          type: object
+          additionalProperties: true
+
+    RunStatus:
+      type: string
+      enum: [queued, running, succeeded, failed, cancelled]
+
+    Run:
+      type: object
+      required: [id, mode, environment_id, status, targets, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        leaderboard_id:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/RunMode'
+        environment_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/RunStatus'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunTarget'
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+
+    RunResult:
+      type: object
+      required: [run_id, mode, environment_id, subjects]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/RunMode'
+        environment_id:
+          type: string
+          format: uuid
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectResult'
+        aggregates:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregateMetric'
+
+    SubjectResult:
+      type: object
+      required: [model_id, metrics]
+      properties:
+        model_id:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricResult'
+        trajectory_summary:
+          $ref: '#/components/schemas/TrajectorySummary'
+
+    MetricResult:
+      type: object
+      required: [name, value, direction]
+      properties:
+        name:
+          type: string
+        value:
+          type: number
+        direction:
+          type: string
+          enum: [max, min]
+        metadata:
+          type: object
+          additionalProperties: true
+
+    AggregateMetric:
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          type: string
+        value:
+          type: number
+        aggregation:
+          type: string
+
+    TrajectorySummary:
+      type: object
+      properties:
+        total_steps:
+          type: integer
+          minimum: 0
+        tool_calls:
+          type: integer
+          minimum: 0
+        failures:
+          type: integer
+          minimum: 0
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, model_id, score]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        model_id:
+          type: string
+        score:
+          type: number
+        metrics:
+          type: object
+          additionalProperties:
+            type: number
+        last_run_id:
+          type: string
+          format: uuid
+
+    ModelCatalogListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelCatalog'
+        next_cursor:
+          type: string
+
+    VerifierSuiteListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VerifierSuite'
+        next_cursor:
+          type: string
+
+    EnvironmentListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Environment'
+        next_cursor:
+          type: string
+
+    LeaderboardListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Leaderboard'
+        next_cursor:
+          type: string
+
+    LeaderboardEntryListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+        next_cursor:
+          type: string
+
+    RunListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Run'
+        next_cursor:
+          type: string
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
