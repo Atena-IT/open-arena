@@ -1393,6 +1393,16 @@ components:
     EnvironmentCreate:
       type: object
       required: [source]
+      allOf:
+        - if:
+            properties:
+              source:
+                type: object
+                properties:
+                  kind:
+                    const: inline
+          then:
+            required: [inline_definition]
       properties:
         source:
           $ref: '#/components/schemas/EnvironmentSource'
@@ -1590,22 +1600,28 @@ components:
 
     RunSelection:
       type: object
+      anyOf:
+        - required: [leaderboard_id]
+        - required: [direct_pairs]
       properties:
         leaderboard_id:
           type: string
           format: uuid
         model_ids:
           type: array
+          minItems: 1
           items:
             type: string
             format: uuid
         environment_ids:
           type: array
+          minItems: 1
           items:
             type: string
             format: uuid
         direct_pairs:
           type: array
+          minItems: 1
           items:
             $ref: '#/components/schemas/DirectRunPair'
         publish_to_public_leaderboard:
@@ -1849,7 +1865,7 @@ components:
 
     LeaderboardEntry:
       type: object
-      required: [rank, model_id, model_version, score]
+      required: [rank, model_id, model_version, environment_id, environment_version, score]
       properties:
         rank:
           type: integer
@@ -1859,10 +1875,16 @@ components:
           format: uuid
         model_version:
           type: string
+        environment_id:
+          type: string
+          format: uuid
+        environment_version:
+          type: string
         score:
           type: number
         environment_breakdown:
           type: object
+          description: Optional per-entry subscore breakdown; keys are implementation-defined labels, not environment identifiers.
           additionalProperties:
             type: number
         last_run_id:

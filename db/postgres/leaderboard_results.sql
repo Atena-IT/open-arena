@@ -1,6 +1,6 @@
 -- Open Arena leaderboard-oriented persistence model (PostgreSQL)
-
-create extension if not exists pgcrypto;
+-- Requires pgcrypto (for gen_random_uuid()) to be enabled by an admin before
+-- applying this schema in managed Postgres environments.
 
 create table if not exists leaderboard (
     id uuid primary key default gen_random_uuid(),
@@ -48,7 +48,7 @@ create table if not exists verifier_suite (
     id uuid primary key default gen_random_uuid(),
     name text not null,
     version text,
-    aggregation text not null,
+    aggregation text not null default 'weighted_mean' check (aggregation in ('mean', 'weighted_mean', 'pairwise', 'custom')),
     definition jsonb not null,
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
