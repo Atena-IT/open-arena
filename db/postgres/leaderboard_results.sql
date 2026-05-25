@@ -67,6 +67,7 @@ create table if not exists environment_definition (
     metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
+    -- Exactly one verifier source must be present: either a reusable suite ref or an inline verifier definition.
     check ((verifier_suite_id is null) <> (inline_verifier is null)),
     unique (source_kind, canonical_name, environment_version)
 );

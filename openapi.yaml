@@ -1071,7 +1071,7 @@ components:
           type: array
           items:
             type: string
-          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and selected entries from `ModelExecutionConfig.hyperparameters`.
+          description: Fields contributing to run reuse, such as model_version, environment_version, mode, and selected entries from `runtime.hyperparameters`.
         metadata:
           type: object
           additionalProperties: true
@@ -1710,7 +1710,7 @@ components:
 
     MetricResult:
       type: object
-      required: [name, value, direction, weight]
+      required: [name, value, direction]
       properties:
         name:
           type: string
@@ -1757,7 +1757,7 @@ components:
           $ref: '#/components/schemas/TrajectorySummary'
         run_fingerprint:
           type: string
-          description: Deterministic cache key computed from the active `ReusePolicy.key_fields`, typically including model version, environment version, mode, and selected execution parameters.
+          description: Deterministic cache key computed from the active `ReusePolicy.key_fields`; by default this includes model_version, environment_version, mode, temperature, and max_tokens.
 
     AggregateMetric:
       type: object
