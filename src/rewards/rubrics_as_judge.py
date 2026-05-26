@@ -240,8 +240,14 @@ class RubricsAsJudgeProgram(Program):
                 )
             if any(w < 0 for w in rubrics_weights):
                 raise ValueError("`rubrics_weights` must all be non-negative.")
-            if sum(rubrics_weights) == 0:
-                raise ValueError("`rubrics_weights` must not all be zero.")
+            if (
+                rubrics_reduction == "mean"
+                and sum(rubrics_weights) == 0
+            ):
+                raise ValueError(
+                    "`rubrics_weights` must not all be zero when "
+                    "`rubrics_reduction` is 'mean'."
+                )
 
         # Resolve string / dict / instance identifiers up front, matching the
         # pattern used inside synalinks (e.g. `ChainOfThought`).
