@@ -23,7 +23,7 @@ as a single-shot `Generator` eval or as a multi-step
 
 ## Install
 
-Requires Python 3.10+ and [`uv`](https://github.com/astral-sh/uv).
+Requires Python 3.11+ and [`uv`](https://github.com/astral-sh/uv).
 
 ```bash
 git clone <this repo> && cd open-arena
