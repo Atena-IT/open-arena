@@ -271,6 +271,13 @@ class MultiJudgePanel(ProgramAsJudge):
             reward.
         out_mask (list): Optional. list of keys to remove to compute the
             reward.
+        reduction (str): Optional. How per-sample rewards are reduced over a
+            batch — one of `"mean"` (default), `"sum"`, `"min"`, `"max"`,
+            `"none"`.
+        in_mask_pattern (str): Optional. Regex; fields whose names match are
+            kept (OR-combined with `in_mask`).
+        out_mask_pattern (str): Optional. Regex; fields whose names match are
+            dropped (OR-combined with `out_mask`).
     """
 
     def __init__(
@@ -284,18 +291,29 @@ class MultiJudgePanel(ProgramAsJudge):
         name="multi_judge_panel",
         in_mask=None,
         out_mask=None,
+        reduction="mean",
+        in_mask_pattern=None,
+        out_mask_pattern=None,
+        program=None,
     ):
-        program = MultiJudgePanelProgram(
-            panel_language_models=panel_language_models,
-            smart_language_model=smart_language_model,
-            agreement_threshold=agreement_threshold,
-            prompt_template=prompt_template,
-            examples=examples,
-            instructions=instructions,
-        )
+        # `program` is normally built from the args above; it is accepted as a
+        # kwarg only so `from_config` can pass the deserialized inner program
+        # straight back in (round-tripping a saved reward).
+        if program is None:
+            program = MultiJudgePanelProgram(
+                panel_language_models=panel_language_models,
+                smart_language_model=smart_language_model,
+                agreement_threshold=agreement_threshold,
+                prompt_template=prompt_template,
+                examples=examples,
+                instructions=instructions,
+            )
         super().__init__(
             program=program,
             name=name,
+            reduction=reduction,
             in_mask=in_mask,
             out_mask=out_mask,
+            in_mask_pattern=in_mask_pattern,
+            out_mask_pattern=out_mask_pattern,
         )

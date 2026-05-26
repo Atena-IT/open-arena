@@ -16,12 +16,11 @@ asking semantic questions.
 
 import synalinks
 from synalinks.src import ops
-from synalinks.src.modules.agents.recursive_language_model_agent import (
-    RecursiveLanguageModelAgent,
+from synalinks.src.modules.agents.rlm_agent import RecursiveLanguageModelAgent
+from synalinks.src.modules.agents.rlm_agent import (
+    get_recursive_instructions as _get_rlm_recursive_instructions,
 )
-from synalinks.src.modules.agents.recursive_language_model_agent import (
-    get_default_instructions as _get_rlm_default_instructions,
-)
+from synalinks.src.modules.core.tool import Tool
 from synalinks.src.modules.language_models import get as _get_lm
 from synalinks.src.modules.ttc.self_critique import CritiqueWithReward
 from synalinks.src.programs import Program
@@ -58,13 +57,19 @@ the prediction is close but not exact.\
 def _build_judge_instructions(user_task, max_llm_calls):
     """Combine the RLM workflow guide with the judging task.
 
-    The agent's per-turn code generator needs the workflow instructions
-    (how to use code-mode, llm_query, submit, ...) to function at all;
-    `instructions=` on `RecursiveLanguageModelAgent` *overrides* those
-    rather than appending, so we have to splice the user's judging task
-    onto the workflow text ourselves.
+    The agent drives itself by calling the `run_python_code` tool and
+    delegating semantic work to `llm_query`; it needs the recursive
+    workflow instructions (how to use the sandbox, `llm_query`, `submit`,
+    ...) to function at all. `instructions=` on
+    `RecursiveLanguageModelAgent` *overrides* those rather than appending,
+    so we splice the user's judging task onto the workflow text ourselves.
+
+    We pull `get_recursive_instructions`, not the non-recursive
+    `get_default_instructions`: the judge runs the agent in its default
+    recursive mode, and only that text both describes `llm_query` and
+    carries the `{max_llm_calls}` budget placeholder we substitute here.
     """
-    base = _get_rlm_default_instructions().replace(
+    base = _get_rlm_recursive_instructions().replace(
         "{max_llm_calls}", str(max_llm_calls)
     )
     task = (user_task or _DEFAULT_JUDGE_TASK).strip()
@@ -123,6 +128,11 @@ class RecursiveLMAsJudgeProgram(Program):
             (default 10 000).
         temperature (float): Sampling temperature for the inner
             generators (default 0.0).
+        tools (list): Optional. Extra tools (callables or `Tool` instances)
+            bound into the agent's code sandbox alongside `llm_query` /
+            `submit`, callable from the Python it runs each turn — e.g. a
+            calculator or a domain API to check a prediction against. Defaults
+            to `None`.
         name (str): Optional. The name of the program.
         description (str): Optional. The description of the program.
         trainable (bool): Whether the program's variables should be
@@ -141,6 +151,7 @@ class RecursiveLMAsJudgeProgram(Program):
         timeout=60,
         max_output_chars=10_000,
         temperature=0.0,
+        tools=None,
         name=None,
         description=None,
         trainable=True,
@@ -156,10 +167,19 @@ class RecursiveLMAsJudgeProgram(Program):
         sub_language_model = (
             _get_lm(sub_language_model) if sub_language_model is not None else language_model
         )
+        # Normalize tools to `Tool` instances up front so a bare callable works
+        # uniformly across the agentic judges and `self.tools` serializes the
+        # same way regardless of how the caller passed them.
+        tools = (
+            [t if isinstance(t, Tool) else Tool(t) for t in tools]
+            if tools
+            else None
+        )
         self.judge = RecursiveLanguageModelAgent(
             data_model=CritiqueWithReward,
             language_model=language_model,
             sub_language_model=sub_language_model,
+            tools=tools,
             prompt_template=prompt_template,
             examples=examples,
             instructions=_build_judge_instructions(instructions, max_llm_calls),
@@ -181,6 +201,7 @@ class RecursiveLMAsJudgeProgram(Program):
         self.timeout = timeout
         self.max_output_chars = max_output_chars
         self.temperature = temperature
+        self.tools = tools
 
     async def call(self, inputs):
         if not isinstance(inputs, (list, tuple)):
@@ -225,7 +246,17 @@ class RecursiveLMAsJudgeProgram(Program):
                 self.sub_language_model
             ),
         }
-        return {**lm_config, **config}
+        # Mirror the agent's own tool serialization: wrap bare callables in
+        # `Tool` so they round-trip the same way the agent's do.
+        tools_config = {
+            "tools": [
+                serialization_lib.serialize_synalinks_object(
+                    t if isinstance(t, Tool) else Tool(t)
+                )
+                for t in (self.tools or [])
+            ],
+        }
+        return {**lm_config, **config, **tools_config}
 
     @classmethod
     def from_config(cls, config):
@@ -238,6 +269,10 @@ class RecursiveLMAsJudgeProgram(Program):
             config["sub_language_model"] = serialization_lib.deserialize_synalinks_object(
                 config["sub_language_model"]
             )
+        config["tools"] = [
+            serialization_lib.deserialize_synalinks_object(t)
+            for t in config.pop("tools", [])
+        ] or None
         return cls(**config)
 
 
@@ -286,12 +321,22 @@ class RecursiveLMAsJudge(ProgramAsJudge):
             (default 10 000).
         temperature (float): Sampling temperature for the inner
             generators (default 0.0).
+        tools (list): Optional. Extra tools (callables or `Tool` instances)
+            bound into the agent's code sandbox, callable from the Python it
+            runs each turn. Defaults to `None`.
         name (str): Optional. string name of the reward instance
             (default `"recursive_lm_as_judge"`).
         in_mask (list): Optional. list of keys to keep to compute the
             reward.
         out_mask (list): Optional. list of keys to remove to compute the
             reward.
+        reduction (str): Optional. How per-sample rewards are reduced over a
+            batch — one of `"mean"` (default), `"sum"`, `"min"`, `"max"`,
+            `"none"`.
+        in_mask_pattern (str): Optional. Regex; fields whose names match are
+            kept (OR-combined with `in_mask`).
+        out_mask_pattern (str): Optional. Regex; fields whose names match are
+            dropped (OR-combined with `out_mask`).
     """
 
     def __init__(
@@ -306,25 +351,38 @@ class RecursiveLMAsJudge(ProgramAsJudge):
         timeout=60,
         max_output_chars=10_000,
         temperature=0.0,
+        tools=None,
         name="recursive_lm_as_judge",
         in_mask=None,
         out_mask=None,
+        reduction="mean",
+        in_mask_pattern=None,
+        out_mask_pattern=None,
+        program=None,
     ):
-        program = RecursiveLMAsJudgeProgram(
-            language_model=language_model,
-            sub_language_model=sub_language_model,
-            prompt_template=prompt_template,
-            examples=examples,
-            instructions=instructions,
-            max_iterations=max_iterations,
-            max_llm_calls=max_llm_calls,
-            timeout=timeout,
-            max_output_chars=max_output_chars,
-            temperature=temperature,
-        )
+        # `program` is normally built from the args above; it is accepted as a
+        # kwarg only so `from_config` can pass the deserialized inner program
+        # straight back in (round-tripping a saved reward).
+        if program is None:
+            program = RecursiveLMAsJudgeProgram(
+                language_model=language_model,
+                sub_language_model=sub_language_model,
+                prompt_template=prompt_template,
+                examples=examples,
+                instructions=instructions,
+                max_iterations=max_iterations,
+                max_llm_calls=max_llm_calls,
+                timeout=timeout,
+                max_output_chars=max_output_chars,
+                temperature=temperature,
+                tools=tools,
+            )
         super().__init__(
             program=program,
             name=name,
+            reduction=reduction,
             in_mask=in_mask,
             out_mask=out_mask,
+            in_mask_pattern=in_mask_pattern,
+            out_mask_pattern=out_mask_pattern,
         )

@@ -4,7 +4,8 @@
 
 Combines synalinks's built-in `Reward` subclasses (auto-discovered via
 `synalinks.src.rewards.ALL_OBJECTS`) with project-local rewards
-(`MultiJudgePanel`, `RecursiveLMAsJudge`) into a single `_REWARD_TYPES` map
+(`MultiJudgePanel`, `RecursiveLMAsJudge`, `DeepEval`, `DeepAsJudge`) into a
+single `_REWARD_TYPES` map
 keyed by the reward's snake_case class name. `get(spec)` instantiates a
 reward from either a string name (`"exact_match"`) or a YAML-shaped dict;
 string `language_model:` / `embedding_model:` values flow straight into
@@ -20,9 +21,12 @@ from synalinks.src.rewards.batch_reward import BatchReward, BatchRewardFunctionW
 from synalinks.src.rewards.reward_wrappers import RewardFunctionWrapper, ProgramAsJudge
 from synalinks.src.utils.naming import to_snake_case
 
+from src.rewards.agent_as_judge import AgentAsJudge
+from src.rewards.deep_as_judge import DeepAsJudge
 from src.rewards.deep_eval import DeepEval
 from src.rewards.multi_judge_panel import MultiJudgePanel
-from src.rewards.recursive_language_model_reward import RecursiveLMAsJudge
+from src.rewards.rlm_as_judge import RecursiveLMAsJudge
+from src.rewards.rubrics_as_judge import RubricsAsJudge
 
 _BASES = (
     synalinks.rewards.Reward,
@@ -34,7 +38,14 @@ _BASES = (
 
 # Project-local reward classes that should also be selectable from YAML by
 # their snake_case class name.
-_LOCAL_REWARDS = (MultiJudgePanel, RecursiveLMAsJudge, DeepEval)
+_LOCAL_REWARDS = (
+    MultiJudgePanel,
+    RecursiveLMAsJudge,
+    DeepEval,
+    DeepAsJudge,
+    RubricsAsJudge,
+    AgentAsJudge,
+)
 
 
 def _is_yaml_instantiable(cls):
