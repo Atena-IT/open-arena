@@ -21,6 +21,8 @@ dependencies = [
     "braintrust>=0.18.0",
     "click>=8.1.8",
     "datasets>=4.8.5",
+    "fastapi>=0.115.0",
+    "httpx>=0.28.0",
     # Direct imports in src/datasets/dataset.py + src/evaluate.py —
     # declared explicitly so installs don't rely on these being pulled in
     # transitively (today they ship via synalinks / datasets / langchain,
@@ -35,6 +37,7 @@ dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "synalinks>=0.9.001",
+    "uvicorn>=0.30.0",
 ]
 
 [project.optional-dependencies]
