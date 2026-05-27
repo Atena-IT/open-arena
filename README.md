@@ -47,6 +47,27 @@ arena --no-cache               # discard the .open-arena/ trial cache and start 
 
 `arena --help` for the full option list.
 
+## Serve the API
+
+The repository now ships a persistent FastAPI backend backed by
+`.open-arena/api.db`.
+
+```bash
+export OPEN_ARENA_API_TOKEN=open-arena-dev-token
+arena serve
+```
+
+Useful CLI entry points:
+
+```bash
+arena request GET /v1/metric-kinds
+arena import-config config.yaml --run
+```
+
+The API requires an `Authorization` header with the configured API token
+on every `/v1/*` endpoint. `/healthz` stays unauthenticated for local
+checks.
+
 ## Launch the autoresearch agent
 
 A coding agent (Claude Code, Codex, Cursor, etc.) reads `AGENTS.md` /
