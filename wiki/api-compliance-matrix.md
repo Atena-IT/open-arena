@@ -1,13 +1,13 @@
 # API compliance matrix
 
-OpenAPI contract source: `/tmp/workspace/Atena-IT/open-arena/openapi.yaml`
+OpenAPI contract source: `openapi.yaml`
 
 Current backend implementation:
 
-- API layer: `/tmp/workspace/Atena-IT/open-arena/src/api/app.py`
-- Persistence + services: `/tmp/workspace/Atena-IT/open-arena/src/api/service.py`
-- OpenAPI-derived schemas: `/tmp/workspace/Atena-IT/open-arena/src/api/models.py`
-- CLI bridge: `/tmp/workspace/Atena-IT/open-arena/src/evaluate.py`
+- API layer: `src/api/app.py`
+- Persistence + services: `src/api/service.py`
+- OpenAPI-derived schemas: `src/api/models.py`
+- CLI bridge: `src/evaluate.py`
 
 | Workstream | Paths | Status | Notes |
 |---|---|---|---|
