@@ -19,6 +19,7 @@ import yaml
 from pydantic import BaseModel
 from synalinks.src.utils.naming import to_snake_case
 
+from src.api.constants import DEFAULT_API_TOKEN
 from src.api import models as api
 from src.config import Config
 from src.datasets import _DATASET_TYPES
@@ -28,7 +29,6 @@ from src.rewards import _REWARD_TYPES
 STATE_DIR = Path('.open-arena')
 DB_PATH = STATE_DIR / 'api.db'
 
-DEFAULT_API_TOKEN = 'open-arena-dev-token'
 DEFAULT_AGGREGATIONS = ('weighted_mean', 'mean', 'min', 'max')
 DEFAULT_MODEL_PROVIDERS = (
     'anthropic',
@@ -684,10 +684,11 @@ class ArenaAPIService:
         return api.PublicLeaderboardEntryListResponse(items=page, next_cursor=next_cursor)
 
     # importer -------------------------------------------------------------------
-    def import_config(self, config_path: str | Path, *, leaderboard_name: str | None = None, create_run: bool = False) -> dict[str, Any]:
+    def import_config(self, config_path: str | Path, *, source_name: str | None = None, leaderboard_name: str | None = None, create_run: bool = False) -> dict[str, Any]:
         config_path = Path(config_path)
+        source = Path(source_name or config_path.name).name
         cfg = Config.load(config_path)
-        raw = yaml.safe_load(config_path.read_text()) or {}
+        raw = yaml.safe_load(config_path.read_text(encoding='utf-8')) or {}
         selected_datasets = cfg.selected_dataset_names()
         raw_datasets = raw.get('datasets', {})
         created_verifiers = []
@@ -704,19 +705,19 @@ class ArenaAPIService:
                 api.EnvironmentCreate(
                     source=api.EnvironmentSource(kind=api.EnvironmentSourceKind.inline, name=ds_name, version=str(ds_raw.get('version') or 'v1')),
                     inline_definition=self._inline_environment_from_dataset(ds_name, ds_raw, verifier, cfg),
-                    metadata={'imported_from': str(config_path)},
+                    metadata={'imported_from': source},
                 )
             )
             memberships.append(api.EnvironmentMembershipCreate(environment=api.EnvironmentRef(environment_id=environment.id)))
         catalog_models = [self._model_definition_create_from_identifier(model_id) for model_id in cfg.experiments.language_models]
         leaderboard = self.create_leaderboard(
             api.LeaderboardCreate(
-                name=leaderboard_name or config_path.stem,
-                description=f'Imported from {config_path.name}',
+                name=leaderboard_name or Path(source).stem,
+                description=f'Imported from {source}',
                 visibility=api.LeaderboardVisibility.private,
                 ranking=api.RankingPolicy(primary_metric=ranking_primary, aggregation='weighted_mean'),
                 bootstrap=api.LeaderboardBootstrap(model_catalog=api.ModelCatalogReplace(models=catalog_models), environments=memberships),
-                metadata={'imported_from': str(config_path)},
+                metadata={'imported_from': source},
             )
         )
         out: dict[str, Any] = {
@@ -734,6 +735,17 @@ class ArenaAPIService:
             )
             out['run'] = run
         return out
+
+    def import_config_document(self, config_text: str, *, config_name: str | None = None, leaderboard_name: str | None = None, create_run: bool = False) -> dict[str, Any]:
+        source = Path(config_name or 'config.yaml').name or 'config.yaml'
+        suffix = Path(source).suffix or '.yaml'
+        with tempfile.NamedTemporaryFile('w', encoding='utf-8', suffix=suffix, prefix='open-arena-import-', delete=False) as handle:
+            handle.write(config_text)
+            temp_path = Path(handle.name)
+        try:
+            return self.import_config(temp_path, source_name=source, leaderboard_name=leaderboard_name, create_run=create_run)
+        finally:
+            temp_path.unlink(missing_ok=True)
 
     # execution internals --------------------------------------------------------
     def _execute_run(self, run_id: UUID, run_create: api.GeneratorRunCreate | api.AgentRunCreate, pending: list[PendingSubject], cached_subjects: list[api.SubjectResult]) -> None:
@@ -966,7 +978,7 @@ class ArenaAPIService:
 
     def _leaderboard_entries(self, leaderboard: api.Leaderboard, *, as_of: datetime | None = None) -> list[api.LeaderboardEntry]:
         entries: list[api.LeaderboardEntry] = []
-        scored: list[tuple[api.ModelDefinition, api.EnvironmentMembership, float, UUID]] = []
+        scored: list[tuple[api.ModelDefinition, api.EnvironmentMembership, float, UUID, list[api.MetricResult]]] = []
         for result in self.store.list_run_results():
             run = self.store.get_run(result.run_id)
             if run is None or run.status != api.RunStatus.succeeded:
@@ -981,14 +993,14 @@ class ArenaAPIService:
                 membership = next((m for m in leaderboard.environments or [] if m.environment_id == subject.environment.id), None)
                 if score is None or membership is None:
                     continue
-                scored.append((subject.model, membership, score, result.run_id))
-        scored.sort(key=lambda item: self._sort_key(item[2], leaderboard.ranking.primary_metric, descending=self._metric_direction(item[0], leaderboard.ranking.primary_metric, fallback=True)), reverse=True)
-        for rank, (model, membership, score, run_id) in enumerate(scored, start=1):
+                scored.append((subject.model, membership, score, result.run_id, subject.metrics))
+        scored.sort(key=lambda item: self._sort_key(item[2], leaderboard.ranking.primary_metric, descending=self._metric_direction(item[4], leaderboard.ranking.primary_metric, fallback=True)), reverse=True)
+        for rank, (model, membership, score, run_id, _metrics) in enumerate(scored, start=1):
             entries.append(api.LeaderboardEntry(rank=rank, model_id=model.id, model_version=model.runtime.model_version, environment_id=membership.environment_id, environment_version=membership.environment.source.version, score=score, environment_breakdown={str(membership.environment_id): score}, last_run_id=run_id))
         return entries
 
     def _public_entries(self) -> list[api.PublicLeaderboardEntry]:
-        entries: list[api.PublicLeaderboardEntry] = []
+        scored: list[tuple[api.PublicLeaderboardEntry, list[api.MetricResult]]] = []
         for result in self.store.list_run_results():
             run = self.store.get_run(result.run_id)
             if run is None or run.status != api.RunStatus.succeeded:
@@ -1002,16 +1014,16 @@ class ArenaAPIService:
                 score = self._metric_value(subject.metrics, 'reward')
                 if score is None:
                     continue
-                entries.append(api.PublicLeaderboardEntry(
+                scored.append((api.PublicLeaderboardEntry(
                     environment_name=subject.environment.source.name,
                     environment_version=subject.environment.source.version,
                     model_name=subject.model.name,
                     model_version=subject.model.runtime.model_version,
                     score=score,
                     source_run_id=result.run_id,
-                ))
-        entries.sort(key=lambda item: item.score, reverse=True)
-        return entries
+                ), subject.metrics))
+        scored.sort(key=lambda item: self._sort_key(item[0].score, 'reward', descending=self._metric_direction(item[1], 'reward', fallback=True)), reverse=True)
+        return [entry for entry, _metrics in scored]
 
     # validation -----------------------------------------------------------------
     def _validate_metric_definitions(self, metrics: list[api.MetricDefinition]) -> None:
@@ -1174,7 +1186,10 @@ class ArenaAPIService:
                 return metric.value
         return None
 
-    def _metric_direction(self, _model: api.ModelDefinition, _name: str, *, fallback: bool = True) -> bool:
+    def _metric_direction(self, metrics: list[api.MetricResult], name: str, *, fallback: bool = True) -> bool:
+        for metric in metrics:
+            if metric.name == name:
+                return metric.direction != api.Direction.min
         return fallback
 
     def _supports_mode(self, environment: api.Environment, mode: api.RunMode) -> bool:
@@ -1192,7 +1207,14 @@ class ArenaAPIService:
 
 
 def _paginate(items: list[Any], *, limit: int, cursor: str | None) -> tuple[list[Any], str | None]:
-    offset = int(cursor or 0)
+    if limit < 1:
+        raise ApiError('invalid_limit', '`limit` must be at least 1.')
+    try:
+        offset = int(cursor or 0)
+    except (TypeError, ValueError) as exc:
+        raise ApiError('invalid_cursor', '`cursor` must be a non-negative integer offset.') from exc
+    if offset < 0:
+        raise ApiError('invalid_cursor', '`cursor` must be a non-negative integer offset.')
     page = items[offset:offset + limit]
     next_cursor = str(offset + limit) if offset + limit < len(items) else None
     return page, next_cursor
@@ -1220,7 +1242,8 @@ def _run_async(coro):
     import asyncio
 
     try:
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
     except RuntimeError:
         return asyncio.run(coro)
-    return loop.run_until_complete(coro)
+    coro.close()
+    raise RuntimeError('_run_async() cannot be called while an event loop is already running; await the coroutine instead.')

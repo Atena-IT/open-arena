@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from src.api.service import DEFAULT_API_TOKEN
+from src.api.constants import DEFAULT_API_TOKEN
 
 
 class ArenaAPIClient:

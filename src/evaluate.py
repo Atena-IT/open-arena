@@ -587,7 +587,7 @@ def import_config(config_path: str, server_url: str, token: str, leaderboard_nam
         return
 
     client = __import__("src.api.client", fromlist=["ArenaAPIClient"]).ArenaAPIClient(server_url, token=token)
-    payload = {"config_path": config_path, "leaderboard_name": leaderboard_name, "create_run": run}
+    payload = {"config_text": Path(config_path).read_text(encoding="utf-8"), "config_name": Path(config_path).name, "leaderboard_name": leaderboard_name, "create_run": run}
     result = client.request("POST", "/v1/import-config", payload)
     click.echo(json.dumps(result, indent=2))
 
