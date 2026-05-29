@@ -20,8 +20,6 @@ Current backend implementation:
 | Leaderboard entries | `/v1/leaderboards/{leaderboard_id}/entries` | Implemented | Built from persisted run results |
 | Discovery | `/v1/metric-kinds`, `/v1/aggregations`, `/v1/model-providers`, `/v1/dataset-providers` | Implemented | Unknown discovery identifiers rejected with 400 |
 | Runs | `/v1/runs`, `/v1/runs/{run_id}`, `/v1/runs/{run_id}/results` | Implemented | Persistent run records + background execution + cached subject reuse |
-| Public leaderboard | `/v1/public-leaderboard`, `/v1/public-leaderboard/entries` | Implemented | Direct-pair runs can publish into the shared board |
-| Migration | `arena import-config`, `/v1/import-config` | Added | Converts legacy YAML configs into backend resources |
 
 ## Current execution scope
 

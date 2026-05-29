@@ -8,7 +8,6 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from src.api import models as api
 from src.api.constants import DEFAULT_API_TOKEN
@@ -195,17 +194,6 @@ def delete_membership(leaderboard_id: UUID, environment_id: UUID, service: Servi
 def leaderboard_entries(leaderboard_id: UUID, environment_id: UUID | None = None, model_id: UUID | None = None, as_of: datetime | None = None, limit: int = 50, cursor: str | None = None, service: ServiceDep = None):
     return service.list_leaderboard_entries(leaderboard_id, environment_id=environment_id, model_id=model_id, as_of=as_of, limit=limit, cursor=cursor)
 
-
-@app.get('/v1/public-leaderboard', response_model=api.PublicLeaderboard, dependencies=[Depends(require_bearer)])
-def get_public_leaderboard(service: ServiceDep = None):
-    return service.get_public_leaderboard()
-
-
-@app.get('/v1/public-leaderboard/entries', response_model=api.PublicLeaderboardEntryListResponse, dependencies=[Depends(require_bearer)])
-def list_public_entries(environment_name: str | None = None, environment_version: str | None = None, model_name: str | None = None, model_version: str | None = None, limit: int = 50, cursor: str | None = None, service: ServiceDep = None):
-    return service.list_public_entries(environment_name=environment_name, environment_version=environment_version, model_name=model_name, model_version=model_version, limit=limit, cursor=cursor)
-
-
 @app.get('/v1/metric-kinds', response_model=api.DiscoveryIdentifierListResponse, dependencies=[Depends(require_bearer)])
 def metric_kinds(service: ServiceDep = None):
     return service.metric_kinds()
@@ -245,21 +233,3 @@ def get_run(run_id: UUID, service: ServiceDep = None):
 def get_run_results(run_id: UUID, service: ServiceDep = None):
     return service.get_run_result(run_id)
 
-
-class ImportConfigRequest(BaseModel):
-    config_text: str
-    config_name: str | None = None
-    leaderboard_name: str | None = None
-    create_run: bool = False
-
-
-@app.post('/v1/import-config', dependencies=[Depends(require_bearer)])
-def import_config(payload: ImportConfigRequest, service: ServiceDep = None):
-    result = service.import_config_document(payload.config_text, config_name=payload.config_name, leaderboard_name=payload.leaderboard_name, create_run=payload.create_run)
-    out = {}
-    for key, value in result.items():
-        if isinstance(value, list):
-            out[key] = [item.model_dump(mode='json') for item in value]
-        else:
-            out[key] = value.model_dump(mode='json')
-    return out

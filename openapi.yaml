@@ -23,9 +23,7 @@ info:
       - an entire leaderboard
       - one or more environments inside a leaderboard across all leaderboard models
       - one or more models inside a leaderboard across all leaderboard environments
-      - explicit model × environment slices
-      - a direct model/environment pair without a private leaderboard; those runs
-        feed the unified public leaderboard.
+      - explicit model × environment slices supplied directly in the run payload.
 
     In this artifact, `Run` is scoped to evaluation submissions plus their
     cache-backed result materialization. Job-control primitives (cancel/retry/
@@ -45,7 +43,6 @@ tags:
   - name: Environments
   - name: Verifiers
   - name: Runs
-  - name: Public Leaderboard
   - name: Discovery
 
 security:
@@ -607,56 +604,6 @@ paths:
                 $ref: '#/components/schemas/LeaderboardEntryListResponse'
         default:
           $ref: '#/components/responses/Error'
-
-  /v1/public-leaderboard:
-    get:
-      tags: [Public Leaderboard]
-      summary: Get unified public leaderboard metadata
-      operationId: getPublicLeaderboard
-      responses:
-        '200':
-          description: Public leaderboard
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicLeaderboard'
-        default:
-          $ref: '#/components/responses/Error'
-
-  /v1/public-leaderboard/entries:
-    get:
-      tags: [Public Leaderboard]
-      summary: List public leaderboard entries
-      operationId: listPublicLeaderboardEntries
-      parameters:
-        - in: query
-          name: environment_name
-          schema:
-            type: string
-        - in: query
-          name: environment_version
-          schema:
-            type: string
-        - in: query
-          name: model_name
-          schema:
-            type: string
-        - in: query
-          name: model_version
-          schema:
-            type: string
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
-      responses:
-        '200':
-          description: Public leaderboard entries
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicLeaderboardEntryListResponse'
-        default:
-          $ref: '#/components/responses/Error'
-
   /v1/metric-kinds:
     get:
       tags: [Discovery]
@@ -784,7 +731,7 @@ paths:
           - leaderboard + environment_ids: run those environments across all leaderboard models
           - leaderboard + model_ids: run those models across all leaderboard environments
           - leaderboard + both: run the explicit cross-product subset
-          - no leaderboard + direct_pairs: run direct model/environment pairs and publish to the public leaderboard
+          - no leaderboard + direct_pairs: run direct model/environment pairs supplied inline in the request
       operationId: createRun
       requestBody:
         required: true
@@ -1980,40 +1927,6 @@ components:
         last_run_id:
           type: string
           format: uuid
-
-    PublicLeaderboard:
-      type: object
-      required: [name, visibility]
-      properties:
-        name:
-          type: string
-          const: public
-        visibility:
-          type: string
-          const: public
-        description:
-          type: string
-        ranking:
-          $ref: '#/components/schemas/RankingPolicy'
-
-    PublicLeaderboardEntry:
-      type: object
-      required: [environment_name, environment_version, model_name, model_version, score]
-      properties:
-        environment_name:
-          type: string
-        environment_version:
-          type: string
-        model_name:
-          type: string
-        model_version:
-          type: string
-        score:
-          type: number
-        source_run_id:
-          type: string
-          format: uuid
-
     ModelDefinitionListResponse:
       type: object
       required: [items]
@@ -2079,18 +1992,6 @@ components:
             $ref: '#/components/schemas/LeaderboardEntry'
         next_cursor:
           type: string
-
-    PublicLeaderboardEntryListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicLeaderboardEntry'
-        next_cursor:
-          type: string
-
     RunListResponse:
       type: object
       required: [items]

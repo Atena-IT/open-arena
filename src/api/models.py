@@ -454,23 +454,6 @@ class LeaderboardEntry(BaseModel):
     )
     last_run_id: UUID | None = None
 
-
-class PublicLeaderboard(BaseModel):
-    name: Literal['public']
-    visibility: Literal['public']
-    description: str | None = None
-    ranking: RankingPolicy | None = None
-
-
-class PublicLeaderboardEntry(BaseModel):
-    environment_name: str
-    environment_version: str
-    model_name: str
-    model_version: str
-    score: float
-    source_run_id: UUID | None = None
-
-
 class ModelDefinitionListResponse(BaseModel):
     items: list[ModelDefinition]
     next_cursor: str | None = None
@@ -484,12 +467,6 @@ class VerifierSuiteListResponse(BaseModel):
 class LeaderboardEntryListResponse(BaseModel):
     items: list[LeaderboardEntry]
     next_cursor: str | None = None
-
-
-class PublicLeaderboardEntryListResponse(BaseModel):
-    items: list[PublicLeaderboardEntry]
-    next_cursor: str | None = None
-
 
 class DiscoveryIdentifier(BaseModel):
     id: str
