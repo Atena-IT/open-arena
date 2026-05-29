@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 import os
@@ -21,7 +20,6 @@ from synalinks.src.utils.naming import to_snake_case
 
 from src.api.constants import DEFAULT_API_TOKEN
 from src.api import models as api
-from src.config import Config
 from src.datasets import _DATASET_TYPES
 from src.evaluate import run_sweep
 from src.rewards import _REWARD_TYPES
@@ -661,92 +659,6 @@ class ArenaAPIService:
             entries = [entry for entry in entries if entry.model_id == model_id]
         page, next_cursor = _paginate(entries, limit=limit, cursor=cursor)
         return api.LeaderboardEntryListResponse(items=page, next_cursor=next_cursor)
-
-    def get_public_leaderboard(self) -> api.PublicLeaderboard:
-        return api.PublicLeaderboard(
-            name='public',
-            visibility='public',
-            description='Unified public leaderboard for direct model/environment evaluation runs.',
-            ranking=api.RankingPolicy(primary_metric='reward', aggregation='weighted_mean'),
-        )
-
-    def list_public_entries(self, *, environment_name: str | None = None, environment_version: str | None = None, model_name: str | None = None, model_version: str | None = None, limit: int = 50, cursor: str | None = None) -> api.PublicLeaderboardEntryListResponse:
-        items = self._public_entries()
-        if environment_name is not None:
-            items = [item for item in items if item.environment_name == environment_name]
-        if environment_version is not None:
-            items = [item for item in items if item.environment_version == environment_version]
-        if model_name is not None:
-            items = [item for item in items if item.model_name == model_name]
-        if model_version is not None:
-            items = [item for item in items if item.model_version == model_version]
-        page, next_cursor = _paginate(items, limit=limit, cursor=cursor)
-        return api.PublicLeaderboardEntryListResponse(items=page, next_cursor=next_cursor)
-
-    # importer -------------------------------------------------------------------
-    def import_config(self, config_path: str | Path, *, source_name: str | None = None, leaderboard_name: str | None = None, create_run: bool = False) -> dict[str, Any]:
-        config_path = Path(config_path)
-        source = Path(source_name or config_path.name).name
-        cfg = Config.load(config_path)
-        raw = yaml.safe_load(config_path.read_text(encoding='utf-8')) or {}
-        selected_datasets = cfg.selected_dataset_names()
-        raw_datasets = raw.get('datasets', {})
-        created_verifiers = []
-        memberships = []
-        ranking_primary = 'reward'
-        now = _now()
-        for ds_name in selected_datasets:
-            ds_raw = copy.deepcopy(raw_datasets[ds_name])
-            verifier_create = self._verifier_create_from_dataset(ds_name, ds_raw)
-            verifier = self.create_verifier(verifier_create)
-            created_verifiers.append(verifier)
-            ranking_primary = verifier.metrics[0].name
-            environment = self.create_environment(
-                api.EnvironmentCreate(
-                    source=api.EnvironmentSource(kind=api.EnvironmentSourceKind.inline, name=ds_name, version=str(ds_raw.get('version') or 'v1')),
-                    inline_definition=self._inline_environment_from_dataset(ds_name, ds_raw, verifier, cfg),
-                    metadata={'imported_from': source},
-                )
-            )
-            memberships.append(api.EnvironmentMembershipCreate(environment=api.EnvironmentRef(environment_id=environment.id)))
-        catalog_models = [self._model_definition_create_from_identifier(model_id) for model_id in cfg.experiments.language_models]
-        leaderboard = self.create_leaderboard(
-            api.LeaderboardCreate(
-                name=leaderboard_name or Path(source).stem,
-                description=f'Imported from {source}',
-                visibility=api.LeaderboardVisibility.private,
-                ranking=api.RankingPolicy(primary_metric=ranking_primary, aggregation='weighted_mean'),
-                bootstrap=api.LeaderboardBootstrap(model_catalog=api.ModelCatalogReplace(models=catalog_models), environments=memberships),
-                metadata={'imported_from': source},
-            )
-        )
-        out: dict[str, Any] = {
-            'leaderboard': leaderboard,
-            'verifiers': created_verifiers,
-        }
-        if create_run:
-            run = self.create_run(
-                api.RunCreate(
-                    root=api.GeneratorRunCreate(
-                        mode='generator',
-                        selection=api.RunSelection(root=api.RunSelection1(leaderboard_id=leaderboard.id)),
-                    )
-                )
-            )
-            out['run'] = run
-        return out
-
-    def import_config_document(self, config_text: str, *, config_name: str | None = None, leaderboard_name: str | None = None, create_run: bool = False) -> dict[str, Any]:
-        source = Path(config_name or 'config.yaml').name or 'config.yaml'
-        suffix = Path(source).suffix or '.yaml'
-        with tempfile.NamedTemporaryFile('w', encoding='utf-8', suffix=suffix, prefix='open-arena-import-', delete=False) as handle:
-            handle.write(config_text)
-            temp_path = Path(handle.name)
-        try:
-            return self.import_config(temp_path, source_name=source, leaderboard_name=leaderboard_name, create_run=create_run)
-        finally:
-            temp_path.unlink(missing_ok=True)
-
     # execution internals --------------------------------------------------------
     def _execute_run(self, run_id: UUID, run_create: api.GeneratorRunCreate | api.AgentRunCreate, pending: list[PendingSubject], cached_subjects: list[api.SubjectResult]) -> None:
         run = self.get_run(run_id)
@@ -998,33 +910,6 @@ class ArenaAPIService:
         for rank, (model, membership, score, run_id, _metrics) in enumerate(scored, start=1):
             entries.append(api.LeaderboardEntry(rank=rank, model_id=model.id, model_version=model.runtime.model_version, environment_id=membership.environment_id, environment_version=membership.environment.source.version, score=score, environment_breakdown={str(membership.environment_id): score}, last_run_id=run_id))
         return entries
-
-    def _public_entries(self) -> list[api.PublicLeaderboardEntry]:
-        scored: list[tuple[api.PublicLeaderboardEntry, list[api.MetricResult]]] = []
-        for result in self.store.list_run_results():
-            run = self.store.get_run(result.run_id)
-            if run is None or run.status != api.RunStatus.succeeded:
-                continue
-            selection = run.selection.root
-            if getattr(selection, 'leaderboard_id', None) is not None:
-                continue
-            if not getattr(selection, 'publish_to_public_leaderboard', False):
-                continue
-            for subject in result.subjects:
-                score = self._metric_value(subject.metrics, 'reward')
-                if score is None:
-                    continue
-                scored.append((api.PublicLeaderboardEntry(
-                    environment_name=subject.environment.source.name,
-                    environment_version=subject.environment.source.version,
-                    model_name=subject.model.name,
-                    model_version=subject.model.runtime.model_version,
-                    score=score,
-                    source_run_id=result.run_id,
-                ), subject.metrics))
-        scored.sort(key=lambda item: self._sort_key(item[0].score, 'reward', descending=self._metric_direction(item[1], 'reward', fallback=True)), reverse=True)
-        return [entry for entry, _metrics in scored]
-
     # validation -----------------------------------------------------------------
     def _validate_metric_definitions(self, metrics: list[api.MetricDefinition]) -> None:
         supported = {item.id for item in self.metric_kinds().items}
@@ -1086,77 +971,6 @@ class ArenaAPIService:
     def _model_from_create(self, payload: api.ModelDefinitionCreate, now: datetime) -> api.ModelDefinition:
         self._validate_model(payload)
         return api.ModelDefinition(id=uuid4(), name=payload.name, display_name=payload.display_name, family=payload.family, tags=payload.tags, runtime=payload.runtime, metadata=payload.metadata, created_at=now, updated_at=now)
-
-    def _model_definition_create_from_identifier(self, model_id: str) -> api.ModelDefinitionCreate:
-        provider, _, model_name = model_id.partition('/')
-        model_name = model_name or provider
-        return api.ModelDefinitionCreate(
-            name=model_id,
-            display_name=model_id,
-            family=provider,
-            runtime=api.ModelExecutionConfig(provider=provider, model_name=model_name, model_version=model_name),
-            metadata={'legacy_model_id': model_id},
-        )
-
-    def _inline_environment_from_dataset(self, ds_name: str, ds_raw: dict[str, Any], verifier: api.VerifierSuite, cfg: Config) -> api.InlineEnvironmentDefinition:
-        provider = ds_raw.pop('type')
-        input_template = ds_raw.pop('input_template', None)
-        output_template = ds_raw.pop('output_template', None)
-        generator_cfg = ds_raw.pop('generator', None)
-        agent_cfg = ds_raw.pop('agent', None)
-        ds_raw.pop('reward', None)
-        ds_raw.pop('metrics', None)
-        source_field = PROVIDER_SOURCE_FIELDS.get(provider, 'path')
-        source_ref = ds_raw.pop(source_field, None)
-        version = ds_raw.pop('version', None)
-        metadata = {}
-        for key in ('input_schema', 'output_schema', 'batch_size', 'limit', 'repeat', 'streaming', 'name', 'split', 'revision', 'format', 'page_size'):
-            if key in ds_raw:
-                metadata[key] = ds_raw.pop(key)
-        dataset = api.DatasetBinding(provider=provider, source_ref=source_ref, version=str(version) if version is not None else None, selector=ds_raw or None, input_template=input_template, output_template=output_template, metadata=metadata or None)
-        runtime_metadata: dict[str, Any] = {}
-        supported_modes = []
-        if generator_cfg is not None:
-            runtime_metadata['generator'] = generator_cfg
-            supported_modes.append(api.RunMode.generator)
-        if agent_cfg is not None:
-            runtime_metadata['agent'] = agent_cfg
-            runtime_metadata['mcp_servers_registry'] = {name: cfg.mcp_servers[name] for name in agent_cfg.get('mcp_servers', []) if name in cfg.mcp_servers}
-            supported_modes.append(api.RunMode.agent)
-        return api.InlineEnvironmentDefinition(
-            name=ds_name,
-            version=str(version or 'v1'),
-            dataset=dataset,
-            verifier=api.VerifierSuiteBinding(root=api.VerifierSuiteRef(binding_type='ref', verifier_id=verifier.id)),
-            runtime=api.EnvironmentRuntimePolicy(supported_modes=supported_modes or [api.RunMode.generator], metadata=runtime_metadata or None),
-            metadata={'imported': True},
-        )
-
-    def _verifier_create_from_dataset(self, ds_name: str, ds_raw: dict[str, Any]) -> api.VerifierSuiteCreate:
-        reward = copy.deepcopy(ds_raw.get('reward') or {})
-        metrics = copy.deepcopy(ds_raw.get('metrics') or [])
-        defs = [self._metric_definition_from_reward_block(reward, reward.get('name') or 'reward')]
-        for idx, metric in enumerate(metrics):
-            defs.append(self._metric_definition_from_metric_block(metric, fallback_name=f'{ds_name}-metric-{idx + 1}'))
-        return api.VerifierSuiteCreate(name=f'{ds_name}-verifier', aggregation='weighted_mean', metrics=defs, metadata={'imported': True})
-
-    def _metric_definition_from_reward_block(self, reward: dict[str, Any], fallback_name: str) -> api.MetricDefinition:
-        metric_kind = reward.pop('name')
-        direction = reward.pop('direction', 'max')
-        backbone = reward.get('language_model') or reward.get('embedding_model')
-        return api.MetricDefinition(name=fallback_name, metric_kind=metric_kind, weight=1.0, direction=api.Direction(direction), deterministic=False, objective=True, backbone=backbone, config=reward or None)
-
-    def _metric_definition_from_metric_block(self, metric: str | dict[str, Any], *, fallback_name: str) -> api.MetricDefinition:
-        if isinstance(metric, str):
-            return api.MetricDefinition(name=metric, metric_kind=metric, weight=1.0)
-        metric = dict(metric)
-        metric_kind = metric.pop('class')
-        name = metric.pop('alias', fallback_name)
-        direction = metric.pop('direction', 'max')
-        objective = metric.pop('objective', False)
-        backbone = metric.get('language_model') or metric.get('embedding_model')
-        return api.MetricDefinition(name=name, metric_kind=metric_kind, weight=1.0, direction=api.Direction(direction), objective=objective, backbone=backbone, config=metric or None)
-
     # misc helpers ----------------------------------------------------------------
     def _run_fingerprint(self, model: api.ModelDefinition, environment: api.Environment, mode: str, execution: api.GeneratorRunConfig | api.AgentRunConfig | None, reuse_policy: api.ReusePolicy) -> str:
         key_fields = reuse_policy.key_fields or ['model_version', 'environment_version', 'mode', 'temperature', 'max_tokens']

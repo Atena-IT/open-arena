@@ -569,29 +569,6 @@ def request_api(method: str, path: str, server_url: str, token: str, file_path: 
     if result is not None:
         click.echo(json.dumps(result, indent=2))
 
-
-@main.command("import-config")
-@click.argument("config_path", type=click.Path(exists=True, dir_okay=False, readable=True))
-@click.option("--server", "server_url", default="http://127.0.0.1:8000", show_default=True)
-@click.option("--token", default=lambda: os.getenv("OPEN_ARENA_API_TOKEN", "open-arena-dev-token"), show_default="OPEN_ARENA_API_TOKEN or open-arena-dev-token")
-@click.option("--name", "leaderboard_name", default=None)
-@click.option("--run/--no-run", default=False, show_default=True)
-def import_config(config_path: str, server_url: str, token: str, leaderboard_name: str | None, run: bool) -> None:
-    """Import a legacy YAML config into API resources."""
-    from src.api.service import ArenaAPIService
-
-    if server_url in {"memory", "local"}:
-        service = ArenaAPIService()
-        result = service.import_config(config_path, leaderboard_name=leaderboard_name, create_run=run)
-        click.echo(json.dumps({k: v.model_dump(mode="json") if hasattr(v, "model_dump") else [item.model_dump(mode="json") for item in v] for k, v in result.items()}, indent=2))
-        return
-
-    client = __import__("src.api.client", fromlist=["ArenaAPIClient"]).ArenaAPIClient(server_url, token=token)
-    payload = {"config_text": Path(config_path).read_text(encoding="utf-8"), "config_name": Path(config_path).name, "leaderboard_name": leaderboard_name, "create_run": run}
-    result = client.request("POST", "/v1/import-config", payload)
-    click.echo(json.dumps(result, indent=2))
-
-
 async def _run(config_path: str, no_cache: bool, verbose: int, json_out: str | None) -> None:
     result = await run_sweep(config_path, no_cache=no_cache, verbose=verbose)
     meta, rows = result["meta"], result["rows"]

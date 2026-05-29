@@ -60,8 +60,8 @@ arena serve
 Useful CLI entry points:
 
 ```bash
+arena                     # local config-driven run
 arena request GET /v1/metric-kinds
-arena import-config config.yaml --run
 ```
 
 The API requires an `Authorization` header with the configured API token
