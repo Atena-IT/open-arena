@@ -35,9 +35,12 @@ from src.program import build_agent, build_program  # noqa: E402
 from src.rewards import _REWARD_TYPES, get as get_reward  # noqa: E402
 
 
-STATE_DIR = Path(".open-arena")
-TSV_PATH = STATE_DIR / "last_run.tsv"
-FRONTIER_TSV_PATH = STATE_DIR / "frontier.tsv"
+# Default directory for trial state + output TSVs. Override per run with
+# `--state-dir` so multiple runs can be kept side by side without clobbering
+# each other's trial cache.
+DEFAULT_STATE_DIR = Path(".open-arena")
+TSV_NAME = "last_run.tsv"
+FRONTIER_TSV_NAME = "frontier.tsv"
 
 
 def _instantiate_metrics(entries: list[MetricEntry], *, context: str):
@@ -317,6 +320,7 @@ async def run_sweep(
     *,
     no_cache: bool = False,
     verbose: int = 0,
+    state_dir: Path = DEFAULT_STATE_DIR,
 ) -> dict:
     """Run the full sweep and return the JSON-serializable result dict.
 
@@ -324,8 +328,9 @@ async def run_sweep(
     matrix without going through stdout). One `synalinks.tuners.GridSearch`
     runs per dataset over `Choice("language_model", ...)` — model is the
     only HP axis; the dataset is a fixed search context. Each tuner
-    persists trial state under `.open-arena/<dataset>/`, the same cache
-    the CLI reads, so resumed runs work.
+    persists trial state under `<state_dir>/<dataset>/` (default
+    `.open-arena`, override with `state_dir`), the same cache the CLI
+    reads, so resumed runs work and distinct `state_dir`s never collide.
 
     Programs are built eagerly per `(model, dataset)` cell inside the
     async context, then handed to the tuner via a sync `hypermodel`
@@ -431,7 +436,7 @@ async def run_sweep(
             hypermodel,
             objective=objectives if len(objectives) > 1 else objectives[0],
             max_trials=len(model_ids),
-            directory=str(STATE_DIR),
+            directory=str(state_dir),
             project_name=ds_name,
             overwrite=no_cache,
         )
@@ -498,10 +503,22 @@ def _emit_json(result: dict, dest) -> None:
     help="Path to the YAML config.",
 )
 @click.option(
+    "--state-dir",
+    "state_dir",
+    type=click.Path(file_okay=False, writable=True, path_type=Path),
+    default=DEFAULT_STATE_DIR,
+    show_default=True,
+    help=(
+        "Directory for trial state and the output TSVs. Use a distinct "
+        "directory per run to keep multiple runs side by side without "
+        "their trial caches colliding."
+    ),
+)
+@click.option(
     "--no-cache",
     is_flag=True,
     help=(
-        "Discard every per-dataset trial cache under `.open-arena/` before "
+        "Discard every per-dataset trial cache under the state dir before "
         "running. Use this when the model list or any dataset's reward / "
         "metric set has changed since the last run."
     ),
@@ -527,13 +544,27 @@ def _emit_json(result: dict, dest) -> None:
         "writes alongside them."
     ),
 )
-def main(config_path: str, no_cache: bool, verbose: int, json_out: str | None) -> None:
+def main(
+    config_path: str,
+    state_dir: Path,
+    no_cache: bool,
+    verbose: int,
+    json_out: str | None,
+) -> None:
     """Run the open-arena LLM evaluation sweep."""
-    asyncio.run(_run(config_path, no_cache, verbose, json_out))
+    asyncio.run(_run(config_path, state_dir, no_cache, verbose, json_out))
 
 
-async def _run(config_path: str, no_cache: bool, verbose: int, json_out: str | None) -> None:
-    result = await run_sweep(config_path, no_cache=no_cache, verbose=verbose)
+async def _run(
+    config_path: str,
+    state_dir: Path,
+    no_cache: bool,
+    verbose: int,
+    json_out: str | None,
+) -> None:
+    result = await run_sweep(
+        config_path, no_cache=no_cache, verbose=verbose, state_dir=state_dir
+    )
     meta, rows = result["meta"], result["rows"]
 
     # `--json -` is the API-style invocation: emit one JSON document on
@@ -548,14 +579,16 @@ async def _run(config_path: str, no_cache: bool, verbose: int, json_out: str | N
                 rows, ds_name, objectives, meta["frontier_by_ds"].get(ds_name, []),
             )
 
-    _write_tsv(rows, TSV_PATH)
-    print(f"wrote {TSV_PATH}")
+    tsv_path = state_dir / TSV_NAME
+    _write_tsv(rows, tsv_path)
+    print(f"wrote {tsv_path}")
 
     # Only mention frontier.tsv when there's at least one multi-objective
     # dataset — otherwise it'd be header-only and the print noise is misleading.
     if any(len(o) > 1 for o in meta["objectives_by_ds"].values()):
-        _write_frontier_tsv(rows, meta["objectives_by_ds"], FRONTIER_TSV_PATH)
-        print(f"wrote {FRONTIER_TSV_PATH}")
+        frontier_path = state_dir / FRONTIER_TSV_NAME
+        _write_frontier_tsv(rows, meta["objectives_by_ds"], frontier_path)
+        print(f"wrote {frontier_path}")
 
     if json_out:
         json_path = Path(json_out)
