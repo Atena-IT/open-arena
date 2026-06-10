@@ -118,10 +118,17 @@ def _build_rubric_instructions(user_task, rubric):
 def _reduce(scores, weights, reduction):
     """Mix per-rubric `scores` (aligned with `weights`) into one reward.
 
-    Operates only on the rubrics that returned a usable score; the caller drops
-    failures before calling this, so `scores` is always non-empty here. All
-    branches return a value in [0, 1] when the inputs are.
+    Operates only on the rubrics that returned a usable score. The caller drops
+    failures before calling this, so `scores` is normally non-empty; the empty
+    guard below is defensive (an all-failed panel reduces to 0.0 rather than
+    crashing on min/max/division). All branches return a value in [0, 1] when
+    the inputs are.
     """
+    if not scores:
+        # No rubric produced a usable score: no signal to mix -> 0.0. Mirrors
+        # synalinks' reduce_values, which collapses an empty batch to 0.0 so
+        # downstream scalar consumers never see a crash or a non-float.
+        return 0.0
     if reduction == "mean":
         # Weighted arithmetic mean; uniform weights reduce it to the plain
         # mean. All-zero surviving weights would divide by zero — fall back to
