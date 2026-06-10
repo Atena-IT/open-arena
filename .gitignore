@@ -218,3 +218,6 @@ __marimo__/
 .codex/
 .gemini/
 .github/skills/
+
+# Node dependencies (demo/gui/frontend)
+**/node_modules/*
