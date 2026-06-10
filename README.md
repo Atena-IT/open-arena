@@ -43,7 +43,11 @@ Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure, AWS).
 arena                          # uses ./config.yaml
 arena -c configs/eval.yaml     # different config
 arena --no-cache               # discard the .open-arena/ trial cache and start over
+arena --state-dir runs/exp1    # store trial state + TSVs here instead of .open-arena/
 ```
+
+Use a distinct `--state-dir` per run to keep multiple runs side by side
+without their trial caches (and `last_run.tsv` / `frontier.tsv`) colliding.
 
 `arena --help` for the full option list.
 
