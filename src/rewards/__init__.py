@@ -24,6 +24,7 @@ from synalinks.src.utils.naming import to_snake_case
 from src.rewards.agent_as_judge import AgentAsJudge
 from src.rewards.deep_as_judge import DeepAsJudge
 from src.rewards.deep_eval import DeepEval
+from src.rewards.metric_reward import MetricReward
 from src.rewards.multi_judge_panel import MultiJudgePanel
 from src.rewards.rlm_as_judge import RecursiveLMAsJudge
 from src.rewards.rubrics_as_judge import RubricsAsJudge
@@ -45,6 +46,7 @@ _LOCAL_REWARDS = (
     DeepAsJudge,
     RubricsAsJudge,
     AgentAsJudge,
+    MetricReward,
 )
 
 
