@@ -123,6 +123,10 @@ class DatasetEntry(BaseModel):
     consumed by the sweep; every other key is a dataset-provider kwarg
     (forwarded by `load_dataset_from_yaml` to the matching `Dataset`
     subclass). `extra="allow"` keeps those provider kwargs untouched.
+
+    `generator:` stays a free-form dict — every key flows straight to
+    `synalinks.Generator(**kwargs)` (incl. `tool_schemas:`), which owns the
+    validation.
     """
 
     model_config = ConfigDict(extra="allow")

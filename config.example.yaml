@@ -171,6 +171,28 @@ datasets:
       instructions: |
         Solve the math word problem. Reply with only the final numerical answer —
         no units, no explanation, no extra text.
+      # Optional: expose tool declarations to the generator. Each entry is an
+      # OpenAI wire-format tool schema (`{type: function, function: {...}}`),
+      # passed straight to `synalinks.Generator(tool_schemas=...)`, which owns
+      # the validation. (These declare the tool interface to the model; wiring
+      # an executor for a multi-step tool-calling loop is the `agent:` block's
+      # job instead.)
+      # tool_schemas:
+      #   - type: function
+      #     function:
+      #       name: calculator
+      #       description: Evaluate an arithmetic expression and return the result.
+      #       parameters:
+      #         type: object
+      #         properties:
+      #           expression:
+      #             type: string
+      #             description: A Python-style arithmetic expression, e.g. "3 * (4 + 5)".
+      #         required: [expression]
+      # YAML is a superset of JSON, so you can also paste a raw JSON tool
+      # schema inline (flow syntax) instead of the block form above:
+      # tool_schemas:
+      #   - {"type": "function", "function": {"name": "calculator", "description": "Evaluate an arithmetic expression.", "parameters": {"type": "object", "properties": {"expression": {"type": "string"}}, "required": ["expression"]}}}
     reward:
       name: exact_match
       in_mask: [content]

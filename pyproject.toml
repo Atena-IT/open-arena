@@ -35,7 +35,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.8.33",
+    "synalinks>=0.8.35",
 ]
 
 [project.optional-dependencies]
@@ -46,6 +46,14 @@ deepeval = ["deepeval>=2.0.0"]
 
 [project.scripts]
 arena = "src.evaluate:main"
+
+# TEMPORARY: pull synalinks from GitHub instead of PyPI.
+# The 0.8.35 fix is published to PyPI but not yet served by the index
+# (PyPI outage / propagation delay), and the repo has no v0.8.35 tag,
+# so we pin the exact commit on `main` that declares 0.8.35.
+# TODO: drop this block once synalinks 0.8.35 is installable from PyPI.
+[tool.uv.sources]
+synalinks = { git = "https://github.com/SynaLinks/synalinks.git", rev = "bbc57fac9293f9abae90ec5bb1b4605d2142e118" }
 
 [build-system]
 requires = ["hatchling"]
