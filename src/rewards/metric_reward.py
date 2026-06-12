@@ -10,12 +10,14 @@ Two modes:
 
 - ``metric: auto`` (default) — pick the best metric **per key**, score each key,
   and average. When an ``output_schema`` is given, each field is routed by its
-  schema type — ``enum``/``const`` → categorical F1, ``boolean`` → binary F1,
-  ``number``/``integer`` → exact match, anything else → token-Jaccard F1. Without
-  a schema it falls back to the value's runtime type (booleans → binary, numbers
-  → exact, everything else → token-Jaccard, which collapses to exact match for
-  single-token labels). A multi-field output is graded field-appropriately and
-  the per-key scores are averaged.
+  schema type — ``enum``/``const`` → categorical accuracy, ``boolean`` → binary
+  accuracy, ``number``/``integer`` → exact match, anything else → token-Jaccard
+  accuracy. Without a schema it falls back to the value's runtime type (booleans
+  → binary, numbers → exact, everything else → token-Jaccard, which collapses to
+  exact match for single-token labels). The accuracy family is used rather than
+  F1 so a correct negative (boolean ``False``, an absent label) scores 1.0; it
+  stays Jaccard-based, so multi-token/multi-label fields keep partial credit. A
+  multi-field output is graded field-appropriately and per-key scores averaged.
 - ``metric: <name>`` — force one metric (e.g. ``categorical_f1_score``) over the
   masked fields.
 
@@ -55,10 +57,15 @@ _METRIC_CLASSES = {
 
 # In `auto` mode, each per-key "kind" maps to the metric used for that group.
 # "numeric" is handled by exact equality (no token metric fits a bare number).
+# The accuracy family is used (not F1) because per-example it's symmetric: a
+# correct negative (e.g. boolean `False`/the absent label) scores 1.0, whereas
+# token/set-F1 only counts the positive class and would score it 0.0. The
+# synalinks accuracy metrics are still Jaccard-based, so text/multi-label fields
+# keep partial credit (|A∩B|/|A∪B|) rather than collapsing to all-or-nothing.
 _AUTO_KIND_METRIC = {
-    "categorical": "categorical_f1_score",
-    "binary": "binary_f1_score",
-    "text": "f1_score",
+    "categorical": "categorical_accuracy",
+    "binary": "binary_accuracy",
+    "text": "accuracy",
 }
 
 
