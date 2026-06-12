@@ -35,7 +35,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.8.36",
+    "synalinks>=0.8.38",
 ]
 
 [project.optional-dependencies]
@@ -46,14 +46,6 @@ deepeval = ["deepeval>=2.0.0"]
 
 [project.scripts]
 arena = "src.evaluate:main"
-
-# TEMPORARY: pull synalinks from GitHub instead of PyPI.
-# Needs 0.8.36, which adds `Generator(tool_schemas=...)` used by the tool configs
-# (0.8.35 raised `unexpected keyword argument 'tool_schemas'`). It isn't on PyPI
-# yet and the repo has no tag, so pin the exact main commit.
-# TODO: drop this block once synalinks >=0.8.36 is installable from PyPI.
-[tool.uv.sources]
-synalinks = { git = "https://github.com/SynaLinks/synalinks.git", rev = "58f95f92814e718b0bdfef33b5f212aeefcc09e1" }
 
 [build-system]
 requires = ["hatchling"]
