@@ -30,7 +30,10 @@ The reward is in [0, 1]. A fresh metric is built per call, so concurrent scoring
 (open-arena's `asyncio.gather`) never shares mutable metric state.
 """
 
+import math
+
 import synalinks
+from synalinks.src.backend.common.json_utils import in_mask_json, out_mask_json
 from synalinks.src.rewards.reward import Reward
 
 # Deterministic metrics selectable as a reward, by their snake_case name (the
@@ -67,6 +70,13 @@ def _to_scalar(result):
         values = [float(v) for v in result]
         return sum(values) / len(values) if values else 0.0
     return float(result)
+
+
+def _clamp(value):
+    """Bound a reward to [0, 1]; map NaN to 0.0 (matches `DeepEval.call`)."""
+    if math.isnan(value):
+        return 0.0
+    return max(0.0, min(1.0, value))
 
 
 def _schema_kind(node):
@@ -151,13 +161,22 @@ class MetricReward(Reward):
         )
 
     def _candidate_keys(self, true_json):
-        """Keys of the gold to score, after applying the user's in/out mask."""
-        keys = list(true_json)
-        if self.in_mask:
-            keys = [k for k in keys if k in self.in_mask]
-        elif self.out_mask:
-            keys = [k for k in keys if k not in self.out_mask]
-        return keys
+        """Keys of the gold to score, after applying the user's in/out masks.
+
+        Mirrors how synalinks Metrics mask fields: in-mask first (list ``in_mask``
+        OR'd with regex ``in_mask_pattern``), then out-mask — so pattern-based
+        masking configured in YAML reaches ``auto`` mode too.
+        """
+        masked = true_json
+        if self.in_mask or self.in_mask_pattern:
+            masked = in_mask_json(
+                masked, mask=self.in_mask, pattern=self.in_mask_pattern
+            )
+        if self.out_mask or self.out_mask_pattern:
+            masked = out_mask_json(
+                masked, mask=self.out_mask, pattern=self.out_mask_pattern
+            )
+        return list(masked)
 
     def _key_kind(self, key, value, props):
         """Route a key to a metric kind: schema first, runtime value as fallback."""
@@ -172,7 +191,7 @@ class MetricReward(Reward):
             return 0.0
         if self.metric != "auto":
             metric = self._build_metric(self.metric, self.average)
-            return _to_scalar(await metric(y_true, y_pred))
+            return _clamp(_to_scalar(await metric(y_true, y_pred)))
 
         # auto: group the gold's keys by metric kind (schema-driven, value as
         # fallback), score each group with the type-appropriate metric, then
@@ -201,7 +220,9 @@ class MetricReward(Reward):
                 parts.append((_to_scalar(await m(y_true, y_pred)), len(group_keys)))
 
         total_w = sum(w for _, w in parts)
-        return sum(s * w for s, w in parts) / total_w if total_w else 0.0
+        if not total_w:
+            return 0.0
+        return _clamp(sum(s * w for s, w in parts) / total_w)
 
     def get_config(self):
         return {

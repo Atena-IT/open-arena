@@ -35,7 +35,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.8.37",
+    "synalinks>=0.8.38",
 ]
 
 [project.optional-dependencies]
@@ -46,14 +46,6 @@ deepeval = ["deepeval>=2.0.0"]
 
 [project.scripts]
 arena = "src.evaluate:main"
-
-# TEMPORARY: pull synalinks from GitHub instead of PyPI.
-# Needs 0.8.37: Generator(tool_schemas=...) for the tool configs, plus honoring
-# rate-limit Retry-After so the judge survives Azure OpenAI throttling. Not on
-# PyPI yet and the repo has no tag, so pin the exact main commit.
-# TODO: drop this block once synalinks >=0.8.37 is installable from PyPI.
-[tool.uv.sources]
-synalinks = { git = "https://github.com/SynaLinks/synalinks.git", rev = "1baaf3e1507d18900d5b317240f85fdac2af21a1" }
 
 [build-system]
 requires = ["hatchling"]

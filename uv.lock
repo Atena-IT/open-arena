@@ -2903,7 +2903,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=23.0.1" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "synalinks", git = "https://github.com/SynaLinks/synalinks.git?rev=1baaf3e1507d18900d5b317240f85fdac2af21a1" },
+    { name = "synalinks", specifier = ">=0.8.38" },
 ]
 provides-extras = ["deepeval"]
 
@@ -4840,8 +4840,8 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.8.37"
-source = { git = "https://github.com/SynaLinks/synalinks.git?rev=1baaf3e1507d18900d5b317240f85fdac2af21a1#1baaf3e1507d18900d5b317240f85fdac2af21a1" }
+version = "0.8.38"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
     { name = "asyncio" },
@@ -4871,6 +4871,10 @@ dependencies = [
     { name = "rich" },
     { name = "synaops" },
     { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c9/4d/c5a77341e771e7019269527e81ce66a6a035700a8259c2da25e5e28f8355/synalinks-0.8.38.tar.gz", hash = "sha256:9fbb5631f6d7ee5bd092de35ad61b740cff9c786afc7521f893335493a0a0553", size = 782938 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4f/2f/ce105cf73f42e4df21e559f5d47fbc6b5e2a98b825597bb3df58bf81c247/synalinks-0.8.38-py3-none-any.whl", hash = "sha256:5b7fab419c593664bf10ba945899b624ab5593f60d2cd00d031480258396f583", size = 1015481 },
 ]
 
 [[package]]
