@@ -1,0 +1,25 @@
+apiVersion: v2
+name: open-arena
+description: >
+  Autoresearch loop for reward R&D and model selection — between
+  post-training evals and the next round of fine-tuning / RL.
+  Deploys the Open Arena FastAPI service with optional Postgres,
+  MinIO, and MLflow backends.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - llm
+  - evaluation
+  - arena
+  - rl
+  - reward
+home: https://github.com/atenareply/open-arena
+sources:
+  - https://github.com/atenareply/open-arena
+maintainers:
+  - name: Athena-Reply
+    email: open-arena@reply.it
+annotations:
+  # ModelFactory org-node integration marker
+  modelfactory/component: open-arena

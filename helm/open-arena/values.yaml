@@ -1,0 +1,225 @@
+# =============================================================================
+# Open Arena — Helm values
+#
+# Designed to be deployed standalone OR as a managed sub-chart of the
+# ModelFactory org-node chart. When used as a sub-chart, prefix every value
+# with `open-arena.` in the parent chart's values file.
+#
+# Org-node injection pattern:
+#   open-arena:
+#     org: acme
+#     image:
+#       tag: "1.2.3"
+#     ingress:
+#       enabled: true
+# =============================================================================
+
+# Organization identifier — used in ingress hostname templating:
+#   arena.<org>.dev.reply-modelfactory.com
+# Injected by the org-node chart per-org values; override here for standalone.
+org: ""
+
+# -----------------------------------------------------------------------------
+# Image
+# -----------------------------------------------------------------------------
+image:
+  repository: ghcr.io/atenareply/open-arena
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Override the chart name (useful when embedding as a sub-chart)
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Replica / scheduling
+# -----------------------------------------------------------------------------
+replicaCount: 1
+
+# Rolling-update strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# -----------------------------------------------------------------------------
+# Service account
+# -----------------------------------------------------------------------------
+serviceAccount:
+  # Create a dedicated ServiceAccount for the deployment
+  create: true
+  annotations: {}
+  name: ""
+
+# -----------------------------------------------------------------------------
+# Pod-level settings
+# -----------------------------------------------------------------------------
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# -----------------------------------------------------------------------------
+# Service
+# -----------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+  # Add annotations for cloud load-balancers, e.g. AWS NLB:
+  annotations: {}
+
+# -----------------------------------------------------------------------------
+# Ingress
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  # Host is templated from `org` when provided, otherwise use `hosts` below.
+  # Pattern: arena.<org>.dev.reply-modelfactory.com
+  useOrgHostPattern: true
+  hosts:
+    - host: arena.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # - secretName: open-arena-tls
+  #   hosts:
+  #     - arena.local
+
+# -----------------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+
+# -----------------------------------------------------------------------------
+# Persistence (SQLite state dir / trial cache)
+# When DATABASE_URL (Postgres) is configured, the .open-arena/ volume holds
+# only the eval trial cache — still useful to persist across pod restarts.
+# -----------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  mountPath: /app/.open-arena
+
+# -----------------------------------------------------------------------------
+# Health probes
+# -----------------------------------------------------------------------------
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# -----------------------------------------------------------------------------
+# Auto-scaling (disabled by default)
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# -----------------------------------------------------------------------------
+# Non-secret environment configuration (goes into ConfigMap)
+# All values must be strings.
+# -----------------------------------------------------------------------------
+env:
+  # Database — set to a Postgres DSN for WS1; leave empty for SQLite default
+  DATABASE_URL: ""
+  # Gitea
+  GITEA_BASE_URL: ""
+  GITEA_ORG: ""
+  # Unity Catalog
+  UNITY_CATALOG_API_URL: ""
+  # MLflow
+  MLFLOW_TRACKING_URI: ""
+  # S3 / object storage
+  S3_ENDPOINT: ""
+  S3_BUCKET: ""
+  AWS_DEFAULT_REGION: "fr-par"
+  # OIDC
+  OIDC_ISSUER: ""
+  OIDC_CLIENT_ID: ""
+  # Sandbox
+  SANDBOX_PROVIDER: "local"
+
+# -----------------------------------------------------------------------------
+# Secret environment variables (goes into a Kubernetes Secret)
+# Provide values here or reference an existing secret via `existingSecret`.
+# Plain-text values here are base64-encoded by Helm at template time.
+# In production use an external secrets manager (e.g. External Secrets Operator).
+# -----------------------------------------------------------------------------
+secrets:
+  # API auth
+  OPEN_ARENA_API_TOKEN: ""
+  # Gitea
+  GITEA_TOKEN: ""
+  # Unity Catalog
+  UC_TOKEN: ""
+  # MLflow
+  MLFLOW_TRACKING_TOKEN: ""
+  # S3 credentials
+  AWS_ACCESS_KEY_ID: ""
+  AWS_SECRET_ACCESS_KEY: ""
+  # OIDC
+  OIDC_CLIENT_SECRET: ""
+  # E2B
+  E2B_API_KEY: ""
+
+# Reference an existing secret instead of letting Helm manage one.
+# When set, the `secrets:` block above is ignored for the named keys.
+existingSecret: ""
+
+# -----------------------------------------------------------------------------
+# Node selection / tolerations / affinity
+# -----------------------------------------------------------------------------
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# -----------------------------------------------------------------------------
+# Extra volumes / volume mounts (e.g. for config files)
+# -----------------------------------------------------------------------------
+extraVolumes: []
+extraVolumeMounts: []
