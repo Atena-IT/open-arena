@@ -1,0 +1,52 @@
+Open Arena has been deployed!
+
+Chart version:   {{ .Chart.Version }}
+App version:     {{ .Chart.AppVersion }}
+Release name:    {{ .Release.Name }}
+Namespace:       {{ .Release.Namespace }}
+
+1. Get the API URL:
+
+{{- if .Values.ingress.enabled }}
+  API is accessible at:
+  http{{ if .Values.ingress.tls }}s{{ end }}://{{ include "open-arena.ingressHost" . }}/
+
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to become available.
+  Watch status with:
+    kubectl get svc --namespace {{ .Release.Namespace }} {{ include "open-arena.fullname" . }} -w
+
+  Once the EXTERNAL-IP is populated:
+    export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "open-arena.fullname" . }} --template "{{"{{"}} range (index .status.loadBalancer.ingress 0) {{"}}"}}{{"{{"}} . {{"}}"}}{{"{{"}} end {{"}}"}}")
+    echo "API URL: http://$SERVICE_IP:{{ .Values.service.port }}"
+
+{{- else if eq .Values.service.type "NodePort" }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "open-arena.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "API URL: http://$NODE_IP:$NODE_PORT"
+
+{{- else }}
+  Port-forward to reach the API locally:
+    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "open-arena.fullname" . }} 8000:{{ .Values.service.port }}
+
+  Then visit: http://localhost:8000
+{{- end }}
+
+2. Check the API health:
+    curl http://<host>/health
+
+3. Authenticate:
+    curl -H "Authorization: Bearer <OPEN_ARENA_API_TOKEN>" http://<host>/api/v1/leaderboards
+
+4. View logs:
+    kubectl logs --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "open-arena.name" . }}" -f
+
+{{- if not .Values.secrets.OPEN_ARENA_API_TOKEN }}
+
+WARNING: OPEN_ARENA_API_TOKEN is not set. The API will reject all authenticated requests.
+  Set it in your values file:
+    secrets:
+      OPEN_ARENA_API_TOKEN: "your-secret-token"
+  Or reference an existing secret:
+    existingSecret: "your-existing-secret"
+{{- end }}
