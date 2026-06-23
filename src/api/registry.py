@@ -98,10 +98,13 @@ def _build_results_sink(store: Store, settings: ArenaSettings) -> ResultsSink:
 def _build_sandbox(settings: ArenaSettings) -> SandboxProvider:
     if settings.sandbox == "local":
         return LocalSandboxProvider()
-    # WS6: E2B-compatible — elif settings.sandbox == "e2b": return E2BSandboxProvider()
+    elif settings.sandbox == "e2b":
+        from src.api.sandboxes.e2b_provider import E2BSandboxProvider
+
+        return E2BSandboxProvider()
     raise ValueError(
         f"Unknown OPEN_ARENA_SANDBOX={settings.sandbox!r}.  "
-        "Supported values: 'local'."
+        "Supported values: 'local', 'e2b'."
     )
 
 
