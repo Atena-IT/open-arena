@@ -88,10 +88,13 @@ def _build_dataset_resolver(settings: ArenaSettings) -> DatasetResolver:
 def _build_results_sink(store: Store, settings: ArenaSettings) -> ResultsSink:
     if settings.results_sink == "store":
         return StoreResultsSink(store=store)
-    # WS5: MLflow — elif settings.results_sink == "mlflow": return MlflowResultsSink(...)
+    elif settings.results_sink == "mlflow":
+        from src.api.sinks.mlflow_sink import MlflowResultsSink  # noqa: PLC0415
+
+        return MlflowResultsSink(store=store)
     raise ValueError(
         f"Unknown OPEN_ARENA_RESULTS_SINK={settings.results_sink!r}.  "
-        "Supported values: 'store'."
+        "Supported values: 'store', 'mlflow'."
     )
 
 
