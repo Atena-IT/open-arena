@@ -97,8 +97,16 @@ class _LocalBackend:
     """
 
     def __init__(self) -> None:
-        from src.api.registry import build_adapters
-        from src.api.service import ArenaAPIService
+        try:
+            from src.api.registry import build_adapters
+            from src.api.service import ArenaAPIService
+        except ImportError as exc:
+            msg = (
+                "Local (in-process) mode requires the full Open Arena engine." + chr(10) +
+                "Install it with:  pip install open-arena" + chr(10) +
+                f"(original error: {exc})"
+            )
+            raise ImportError(msg) from exc
 
         self._svc = ArenaAPIService(adapters=build_adapters())
 
@@ -111,8 +119,8 @@ class _LocalBackend:
         """Convert a Pydantic model (or list/dict of them) to JSON-safe dicts."""
         if obj is None:
             return None
-        if hasattr(obj, "model_dump"):
-            return json.loads(obj.model_json_string()) if hasattr(obj, "model_json_string") else json.loads(obj.model_dump_json())
+        if hasattr(obj, "model_dump_json"):
+            return json.loads(obj.model_dump_json())
         return obj
 
 

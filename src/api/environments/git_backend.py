@@ -85,7 +85,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.environment_backend import (
     EnvironmentBackend,
     InlineEnvironmentBackend,

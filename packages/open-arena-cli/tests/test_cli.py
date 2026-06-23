@@ -1,5 +1,5 @@
 # License Apache 2.0: (c) 2026 Athena-Reply
-"""Tests for the arena CLI sub-groups added in WS9 (issue #43).
+"""Tests for the arena CLI sub-groups (WS9, issue #43) via open_arena_cli.main.
 
 Coverage:
 - Command tree wiring (every sub-group and sub-command resolves under `main`)
@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from src.evaluate import main
+from open_arena_cli.main import main
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ class TestRemotePath:
 
     def _patch_client_request(self, return_value):
         """Patch ArenaAPIClient.request to return *return_value*."""
-        return patch("src.api.client.ArenaAPIClient.request", return_value=return_value)
+        return patch("open_arena_core.client.ArenaAPIClient.request", return_value=return_value)
 
     def test_discover_metric_kinds_remote(self):
         payload = {"items": [{"id": "exact_match", "display_name": "exact match"}]}

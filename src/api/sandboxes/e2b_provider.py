@@ -36,7 +36,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.sandbox_provider import SandboxProvider
 
 logger = logging.getLogger(__name__)

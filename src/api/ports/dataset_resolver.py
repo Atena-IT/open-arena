@@ -15,7 +15,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from src.api import models as api
+from open_arena_core import models as api
 
 
 PROVIDER_SOURCE_FIELDS: dict[str, str] = {

@@ -56,7 +56,7 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.results_sink import ResultsSink, StoreResultsSink
 from src.api.ports.store import Store
 

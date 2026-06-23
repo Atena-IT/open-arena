@@ -22,7 +22,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, Header, Response
 from fastapi.responses import JSONResponse
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.service import ArenaAPIService, ApiError
 
 app = FastAPI(title='Open Arena API', version='0.3.0')

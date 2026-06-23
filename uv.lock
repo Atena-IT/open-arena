@@ -7,6 +7,13 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
+[manifest]
+members = [
+    "open-arena",
+    "open-arena-cli",
+    "open-arena-core",
+]
+
 [[package]]
 name = "absl-py"
 version = "2.4.0"
@@ -2965,6 +2972,8 @@ dependencies = [
     { name = "langfuse" },
     { name = "langsmith" },
     { name = "numpy" },
+    { name = "open-arena-cli" },
+    { name = "open-arena-core" },
     { name = "opik" },
     { name = "pyarrow" },
     { name = "pydantic" },
@@ -3021,6 +3030,8 @@ requires-dist = [
     { name = "langsmith", specifier = ">=0.7.38" },
     { name = "mlflow-skinny", marker = "extra == 'mlflow'", specifier = ">=2.14" },
     { name = "numpy", specifier = ">=2.0" },
+    { name = "open-arena-cli", editable = "packages/open-arena-cli" },
+    { name = "open-arena-core", editable = "packages/open-arena-core" },
     { name = "opik", specifier = ">=2.0.20" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'", specifier = ">=3.2" },
     { name = "pyarrow", specifier = ">=23.0.1" },
@@ -3034,6 +3045,47 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.30.0" },
 ]
 provides-extras = ["deepeval", "unity-catalog", "postgres", "mlflow", "e2b", "keycloak"]
+
+[[package]]
+name = "open-arena-cli"
+version = "0.1.0"
+source = { editable = "packages/open-arena-cli" }
+dependencies = [
+    { name = "click" },
+    { name = "httpx" },
+    { name = "open-arena-core" },
+]
+
+[package.optional-dependencies]
+server = [
+    { name = "open-arena" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.1" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "open-arena", marker = "extra == 'server'", editable = "." },
+    { name = "open-arena-core", editable = "packages/open-arena-core" },
+]
+provides-extras = ["server"]
+
+[[package]]
+name = "open-arena-core"
+version = "0.1.0"
+source = { editable = "packages/open-arena-core" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "openai"
