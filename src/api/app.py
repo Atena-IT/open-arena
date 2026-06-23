@@ -1,6 +1,19 @@
+# License Apache 2.0: (c) 2026 Athena-Reply
+"""``src.api.app`` — FastAPI application and HTTP handlers.
+
+This module is intentionally thin: all business logic lives in
+:class:`~src.api.service.ArenaAPIService`; all external concerns are
+handled by port adapters configured via :mod:`src.api.registry`.
+
+Authentication is delegated to the :class:`~src.api.ports.auth_provider.AuthProvider`
+port.  By default :class:`~src.api.ports.auth_provider.StaticBearerAuthProvider`
+reproduces the original ``OPEN_ARENA_API_TOKEN`` comparison.
+
+WS7: Keycloak — set ``OPEN_ARENA_AUTH=keycloak`` to activate
+``KeycloakAuthProvider`` once it is registered in the registry.
+"""
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from functools import lru_cache
 from typing import Annotated
@@ -10,7 +23,6 @@ from fastapi import Depends, FastAPI, Header, Response
 from fastapi.responses import JSONResponse
 
 from src.api import models as api
-from src.api.constants import DEFAULT_API_TOKEN
 from src.api.service import ArenaAPIService, ApiError
 
 app = FastAPI(title='Open Arena API', version='0.3.0')
@@ -18,7 +30,14 @@ app = FastAPI(title='Open Arena API', version='0.3.0')
 
 @lru_cache
 def _service() -> ArenaAPIService:
-    return ArenaAPIService()
+    """Build and cache the singleton :class:`ArenaAPIService`.
+
+    Uses :func:`~src.api.registry.build_adapters` to wire all ports from
+    the current environment settings.
+    """
+    from src.api.registry import build_adapters
+
+    return ArenaAPIService(adapters=build_adapters())
 
 
 def get_service() -> ArenaAPIService:
@@ -28,11 +47,23 @@ def get_service() -> ArenaAPIService:
 ServiceDep = Annotated[ArenaAPIService, Depends(get_service)]
 
 
+@lru_cache
+def _auth_provider():
+    """Return the cached :class:`~src.api.ports.auth_provider.AuthProvider`."""
+    from src.api.registry import build_adapters
+
+    return build_adapters().auth
+
+
 def require_bearer(authorization: str | None = Header(default=None)) -> None:
-    token = os.getenv('OPEN_ARENA_API_TOKEN', DEFAULT_API_TOKEN)
-    expected = 'Bearer ' + token
-    if authorization != expected:
-        raise ApiError('unauthorized', 'Missing or invalid bearer token.', status_code=401)
+    """Authenticate the request using the configured AuthProvider.
+
+    Raises :exc:`~src.api.service.ApiError` (401) when authentication fails.
+
+    WS7: Keycloak — the same signature is retained; swap the adapter via
+    ``OPEN_ARENA_AUTH=keycloak``.
+    """
+    _auth_provider().authenticate(authorization)
 
 
 @app.exception_handler(ApiError)
@@ -232,4 +263,3 @@ def get_run(run_id: UUID, service: ServiceDep = None):
 @app.get('/v1/runs/{run_id}/results', response_model=api.RunResult, dependencies=[Depends(require_bearer)])
 def get_run_results(run_id: UUID, service: ServiceDep = None):
     return service.get_run_result(run_id)
-
