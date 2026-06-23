@@ -883,6 +883,15 @@ components:
 
     EnvironmentSourceKind:
       type: string
+      description: >
+        Source kind for an environment definition.
+        `huggingface_hub` — environment stored in the Hugging Face Hub.
+        `github_repo` — Git-backed environment; also used to address a Gitea
+        repository by setting `GITEA_BASE_URL`, `GITEA_TOKEN`, and
+        `GITEA_ORG` in the server environment and selecting the
+        `git` backend with `OPEN_ARENA_ENV_BACKEND=git`.
+        `prime_environment_hub` — environment managed by Prime Environment Hub.
+        `inline` — fully inline definition embedded in the request body.
       enum:
         - huggingface_hub
         - github_repo
@@ -1139,7 +1148,7 @@ components:
       properties:
         provider:
           type: string
-          description: huggingface, local, folder, langfuse, langsmith, opik, phoenix, braintrust, or custom.
+          description: huggingface, local, folder, unity_catalog, langfuse, langsmith, opik, phoenix, braintrust, or custom.
         source_ref:
           type: string
           description: Dataset identifier such as HF path, repo path, or registry key.

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -43,6 +44,8 @@ from src.rewards import _REWARD_TYPES
 # Re-export SQLiteStore for backward compatibility with any code that did
 # ``from src.api.service import SQLiteStore``.
 from src.api.stores.sqlite import SQLiteStore  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_AGGREGATIONS = ('weighted_mean', 'mean', 'min', 'max')
 DEFAULT_MODEL_PROVIDERS = (
@@ -642,12 +645,35 @@ class ArenaAPIService:
         if not pending:
             return []
         config_payload = self._config_for_pending(mode, execution, pending)
+        # P2-1: collect sandbox policies from all pending subjects and resolve
+        # a single policy to pass to the SandboxProvider.
+        sandbox_policies: list[api.SandboxPolicy] = [
+            item.environment.inline_definition.sandbox
+            for item in pending
+            if item.environment.inline_definition is not None
+            and item.environment.inline_definition.sandbox is not None
+        ]
+        distinct_policies: list[api.SandboxPolicy] = []
+        for p in sandbox_policies:
+            if not any(p.model_dump() == d.model_dump() for d in distinct_policies):
+                distinct_policies.append(p)
+        if len(distinct_policies) > 1:
+            logger.warning(
+                "Multiple distinct sandbox policies across pending subjects — "
+                "falling back to policy=None (unrestricted in-process). "
+                "Distinct policies: %s",
+                [p.model_dump(exclude_none=True) for p in distinct_policies],
+            )
+            # P2-2: per-task fan-out handles heterogeneous sandbox policies
+            resolved_policy: api.SandboxPolicy | None = None
+        else:
+            resolved_policy = distinct_policies[0] if distinct_policies else None
         with tempfile.TemporaryDirectory(prefix='open-arena-api-') as tmpdir:
             config_path = Path(tmpdir) / 'run.yaml'
             config_path.write_text(yaml.safe_dump(config_payload, sort_keys=False))
             # Delegate execution to the SandboxProvider port.
             # WS6: E2B-compatible — swap LocalSandboxProvider for E2BSandboxProvider.
-            result = self._sandbox.run(config_path)
+            result = self._sandbox.run(config_path, policy=resolved_policy)
         rows = result['rows']
         by_dataset_model: dict[tuple[str, str], list[dict[str, Any]]] = {}
         for row in rows:
@@ -777,6 +803,15 @@ class ArenaAPIService:
         metrics = [self._metric_to_runner(metric, primary=False) for metric in verifier.metrics[1:]]
         return reward, metrics
 
+    @staticmethod
+    def _direction_value(direction: api.Direction | str | None) -> str:
+        """Return the string value of *direction*, handling both enum and raw str."""
+        if direction is None:
+            return 'max'
+        if isinstance(direction, str):
+            return direction
+        return direction.value
+
     def _metric_to_runner(self, metric: api.MetricDefinition, *, primary: bool) -> dict[str, Any]:
         payload = dict(metric.config or {})
         if metric.backbone:
@@ -784,13 +819,14 @@ class ArenaAPIService:
                 payload.setdefault('embedding_model', metric.backbone)
             else:
                 payload.setdefault('language_model', metric.backbone)
+        direction = self._direction_value(metric.direction)
         if metric.metric_kind in _REWARD_TYPES:
             if primary:
-                return {'name': metric.metric_kind, **payload, 'direction': metric.direction.value if metric.direction else 'max'}
+                return {'name': metric.metric_kind, **payload, 'direction': direction}
             return {
                 'class': metric.metric_kind,
                 'alias': metric.name,
-                'direction': metric.direction.value if metric.direction else 'max',
+                'direction': direction,
                 'objective': bool(metric.objective),
                 **payload,
             }
@@ -799,7 +835,7 @@ class ArenaAPIService:
         return {
             'class': metric.metric_kind,
             'alias': metric.name,
-            'direction': metric.direction.value if metric.direction else 'max',
+            'direction': direction,
             'objective': bool(metric.objective),
             **payload,
         }
