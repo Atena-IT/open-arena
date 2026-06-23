@@ -520,6 +520,10 @@ class Environment(BaseModel):
     id: UUID
     source: EnvironmentSource
     inline_definition: InlineEnvironmentDefinition | None = None
+    # WS3: resolved pinned identity — populated on create/update when the
+    # backend supports it (git-backed sources).  Null for inline environments.
+    commit_sha: str | None = None
+    content_hash: str | None = None
     metadata: dict[str, Any] | None = None
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -580,6 +584,21 @@ class EnvironmentMembershipListResponse(BaseModel):
 
 class EnvironmentListResponse(BaseModel):
     items: list[Environment]
+    next_cursor: str | None = None
+
+
+class EnvironmentVersion(BaseModel):
+    """A single version descriptor for an environment (WS3: environment versioning)."""
+
+    version: str
+    commit_sha: str | None = None
+    content_hash: str | None = None
+    git_ref: str | None = None
+    created_at: AwareDatetime | None = None
+
+
+class EnvironmentVersionListResponse(BaseModel):
+    items: list[EnvironmentVersion]
     next_cursor: str | None = None
 
 
