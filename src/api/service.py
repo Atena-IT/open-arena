@@ -1,9 +1,22 @@
+# License Apache 2.0: (c) 2026 Athena-Reply
+"""``src.api.service`` — Business-logic layer for Open Arena API.
+
+:class:`ArenaAPIService` is the single entry-point for every HTTP handler
+in :mod:`src.api.app`.  It delegates all external concerns to a set of
+port adapters (see :mod:`src.api.ports`) and contains no I/O of its own.
+
+Backward-compatibility notes
+-----------------------------
+* ``SQLiteStore`` is still importable from this module (re-exported from
+  :mod:`src.api.stores.sqlite`) so any code that did
+  ``from src.api.service import SQLiteStore`` keeps working.
+* ``ArenaAPIService(store=<store>)`` still works — the ``store`` kwarg is
+  accepted and wired into the adapter set internally.
+"""
 from __future__ import annotations
 
 import hashlib
 import json
-import os
-import sqlite3
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -15,17 +28,21 @@ from uuid import UUID, uuid4
 
 import synalinks
 import yaml
-from pydantic import BaseModel
 from synalinks.src.utils.naming import to_snake_case
 
-from src.api.constants import DEFAULT_API_TOKEN
+from src.api.constants import DEFAULT_API_TOKEN  # noqa: F401 — kept for back-compat
 from src.api import models as api
+from src.api.ports.dataset_resolver import DatasetResolver
+from src.api.ports.environment_backend import EnvironmentBackend
+from src.api.ports.results_sink import ResultsSink
+from src.api.ports.sandbox_provider import SandboxProvider
+from src.api.ports.store import Store
 from src.datasets import _DATASET_TYPES
-from src.evaluate import run_sweep
 from src.rewards import _REWARD_TYPES
 
-STATE_DIR = Path('.open-arena')
-DB_PATH = STATE_DIR / 'api.db'
+# Re-export SQLiteStore for backward compatibility with any code that did
+# ``from src.api.service import SQLiteStore``.
+from src.api.stores.sqlite import SQLiteStore  # noqa: F401
 
 DEFAULT_AGGREGATIONS = ('weighted_mean', 'mean', 'min', 'max')
 DEFAULT_MODEL_PROVIDERS = (
@@ -74,205 +91,59 @@ class PendingSubject:
     fingerprint: str
 
 
-class SQLiteStore:
-    def __init__(self, path: Path = DB_PATH):
-        self.path = path
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.RLock()
-        self._init_db()
-
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init_db(self) -> None:
-        with self._connect() as conn:
-            conn.executescript(
-                '''
-                CREATE TABLE IF NOT EXISTS verifiers (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS environments (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    source_kind TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS leaderboards (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    visibility TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS runs (
-                    id TEXT PRIMARY KEY,
-                    mode TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    cache_status TEXT NOT NULL,
-                    leaderboard_id TEXT,
-                    idempotency_key TEXT UNIQUE,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS run_results (
-                    run_id TEXT PRIMARY KEY,
-                    created_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS subject_cache (
-                    fingerprint TEXT PRIMARY KEY,
-                    run_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    doc TEXT NOT NULL
-                );
-                '''
-            )
-
-    def _save_doc(self, table: str, doc_id: str, model: BaseModel, *, name: str | None = None, source_kind: str | None = None, visibility: str | None = None, mode: str | None = None, status: str | None = None, cache_status: str | None = None, leaderboard_id: str | None = None, idempotency_key: str | None = None) -> None:
-        payload = json.dumps(model.model_dump(mode='json', exclude_none=True))
-        now = _iso(_now())
-        with self._lock, self._connect() as conn:
-            if table == 'verifiers':
-                conn.execute(
-                    'REPLACE INTO verifiers (id, name, created_at, updated_at, doc) VALUES (?, ?, COALESCE((SELECT created_at FROM verifiers WHERE id = ?), ?), ?, ?)',
-                    (doc_id, name or '', doc_id, now, now, payload),
-                )
-            elif table == 'environments':
-                conn.execute(
-                    'REPLACE INTO environments (id, name, source_kind, created_at, updated_at, doc) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM environments WHERE id = ?), ?), ?, ?)',
-                    (doc_id, name or '', source_kind or '', doc_id, now, now, payload),
-                )
-            elif table == 'leaderboards':
-                conn.execute(
-                    'REPLACE INTO leaderboards (id, name, visibility, created_at, updated_at, doc) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM leaderboards WHERE id = ?), ?), ?, ?)',
-                    (doc_id, name or '', visibility or '', doc_id, now, now, payload),
-                )
-            elif table == 'runs':
-                conn.execute(
-                    'REPLACE INTO runs (id, mode, status, cache_status, leaderboard_id, idempotency_key, created_at, updated_at, doc) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM runs WHERE id = ?), ?), ?, ?)',
-                    (doc_id, mode or '', status or '', cache_status or '', leaderboard_id, idempotency_key, doc_id, now, now, payload),
-                )
-            else:
-                raise ValueError(table)
-
-    def save_verifier(self, verifier: api.VerifierSuite) -> None:
-        self._save_doc('verifiers', str(verifier.id), verifier, name=verifier.name)
-
-    def save_environment(self, environment: api.Environment) -> None:
-        self._save_doc('environments', str(environment.id), environment, name=environment.source.name, source_kind=environment.source.kind.value)
-
-    def save_leaderboard(self, leaderboard: api.Leaderboard) -> None:
-        self._save_doc('leaderboards', str(leaderboard.id), leaderboard, name=leaderboard.name, visibility=leaderboard.visibility.value)
-
-    def save_run(self, run: api.Run, *, idempotency_key: str | None = None) -> None:
-        selection = run.selection.root
-        leaderboard_id = getattr(selection, 'leaderboard_id', None)
-        self._save_doc(
-            'runs',
-            str(run.id),
-            run,
-            mode=run.mode.value,
-            status=run.status.value,
-            cache_status=run.cache_status.value,
-            leaderboard_id=str(leaderboard_id) if leaderboard_id else None,
-            idempotency_key=idempotency_key,
-        )
-
-    def save_run_result(self, result: api.RunResult) -> None:
-        with self._lock, self._connect() as conn:
-            conn.execute(
-                'REPLACE INTO run_results (run_id, created_at, doc) VALUES (?, ?, ?)',
-                (str(result.run_id), _iso(_now()), json.dumps(result.model_dump(mode='json', exclude_none=True))),
-            )
-
-    def save_cached_subject(self, fingerprint: str, subject: api.SubjectResult, run_id: UUID) -> None:
-        with self._lock, self._connect() as conn:
-            conn.execute(
-                'REPLACE INTO subject_cache (fingerprint, run_id, created_at, doc) VALUES (?, ?, ?, ?)',
-                (fingerprint, str(run_id), _iso(_now()), json.dumps(subject.model_dump(mode='json', exclude_none=True))),
-            )
-
-    def _get_doc(self, table: str, doc_id: str, model_cls: type[BaseModel]) -> BaseModel | None:
-        with self._lock, self._connect() as conn:
-            row = conn.execute(f'SELECT doc FROM {table} WHERE id = ?', (doc_id,)).fetchone()
-        if not row:
-            return None
-        return model_cls.model_validate_json(row['doc'])
-
-    def get_verifier(self, verifier_id: UUID) -> api.VerifierSuite | None:
-        return self._get_doc('verifiers', str(verifier_id), api.VerifierSuite)
-
-    def get_environment(self, environment_id: UUID) -> api.Environment | None:
-        return self._get_doc('environments', str(environment_id), api.Environment)
-
-    def get_leaderboard(self, leaderboard_id: UUID) -> api.Leaderboard | None:
-        return self._get_doc('leaderboards', str(leaderboard_id), api.Leaderboard)
-
-    def get_run(self, run_id: UUID) -> api.Run | None:
-        return self._get_doc('runs', str(run_id), api.Run)
-
-    def get_run_result(self, run_id: UUID) -> api.RunResult | None:
-        with self._lock, self._connect() as conn:
-            row = conn.execute('SELECT doc FROM run_results WHERE run_id = ?', (str(run_id),)).fetchone()
-        if not row:
-            return None
-        return api.RunResult.model_validate_json(row['doc'])
-
-    def get_cached_subject(self, fingerprint: str) -> tuple[UUID, api.SubjectResult] | None:
-        with self._lock, self._connect() as conn:
-            row = conn.execute('SELECT run_id, doc FROM subject_cache WHERE fingerprint = ?', (fingerprint,)).fetchone()
-        if not row:
-            return None
-        return UUID(row['run_id']), api.SubjectResult.model_validate_json(row['doc'])
-
-    def get_run_by_idempotency(self, idempotency_key: str) -> api.Run | None:
-        with self._lock, self._connect() as conn:
-            row = conn.execute('SELECT doc FROM runs WHERE idempotency_key = ?', (idempotency_key,)).fetchone()
-        if not row:
-            return None
-        return api.Run.model_validate_json(row['doc'])
-
-    def delete(self, table: str, doc_id: UUID) -> bool:
-        with self._lock, self._connect() as conn:
-            cur = conn.execute(f'DELETE FROM {table} WHERE id = ?', (str(doc_id),))
-            return cur.rowcount > 0
-
-    def list_verifiers(self) -> list[api.VerifierSuite]:
-        return self._list_docs('verifiers', api.VerifierSuite)
-
-    def list_environments(self) -> list[api.Environment]:
-        return self._list_docs('environments', api.Environment)
-
-    def list_leaderboards(self) -> list[api.Leaderboard]:
-        return self._list_docs('leaderboards', api.Leaderboard)
-
-    def list_runs(self) -> list[api.Run]:
-        return self._list_docs('runs', api.Run)
-
-    def list_run_results(self) -> list[api.RunResult]:
-        with self._lock, self._connect() as conn:
-            rows = conn.execute('SELECT doc FROM run_results ORDER BY created_at DESC').fetchall()
-        return [api.RunResult.model_validate_json(row['doc']) for row in rows]
-
-    def _list_docs(self, table: str, model_cls: type[BaseModel]) -> list[BaseModel]:
-        with self._lock, self._connect() as conn:
-            rows = conn.execute(f'SELECT doc FROM {table} ORDER BY created_at DESC').fetchall()
-        return [model_cls.model_validate_json(row['doc']) for row in rows]
-
-
 class ArenaAPIService:
-    def __init__(self, store: SQLiteStore | None = None):
-        self.store = store or SQLiteStore()
+    """Business-logic façade for the Open Arena REST API.
+
+    All external I/O is delegated to port adapters:
+
+    * **store** — persistence (:class:`~src.api.ports.store.Store`)
+    * **env_backend** — environment resolution
+      (:class:`~src.api.ports.environment_backend.EnvironmentBackend`)
+    * **dataset_resolver** — dataset binding translation
+      (:class:`~src.api.ports.dataset_resolver.DatasetResolver`)
+    * **results_sink** — result persistence / forwarding
+      (:class:`~src.api.ports.results_sink.ResultsSink`)
+    * **sandbox** — sweep execution
+      (:class:`~src.api.ports.sandbox_provider.SandboxProvider`)
+
+    Args:
+        store: Back-compat kwarg.  When provided (and *adapters* is
+            ``None``), the given store is used and all other ports fall
+            back to their defaults.  Prefer passing a fully-built
+            :class:`~src.api.registry.AdapterSet` via *adapters*.
+        adapters: Pre-built adapter set from
+            :func:`~src.api.registry.build_adapters`.  When ``None``,
+            the registry is called with default settings.
+    """
+
+    def __init__(
+        self,
+        store: Store | None = None,
+        *,
+        adapters=None,  # AdapterSet | None — avoids circular import at module level
+    ) -> None:
+        if adapters is not None:
+            # Fully-wired adapter set provided (preferred code path).
+            self.store: Store = adapters.store
+            self._env_backend: EnvironmentBackend = adapters.env_backend
+            self._dataset_resolver: DatasetResolver = adapters.dataset_resolver
+            self._results_sink: ResultsSink = adapters.results_sink
+            self._sandbox: SandboxProvider = adapters.sandbox
+        else:
+            # Legacy / back-compat code path: build adapters from the
+            # registry but allow the caller to override the store.
+            from src.api.registry import build_adapters
+
+            built = build_adapters()
+            self.store = store if store is not None else built.store
+            self._env_backend = built.env_backend
+            self._dataset_resolver = built.dataset_resolver
+            # ResultsSink must see the same store instance we are using.
+            from src.api.ports.results_sink import StoreResultsSink
+
+            self._results_sink = StoreResultsSink(store=self.store)
+            self._sandbox = built.sandbox
+
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='arena-api')
 
     # discovery -----------------------------------------------------------------
@@ -633,7 +504,7 @@ class ArenaAPIService:
         self.store.save_run(run, idempotency_key=run_create.idempotency_key)
         if status == api.RunStatus.succeeded:
             result = self._finalize_result(run, cached_subjects)
-            self.store.save_run_result(result)
+            self._results_sink.write(run, result)
             return run
         self._executor.submit(self._execute_run, run.id, run_create, pending, cached_subjects)
         return run
@@ -659,6 +530,7 @@ class ArenaAPIService:
             entries = [entry for entry in entries if entry.model_id == model_id]
         page, next_cursor = _paginate(entries, limit=limit, cursor=cursor)
         return api.LeaderboardEntryListResponse(items=page, next_cursor=next_cursor)
+
     # execution internals --------------------------------------------------------
     def _execute_run(self, run_id: UUID, run_create: api.GeneratorRunCreate | api.AgentRunCreate, pending: list[PendingSubject], cached_subjects: list[api.SubjectResult]) -> None:
         run = self.get_run(run_id)
@@ -668,7 +540,7 @@ class ArenaAPIService:
             executed = self._run_pending_subjects(run.mode, run_create.execution, pending)
             subjects = [*cached_subjects, *executed]
             result = self._finalize_result(run, subjects)
-            self.store.save_run_result(result)
+            self._results_sink.write(run, result)
             done = self.get_run(run_id).model_copy(update={'status': api.RunStatus.succeeded, 'completed_at': _now()})
             self.store.save_run(done, idempotency_key=run_create.idempotency_key)
         except Exception as exc:  # noqa: BLE001
@@ -713,7 +585,9 @@ class ArenaAPIService:
         with tempfile.TemporaryDirectory(prefix='open-arena-api-') as tmpdir:
             config_path = Path(tmpdir) / 'run.yaml'
             config_path.write_text(yaml.safe_dump(config_payload, sort_keys=False))
-            result = _run_async(run_sweep(str(config_path), no_cache=False, verbose=0))
+            # Delegate execution to the SandboxProvider port.
+            # WS6: E2B-compatible — swap LocalSandboxProvider for E2BSandboxProvider.
+            result = self._sandbox.run(config_path)
         rows = result['rows']
         by_dataset_model: dict[tuple[str, str], list[dict[str, Any]]] = {}
         for row in rows:
@@ -739,14 +613,16 @@ class ArenaAPIService:
         return out
 
     def _finalize_result(self, run: api.Run, subjects: list[api.SubjectResult]) -> api.RunResult:
+        """Build the :class:`~src.api.models.RunResult` from *subjects*.
+
+        Note: persistence is now delegated to the ResultsSink port.
+        The caller (``create_run`` / ``_execute_run``) must call
+        ``self._results_sink.write(run, result)`` after this method.
+        """
         if not subjects:
             raise ApiError('empty_run', 'Run has no subjects to materialize.', status_code=500)
         aggregates = self._aggregate_subjects(subjects)
-        result = api.RunResult(run_id=run.id, mode=run.mode, subjects=subjects, aggregates=aggregates)
-        for subject in subjects:
-            if subject.run_fingerprint:
-                self.store.save_cached_subject(subject.run_fingerprint, subject, run.id)
-        return result
+        return api.RunResult(run_id=run.id, mode=run.mode, subjects=subjects, aggregates=aggregates)
 
     def _expand_selection(self, selection: api.RunSelection1 | api.RunSelection2) -> list[tuple[api.ModelDefinition, api.Environment]]:
         if getattr(selection, 'leaderboard_id', None):
@@ -779,12 +655,20 @@ class ArenaAPIService:
         datasets: dict[str, Any] = {}
         mcp_registry: dict[str, Any] = {}
         for item in pending:
-            definition = item.environment.inline_definition
-            if definition is None:
-                raise ApiError('non_executable_environment', f'Environment {item.environment.id} has no inline definition to execute.')
+            # Resolve the environment through the EnvironmentBackend port.
+            # WS2 (Gitea/GitHub): GitEnvironmentBackend will clone the repo and
+            # return the resolved InlineEnvironmentDefinition here.
+            resolved = self._env_backend.resolve(item.environment)
+            definition = resolved.definition
+
             if not self._supports_mode(item.environment, mode):
                 raise ApiError('unsupported_mode', f'Environment {item.environment.id} does not support mode {mode.value}.')
-            ds_entry = self._dataset_entry(definition.dataset)
+
+            # Resolve dataset entry through the DatasetResolver port.
+            # WS4: unity_catalog — UnityCatalogDatasetResolver will handle
+            # type=unity_catalog bindings here.
+            ds_entry = self._dataset_resolver.resolve(definition.dataset)
+
             verifier = self._resolve_verifier_binding(definition.verifier)
             reward, metrics = self._verifier_to_runner(verifier)
             ds_entry['reward'] = reward
@@ -811,27 +695,6 @@ class ArenaAPIService:
                 'datasets': list(datasets),
             },
         }
-
-    def _dataset_entry(self, binding: api.DatasetBinding) -> dict[str, Any]:
-        self._validate_dataset_provider(binding.provider)
-        entry = {'type': binding.provider}
-        if binding.input_template is not None:
-            entry['input_template'] = binding.input_template
-        if binding.output_template is not None:
-            entry['output_template'] = binding.output_template
-        selector = dict(binding.selector or {})
-        field = PROVIDER_SOURCE_FIELDS.get(binding.provider, 'source_ref')
-        if binding.source_ref is not None:
-            selector.setdefault(field, binding.source_ref)
-        if binding.version is not None:
-            if binding.provider == 'huggingface':
-                selector.setdefault('revision', binding.version)
-            else:
-                selector.setdefault('version', binding.version)
-        for key, value in (binding.metadata or {}).items():
-            selector.setdefault(key, value)
-        entry.update(selector)
-        return entry
 
     def _resolve_verifier_binding(self, binding: api.VerifierSuiteBinding) -> api.VerifierSuite:
         inner = binding.root
@@ -910,6 +773,7 @@ class ArenaAPIService:
         for rank, (model, membership, score, run_id, _metrics) in enumerate(scored, start=1):
             entries.append(api.LeaderboardEntry(rank=rank, model_id=model.id, model_version=model.runtime.model_version, environment_id=membership.environment_id, environment_version=membership.environment.source.version, score=score, environment_breakdown={str(membership.environment_id): score}, last_run_id=run_id))
         return entries
+
     # validation -----------------------------------------------------------------
     def _validate_metric_definitions(self, metrics: list[api.MetricDefinition]) -> None:
         supported = {item.id for item in self.metric_kinds().items}
@@ -971,6 +835,7 @@ class ArenaAPIService:
     def _model_from_create(self, payload: api.ModelDefinitionCreate, now: datetime) -> api.ModelDefinition:
         self._validate_model(payload)
         return api.ModelDefinition(id=uuid4(), name=payload.name, display_name=payload.display_name, family=payload.family, tags=payload.tags, runtime=payload.runtime, metadata=payload.metadata, created_at=now, updated_at=now)
+
     # misc helpers ----------------------------------------------------------------
     def _run_fingerprint(self, model: api.ModelDefinition, environment: api.Environment, mode: str, execution: api.GeneratorRunConfig | api.AgentRunConfig | None, reuse_policy: api.ReusePolicy) -> str:
         key_fields = reuse_policy.key_fields or ['model_version', 'environment_version', 'mode', 'temperature', 'max_tokens']
