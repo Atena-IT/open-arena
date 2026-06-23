@@ -134,5 +134,5 @@ arena request GET /v1/runs/<run_id>
 ## Notes
 
 - `arena serve` and `arena request` are subcommands of the `arena` group. The default behavior (no subcommand) still runs the local sweep.
-- Broader CLI subcommands for environment/run/leaderboard management beyond what is listed here, and a local-run-mode integration, are coming in a follow-up workstream. Check `arena --help` for the current command set.
+- Full resource sub-commands (`arena env`, `arena verifier`, `arena leaderboard`, `arena run`, `arena discover`) and local-run-mode are available in `open-arena` (WS9). Install with `pip install open-arena` or `uv sync` from the repo root. Run `arena --help` for the current command set.
 - The full OpenAPI spec is in `openapi.yaml` at the repo root. For schema details (request/response shapes, enum values, pagination cursors), read that file directly.
