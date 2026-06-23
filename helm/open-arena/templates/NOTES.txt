@@ -33,7 +33,7 @@ Namespace:       {{ .Release.Namespace }}
 {{- end }}
 
 2. Check the API health:
-    curl http://<host>/health
+    curl http://<host>/healthz
 
 3. Authenticate:
     curl -H "Authorization: Bearer <OPEN_ARENA_API_TOKEN>" http://<host>/api/v1/leaderboards
