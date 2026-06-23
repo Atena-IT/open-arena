@@ -1,7 +1,7 @@
 # License Apache 2.0: (c) 2026 Athena-Reply
 """``src.cli`` — Rich CLI sub-groups that expose every API resource.
 
-All commands are registered under the :func:`~src.evaluate.main` Click
+All commands are registered under the :func:`~open_arena_cli.main.main` Click
 group, which is the ``arena`` console-script entry-point.
 
 Dispatch logic
