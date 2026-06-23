@@ -3,7 +3,7 @@ name = "open-arena"
 version = "0.1.0"
 description = "Autoresearch loop for reward R&D and model selection — between post-training evals and the next round of fine-tuning / RL."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 authors = [{ name = "Athena-Reply" }]
 classifiers = [
@@ -11,7 +11,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Environment :: Console",
@@ -35,7 +34,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.8.38",
+    "synalinks>=0.9.001",
 ]
 
 [project.optional-dependencies]
