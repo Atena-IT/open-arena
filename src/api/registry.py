@@ -1,4 +1,4 @@
-# License Apache 2.0: (c) 2026 Athena-Reply
+﻿# License Apache 2.0: (c) 2026 Athena-Reply
 """``src.api.registry`` — Adapter factory.
 
 :func:`build_adapters` reads :class:`~src.api.settings.ArenaSettings` and
