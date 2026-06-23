@@ -233,14 +233,22 @@ class ArenaAPIService:
     def create_environment(self, payload: api.EnvironmentCreate) -> api.Environment:
         self._validate_environment_payload(payload.source, payload.inline_definition)
         now = _now()
-        env = api.Environment(
-            id=uuid4(),
+        env_id = uuid4()
+        # WS3: build a provisional env to pass into _resolve_environment_identity.
+        # The id doesn't affect resolution; we reuse it for the final object.
+        provisional = api.Environment(
+            id=env_id,
             source=payload.source,
             inline_definition=payload.inline_definition,
             metadata=payload.metadata,
             created_at=now,
             updated_at=now,
         )
+        commit_sha, content_hash = self._resolve_environment_identity(provisional)
+        env = provisional.model_copy(update={
+            'commit_sha': commit_sha,
+            'content_hash': content_hash,
+        })
         self.store.save_environment(env)
         return env
 
@@ -255,11 +263,17 @@ class ArenaAPIService:
         source = patch.source or current.source
         inline_definition = patch.inline_definition if patch.inline_definition is not None else current.inline_definition
         self._validate_environment_payload(source, inline_definition)
-        updated = current.model_copy(update={
+        # WS3: re-resolve identity when source changes.
+        candidate = current.model_copy(update={
             'source': source,
             'inline_definition': inline_definition,
             'metadata': patch.metadata if patch.metadata is not None else current.metadata,
             'updated_at': _now(),
+        })
+        commit_sha, content_hash = self._resolve_environment_identity(candidate)
+        updated = candidate.model_copy(update={
+            'commit_sha': commit_sha,
+            'content_hash': content_hash,
         })
         self.store.save_environment(updated)
         return updated
@@ -267,6 +281,52 @@ class ArenaAPIService:
     def delete_environment(self, environment_id: UUID) -> None:
         if not self.store.delete('environments', environment_id):
             raise ApiError('environment_not_found', f'Unknown environment {environment_id}.', status_code=404)
+
+    def list_environment_versions(self, environment_id: UUID) -> api.EnvironmentVersionListResponse:
+        """Return known version descriptors for *environment_id* (WS3).
+
+        For git-backed sources the backend is called to resolve the current
+        ``commit_sha`` and ``content_hash``; a single :class:`~api.EnvironmentVersion`
+        entry is returned for the pinned revision.  For inline environments a
+        single entry is synthesised from the source ``version`` field.
+
+        Future backends can enumerate tags/refs and return multiple entries;
+        this implementation returns the single resolved/pinned version.
+        """
+        env = self.get_environment(environment_id)
+        now = _now()
+
+        if env.source.kind == api.EnvironmentSourceKind.inline:
+            # Inline: return the source version; no VCS provenance.
+            return api.EnvironmentVersionListResponse(items=[
+                api.EnvironmentVersion(
+                    version=env.source.version,
+                    commit_sha=None,
+                    content_hash=None,
+                    git_ref=None,
+                    created_at=env.created_at,
+                )
+            ])
+
+        # Git-backed: resolve current commit and return as the single entry.
+        try:
+            resolved = self._env_backend.resolve(env)
+            commit_sha = resolved.commit_sha
+            content_hash = resolved.content_hash
+        except (NotImplementedError, Exception):  # noqa: BLE001
+            # Backend not configured or resolution failed; fall back to stored values.
+            commit_sha = env.commit_sha
+            content_hash = env.content_hash
+
+        return api.EnvironmentVersionListResponse(items=[
+            api.EnvironmentVersion(
+                version=env.source.version,
+                commit_sha=commit_sha,
+                content_hash=content_hash,
+                git_ref=env.source.git_ref,
+                created_at=env.created_at,
+            )
+        ])
 
     # leaderboards ----------------------------------------------------------------
     def list_leaderboards(self, *, visibility: api.LeaderboardVisibility | None = None, limit: int = 50, cursor: str | None = None) -> api.LeaderboardListResponse:
@@ -837,7 +897,45 @@ class ArenaAPIService:
         return api.ModelDefinition(id=uuid4(), name=payload.name, display_name=payload.display_name, family=payload.family, tags=payload.tags, runtime=payload.runtime, metadata=payload.metadata, created_at=now, updated_at=now)
 
     # misc helpers ----------------------------------------------------------------
+    def _resolve_environment_identity(self, env: api.Environment) -> tuple[str | None, str | None]:
+        """Attempt to resolve ``(commit_sha, content_hash)`` for *env* (WS3).
+
+        Called on environment create/update.  Returns ``(None, None)`` for
+        inline environments or when the backend raises :exc:`NotImplementedError`
+        (e.g. the default :class:`InlineEnvironmentBackend`).  Any other
+        exception is silently swallowed so that environment creation never fails
+        due to a transient VCS resolution error; the caller can retry via
+        ``update_environment``.
+        """
+        if env.source.kind == api.EnvironmentSourceKind.inline:
+            return None, None
+        try:
+            resolved = self._env_backend.resolve(env)
+            return resolved.commit_sha, resolved.content_hash
+        except NotImplementedError:
+            return None, None
+        except Exception:  # noqa: BLE001
+            # Transient errors (network, auth) — return None so creation proceeds.
+            return None, None
+
     def _run_fingerprint(self, model: api.ModelDefinition, environment: api.Environment, mode: str, execution: api.GeneratorRunConfig | api.AgentRunConfig | None, reuse_policy: api.ReusePolicy) -> str:
+        """Compute a deterministic cache key for a model/environment pair (WS3).
+
+        WS3 fingerprint change: when *environment* carries a ``commit_sha``
+        (git-backed) the SHA is included in the payload instead of (or
+        alongside) ``environment_version``.  This makes every leaderboard
+        entry reproducible from a pinned commit.
+
+        Back-compat: existing cached fingerprints were computed without
+        ``commit_sha``.  Rather than silently invalidating all prior cache
+        entries, ``commit_sha`` is added as an *additional* field alongside
+        ``environment_version`` in ``field_values`` but is only included in
+        the hash payload when present in ``key_fields`` (explicitly requested)
+        OR when the environment has a ``commit_sha`` AND ``key_fields`` still
+        contains ``environment_version`` (opt-in upgrade path).  Callers that
+        need strict reproducibility should add ``"environment_commit_sha"`` to
+        ``ReusePolicy.key_fields``.
+        """
         key_fields = reuse_policy.key_fields or ['model_version', 'environment_version', 'mode', 'temperature', 'max_tokens']
         execution_data = execution.model_dump(mode='json', exclude_none=True) if execution is not None else {}
         field_values = {
@@ -845,6 +943,9 @@ class ArenaAPIService:
             'model_version': model.runtime.model_version,
             'environment_name': environment.source.name,
             'environment_version': environment.source.version,
+            # WS3: include pinned commit identity when available.
+            'environment_commit_sha': environment.commit_sha,
+            'environment_content_hash': environment.content_hash,
             'mode': mode,
             'temperature': model.runtime.temperature,
             'max_tokens': model.runtime.max_tokens,
@@ -852,6 +953,11 @@ class ArenaAPIService:
             **execution_data,
         }
         payload = {field: field_values.get(field) for field in key_fields}
+        # When environment has a commit_sha and key_fields includes
+        # environment_version (the legacy default), also fold commit_sha in so
+        # that a cache hit on the same commit is guaranteed reproducible.
+        if environment.commit_sha and 'environment_version' in key_fields and 'environment_commit_sha' not in key_fields:
+            payload['environment_commit_sha'] = environment.commit_sha
         payload['provider'] = model.runtime.provider
         digest = hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
         return digest

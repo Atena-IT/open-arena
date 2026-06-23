@@ -73,6 +73,8 @@ from open_arena_core.models import (  # noqa: F401
     RunResult,
     EnvironmentMembershipListResponse,
     EnvironmentListResponse,
+    EnvironmentVersion,
+    EnvironmentVersionListResponse,
     LeaderboardListResponse,
     Error,
     EnvironmentMembershipCreate,

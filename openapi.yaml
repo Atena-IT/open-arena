@@ -234,6 +234,30 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 
+  /v1/environments/{environment_id}/versions:
+    get:
+      tags: [Environments]
+      summary: List available versions for an environment
+      description: |
+        Returns the known version descriptors for this environment.
+        For git-backed sources (github_repo, prime_environment_hub) the
+        currently-resolved commit is always included; when the backend can
+        enumerate tags/refs additional entries may appear.
+        For inline environments a single entry derived from the source
+        version is returned.
+      operationId: listEnvironmentVersions
+      parameters:
+        - $ref: '#/components/parameters/EnvironmentId'
+      responses:
+        '200':
+          description: Environment version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentVersionListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
   /v1/leaderboards:
     get:
       tags: [Leaderboards]
@@ -1468,6 +1492,14 @@ components:
           $ref: '#/components/schemas/EnvironmentSource'
         inline_definition:
           $ref: '#/components/schemas/InlineEnvironmentDefinition'
+        commit_sha:
+          type: string
+          nullable: true
+          description: Resolved VCS commit SHA pinned at registration time. Null for inline environments.
+        content_hash:
+          type: string
+          nullable: true
+          description: Stable SHA-256 hash of the environment tree content. Null for inline environments.
         metadata:
           type: object
           additionalProperties: true
@@ -1968,6 +2000,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Environment'
+        next_cursor:
+          type: string
+
+    EnvironmentVersion:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+          description: The version string from the environment source.
+        commit_sha:
+          type: string
+          nullable: true
+          description: Resolved VCS commit SHA for this version. Null for inline environments.
+        content_hash:
+          type: string
+          nullable: true
+          description: Stable SHA-256 hash of the environment tree. Null for inline environments.
+        git_ref:
+          type: string
+          nullable: true
+          description: The git ref (tag, branch, or SHA) used to resolve this version.
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When this version entry was created. Null when not tracked.
+
+    EnvironmentVersionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnvironmentVersion'
         next_cursor:
           type: string
 

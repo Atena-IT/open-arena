@@ -50,11 +50,13 @@ def test_default_adapters_are_correct_types():
 # ---------------------------------------------------------------------------
 
 def test_app_route_count_unchanged():
-    """The refactor must not add or remove any HTTP routes.
+    """Assert the expected route count after the ports refactor + WS3 versioning.
 
-    ``len(app.routes)`` returns 42 because FastAPI adds 4 internal routes
+    ``len(app.routes)`` returns 43 because FastAPI adds 4 internal routes
     for the OpenAPI schema, docs UI, docs oauth2 redirect and redoc UI.
-    Of those, 38 are proper ``APIRoute`` instances (our routes + /healthz).
+    Of those, 39 are proper ``APIRoute`` instances (our routes + /healthz).
+    WS3 added one route (GET /v1/environments/{id}/versions), bringing the
+    total from 42 → 43 and the API routes from 38 → 39.
     We assert both numbers to make accidental additions/removals obvious.
     """
     from src.api.app import app
@@ -64,14 +66,14 @@ def test_app_route_count_unchanged():
     api_route_count = sum(1 for r in app.routes if isinstance(r, APIRoute))
 
     # Total (including FastAPI internal routes: openapi.json, docs, redoc, …)
-    assert total_routes == 42, (
-        f"Expected 42 total routes but found {total_routes}. "
-        "A port refactor must not add or remove HTTP routes."
+    assert total_routes == 43, (
+        f"Expected 43 total routes but found {total_routes}. "
+        "WS3 added GET /v1/environments/{{id}}/versions (+1 route)."
     )
     # Pure API routes (our handlers + /healthz, excluding FastAPI internals)
-    assert api_route_count == 38, (
-        f"Expected 38 APIRoute instances but found {api_route_count}. "
-        "A port refactor must not add or remove HTTP routes."
+    assert api_route_count == 39, (
+        f"Expected 39 APIRoute instances but found {api_route_count}. "
+        "WS3 added GET /v1/environments/{{id}}/versions (+1 route)."
     )
 
 

@@ -128,6 +128,11 @@ def delete_environment(environment_id: UUID, service: ServiceDep = None):
     return Response(status_code=204)
 
 
+@app.get('/v1/environments/{environment_id}/versions', response_model=api.EnvironmentVersionListResponse, dependencies=[Depends(require_bearer)])
+def list_environment_versions(environment_id: UUID, service: ServiceDep = None):
+    return service.list_environment_versions(environment_id)
+
+
 @app.get('/v1/leaderboards', response_model=api.LeaderboardListResponse, dependencies=[Depends(require_bearer)])
 def list_leaderboards(visibility: api.LeaderboardVisibility | None = None, limit: int = 50, cursor: str | None = None, service: ServiceDep = None):
     return service.list_leaderboards(visibility=visibility, limit=limit, cursor=cursor)
