@@ -8,9 +8,11 @@ Read `README.md` (Run section) and `AUTORESEARCH.md` (Output format section) for
 ## Prerequisites
 
 ```bash
-uv sync           # installs deps + the `arena` console script
+uv sync           # installs the full workspace (open-arena + open-arena-cli + open-arena-core)
 cp .env.example .env   # fill in provider API keys you use
 ```
+
+> **Install note**: ```uv sync``` installs the full workspace and is required for local sweeps. For remote API operations only, ```pip install open-arena-cli``` is sufficient.
 
 ## CLI flags
 

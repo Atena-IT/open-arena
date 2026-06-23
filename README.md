@@ -90,6 +90,76 @@ The API requires an `Authorization` header with the configured API token
 on every `/v1/*` endpoint. `/healthz` stays unauthenticated for local
 checks.
 
+
+## Architecture: ports & connectors
+
+Open Arena uses a **repository-pattern ports/adapters** architecture. Every
+external concern is hidden behind a port ABC; the concrete implementation
+is selected at startup via environment variables. This means you can swap
+storage, auth, environment resolution, or the results sink without touching
+any application logic.
+
+### Ports at a glance
+
+| Port | Default adapter | MF connector | Selecting env var |
+|---|---|---|---|
+| `Store` | `SQLiteStore` (`.open-arena/api.db`) | `SQLAlchemyStore` (Postgres + JSONB + Alembic) | `OPEN_ARENA_STORE=postgres` + `DATABASE_URL` |
+| `EnvironmentBackend` | `InlineEnvironmentBackend` | `GitEnvironmentBackend` (Gitea / GitHub) | `OPEN_ARENA_ENV_BACKEND=git` + `GITEA_BASE_URL` / `GITEA_TOKEN` / `GITEA_ORG` |
+| `DatasetResolver` | `LegacyDatasetResolver` | `UnityCatalogDataset` (Delta / Parquet over S3) | `OPEN_ARENA_DATASET_RESOLVER=unity_catalog` + `UNITY_CATALOG_API_URL` / `UC_TOKEN` |
+| `ResultsSink` | `StoreResultsSink` | `MlflowResultsSink` | `OPEN_ARENA_RESULTS_SINK=mlflow` + `MLFLOW_TRACKING_URI` |
+| `SandboxProvider` | `LocalSandboxProvider` | `E2BSandboxProvider` | `OPEN_ARENA_SANDBOX=e2b` + `E2B_API_KEY` |
+| `AuthProvider` | `StaticBearerAuthProvider` (`OPEN_ARENA_API_TOKEN`) | `KeycloakAuthProvider` (OIDC JWT) | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` |
+
+All defaults reproduce the original behaviour — no configuration change required
+for existing deployments. See `src/api/ports/README.md` for the full contract
+and instructions for adding new adapters.
+
+### CLI command overview
+
+```bash
+# Local sweep (default)
+arena                              # reads ./config.yaml
+arena -c configs/eval.yaml
+arena --no-cache
+arena --state-dir runs/exp1
+
+# API server
+arena serve                        # binds to 127.0.0.1:8000
+
+# API client (works with thin install too)
+arena request GET /v1/metric-kinds
+arena request POST /v1/leaderboards --file lb.json
+
+# Resource sub-commands
+arena env list --server http://your-server:8000
+arena verifier list
+arena leaderboard list
+arena run submit --file run.json
+arena discover metric-kinds
+```
+
+### Deployment
+
+Run locally with Docker Compose (lean stack: SQLite + Postgres forward,
+or full stack with MinIO + MLflow):
+
+```bash
+docker compose up --build            # lean stack
+docker compose --profile full up     # + MinIO + MLflow
+```
+
+Deploy to Kubernetes via the bundled Helm chart
+(org-node ready — one release per org, ingress at `arena.<org>.dev.reply-modelfactory.com`):
+
+```bash
+helm upgrade --install open-arena helm/open-arena \
+  --namespace open-arena --create-namespace \
+  --set secrets.OPEN_ARENA_API_TOKEN=your-token \
+  --set org=myorg
+```
+
+See `deploy/README.md` for the full environment variable contract and
+`helm/open-arena/README.md` for the ModelFactory org-node sub-chart pattern.
 ## Launch the autoresearch agent
 
 A coding agent (Claude Code, Codex, Cursor, etc.) reads `AGENTS.md` /

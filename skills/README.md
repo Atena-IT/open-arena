@@ -22,5 +22,7 @@ Six Claude Code skills that package the operational knowledge for Open Arena. Ea
 - `PREPARE_DATA.md` — dataset preparation pipeline, all loader providers, pitfalls
 - `REWARDS_BUILDING.md` — custom reward authoring, base classes, masking, 7-step walkthrough
 - `config.example.yaml` — canonical reference for every YAML key
-- `src/evaluate.py` — `arena` CLI: sweep command + `arena serve` + `arena request`
+- `src/evaluate.py` — sweep runner; CLI entry point is the `arena` console script (from `open-arena` package)
+- `packages/open-arena-cli/` — thin CLI (`pip install open-arena-cli`) for remote API operations
+- `packages/open-arena/` — full install (`pip install open-arena`) for local sweep + `arena serve`
 - `src/api/app.py` + `openapi.yaml` — REST API routes and schemas
