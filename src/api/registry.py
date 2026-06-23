@@ -58,10 +58,13 @@ def _build_store(settings: ArenaSettings) -> Store:
 def _build_auth(settings: ArenaSettings) -> AuthProvider:
     if settings.auth == "static":
         return StaticBearerAuthProvider()
-    # WS7: Keycloak — add: elif settings.auth == "keycloak": return KeycloakAuthProvider()
+    elif settings.auth == "keycloak":
+        from src.api.auth.keycloak_provider import KeycloakAuthProvider  # local import: requires keycloak extra
+
+        return KeycloakAuthProvider()
     raise ValueError(
         f"Unknown OPEN_ARENA_AUTH={settings.auth!r}.  "
-        "Supported values: 'static'."
+        "Supported values: 'static', 'keycloak'."
     )
 
 
