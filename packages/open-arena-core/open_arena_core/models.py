@@ -199,6 +199,13 @@ class IsolationMode(StrEnum):
 class SandboxPolicy(BaseModel):
     enabled: bool | None = False
     isolation_mode: IsolationMode | None = None
+    image: str | None = None
+    """Warm OCI image reference (e.g. ``ghcr.io/org/eval-env@sha256:...``) or
+    sandbox template ref.  Used to skip cold-start image pulls."""
+    per_task_sandbox: bool | None = False
+    """When ``True``, a fresh sandbox is launched for every task in the
+    dataset (fan-out execution — P2-2).  Stored here; acted on by the
+    execution layer once P2-2 is implemented."""
     bootstrap: dict[str, Any] | None = None
     teardown: dict[str, Any] | None = None
     limits: dict[str, Any] | None = None

@@ -27,23 +27,36 @@ def test_build_adapters_returns_complete_adapter_set():
     assert isinstance(adapters, AdapterSet)
 
 
-def test_default_adapters_are_correct_types():
+def test_default_adapters_are_correct_types(monkeypatch, tmp_path):
+    # P2-1: default env_backend is now "dispatch" (DispatchingEnvironmentBackend)
     from src.api.registry import build_adapters
+    from src.api.settings import ArenaSettings
     from src.api.stores.sqlite import SQLiteStore
     from src.api.ports.auth_provider import StaticBearerAuthProvider
-    from src.api.ports.environment_backend import InlineEnvironmentBackend
+    from src.api.environments.dispatching import DispatchingEnvironmentBackend
     from src.api.ports.dataset_resolver import LegacyDatasetResolver
     from src.api.ports.results_sink import StoreResultsSink
     from src.api.ports.sandbox_provider import LocalSandboxProvider
 
-    adapters = build_adapters()
+    monkeypatch.delenv("OPEN_ARENA_ENV_BACKEND", raising=False)
+    settings = ArenaSettings(db_path=tmp_path / "test.db")
+    adapters = build_adapters(settings)
     assert isinstance(adapters.store, SQLiteStore)
     assert isinstance(adapters.auth, StaticBearerAuthProvider)
-    assert isinstance(adapters.env_backend, InlineEnvironmentBackend)
+    assert isinstance(adapters.env_backend, DispatchingEnvironmentBackend)
     assert isinstance(adapters.dataset_resolver, LegacyDatasetResolver)
     assert isinstance(adapters.results_sink, StoreResultsSink)
     assert isinstance(adapters.sandbox, LocalSandboxProvider)
 
+
+def test_explicit_inline_env_backend(tmp_path):
+    from src.api.registry import build_adapters
+    from src.api.settings import ArenaSettings
+    from src.api.ports.environment_backend import InlineEnvironmentBackend
+
+    settings = ArenaSettings(env_backend="inline", db_path=tmp_path / "test.db")
+    adapters = build_adapters(settings)
+    assert isinstance(adapters.env_backend, InlineEnvironmentBackend)
 
 # ---------------------------------------------------------------------------
 # Route count

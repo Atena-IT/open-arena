@@ -69,7 +69,10 @@ def _build_auth(settings: ArenaSettings) -> AuthProvider:
 
 
 def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
-    if settings.env_backend == "inline":
+    if settings.env_backend == "dispatch":
+        from src.api.environments.dispatching import DispatchingEnvironmentBackend
+        return DispatchingEnvironmentBackend()
+    elif settings.env_backend == "inline":
         return InlineEnvironmentBackend()
     elif settings.env_backend == "git":
         from src.api.environments.git_backend import GitEnvironmentBackend
@@ -79,7 +82,7 @@ def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
         return PrimeEnvHubBackend()
     raise ValueError(
         f"Unknown OPEN_ARENA_ENV_BACKEND={settings.env_backend!r}.  "
-        "Supported values: 'inline', 'git', 'prime_hub'."
+        "Supported values: 'dispatch' (default), 'inline', 'git', 'prime_hub'."
     )
 
 
