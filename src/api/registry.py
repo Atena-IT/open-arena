@@ -68,10 +68,12 @@ def _build_auth(settings: ArenaSettings) -> AuthProvider:
 def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
     if settings.env_backend == "inline":
         return InlineEnvironmentBackend()
-    # WS2 (Gitea/GitHub): elif settings.env_backend == "git": return GitEnvironmentBackend()
+    elif settings.env_backend == "git":
+        from src.api.environments.git_backend import GitEnvironmentBackend
+        return GitEnvironmentBackend()
     raise ValueError(
         f"Unknown OPEN_ARENA_ENV_BACKEND={settings.env_backend!r}.  "
-        "Supported values: 'inline'."
+        "Supported values: 'inline', 'git'."
     )
 
 
