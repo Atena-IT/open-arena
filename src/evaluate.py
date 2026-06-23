@@ -581,7 +581,7 @@ def serve_api(host: str, port: int) -> None:
 @click.option("--file", "file_path", type=click.Path(exists=True, dir_okay=False, readable=True))
 def request_api(method: str, path: str, server_url: str, token: str, file_path: str | None) -> None:
     """Send an authenticated API request and print JSON."""
-    from src.api.client import ArenaAPIClient
+    from open_arena_core.client import ArenaAPIClient
 
     client = ArenaAPIClient(server_url, token=token)
     result = client.request_file(method, path, file_path)

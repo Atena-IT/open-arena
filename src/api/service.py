@@ -30,8 +30,8 @@ import synalinks
 import yaml
 from synalinks.src.utils.naming import to_snake_case
 
-from src.api.constants import DEFAULT_API_TOKEN  # noqa: F401 — kept for back-compat
-from src.api import models as api
+from open_arena_core.constants import DEFAULT_API_TOKEN  # noqa: F401 — kept for back-compat
+from open_arena_core import models as api
 from src.api.ports.dataset_resolver import DatasetResolver
 from src.api.ports.environment_backend import EnvironmentBackend
 from src.api.ports.results_sink import ResultsSink

@@ -23,11 +23,29 @@ as a single-shot `Generator` eval or as a multi-step
 
 ## Install
 
-Requires Python 3.11+ and [`uv`](https://github.com/astral-sh/uv).
+### Option A: Thin CLI only (remote operations, no engine)
+
+Interact with a running Open Arena server without installing the heavy evaluation engine:
+
+```bash
+pip install open-arena-cli
+arena env list --server http://your-arena-server:8000
+arena request GET /v1/metric-kinds
+```
+
+### Option B: Full install (engine + local sweep + `arena serve`)
+
+Includes the evaluation engine, the local sweep, and the ability to run the API server:
+
+```bash
+pip install open-arena
+```
+
+Or from source with [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
 git clone <this repo> && cd open-arena
-uv sync                # installs deps + the `arena` console script
+uv sync                # installs the full workspace (engine + CLI)
 cp .env.example .env   # fill in only the providers you actually use
 cp config.example.yaml config.yaml
 ```

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Stage 1 — builder
+# Stage 1 -- builder
 # Install uv and resolve/install all project dependencies into /app/.venv.
 # We copy only the files that affect the dependency install first so that
 # Docker's layer cache is reused on code-only changes.
@@ -11,15 +11,19 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copy dependency manifests first (cache-friendly layer)
+# Copy the workspace manifests first (cache-friendly layer).
+# The workspace root pyproject.toml + uv.lock define all transitive deps;
+# the sub-packages under packages/ are local workspace members.
 COPY pyproject.toml uv.lock ./
+COPY packages/open-arena-core/pyproject.toml ./packages/open-arena-core/
+COPY packages/open-arena-cli/pyproject.toml ./packages/open-arena-cli/
 
-# Install all non-dev dependencies into an isolated venv under /app/.venv.
+# Install all non-dev dependencies for the entire workspace into /app/.venv.
 # --frozen: use uv.lock as-is; --no-dev: skip dev extras.
 RUN uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------------------
-# Stage 2 — runtime
+# Stage 2 -- runtime
 # Copy the venv from builder, copy source code, add a non-root user.
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
@@ -33,8 +37,10 @@ WORKDIR /app
 # Copy the pre-built virtual environment from the builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy the project source and assets
+# Copy the workspace source and assets
 COPY src/ ./src/
+COPY packages/open-arena-core/ ./packages/open-arena-core/
+COPY packages/open-arena-cli/ ./packages/open-arena-cli/
 COPY pyproject.toml ./
 
 # Ensure the arena state directory exists and is writable by the arena user
@@ -55,5 +61,7 @@ VOLUME ["/app/.open-arena"]
 EXPOSE 8000
 
 # Default command: start the API server.
+# The `arena` script is provided by the open-arena-cli workspace package,
+# which is installed as part of the full `open-arena` workspace install.
 # Override at runtime with a different `arena` sub-command.
 CMD ["arena", "serve", "--host", "0.0.0.0", "--port", "8000"]

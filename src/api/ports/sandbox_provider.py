@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from src.api import models as api
+from open_arena_core import models as api
 
 
 class SandboxProvider(ABC):

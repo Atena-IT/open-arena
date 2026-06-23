@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.store import Store
 
 

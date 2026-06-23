@@ -52,7 +52,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Engine
 from sqlalchemy.types import JSON
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.store import Store
 
 _DEFAULT_DSN = "postgresql+psycopg://localhost/open-arena"

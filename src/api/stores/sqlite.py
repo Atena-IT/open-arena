@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from src.api import models as api
+from open_arena_core import models as api
 from src.api.ports.store import Store
 
 STATE_DIR = Path(".open-arena")

@@ -18,7 +18,7 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from src.api.constants import DEFAULT_API_TOKEN
+from open_arena_core.constants import DEFAULT_API_TOKEN
 
 
 @dataclass
