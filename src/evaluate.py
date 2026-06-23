@@ -34,6 +34,7 @@ from src.config import Config, MetricEntry  # noqa: E402
 from src.datasets import load_dataset_from_yaml  # noqa: E402
 from src.program import build_agent, build_program  # noqa: E402
 from src.rewards import _REWARD_TYPES, get as get_reward  # noqa: E402
+from src.cli import CLI_GROUPS  # noqa: E402
 
 
 # Default directory for trial state + output TSVs. Override per run with
@@ -628,6 +629,17 @@ async def _run(
         with json_path.open("w") as f:
             _emit_json(result, f)
         print(f"wrote {json_path}")
+
+
+# Register the resource sub-groups from src/cli.py so they are all reachable
+# under the `arena` console-script entry-point:
+#   arena env list|get|create|delete
+#   arena verifier list|get|create|delete
+#   arena leaderboard list|get|create|delete|models|environments|entries
+#   arena run submit|get|results|list
+#   arena discover metric-kinds|aggregations|model-providers|dataset-providers
+for _g in CLI_GROUPS:
+    main.add_command(_g)
 
 
 if __name__ == "__main__":
