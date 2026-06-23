@@ -11,6 +11,7 @@ from src.datasets.langsmith_dataset import LangSmithDataset
 from src.datasets.local_dataset import LocalDataset
 from src.datasets.opik_dataset import OpikDataset
 from src.datasets.phoenix_dataset import PhoenixDataset
+from src.datasets.unity_catalog_dataset import UnityCatalogDataset
 
 _DATASET_TYPES = {
     "braintrust": BraintrustDataset,
@@ -21,6 +22,7 @@ _DATASET_TYPES = {
     "local": LocalDataset,
     "opik": OpikDataset,
     "phoenix": PhoenixDataset,
+    "unity_catalog": UnityCatalogDataset,
 }
 
 
