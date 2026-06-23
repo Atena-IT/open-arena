@@ -74,9 +74,12 @@ def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
     elif settings.env_backend == "git":
         from src.api.environments.git_backend import GitEnvironmentBackend
         return GitEnvironmentBackend()
+    elif settings.env_backend == "prime_hub":
+        from src.api.environments.prime_hub_backend import PrimeEnvHubBackend
+        return PrimeEnvHubBackend()
     raise ValueError(
         f"Unknown OPEN_ARENA_ENV_BACKEND={settings.env_backend!r}.  "
-        "Supported values: 'inline', 'git'."
+        "Supported values: 'inline', 'git', 'prime_hub'."
     )
 
 
