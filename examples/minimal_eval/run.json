@@ -1,0 +1,48 @@
+{
+  "mode": "generator",
+  "selection": {
+    "direct_pairs": [
+      {
+        "model": {
+          "name": "my-test-model",
+          "runtime": {
+            "provider": "openai",
+            "model_name": "gpt-4o-mini",
+            "model_version": "2024-07-18",
+            "temperature": 0.0,
+            "max_tokens": 256
+          }
+        },
+        "environment": {
+          "inline_definition": {
+            "name": "minimal-qa",
+            "version": "0.1.0",
+            "description": "Tiny question-answering environment for smoke-testing the harness.",
+            "dataset": {
+              "provider": "local",
+              "source_ref": "examples/minimal_eval/data.jsonl"
+            },
+            "verifier": {
+              "binding_type": "inline",
+              "name": "exact-match-verifier",
+              "metrics": [
+                {
+                  "name": "exact_match",
+                  "metric_kind": "exact_match",
+                  "weight": 1.0
+                }
+              ]
+            },
+            "runtime": {
+              "supported_modes": ["generator"],
+              "batch_size": 4
+            }
+          }
+        }
+      }
+    ]
+  },
+  "reuse_policy": {
+    "enabled": false
+  }
+}

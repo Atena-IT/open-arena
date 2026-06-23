@@ -114,6 +114,10 @@ All defaults reproduce the original behaviour — no configuration change requir
 for existing deployments. See `src/api/ports/README.md` for the full contract
 and instructions for adding new adapters.
 
+**Single-tenant by design** — each ModelFactory org-node runs its own Open
+Arena instance; there is no shared multi-tenant data plane.  Keycloak OIDC
+authentication is available but optional.
+
 ### CLI command overview
 
 ```bash
