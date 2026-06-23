@@ -59,6 +59,37 @@ unity_catalog = [
     "httpx>=0.27",
 ]
 
+# `postgres` Store adapter (WS1) — managed Postgres persistence behind the
+# Store port, with Alembic migrations. Select with OPEN_ARENA_STORE=postgres
+# and DATABASE_URL=postgresql+psycopg://...  Install with `uv sync --extra postgres`.
+postgres = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.13",
+]
+
+# `mlflow` ResultsSink adapter (WS5) — logs run metrics/artifacts to MLflow.
+# Select with OPEN_ARENA_RESULTS_SINK=mlflow and MLFLOW_TRACKING_URI=...
+# Install with `uv sync --extra mlflow`.
+mlflow = [
+    "mlflow-skinny>=2.14",
+]
+
+# `e2b` SandboxProvider adapter (WS6) — runs verifiers in E2B-compatible
+# sandboxes (CubeSandbox lands in ModelFactory soon). Select with
+# OPEN_ARENA_SANDBOX=e2b and E2B_API_KEY=...  Install with `uv sync --extra e2b`.
+e2b = [
+    "e2b>=1.0",
+]
+
+# `keycloak` AuthProvider adapter (WS7) — validates Keycloak/OIDC JWTs and
+# derives the org claim. Select with OPEN_ARENA_AUTH=keycloak and OIDC_ISSUER=...
+# Install with `uv sync --extra keycloak`.
+keycloak = [
+    "pyjwt[crypto]>=2.8",
+    "httpx>=0.27",
+]
+
 [project.scripts]
 arena = "src.evaluate:main"
 
