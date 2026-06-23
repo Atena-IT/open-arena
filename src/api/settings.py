@@ -42,7 +42,7 @@ class ArenaSettings:
     store: str = field(default_factory=lambda: os.getenv("OPEN_ARENA_STORE", "sqlite"))
     auth: str = field(default_factory=lambda: os.getenv("OPEN_ARENA_AUTH", "static"))
     env_backend: str = field(
-        default_factory=lambda: os.getenv("OPEN_ARENA_ENV_BACKEND", "inline")
+        default_factory=lambda: os.getenv("OPEN_ARENA_ENV_BACKEND", "dispatch")
     )
     dataset_resolver: str = field(
         default_factory=lambda: os.getenv("OPEN_ARENA_DATASET_RESOLVER", "legacy")

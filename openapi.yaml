@@ -1202,6 +1202,17 @@ components:
         isolation_mode:
           type: string
           enum: [none, container, vm, remote]
+        image:
+          type: string
+          nullable: true
+          description: Warm OCI image reference (e.g. ghcr.io/org/eval-env@sha256) or sandbox template ref. Used to skip cold-start image pulls.
+        per_task_sandbox:
+          type: boolean
+          default: false
+          description: >
+            When true, a fresh sandbox is launched for every task in the dataset
+            (fan-out execution, P2-2). Stored here; acted on by the execution
+            layer once P2-2 is implemented.
         bootstrap:
           type: object
           additionalProperties: true

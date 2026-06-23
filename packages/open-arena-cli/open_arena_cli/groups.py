@@ -692,6 +692,59 @@ def discover_dataset_providers(server_url, token, local):
         _out(backend.get("/v1/dataset-providers"))
 
 
+# ===========================================================================
+# arena eval
+# ===========================================================================
+
+
+@click.group("eval")
+def eval_group():
+    """Submit evaluation jobs from an EvalEnvironment manifest (eval.yaml)."""
+
+
+@eval_group.command("submit")
+@_SERVER_OPTION
+@_TOKEN_OPTION
+@_LOCAL_OPTION
+@click.option(
+    "--file",
+    "file_path",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    default=None,
+    help="Path to an eval.yaml manifest file.",
+)
+@click.option(
+    "--dir",
+    "dir_path",
+    type=click.Path(exists=True, file_okay=False, readable=True),
+    default=None,
+    help="Path to a directory containing an eval.yaml manifest.",
+)
+def eval_submit(server_url, token, local, file_path, dir_path):
+    """Submit an evaluation job from an EvalEnvironment manifest.
+
+    Accepts --file eval.yaml or --dir ./my-eval (must contain eval.yaml).
+    The manifest is translated to a RunCreate payload and submitted via
+    POST /v1/runs (no new endpoints).
+    """
+    if file_path is None and dir_path is None:
+        raise click.UsageError("Either --file or --dir is required for eval submit")
+    if file_path is not None and dir_path is not None:
+        raise click.UsageError("Specify only one of --file or --dir, not both")
+
+    manifest_path = file_path or dir_path
+    from src.api.manifest import load_manifest
+    run_create = load_manifest(manifest_path)
+
+    backend = _make_backend(server_url, token, local=local)
+    if isinstance(backend, _LocalBackend):
+        result = backend.svc.create_run(run_create)
+        _out(result)
+    else:
+        payload = run_create.model_dump(mode="json")
+        _out(backend.post("/v1/runs", payload))
+
+
 # ---------------------------------------------------------------------------
 # Public API: the list of groups to attach to the main Click group
 # ---------------------------------------------------------------------------
@@ -702,4 +755,5 @@ CLI_GROUPS = [
     leaderboard_group,
     run_group,
     discover_group,
+    eval_group,
 ]
