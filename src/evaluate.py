@@ -7,11 +7,14 @@ The program graph lives in `src/program.py`. Two entry points there:
 `generator:`) and `build_agent()` (FunctionCallingAgent + MCP tools,
 used when a dataset declares `agent:`). The two are mutually
 exclusive per dataset; this file dispatches between them based on
-which block is set in YAML. The `arena` console script (installed
-by `uv sync` via the `[project.scripts]` entry in `pyproject.toml`)
-resolves to `main()` below.
+which block is set in YAML.
 
-Run with:
+This module is the engine-side sweep: `run_sweep()` plus the result
+rendering / TSV helpers. The user-facing `arena` CLI now lives in the
+`open-arena-cli` package (`open_arena_cli.main`); its default sweep
+command imports `run_sweep()` and the rendering helpers from here.
+
+Run a sweep with:
 
     uv run arena -c config.yaml
     uv run arena -v                # show synalinks progress bar
@@ -19,14 +22,12 @@ Run with:
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 
 import synalinks
 
 synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
 
-import click  # noqa: E402
 from synalinks.src.utils.naming import to_snake_case  # noqa: E402
 
 from src.config import Config, MetricEntry  # noqa: E402
@@ -492,111 +493,3 @@ def _emit_json(result: dict, dest) -> None:
     dest.write("\n")
 
 
-@click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.option(
-    "-c",
-    "--config",
-    "config_path",
-    type=click.Path(exists=True, dir_okay=False, readable=True),
-    default="config.yaml",
-    show_default=True,
-    help="Path to the YAML config.",
-)
-@click.option(
-    "--state-dir",
-    "state_dir",
-    type=click.Path(file_okay=False, writable=True, path_type=Path),
-    default=DEFAULT_STATE_DIR,
-    show_default=True,
-    help=(
-        "Directory for trial state and the output TSVs. Use a distinct "
-        "directory per run to keep multiple runs side by side without "
-        "their trial caches colliding."
-    ),
-)
-@click.option(
-    "--no-cache",
-    is_flag=True,
-    help=(
-        "Discard every per-dataset trial cache under the state dir before "
-        "running. Use this when the model list or any dataset's reward / "
-        "metric set has changed since the last run."
-    ),
-)
-@click.option(
-    "-v",
-    "--verbose",
-    count=True,
-    help=(
-        "Show the per-trial progress bar. Repeat for more detail: `-v` is "
-        "synalinks's progress bar (verbose=1), `-vv` is per-batch lines "
-        "(verbose=2, recommended when piping to a log file)."
-    ),
-)
-@click.option(
-    "--json",
-    "json_out",
-    type=click.Path(dir_okay=False, writable=True, allow_dash=True),
-    default=None,
-    help=(
-        "Write the result matrix as JSON to PATH (use `-` for stdout). "
-        "Suppresses the markdown tables and TSV when set to `-`; otherwise "
-        "writes alongside them."
-    ),
-)
-def main(
-    config_path: str,
-    state_dir: Path,
-    no_cache: bool,
-    verbose: int,
-    json_out: str | None,
-) -> None:
-    """Run the open-arena LLM evaluation sweep."""
-    asyncio.run(_run(config_path, state_dir, no_cache, verbose, json_out))
-
-
-async def _run(
-    config_path: str,
-    state_dir: Path,
-    no_cache: bool,
-    verbose: int,
-    json_out: str | None,
-) -> None:
-    result = await run_sweep(
-        config_path, no_cache=no_cache, verbose=verbose, state_dir=state_dir
-    )
-    meta, rows = result["meta"], result["rows"]
-
-    # `--json -` is the API-style invocation: emit one JSON document on
-    # stdout and skip the human-facing table / TSV outputs entirely.
-    if json_out == "-":
-        _emit_json(result, sys.stdout)
-        return
-
-    for ds_name, objectives in meta["objectives_by_ds"].items():
-        if len(objectives) > 1:
-            _render_pareto_frontier(
-                rows, ds_name, objectives, meta["frontier_by_ds"].get(ds_name, []),
-            )
-
-    tsv_path = state_dir / TSV_NAME
-    _write_tsv(rows, tsv_path)
-    print(f"wrote {tsv_path}")
-
-    # Only mention frontier.tsv when there's at least one multi-objective
-    # dataset — otherwise it'd be header-only and the print noise is misleading.
-    if any(len(o) > 1 for o in meta["objectives_by_ds"].values()):
-        frontier_path = state_dir / FRONTIER_TSV_NAME
-        _write_frontier_tsv(rows, meta["objectives_by_ds"], frontier_path)
-        print(f"wrote {frontier_path}")
-
-    if json_out:
-        json_path = Path(json_out)
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-        with json_path.open("w") as f:
-            _emit_json(result, f)
-        print(f"wrote {json_path}")
-
-
-if __name__ == "__main__":
-    main()

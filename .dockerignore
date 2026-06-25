@@ -1,0 +1,54 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local state / trial cache
+.open-arena/
+results.tsv
+
+# Distribution / build artefacts
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Development / CI
+.env
+.envrc
+.github/
+.claude/
+.vscode/
+.idea/
+*.md
+!README.md
+
+# Node (frontend / demos)
+**/node_modules/
+
+# Data
+raw_data/
+clean_data/
+
+# Docker files themselves
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Helm chart (not needed at image build time)
+helm/
+deploy/

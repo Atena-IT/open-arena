@@ -1,0 +1,155 @@
+﻿# License Apache 2.0: (c) 2026 Athena-Reply
+"""``src.api.registry`` — Adapter factory.
+
+:func:`build_adapters` reads :class:`~src.api.settings.ArenaSettings` and
+returns a fully-wired :class:`AdapterSet` ready to be injected into
+:class:`~src.api.service.ArenaAPIService`.
+
+Adding a new adapter
+--------------------
+1. Implement the port ABC in ``src/api/ports/<port>.py``.
+2. Add an ``elif settings.<port> == "<key>":`` branch in the matching
+   builder function below.
+3. Update ``OPEN_ARENA_<PORT>`` defaults in ``src/api/settings.py`` if
+   appropriate.
+4. Document the new adapter in ``src/api/ports/README.md``.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from src.api.ports.auth_provider import AuthProvider, StaticBearerAuthProvider
+from src.api.ports.dataset_resolver import DatasetResolver, LegacyDatasetResolver
+from src.api.ports.environment_backend import EnvironmentBackend, InlineEnvironmentBackend
+from src.api.ports.results_sink import ResultsSink, StoreResultsSink
+from src.api.ports.sandbox_provider import LocalSandboxProvider, SandboxProvider
+from src.api.ports.store import Store
+from src.api.settings import ArenaSettings, get_settings
+
+
+@dataclass
+class AdapterSet:
+    """A fully-resolved set of port adapters.
+
+    All fields are concrete implementations of their respective port ABCs.
+    Pass an :class:`AdapterSet` to
+    :meth:`~src.api.service.ArenaAPIService.__init__` to override defaults.
+    """
+
+    store: Store
+    auth: AuthProvider
+    env_backend: EnvironmentBackend
+    dataset_resolver: DatasetResolver
+    results_sink: ResultsSink
+    sandbox: SandboxProvider
+
+
+def _build_store(settings: ArenaSettings) -> Store:
+    if settings.store == "sqlite":
+        from src.api.stores.sqlite import SQLiteStore
+
+        return SQLiteStore(path=settings.db_path)
+    elif settings.store == "postgres":
+        # WS1: SQLAlchemy/Postgres adapter — DSN read from DATABASE_URL.
+        from src.api.stores.sqlalchemy_store import SqlAlchemyStore
+
+        return SqlAlchemyStore()
+    raise ValueError(
+        f"Unknown OPEN_ARENA_STORE={settings.store!r}.  "
+        "Supported values: 'sqlite', 'postgres'."
+    )
+
+
+def _build_auth(settings: ArenaSettings) -> AuthProvider:
+    if settings.auth == "static":
+        return StaticBearerAuthProvider()
+    elif settings.auth == "keycloak":
+        from src.api.auth.keycloak_provider import KeycloakAuthProvider  # local import: requires keycloak extra
+
+        return KeycloakAuthProvider()
+    raise ValueError(
+        f"Unknown OPEN_ARENA_AUTH={settings.auth!r}.  "
+        "Supported values: 'static', 'keycloak'."
+    )
+
+
+def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
+    if settings.env_backend == "dispatch":
+        from src.api.environments.dispatching import DispatchingEnvironmentBackend
+        return DispatchingEnvironmentBackend()
+    elif settings.env_backend == "inline":
+        return InlineEnvironmentBackend()
+    elif settings.env_backend == "git":
+        from src.api.environments.git_backend import GitEnvironmentBackend
+        return GitEnvironmentBackend()
+    elif settings.env_backend == "prime_hub":
+        from src.api.environments.prime_hub_backend import PrimeEnvHubBackend
+        return PrimeEnvHubBackend()
+    raise ValueError(
+        f"Unknown OPEN_ARENA_ENV_BACKEND={settings.env_backend!r}.  "
+        "Supported values: 'dispatch' (default), 'inline', 'git', 'prime_hub'."
+    )
+
+
+def _build_dataset_resolver(settings: ArenaSettings) -> DatasetResolver:
+    if settings.dataset_resolver == "legacy":
+        # WS4: the universal LegacyDatasetResolver dispatches by
+        # ``binding.provider`` against ``_DATASET_TYPES`` (which includes
+        # ``unity_catalog``); no separate UC resolver is required.
+        return LegacyDatasetResolver()
+    raise ValueError(
+        f"Unknown OPEN_ARENA_DATASET_RESOLVER={settings.dataset_resolver!r}.  "
+        "Supported values: 'legacy'."
+    )
+
+
+def _build_results_sink(store: Store, settings: ArenaSettings) -> ResultsSink:
+    if settings.results_sink == "store":
+        return StoreResultsSink(store=store)
+    elif settings.results_sink == "mlflow":
+        from src.api.sinks.mlflow_sink import MlflowResultsSink  # noqa: PLC0415
+
+        return MlflowResultsSink(store=store)
+    raise ValueError(
+        f"Unknown OPEN_ARENA_RESULTS_SINK={settings.results_sink!r}.  "
+        "Supported values: 'store', 'mlflow'."
+    )
+
+
+def _build_sandbox(settings: ArenaSettings) -> SandboxProvider:
+    if settings.sandbox == "local":
+        return LocalSandboxProvider()
+    elif settings.sandbox == "e2b":
+        from src.api.sandboxes.e2b_provider import E2BSandboxProvider
+
+        return E2BSandboxProvider()
+    raise ValueError(
+        f"Unknown OPEN_ARENA_SANDBOX={settings.sandbox!r}.  "
+        "Supported values: 'local', 'e2b'."
+    )
+
+
+def build_adapters(settings: ArenaSettings | None = None) -> AdapterSet:
+    """Build a complete :class:`AdapterSet` from *settings*.
+
+    Args:
+        settings: Settings snapshot to use.  When ``None``, calls
+            :func:`~src.api.settings.get_settings` to read the current
+            environment.
+
+    Returns:
+        An :class:`AdapterSet` with all ports wired to their concrete
+        adapters.
+    """
+    if settings is None:
+        settings = get_settings()
+
+    store = _build_store(settings)
+    return AdapterSet(
+        store=store,
+        auth=_build_auth(settings),
+        env_backend=_build_env_backend(settings),
+        dataset_resolver=_build_dataset_resolver(settings),
+        results_sink=_build_results_sink(store, settings),
+        sandbox=_build_sandbox(settings),
+    )

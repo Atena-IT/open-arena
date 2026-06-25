@@ -1,0 +1,114 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Open Arena API
+  # Build from source; persistent SQLite state in .open-arena/ volume.
+  # Forward-looking DATABASE_URL wires to Postgres (WS1) when provided —
+  # the app falls back to SQLite at .open-arena/api.db by default.
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: open-arena:local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to point at the compose Postgres service.
+      # Remove or override in .env if you want SQLite instead.
+      DATABASE_URL: postgresql://arena:${POSTGRES_PASSWORD:-arena_dev}@postgres:5432/arena
+    volumes:
+      - open_arena_state:/app/.open-arena
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — persistent store (forward-looking for WS1)
+  # The app uses SQLite by default; set DATABASE_URL in .env to activate this.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: arena
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arena_dev}
+      POSTGRES_DB: arena
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arena -d arena"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      # Expose locally for debugging / migrations; remove in production
+      - "5432:5432"
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible object storage
+  # Only started when the `full` profile is activated:
+  #   docker compose --profile full up
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    profiles:
+      - full
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # MLflow tracking server
+  # Only started under the `full` profile.
+  # ---------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    profiles:
+      - full
+    restart: unless-stopped
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri postgresql://arena:${POSTGRES_PASSWORD:-arena_dev}@postgres:5432/mlflow
+        --default-artifact-root s3://${S3_BUCKET:-mlflow-artifacts}
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: ${S3_ENDPOINT:-http://minio:9000}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  open_arena_state:
+    driver: local
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local

@@ -21,6 +21,8 @@ dependencies = [
     "braintrust>=0.18.0",
     "click>=8.1.8",
     "datasets>=4.8.5",
+    "fastapi>=0.115.0",
+    "httpx>=0.28.0",
     # Direct imports in src/datasets/dataset.py + src/evaluate.py —
     # declared explicitly so installs don't rely on these being pulled in
     # transitively (today they ship via synalinks / datasets / langchain,
@@ -35,6 +37,10 @@ dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "synalinks>=0.9.001",
+    "uvicorn>=0.30.0",
+    # workspace packages -- installed together with the engine
+    "open-arena-core",
+    "open-arena-cli",
 ]
 
 [project.optional-dependencies]
@@ -43,8 +49,52 @@ dependencies = [
 # Install with `uv sync --extra deepeval`.
 deepeval = ["deepeval>=2.0.0"]
 
-[project.scripts]
-arena = "src.evaluate:main"
+# `unity_catalog` dataset provider — reads Delta/Parquet tables from
+# Databricks or OSS Unity Catalog via the REST API + S3-compatible object
+# storage.  Install with `uv sync --extra unity_catalog`.
+# httpx is already in the core deps (pulled transitively); listed here for
+# explicitness so the extra is self-documenting.
+unity_catalog = [
+    "unitycatalog-client>=0.3.0",
+    "deltalake>=0.18",
+    "boto3>=1.34",
+    "pyarrow>=23.0.1",
+    "httpx>=0.27",
+]
+
+# `postgres` Store adapter (WS1) — managed Postgres persistence behind the
+# Store port, with Alembic migrations. Select with OPEN_ARENA_STORE=postgres
+# and DATABASE_URL=postgresql+psycopg://...  Install with `uv sync --extra postgres`.
+postgres = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.13",
+]
+
+# `mlflow` ResultsSink adapter (WS5) — logs run metrics/artifacts to MLflow.
+# Select with OPEN_ARENA_RESULTS_SINK=mlflow and MLFLOW_TRACKING_URI=...
+# Install with `uv sync --extra mlflow`.
+mlflow = [
+    "mlflow-skinny>=2.14",
+]
+
+# `e2b` SandboxProvider adapter (WS6) — runs verifiers in E2B-compatible
+# sandboxes (CubeSandbox lands in ModelFactory soon). Select with
+# OPEN_ARENA_SANDBOX=e2b and E2B_API_KEY=...  Install with `uv sync --extra e2b`.
+e2b = [
+    "e2b>=1.0",
+]
+
+# `keycloak` AuthProvider adapter (WS7) — validates Keycloak/OIDC JWTs and
+# derives the org claim. Select with OPEN_ARENA_AUTH=keycloak and OIDC_ISSUER=...
+# Install with `uv sync --extra keycloak`.
+keycloak = [
+    "pyjwt[crypto]>=2.8",
+    "httpx>=0.27",
+]
+
+# The `arena` console script now lives in `open-arena-cli`.
+# Installing `open-arena` brings the full stack (engine + CLI).
 
 [build-system]
 requires = ["hatchling"]
@@ -52,3 +102,20 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+# ---------------------------------------------------------------------------
+# uv workspace -- root is open-arena (engine); sub-packages provide the
+# lightweight core models and standalone CLI.
+# ---------------------------------------------------------------------------
+[tool.uv.workspace]
+members = ["packages/open-arena-core", "packages/open-arena-cli"]
+
+[tool.uv.sources]
+open-arena-core = { workspace = true }
+open-arena-cli = { workspace = true }
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "packages/open-arena-cli/tests",
+    "packages/open-arena-core/tests",
+]

@@ -1,0 +1,23 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching, relative path matching, and
+# negation (prefixed with !). Only one pattern per line.
+
+.DS_Store
+# Git
+.git/
+.gitignore
+.gitattributes
+# CI
+.github/
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.bak
+# Backup / temp files
+*.orig
+*~
+# Test values
+tests/
+test/
+ci/

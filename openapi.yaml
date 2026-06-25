@@ -23,9 +23,7 @@ info:
       - an entire leaderboard
       - one or more environments inside a leaderboard across all leaderboard models
       - one or more models inside a leaderboard across all leaderboard environments
-      - explicit model × environment slices
-      - a direct model/environment pair without a private leaderboard; those runs
-        feed the unified public leaderboard.
+      - explicit model × environment slices supplied directly in the run payload.
 
     In this artifact, `Run` is scoped to evaluation submissions plus their
     cache-backed result materialization. Job-control primitives (cancel/retry/
@@ -45,7 +43,6 @@ tags:
   - name: Environments
   - name: Verifiers
   - name: Runs
-  - name: Public Leaderboard
   - name: Discovery
 
 security:
@@ -234,6 +231,30 @@ paths:
       responses:
         '204':
           description: Environment deleted
+        default:
+          $ref: '#/components/responses/Error'
+
+  /v1/environments/{environment_id}/versions:
+    get:
+      tags: [Environments]
+      summary: List available versions for an environment
+      description: |
+        Returns the known version descriptors for this environment.
+        For git-backed sources (github_repo, prime_environment_hub) the
+        currently-resolved commit is always included; when the backend can
+        enumerate tags/refs additional entries may appear.
+        For inline environments a single entry derived from the source
+        version is returned.
+      operationId: listEnvironmentVersions
+      parameters:
+        - $ref: '#/components/parameters/EnvironmentId'
+      responses:
+        '200':
+          description: Environment version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvironmentVersionListResponse'
         default:
           $ref: '#/components/responses/Error'
 
@@ -607,56 +628,6 @@ paths:
                 $ref: '#/components/schemas/LeaderboardEntryListResponse'
         default:
           $ref: '#/components/responses/Error'
-
-  /v1/public-leaderboard:
-    get:
-      tags: [Public Leaderboard]
-      summary: Get unified public leaderboard metadata
-      operationId: getPublicLeaderboard
-      responses:
-        '200':
-          description: Public leaderboard
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicLeaderboard'
-        default:
-          $ref: '#/components/responses/Error'
-
-  /v1/public-leaderboard/entries:
-    get:
-      tags: [Public Leaderboard]
-      summary: List public leaderboard entries
-      operationId: listPublicLeaderboardEntries
-      parameters:
-        - in: query
-          name: environment_name
-          schema:
-            type: string
-        - in: query
-          name: environment_version
-          schema:
-            type: string
-        - in: query
-          name: model_name
-          schema:
-            type: string
-        - in: query
-          name: model_version
-          schema:
-            type: string
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
-      responses:
-        '200':
-          description: Public leaderboard entries
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicLeaderboardEntryListResponse'
-        default:
-          $ref: '#/components/responses/Error'
-
   /v1/metric-kinds:
     get:
       tags: [Discovery]
@@ -784,7 +755,7 @@ paths:
           - leaderboard + environment_ids: run those environments across all leaderboard models
           - leaderboard + model_ids: run those models across all leaderboard environments
           - leaderboard + both: run the explicit cross-product subset
-          - no leaderboard + direct_pairs: run direct model/environment pairs and publish to the public leaderboard
+          - no leaderboard + direct_pairs: run direct model/environment pairs supplied inline in the request
       operationId: createRun
       requestBody:
         required: true
@@ -912,6 +883,15 @@ components:
 
     EnvironmentSourceKind:
       type: string
+      description: >
+        Source kind for an environment definition.
+        `huggingface_hub` — environment stored in the Hugging Face Hub.
+        `github_repo` — Git-backed environment; also used to address a Gitea
+        repository by setting `GITEA_BASE_URL`, `GITEA_TOKEN`, and
+        `GITEA_ORG` in the server environment and selecting the
+        `git` backend with `OPEN_ARENA_ENV_BACKEND=git`.
+        `prime_environment_hub` — environment managed by Prime Environment Hub.
+        `inline` — fully inline definition embedded in the request body.
       enum:
         - huggingface_hub
         - github_repo
@@ -1168,7 +1148,7 @@ components:
       properties:
         provider:
           type: string
-          description: huggingface, local, folder, langfuse, langsmith, opik, phoenix, braintrust, or custom.
+          description: huggingface, local, folder, unity_catalog, langfuse, langsmith, opik, phoenix, braintrust, or custom.
         source_ref:
           type: string
           description: Dataset identifier such as HF path, repo path, or registry key.
@@ -1222,6 +1202,17 @@ components:
         isolation_mode:
           type: string
           enum: [none, container, vm, remote]
+        image:
+          type: string
+          nullable: true
+          description: Warm OCI image reference (e.g. ghcr.io/org/eval-env@sha256) or sandbox template ref. Used to skip cold-start image pulls.
+        per_task_sandbox:
+          type: boolean
+          default: false
+          description: >
+            When true, a fresh sandbox is launched for every task in the dataset
+            (fan-out execution, P2-2). Stored here; acted on by the execution
+            layer once P2-2 is implemented.
         bootstrap:
           type: object
           additionalProperties: true
@@ -1521,6 +1512,14 @@ components:
           $ref: '#/components/schemas/EnvironmentSource'
         inline_definition:
           $ref: '#/components/schemas/InlineEnvironmentDefinition'
+        commit_sha:
+          type: string
+          nullable: true
+          description: Resolved VCS commit SHA pinned at registration time. Null for inline environments.
+        content_hash:
+          type: string
+          nullable: true
+          description: Stable SHA-256 hash of the environment tree content. Null for inline environments.
         metadata:
           type: object
           additionalProperties: true
@@ -1980,40 +1979,6 @@ components:
         last_run_id:
           type: string
           format: uuid
-
-    PublicLeaderboard:
-      type: object
-      required: [name, visibility]
-      properties:
-        name:
-          type: string
-          const: public
-        visibility:
-          type: string
-          const: public
-        description:
-          type: string
-        ranking:
-          $ref: '#/components/schemas/RankingPolicy'
-
-    PublicLeaderboardEntry:
-      type: object
-      required: [environment_name, environment_version, model_name, model_version, score]
-      properties:
-        environment_name:
-          type: string
-        environment_version:
-          type: string
-        model_name:
-          type: string
-        model_version:
-          type: string
-        score:
-          type: number
-        source_run_id:
-          type: string
-          format: uuid
-
     ModelDefinitionListResponse:
       type: object
       required: [items]
@@ -2058,6 +2023,42 @@ components:
         next_cursor:
           type: string
 
+    EnvironmentVersion:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+          description: The version string from the environment source.
+        commit_sha:
+          type: string
+          nullable: true
+          description: Resolved VCS commit SHA for this version. Null for inline environments.
+        content_hash:
+          type: string
+          nullable: true
+          description: Stable SHA-256 hash of the environment tree. Null for inline environments.
+        git_ref:
+          type: string
+          nullable: true
+          description: The git ref (tag, branch, or SHA) used to resolve this version.
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When this version entry was created. Null when not tracked.
+
+    EnvironmentVersionListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnvironmentVersion'
+        next_cursor:
+          type: string
+
     LeaderboardListResponse:
       type: object
       required: [items]
@@ -2079,18 +2080,6 @@ components:
             $ref: '#/components/schemas/LeaderboardEntry'
         next_cursor:
           type: string
-
-    PublicLeaderboardEntryListResponse:
-      type: object
-      required: [items]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublicLeaderboardEntry'
-        next_cursor:
-          type: string
-
     RunListResponse:
       type: object
       required: [items]
