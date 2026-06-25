@@ -316,9 +316,11 @@ class KeycloakAuthProvider(AuthProvider):
                 raw_token,
                 signing_key,
                 algorithms=["RS256"],
+                issuer=self._issuer,
                 options={
                     "verify_aud": False,  # we do audience check manually below
                     "verify_exp": True,
+                    "verify_iss": True,  # reject tokens from other issuers
                 },
             )
         except ExpiredSignatureError as exc:

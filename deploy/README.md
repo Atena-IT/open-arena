@@ -218,7 +218,7 @@ All variable names are exact — no aliases.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `E2B_API_KEY` | No | — | API key for the [E2B](https://e2b.dev) remote code sandbox. |
-| `SANDBOX_PROVIDER` | No | `local` | Sandbox backend: `local` (no isolation) or `e2b`. |
+| `OPEN_ARENA_SANDBOX` | No | `local` | Sandbox backend: `local` (no isolation) or `e2b`. |
 
 ---
 

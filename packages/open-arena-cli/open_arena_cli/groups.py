@@ -733,7 +733,9 @@ def eval_submit(server_url, token, local, file_path, dir_path):
         raise click.UsageError("Specify only one of --file or --dir, not both")
 
     manifest_path = file_path or dir_path
-    from src.api.manifest import load_manifest
+    # Manifest loader lives in the thin core package so this command works on
+    # a standalone CLI install (no engine required) for both local & remote.
+    from open_arena_core.manifest import load_manifest
     run_create = load_manifest(manifest_path)
 
     backend = _make_backend(server_url, token, local=local)

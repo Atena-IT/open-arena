@@ -540,7 +540,9 @@ class TestSnapshotInline:
             result_url, result_sha = backend.snapshot_inline(definition)
 
         assert result_url == repo_url
-        assert result_sha == commit_sha
+        # snapshot_inline must return the *last* write's commit (pyproject.toml) —
+        # the tree HEAD containing BOTH files — not the earlier env.py commit.
+        assert result_sha == "anothersha"
 
     def test_snapshot_inline_calls_create_repo_with_correct_payload(self, monkeypatch):
         monkeypatch.setenv("GITEA_BASE_URL", "https://gitea.example.com")

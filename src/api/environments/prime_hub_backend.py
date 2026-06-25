@@ -261,18 +261,27 @@ def _download_artifact(download_url: str, dest_dir: Path, api_key: str) -> Path:
     """
     filename = _infer_artifact_filename(download_url)
     dest_file = dest_dir / filename
+    # Stream to a temp file and atomically rename on success so an
+    # interrupted download never leaves a truncated file at *dest_file*
+    # (which would later pass as a valid cache hit).
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    tmp_file = dest_file.with_name(dest_file.name + ".part")
 
-    with httpx.Client(
-        headers={"Authorization": f"Bearer {api_key}"},
-        timeout=300,
-        follow_redirects=True,
-    ) as dl_client:
-        with dl_client.stream("GET", download_url) as response:
-            response.raise_for_status()
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            with dest_file.open("wb") as fh:
-                for chunk in response.iter_bytes(chunk_size=65536):
-                    fh.write(chunk)
+    try:
+        with httpx.Client(
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=300,
+            follow_redirects=True,
+        ) as dl_client:
+            with dl_client.stream("GET", download_url) as response:
+                response.raise_for_status()
+                with tmp_file.open("wb") as fh:
+                    for chunk in response.iter_bytes(chunk_size=65536):
+                        fh.write(chunk)
+        tmp_file.replace(dest_file)
+    except BaseException:
+        tmp_file.unlink(missing_ok=True)
+        raise
 
     return dest_file
 

@@ -83,7 +83,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String, nullable=False),
         sa.Column("cache_status", sa.String, nullable=False),
         sa.Column("leaderboard_id", sa.String, nullable=True),
-        sa.Column("idempotency_key", sa.String, nullable=True, unique=True),
+        sa.Column("idempotency_key", sa.String, nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         _json_col("doc"),

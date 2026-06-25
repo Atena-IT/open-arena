@@ -307,7 +307,15 @@ def _load_inline_definition_from_repo(
     # Prime-Intellect verifiers package convention
     env_py = repo_path / "env.py"
     pyproject = repo_path / "pyproject.toml"
-    if env_py.exists() and pyproject.exists():
+    # SECURITY: importing env.py runs arbitrary code from the resolved repo
+    # *in the API process*. Until execution is confined to a per-task sandbox
+    # (P2-4), this best-effort loader is OPT-IN and OFF by default; the safe
+    # placeholder below is synthesised instead. Enable only for trusted
+    # sources via OPEN_ARENA_ALLOW_INPROCESS_ENV_EXEC=1.
+    _allow_exec = os.getenv(
+        "OPEN_ARENA_ALLOW_INPROCESS_ENV_EXEC", ""
+    ).strip().lower() in ("1", "true", "yes")
+    if env_py.exists() and pyproject.exists() and _allow_exec:
         # Attempt to import load_environment() dynamically.
         # This is an optional best-effort path; errors are swallowed and we
         # fall through to the placeholder.
@@ -620,7 +628,7 @@ class GitEnvironmentBackend(EnvironmentBackend):
             )
             repo_url: str = repo_data["clone_url"]
 
-            env_result = _gitea_put_file(
+            _gitea_put_file(
                 client,
                 org=org,
                 repo=effective_repo_name,
@@ -629,7 +637,7 @@ class GitEnvironmentBackend(EnvironmentBackend):
                 message=f"feat: add env.py for {definition.name} v{definition.version}",
                 branch=branch,
             )
-            _gitea_put_file(
+            pyproject_result = _gitea_put_file(
                 client,
                 org=org,
                 repo=effective_repo_name,
@@ -642,6 +650,7 @@ class GitEnvironmentBackend(EnvironmentBackend):
                 branch=branch,
             )
 
-        # The commit SHA of the last operation is the tree HEAD
-        commit_sha: str = env_result["commit"]["sha"]
+        # The commit SHA of the *last* write is the tree HEAD — pinning to it
+        # yields a tree containing both env.py and pyproject.toml.
+        commit_sha: str = pyproject_result["commit"]["sha"]
         return repo_url, commit_sha

@@ -49,9 +49,14 @@ def _build_store(settings: ArenaSettings) -> Store:
         from src.api.stores.sqlite import SQLiteStore
 
         return SQLiteStore(path=settings.db_path)
+    elif settings.store == "postgres":
+        # WS1: SQLAlchemy/Postgres adapter — DSN read from DATABASE_URL.
+        from src.api.stores.sqlalchemy_store import SqlAlchemyStore
+
+        return SqlAlchemyStore()
     raise ValueError(
         f"Unknown OPEN_ARENA_STORE={settings.store!r}.  "
-        "Supported values: 'sqlite'."
+        "Supported values: 'sqlite', 'postgres'."
     )
 
 
@@ -88,8 +93,10 @@ def _build_env_backend(settings: ArenaSettings) -> EnvironmentBackend:
 
 def _build_dataset_resolver(settings: ArenaSettings) -> DatasetResolver:
     if settings.dataset_resolver == "legacy":
+        # WS4: the universal LegacyDatasetResolver dispatches by
+        # ``binding.provider`` against ``_DATASET_TYPES`` (which includes
+        # ``unity_catalog``); no separate UC resolver is required.
         return LegacyDatasetResolver()
-    # WS4: unity_catalog — elif settings.dataset_resolver == "unity_catalog": ...
     raise ValueError(
         f"Unknown OPEN_ARENA_DATASET_RESOLVER={settings.dataset_resolver!r}.  "
         "Supported values: 'legacy'."

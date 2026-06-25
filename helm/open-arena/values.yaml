@@ -180,7 +180,7 @@ env:
   OIDC_ISSUER: ""
   OIDC_CLIENT_ID: ""
   # Sandbox
-  SANDBOX_PROVIDER: "local"
+  OPEN_ARENA_SANDBOX: "local"
 
 # -----------------------------------------------------------------------------
 # Secret environment variables (goes into a Kubernetes Secret)

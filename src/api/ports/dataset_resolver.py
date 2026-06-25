@@ -5,10 +5,11 @@ Translates an :class:`~src.api.models.DatasetBinding` into the flat
 dictionary entry that the Arena YAML runner understands.
 
 The default adapter is :class:`LegacyDatasetResolver` which reproduces
-the original ``_dataset_entry`` / ``_DATASET_TYPES`` logic verbatim.
-
-WS4: unity_catalog — add a ``UnityCatalogDatasetResolver`` that resolves
-``type: unity_catalog`` bindings against a Databricks Unity Catalog volume.
+the original ``_dataset_entry`` / ``_DATASET_TYPES`` logic verbatim and
+dispatches by ``binding.provider`` — including WS4 ``unity_catalog``
+bindings, which map ``source_ref`` to the ``table`` kwarg (see
+``PROVIDER_SOURCE_FIELDS``). No provider-specific resolver subclass is
+required.
 """
 from __future__ import annotations
 
@@ -27,6 +28,9 @@ PROVIDER_SOURCE_FIELDS: dict[str, str] = {
     "local": "path",
     "opik": "dataset_name",
     "phoenix": "dataset_name",
+    # WS4: UnityCatalogDataset expects the fully-qualified table name
+    # (``catalog.schema.table``) under the ``table`` kwarg.
+    "unity_catalog": "table",
 }
 
 
@@ -60,11 +64,9 @@ class LegacyDatasetResolver(DatasetResolver):
     """Default adapter — delegates to ``_DATASET_TYPES`` / ``load_dataset_from_yaml``.
 
     Reproduces the original ``ArenaAPIService._dataset_entry`` logic
-    exactly so no existing behavior changes.
-
-    WS4: unity_catalog — register a ``UnityCatalogDatasetResolver`` and
-    update the registry to select it when
-    ``OPEN_ARENA_DATASET_RESOLVER=unity_catalog``.
+    exactly so no existing behavior changes.  Provider dispatch (including
+    WS4 ``unity_catalog``) is data-driven via ``PROVIDER_SOURCE_FIELDS`` +
+    ``_DATASET_TYPES`` — no per-provider subclass is needed.
     """
 
     def resolve(self, binding: api.DatasetBinding) -> dict[str, Any]:  # noqa: D102
