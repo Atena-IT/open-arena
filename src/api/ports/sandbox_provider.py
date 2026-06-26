@@ -11,6 +11,11 @@ P2-2: per-task fan-out — :meth:`SandboxProvider.run_task` executes a
 single (model, environment) task in its own sandbox concurrently.
 ``run`` (whole-run path) is preserved byte-for-byte.
 
+P2-4: env-package runtimes — :meth:`SandboxProvider.open_session` returns
+a :class:`~src.api.sandboxes.env_runtime.SandboxSession`-compatible object
+so the env-package runtimes can execute inside the same sandbox without
+additional lifecycle overhead.
+
 WS6: E2B-compatible — add an ``E2BSandboxProvider`` (or a generic
 ``RemoteSandboxProvider``) that ships the YAML config to a remote
 execution environment (E2B sandbox, Modal, Fly.io, …) and streams
@@ -18,10 +23,12 @@ results back.
 """
 from __future__ import annotations
 
+import subprocess
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 from open_arena_core import models as api
 
@@ -78,6 +85,28 @@ class SandboxProvider(ABC):
             The result dict returned by ``run_sweep`` (contains at
             minimum a ``"rows"`` key with per-metric result rows).
         """
+
+    @contextmanager
+    def open_session(
+        self,
+        policy: api.SandboxPolicy | None = None,
+    ) -> Generator[Any, None, None]:
+        """Open a :class:`~src.api.sandboxes.env_runtime.SandboxSession`-compatible
+        context for use by env-package runtimes (P2-4).
+
+        The default implementation yields a :class:`LocalShellSession` that
+        executes commands via ``subprocess`` in the current process.  Remote
+        sandbox providers (E2B, Modal, …) should override this to yield a
+        session backed by the remote execution environment.
+
+        Args:
+            policy: Optional :class:`~open_arena_core.models.SandboxPolicy`.
+                Forwarded to the session for warm-image and timeout hints.
+
+        Yields:
+            A :class:`SandboxSession`-compatible object.
+        """
+        yield LocalShellSession()
 
     def run_task(
         self,
@@ -154,3 +183,45 @@ class LocalSandboxProvider(SandboxProvider):
             )
 
         return _run_async(run_sweep(str(config_path), no_cache=False, verbose=0))
+
+
+# ---------------------------------------------------------------------------
+# LocalShellSession — SandboxSession backed by subprocess (for local runs)
+# ---------------------------------------------------------------------------
+
+
+class LocalShellSession:
+    """In-process :class:`~src.api.sandboxes.env_runtime.SandboxSession` that
+    executes commands via :mod:`subprocess` and writes files to the local
+    filesystem.
+
+    P2-4: used by :class:`~src.api.ports.sandbox_provider.LocalSandboxProvider`
+    as the default session returned by :meth:`SandboxProvider.open_session`.
+    Remote providers (E2B, Modal) override :meth:`open_session` to yield a
+    remote-backed session instead.
+
+    This class satisfies the
+    :class:`~src.api.sandboxes.env_runtime.SandboxSession` protocol.
+    """
+
+    def run_command(
+        self,
+        cmd: str,
+        *,
+        workdir: str | None = None,
+    ) -> tuple[int, str, str]:
+        """Run *cmd* via :func:`subprocess.run` and return ``(exit_code, stdout, stderr)``."""
+        result = subprocess.run(
+            cmd,
+            shell=True,  # noqa: S602 — local only, commands are trusted
+            capture_output=True,
+            text=True,
+            cwd=workdir,
+        )
+        return result.returncode, result.stdout, result.stderr
+
+    def write_file(self, remote_path: str, content: bytes) -> None:
+        """Write *content* to *remote_path* on the local filesystem."""
+        dest = Path(remote_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(content)

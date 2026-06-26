@@ -33,8 +33,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 
 from open_arena_core import models as api
 from src.api.ports.sandbox_provider import SandboxProvider, TaskResult
@@ -143,6 +145,57 @@ class _E2BClient:
 
 
 # ---------------------------------------------------------------------------
+# _E2BClientSession — SandboxSession adapter wrapping _E2BClient
+# ---------------------------------------------------------------------------
+
+
+class _E2BClientSession:
+    """Adapts :class:`_E2BClient` to the
+    :class:`~src.api.sandboxes.env_runtime.SandboxSession` protocol.
+
+    The E2B SDK's ``upload_file`` takes a local filesystem :class:`~pathlib.Path`
+    rather than raw bytes, so this adapter writes the bytes to a temporary file
+    first and then calls ``client.upload_file(tmp_path, remote_path)``.
+
+    Args:
+        client: An already-created (``create()``-called) :class:`_E2BClient`
+            instance owned by the caller.  This adapter does *not* call
+            ``create()`` or ``kill()`` — the lifecycle is the caller's
+            responsibility.
+    """
+
+    def __init__(self, client: _E2BClient) -> None:
+        self._client = client
+
+    def run_command(
+        self,
+        cmd: str,
+        *,
+        workdir: str | None = None,
+    ) -> tuple[int, str, str]:
+        """Delegate to :meth:`_E2BClient.run_command`."""
+        return self._client.run_command(cmd, workdir=workdir)
+
+    def write_file(self, remote_path: str, content: bytes) -> None:
+        """Write *content* to *remote_path* inside the E2B sandbox.
+
+        Translates the bytes-based
+        :class:`~src.api.sandboxes.env_runtime.SandboxSession` interface to the
+        path-based ``_E2BClient.upload_file`` API via a temporary file.
+        """
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp:
+            tmp_path = Path(tmp.name)
+            tmp_path.write_bytes(content)
+        try:
+            self._client.upload_file(tmp_path, remote_path)
+        finally:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:  # pragma: no cover — best-effort cleanup
+                pass
+
+
+# ---------------------------------------------------------------------------
 # SandboxProvider adapter
 # ---------------------------------------------------------------------------
 
@@ -192,6 +245,53 @@ class E2BSandboxProvider(SandboxProvider):
     _REMOTE_CONFIG = "/arena/config.yaml"
     _REMOTE_RESULT = "/arena/result.json"
     _DEFAULT_PACKAGE = "open-arena"
+
+    @contextmanager
+    def open_session(
+        self,
+        policy: api.SandboxPolicy | None = None,
+    ) -> Generator[_E2BClientSession, None, None]:
+        """Open an E2B-backed :class:`_E2BClientSession` for env-package runtimes (P2-4).
+
+        Creates a dedicated E2B sandbox instance, yields an
+        :class:`_E2BClientSession` adapter (which satisfies the
+        :class:`~src.api.sandboxes.env_runtime.SandboxSession` protocol), then
+        kills the sandbox on exit — even if an exception is raised inside the
+        ``with`` block.
+
+        Args:
+            policy: Optional :class:`~open_arena_core.models.SandboxPolicy`.
+                ``policy.limits["timeout_seconds"]`` controls the sandbox
+                lifetime (default 300 s); ``policy.bootstrap["template"]``
+                selects the E2B template / warm OCI image.
+
+        Yields:
+            An :class:`_E2BClientSession` backed by a live E2B microVM.
+
+        Raises:
+            E2BSandboxConfigError: When ``E2B_API_KEY`` is missing/empty.
+            E2BSandboxError: When sandbox creation fails.
+        """
+        api_key = os.getenv("E2B_API_KEY", "").strip()
+        if not api_key:
+            raise E2BSandboxConfigError(
+                "E2B_API_KEY environment variable is not set.  "
+                "Set it to your E2B / CubeSandbox API key, or use "
+                "LocalSandboxProvider (OPEN_ARENA_SANDBOX=local) for "
+                "in-process execution."
+            )
+
+        limits = (policy.limits or {}) if policy else {}
+        bootstrap = (policy.bootstrap or {}) if policy else {}
+        timeout: int = int(limits.get("timeout_seconds", 300))
+        template: str | None = bootstrap.get("template") or (policy.image if policy else None)
+
+        client = _E2BClient(api_key, timeout=timeout, template=template)
+        client.create()
+        try:
+            yield _E2BClientSession(client)
+        finally:
+            client.kill()
 
     def run(
         self,
