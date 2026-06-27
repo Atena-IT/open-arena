@@ -24,6 +24,8 @@ import asyncio
 import json
 from pathlib import Path
 
+import yaml
+
 import synalinks
 
 synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
@@ -31,7 +33,7 @@ synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
 from synalinks.src.utils.naming import to_snake_case  # noqa: E402
 
 from src.config import Config, MetricEntry  # noqa: E402
-from src.datasets import load_dataset_from_yaml  # noqa: E402
+from src.datasets import load_dataset_from_config  # noqa: E402
 from src.program import build_agent, build_program  # noqa: E402
 from src.rewards import _REWARD_TYPES, get as get_reward  # noqa: E402
 
@@ -366,7 +368,16 @@ async def run_sweep(
 
     model_ids = cfg.experiments.language_models
     dataset_names = cfg.selected_dataset_names()
-    datasets = {n: load_dataset_from_yaml(config_path, name=n) for n in dataset_names}
+    # Parse the config ONCE and build every dataset from the in-memory mapping.
+    # load_dataset_from_yaml re-reads + re-parses the whole file per call, which
+    # is O(datasets × filesize) — for a 12 MB / 450-dataset config (~21 s/parse)
+    # that alone added hours to startup before the first trial ran.
+    with open(config_path) as _f:
+        _raw_config = yaml.safe_load(_f)
+    datasets = {
+        n: load_dataset_from_config(_raw_config, name=n, yaml_path=str(config_path))
+        for n in dataset_names
+    }
 
     # Pre-resolve the global metric list so unknown identifiers fail fast,
     # before the first trial.

@@ -98,7 +98,22 @@ def load_dataset_from_yaml(yaml_path: str, name: str | None = None) -> Dataset:
     """
     with open(yaml_path) as f:
         config = yaml.safe_load(f)
+    return load_dataset_from_config(config, name=name, yaml_path=yaml_path)
 
+
+def load_dataset_from_config(
+    config: dict, name: str | None = None, yaml_path: str = "<config>"
+) -> Dataset:
+    """Build a `Dataset` from an already-parsed config mapping.
+
+    Same behaviour as `load_dataset_from_yaml`, but takes the parsed YAML dict
+    instead of a path. A caller building many datasets from one config (e.g.
+    `evaluate.run_sweep`) should parse the file ONCE and call this per dataset —
+    `load_dataset_from_yaml` re-reads and re-parses the whole file every call,
+    which is O(datasets × filesize) and dominates startup for large configs
+    (a 12 MB / 450-dataset config takes ~21 s to parse, so ~450 re-parses cost
+    hours). `yaml_path` is used only to label error messages.
+    """
     entries = config.get("datasets")
     if not entries:
         raise ValueError(f"{yaml_path}: missing or empty `datasets:` section.")
