@@ -770,20 +770,67 @@ class ArenaAPIService:
             model_key = self._model_runtime_id(item.model)
             scratch_tag = f"{dataset_name}.{model_key}.{idx}"
 
-            per_task_payload = self._config_for_pending(mode, execution, [item])
-            with tempfile.TemporaryDirectory(prefix=f'open-arena-task-{idx}-') as tmpdir:
-                config_path = Path(tmpdir) / 'run.yaml'
-                config_path.write_text(yaml.safe_dump(per_task_payload, sort_keys=False))
+            # P2-4: Resolve the environment to detect pinned external packages.
+            # When the resolved environment has a local_path (github_repo or
+            # prime_environment_hub kind with a pinned commit), route execution
+            # to the env-package runtimes (PrimeVerifiersRuntime / HarborTaskRuntime)
+            # instead of the sweep-based run_task path.
+            try:
+                resolved_env = self._env_backend.resolve(item.environment)
+            except Exception:  # noqa: BLE001
+                resolved_env = None
+
+            is_pinned_external = (
+                resolved_env is not None
+                and resolved_env.local_path is not None
+                and item.environment.source.kind
+                in (
+                    api.EnvironmentSourceKind.github_repo,
+                    api.EnvironmentSourceKind.prime_environment_hub,
+                )
+            )
+
+            if is_pinned_external:
+                # P2-4 path: execute the pinned env-package via runtime.
+                from src.api.sandboxes.env_runtime import execute_env_package
+
                 logger.debug(
-                    "P2-2 per-task sandbox: idx=%d scratch_tag=%r policy=%r",
-                    idx, scratch_tag,
-                    task_policy.model_dump(exclude_none=True) if task_policy else None,
+                    "P2-4 env-package runtime: idx=%d scratch_tag=%r local_path=%r",
+                    idx, scratch_tag, resolved_env.local_path,
                 )
-                task_result = self._sandbox.run_task(
-                    config_path,
-                    policy=task_policy,
-                    scratch_tag=scratch_tag,
+                with self._sandbox.open_session(task_policy) as session:
+                    task_result = execute_env_package(
+                        resolved_env.local_path,
+                        session,
+                        dataset_name=dataset_name,
+                        model_key=model_key,
+                        policy=task_policy,
+                        scratch_tag=scratch_tag,
+                    )
+            else:
+                # Pass the already-resolved env (from the P2-4 detection above)
+                # so _config_for_pending skips a duplicate resolve() call.
+                _pre_resolved = (
+                    {str(item.environment.id): resolved_env}
+                    if resolved_env is not None
+                    else None
                 )
+                per_task_payload = self._config_for_pending(
+                    mode, execution, [item], _resolved_envs=_pre_resolved
+                )
+                with tempfile.TemporaryDirectory(prefix=f'open-arena-task-{idx}-') as tmpdir:
+                    config_path = Path(tmpdir) / 'run.yaml'
+                    config_path.write_text(yaml.safe_dump(per_task_payload, sort_keys=False))
+                    logger.debug(
+                        "P2-2 per-task sandbox: idx=%d scratch_tag=%r policy=%r",
+                        idx, scratch_tag,
+                        task_policy.model_dump(exclude_none=True) if task_policy else None,
+                    )
+                    task_result = self._sandbox.run_task(
+                        config_path,
+                        policy=task_policy,
+                        scratch_tag=scratch_tag,
+                    )
 
             # Assemble into SubjectResult (same logic as the whole-run path).
             rows = task_result.rows
@@ -873,14 +920,38 @@ class ArenaAPIService:
         source = api.EnvironmentSource(kind=api.EnvironmentSourceKind.inline, name=inline.name, version=inline.version)
         return api.Environment(id=uuid4(), source=source, inline_definition=inline, created_at=now, updated_at=now)
 
-    def _config_for_pending(self, mode: api.RunMode, execution: api.GeneratorRunConfig | api.AgentRunConfig | None, pending: list[PendingSubject]) -> dict[str, Any]:
+    def _config_for_pending(
+        self,
+        mode: api.RunMode,
+        execution: api.GeneratorRunConfig | api.AgentRunConfig | None,
+        pending: list[PendingSubject],
+        *,
+        _resolved_envs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build the YAML config payload for *pending* subjects.
+
+        Args:
+            mode: The run mode (generator / agent).
+            execution: Optional execution config with overrides.
+            pending: Ordered list of pending subjects to configure.
+            _resolved_envs: Optional pre-resolved environment map keyed by
+                ``str(item.environment.id)``.  When provided, the per-item
+                ``self._env_backend.resolve()`` call is skipped (avoids a
+                duplicate network round-trip for the P2-4 per-task path which
+                already resolved the environment in ``_run_one``).
+        """
         datasets: dict[str, Any] = {}
         mcp_registry: dict[str, Any] = {}
         for item in pending:
-            # Resolve the environment through the EnvironmentBackend port.
+            # Use the pre-resolved env when available (P2-4 per-task path),
+            # otherwise resolve now (whole-run path and legacy callers).
             # WS2 (Gitea/GitHub): GitEnvironmentBackend will clone the repo and
             # return the resolved InlineEnvironmentDefinition here.
-            resolved = self._env_backend.resolve(item.environment)
+            env_key = str(item.environment.id)
+            if _resolved_envs is not None and env_key in _resolved_envs:
+                resolved = _resolved_envs[env_key]
+            else:
+                resolved = self._env_backend.resolve(item.environment)
             definition = resolved.definition
 
             if not self._supports_mode(item.environment, mode):
