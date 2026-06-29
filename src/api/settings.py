@@ -21,6 +21,8 @@ is required for existing deployments.
 +---------------------------------+------------------+-----------------------------+
 | ``OPEN_ARENA_SANDBOX``          | ``local``        | Sweep execution              |
 +---------------------------------+------------------+-----------------------------+
+| ``OPEN_ARENA_TASK_CONCURRENCY`` | ``8``            | Per-task sandbox fan-out cap |
++---------------------------------+------------------+-----------------------------+
 | ``OPEN_ARENA_DB_PATH``          | ``.open-arena/api.db`` | SQLite file location   |
 +---------------------------------+------------------+-----------------------------+
 """
@@ -51,6 +53,10 @@ class ArenaSettings:
         default_factory=lambda: os.getenv("OPEN_ARENA_RESULTS_SINK", "store")
     )
     sandbox: str = field(default_factory=lambda: os.getenv("OPEN_ARENA_SANDBOX", "local"))
+    # P2-2: max concurrent per-task sandboxes in the fan-out path (single-tenant).
+    task_concurrency: int = field(
+        default_factory=lambda: int(os.getenv("OPEN_ARENA_TASK_CONCURRENCY", "8"))
+    )
     db_path: Path = field(
         default_factory=lambda: Path(
             os.getenv("OPEN_ARENA_DB_PATH", ".open-arena/api.db")

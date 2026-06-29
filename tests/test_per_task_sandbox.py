@@ -5,7 +5,8 @@ Verifies that:
 
 1. When ``per_task_sandbox=True`` is set in the SandboxPolicy the service fans
    out: each pending subject triggers its own ``run_task`` call (one per task).
-2. The concurrency is bounded by ``ArenaAPIService._PER_TASK_CONCURRENCY``.
+2. The concurrency is bounded by ``ArenaAPIService._task_concurrency``
+   (configurable via ``OPEN_ARENA_TASK_CONCURRENCY``, default 8).
 3. Results assemble into ``SubjectResult`` objects identical in shape to those
    produced by the whole-run path.
 4. Heterogeneous sandbox policies (different per subject) are naturally handled:
@@ -400,12 +401,13 @@ class TestPerTaskFanOut:
             assert subject.cache_status.value == "miss"
 
     def test_concurrency_is_bounded_by_max_workers(self, tmp_path):
-        """Concurrent tasks must not exceed _PER_TASK_CONCURRENCY at any instant."""
+        """Concurrent tasks must not exceed the per-task concurrency cap at any instant."""
         svc = _make_service(tmp_path)
         n = 6  # more tasks than a low concurrency cap
-        # Temporarily lower the cap for this test.
-        original_cap = ArenaAPIService._PER_TASK_CONCURRENCY
-        ArenaAPIService._PER_TASK_CONCURRENCY = 3
+        # Temporarily lower the per-task fan-out cap for this test
+        # (instance-level; backed by OPEN_ARENA_TASK_CONCURRENCY).
+        original_cap = svc._task_concurrency
+        svc._task_concurrency = 3
         try:
             payload = RunCreate.model_validate(self._payload_with_per_task(n))
 
@@ -440,7 +442,13 @@ class TestPerTaskFanOut:
                 f"Concurrency exceeded cap: peak={peak_concurrent[0]} > cap=3"
             )
         finally:
-            ArenaAPIService._PER_TASK_CONCURRENCY = original_cap
+            svc._task_concurrency = original_cap
+
+    def test_task_concurrency_configurable_via_env(self, tmp_path, monkeypatch):
+        """OPEN_ARENA_TASK_CONCURRENCY controls the per-task fan-out cap."""
+        monkeypatch.setenv("OPEN_ARENA_TASK_CONCURRENCY", "5")
+        svc = _make_service(tmp_path)
+        assert svc._task_concurrency == 5
 
 
 # ---------------------------------------------------------------------------
