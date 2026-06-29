@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from open_arena_core import models as api
-from src.api.ports.sandbox_provider import SandboxProvider
+from src.api.ports.sandbox_provider import SandboxProvider, TaskResult
 
 logger = logging.getLogger(__name__)
 
@@ -353,6 +353,46 @@ class E2BSandboxProvider(SandboxProvider):
             client.kill()
 
         return result
+
+    def run_task(
+        self,
+        config_path: Path,
+        *,
+        policy: api.SandboxPolicy | None = None,
+        scratch_tag: str = "",
+    ) -> TaskResult:
+        """Execute a single (model, environment) task via the E2B sandbox.
+
+        P2-2: per-task fan-out path.  This implementation currently delegates
+        to :meth:`run` (a single shared E2B sandbox per call), which is
+        functionally correct for per-task configs but does **not** provide
+        independent concurrent E2B sandbox instances.  True per-call isolation
+        (launching a fresh, separate E2B sandbox for each concurrent task) is a
+        planned follow-up.
+
+        The *config_path* must describe exactly one (model, environment) pair
+        (the caller builds per-task configs via ``_config_for_pending([item])``).
+
+        Args:
+            config_path: Path to the per-task YAML config.
+            policy: Optional :class:`~open_arena_core.models.SandboxPolicy`.
+            scratch_tag: Opaque label for the ephemeral scratch directory;
+                included in the returned :class:`TaskResult` for traceability.
+
+        Returns:
+            A :class:`TaskResult` wrapping the rows for this single task.
+        """
+        logger.debug(
+            "E2BSandboxProvider.run_task: scratch_tag=%r, policy=%r",
+            scratch_tag,
+            policy.model_dump(exclude_none=True) if policy else None,
+        )
+        raw = self.run(config_path, policy=policy)
+        return TaskResult(
+            rows=raw.get("rows", []),
+            scratch_tag=scratch_tag,
+            meta=raw.get("meta", {}),
+        )
 
 
 # ---------------------------------------------------------------------------

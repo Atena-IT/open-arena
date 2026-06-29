@@ -7,6 +7,10 @@ environment and returns the raw sweep result.
 The default adapter is :class:`LocalSandboxProvider` which runs
 ``run_sweep`` in-process, matching the original behavior exactly.
 
+P2-2: per-task fan-out — :meth:`SandboxProvider.run_task` executes a
+single (model, environment) task in its own sandbox concurrently.
+``run`` (whole-run path) is preserved byte-for-byte.
+
 WS6: E2B-compatible — add an ``E2BSandboxProvider`` (or a generic
 ``RemoteSandboxProvider``) that ships the YAML config to a remote
 execution environment (E2B sandbox, Modal, Fly.io, …) and streams
@@ -15,10 +19,34 @@ results back.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from open_arena_core import models as api
+
+
+@dataclass
+class TaskResult:
+    """Result produced by :meth:`SandboxProvider.run_task` for a single task.
+
+    Carries the raw metric rows for one (model, environment) pair and the
+    scratch directory tag used to isolate this task's state.  The caller
+    (``_run_pending_subjects``) assembles these into :class:`SubjectResult`
+    objects identical to those produced by the whole-run path.
+
+    Attributes:
+        rows: Per-metric result rows (same schema as ``run_sweep``'s
+            ``result["rows"]``).
+        scratch_tag: Opaque label identifying the ephemeral scratch
+            directory for this task (``{env}.{model}.{trial}`` format).
+            Informational only — the scratch dir may have been cleaned up.
+        meta: Optional metadata dict forwarded from the sandbox result.
+    """
+
+    rows: list[dict[str, Any]] = field(default_factory=list)
+    scratch_tag: str = ""
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 class SandboxProvider(ABC):
@@ -51,6 +79,41 @@ class SandboxProvider(ABC):
             minimum a ``"rows"`` key with per-metric result rows).
         """
 
+    def run_task(
+        self,
+        config_path: Path,
+        *,
+        policy: api.SandboxPolicy | None = None,
+        scratch_tag: str = "",
+    ) -> TaskResult:
+        """Execute a *single* (model, environment) task in its own sandbox.
+
+        P2-2: per-task fan-out path.  The config at *config_path* must
+        describe exactly one (model, environment) pair — the caller
+        (:meth:`~src.api.service.ArenaAPIService._run_pending_subjects`)
+        builds per-task configs using ``_config_for_pending([item])``.
+
+        The default implementation delegates to :meth:`run` so subclasses
+        that do not override this method stay correct.  Backends that can
+        truly isolate each task (e.g. E2B, Modal) should override this
+        to launch a fresh sandbox per call.
+
+        Args:
+            config_path: Path to the pre-rendered per-task YAML config.
+            policy: Optional sandbox isolation policy.
+            scratch_tag: Opaque label for the ephemeral scratch directory
+                (``{env}.{model}.{trial}`` format); purely informational.
+
+        Returns:
+            A :class:`TaskResult` with the rows for this single task.
+        """
+        raw = self.run(config_path, policy=policy)
+        return TaskResult(
+            rows=raw.get("rows", []),
+            scratch_tag=scratch_tag,
+            meta=raw.get("meta", {}),
+        )
+
 
 class LocalSandboxProvider(SandboxProvider):
     """Default adapter — runs ``run_sweep`` in the current process.
@@ -58,6 +121,11 @@ class LocalSandboxProvider(SandboxProvider):
     Reproduces the original ``_run_pending_subjects`` execution path
     verbatim: the YAML config is passed to ``run_sweep`` which runs
     synchronously via ``_run_async``.
+
+    P2-2: :meth:`run_task` is inherited from :class:`SandboxProvider`
+    and calls :meth:`run` with the per-task config, keeping the in-process
+    sweep as the execution model.  No extra sandboxing is added for the
+    local provider — isolation must come from scratch-dir separation.
 
     WS6: E2B-compatible — replace or complement this provider with an
     ``E2BSandboxProvider`` by setting ``OPEN_ARENA_SANDBOX=e2b`` in the

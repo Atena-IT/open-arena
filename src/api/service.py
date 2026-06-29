@@ -19,7 +19,6 @@ import hashlib
 import json
 import logging
 import tempfile
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -148,6 +147,12 @@ class ArenaAPIService:
             self._sandbox = built.sandbox
 
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='arena-api')
+        # P2-2: per-task sandbox fan-out concurrency cap, from
+        # OPEN_ARENA_TASK_CONCURRENCY (default 8). Single-tenant — a plain
+        # per-backend cap, no org-level fair scheduling.
+        from src.api.settings import get_settings
+
+        self._task_concurrency: int = get_settings().task_concurrency
 
     # discovery -----------------------------------------------------------------
     def metric_kinds(self) -> api.DiscoveryIdentifierListResponse:
@@ -644,7 +649,6 @@ class ArenaAPIService:
     def _run_pending_subjects(self, mode: api.RunMode, execution: api.GeneratorRunConfig | api.AgentRunConfig | None, pending: list[PendingSubject]) -> list[api.SubjectResult]:
         if not pending:
             return []
-        config_payload = self._config_for_pending(mode, execution, pending)
         # P2-1: collect sandbox policies from all pending subjects and resolve
         # a single policy to pass to the SandboxProvider.
         sandbox_policies: list[api.SandboxPolicy] = [
@@ -658,36 +662,151 @@ class ArenaAPIService:
             if not any(p.model_dump() == d.model_dump() for d in distinct_policies):
                 distinct_policies.append(p)
         if len(distinct_policies) > 1:
-            logger.warning(
-                "Multiple distinct sandbox policies across pending subjects — "
-                "falling back to policy=None (unrestricted in-process). "
-                "Distinct policies: %s",
-                [p.model_dump(exclude_none=True) for p in distinct_policies],
-            )
             # P2-2: per-task fan-out handles heterogeneous sandbox policies
             resolved_policy: api.SandboxPolicy | None = None
         else:
             resolved_policy = distinct_policies[0] if distinct_policies else None
-        with tempfile.TemporaryDirectory(prefix='open-arena-api-') as tmpdir:
-            config_path = Path(tmpdir) / 'run.yaml'
-            config_path.write_text(yaml.safe_dump(config_payload, sort_keys=False))
-            # Delegate execution to the SandboxProvider port.
-            # WS6: E2B-compatible — swap LocalSandboxProvider for E2BSandboxProvider.
-            result = self._sandbox.run(config_path, policy=resolved_policy)
-        rows = result['rows']
-        by_dataset_model: dict[tuple[str, str], list[dict[str, Any]]] = {}
-        for row in rows:
-            by_dataset_model.setdefault((row['dataset'], row['model']), []).append(row)
-        out: list[api.SubjectResult] = []
-        for item in pending:
+
+        # P2-2: fan out when resolved_policy requests per-task sandboxing OR
+        # when heterogeneous policies exist AND any of them requests it.
+        # Heterogeneous policies (resolved_policy=None) are naturally handled
+        # because each task carries its own policy from its environment.
+        use_per_task = (
+            (resolved_policy is not None and bool(resolved_policy.per_task_sandbox))
+            or any(bool(p.per_task_sandbox) for p in distinct_policies)
+        )
+        if len(distinct_policies) > 1:
+            if use_per_task:
+                logger.warning(
+                    "Multiple distinct sandbox policies detected across pending subjects — "
+                    "routing to per-task fan-out. Each task will use its own policy. "
+                    "Distinct policies: %s",
+                    [p.model_dump(exclude_none=True) for p in distinct_policies],
+                )
+            else:
+                logger.warning(
+                    "Multiple distinct sandbox policies across pending subjects — "
+                    "falling back to policy=None (unrestricted in-process). "
+                    "Distinct policies: %s",
+                    [p.model_dump(exclude_none=True) for p in distinct_policies],
+                )
+        if not use_per_task:
+            # ----------------------------------------------------------------
+            # Whole-run path (original — unchanged)
+            # ----------------------------------------------------------------
+            config_payload = self._config_for_pending(mode, execution, pending)
+            with tempfile.TemporaryDirectory(prefix='open-arena-api-') as tmpdir:
+                config_path = Path(tmpdir) / 'run.yaml'
+                config_path.write_text(yaml.safe_dump(config_payload, sort_keys=False))
+                # Delegate execution to the SandboxProvider port.
+                # WS6: E2B-compatible — swap LocalSandboxProvider for E2BSandboxProvider.
+                result = self._sandbox.run(config_path, policy=resolved_policy)
+            rows = result['rows']
+            by_dataset_model: dict[tuple[str, str], list[dict[str, Any]]] = {}
+            for row in rows:
+                by_dataset_model.setdefault((row['dataset'], row['model']), []).append(row)
+            out: list[api.SubjectResult] = []
+            for item in pending:
+                dataset_name = str(item.environment.id)
+                model_key = self._model_runtime_id(item.model)
+                metric_rows = by_dataset_model.get((dataset_name, model_key))
+                if not metric_rows:
+                    raise ApiError('missing_result', f'No result rows produced for model {item.model.id} and environment {item.environment.id}.')
+                metrics = [api.MetricResult(name=row['metric'], value=float(row['value']), direction=api.Direction(row['direction'])) for row in metric_rows if row['value'] is not None]
+                trajectory = self._trajectory_summary(metric_rows, mode)
+                subject = api.SubjectResult(
+                    model=item.model,
+                    environment=item.environment,
+                    metrics=metrics,
+                    cache_status=api.CacheStatus.miss,
+                    trajectory_summary=trajectory,
+                    run_fingerprint=item.fingerprint,
+                )
+                out.append(subject)
+            return out
+
+        # ----------------------------------------------------------------
+        # P2-2: per-task fan-out path
+        # ----------------------------------------------------------------
+        return self._run_per_task_fan_out(mode, execution, pending)
+
+    def _run_per_task_fan_out(
+        self,
+        mode: api.RunMode,
+        execution: api.GeneratorRunConfig | api.AgentRunConfig | None,
+        pending: list[PendingSubject],
+    ) -> list[api.SubjectResult]:
+        """Execute each pending subject in its own sandbox concurrently.
+
+        P2-2: fan-out implementation.  Builds a per-task YAML config for
+        each pending subject, calls :meth:`SandboxProvider.run_task` for
+        every item via a :class:`~concurrent.futures.ThreadPoolExecutor`,
+        and assembles the results into :class:`~open_arena_core.models.SubjectResult`
+        objects using the same logic as the whole-run path.
+
+        Concurrency is bounded by :attr:`_task_concurrency` (from
+        ``OPEN_ARENA_TASK_CONCURRENCY``, default 8) via the ``max_workers``
+        cap on the :class:`~concurrent.futures.ThreadPoolExecutor`,
+        single-tenant, no org-level fairness scheduling.
+
+        Each task receives a unique ephemeral scratch directory tag of the
+        form ``{env_id}.{model_key}.{trial_n}`` to prevent cross-task
+        contamination.
+
+        Heterogeneous policies are naturally handled: each task carries its
+        own policy from its inline environment definition (or ``None``).
+        """
+        concurrency = self._task_concurrency
+        results_ordered: list[api.SubjectResult | BaseException] = [None] * len(pending)  # type: ignore[list-item]
+
+        def _run_one(idx: int, item: PendingSubject) -> None:
+            # Resolve the per-task sandbox policy from the item's own environment.
+            task_policy: api.SandboxPolicy | None = (
+                item.environment.inline_definition.sandbox
+                if item.environment.inline_definition is not None
+                else None
+            )
             dataset_name = str(item.environment.id)
             model_key = self._model_runtime_id(item.model)
-            metric_rows = by_dataset_model.get((dataset_name, model_key))
+            scratch_tag = f"{dataset_name}.{model_key}.{idx}"
+
+            per_task_payload = self._config_for_pending(mode, execution, [item])
+            with tempfile.TemporaryDirectory(prefix=f'open-arena-task-{idx}-') as tmpdir:
+                config_path = Path(tmpdir) / 'run.yaml'
+                config_path.write_text(yaml.safe_dump(per_task_payload, sort_keys=False))
+                logger.debug(
+                    "P2-2 per-task sandbox: idx=%d scratch_tag=%r policy=%r",
+                    idx, scratch_tag,
+                    task_policy.model_dump(exclude_none=True) if task_policy else None,
+                )
+                task_result = self._sandbox.run_task(
+                    config_path,
+                    policy=task_policy,
+                    scratch_tag=scratch_tag,
+                )
+
+            # Assemble into SubjectResult (same logic as the whole-run path).
+            rows = task_result.rows
+            by_model: dict[str, list[dict[str, Any]]] = {}
+            for row in rows:
+                by_model.setdefault(row['model'], []).append(row)
+            metric_rows = by_model.get(model_key) or []
             if not metric_rows:
-                raise ApiError('missing_result', f'No result rows produced for model {item.model.id} and environment {item.environment.id}.')
-            metrics = [api.MetricResult(name=row['metric'], value=float(row['value']), direction=api.Direction(row['direction'])) for row in metric_rows if row['value'] is not None]
+                results_ordered[idx] = ApiError(
+                    'missing_result',
+                    f'No result rows produced for model {item.model.id} and environment {item.environment.id}.',
+                )
+                return
+            metrics = [
+                api.MetricResult(
+                    name=row['metric'],
+                    value=float(row['value']),
+                    direction=api.Direction(row['direction']),
+                )
+                for row in metric_rows if row['value'] is not None
+            ]
             trajectory = self._trajectory_summary(metric_rows, mode)
-            subject = api.SubjectResult(
+            results_ordered[idx] = api.SubjectResult(
                 model=item.model,
                 environment=item.environment,
                 metrics=metrics,
@@ -695,7 +814,24 @@ class ArenaAPIService:
                 trajectory_summary=trajectory,
                 run_fingerprint=item.fingerprint,
             )
-            out.append(subject)
+
+        with ThreadPoolExecutor(
+            max_workers=concurrency,
+            thread_name_prefix='arena-pertask',
+        ) as executor:
+            futures = [executor.submit(_run_one, idx, item) for idx, item in enumerate(pending)]
+            for fut in futures:
+                exc = fut.exception()
+                if exc is not None and not isinstance(exc, ApiError):
+                    raise exc
+
+        out: list[api.SubjectResult] = []
+        for idx, result in enumerate(results_ordered):
+            if isinstance(result, ApiError):
+                raise result
+            if isinstance(result, BaseException):
+                raise result
+            out.append(result)
         return out
 
     def _finalize_result(self, run: api.Run, subjects: list[api.SubjectResult]) -> api.RunResult:
