@@ -35,6 +35,29 @@ def _iso(value: datetime) -> str:
     return value.isoformat()
 
 
+# Tables that may be referenced by name in raw SQL. The ``table`` argument is
+# always supplied internally (a fixed set of entity names from the Store port,
+# never request data), but it is validated against this explicit allowlist
+# before being interpolated into a statement so the f-string SELECT/DELETE
+# helpers below can never become a SQL-injection vector if a caller regresses.
+_ALLOWED_TABLES = frozenset(
+    {"verifiers", "environments", "leaderboards", "runs", "run_results", "subject_cache"}
+)
+
+
+def _check_table(table: str) -> str:
+    """Validate *table* against :data:`_ALLOWED_TABLES`; return it unchanged.
+
+    Raises:
+        ValueError: if *table* is not a known table name.
+    """
+    if table not in _ALLOWED_TABLES:
+        raise ValueError(
+            f"Unknown table {table!r}; expected one of {sorted(_ALLOWED_TABLES)}."
+        )
+    return table
+
+
 class SQLiteStore(Store):
     """SQLite-backed implementation of the :class:`~src.api.ports.store.Store` port.
 
@@ -176,9 +199,10 @@ class SQLiteStore(Store):
         doc_id: str,
         model_cls: type[BaseModel],
     ) -> BaseModel | None:
+        _check_table(table)
         with self._lock, self._connect() as conn:
             row = conn.execute(
-                f"SELECT doc FROM {table} WHERE id = ?",  # noqa: S608 — table is controlled internally
+                f"SELECT doc FROM {table} WHERE id = ?",  # noqa: S608 — table validated above
                 (doc_id,),
             ).fetchone()
         if not row:
@@ -190,9 +214,10 @@ class SQLiteStore(Store):
         table: str,
         model_cls: type[BaseModel],
     ) -> list[BaseModel]:
+        _check_table(table)
         with self._lock, self._connect() as conn:
             rows = conn.execute(
-                f"SELECT doc FROM {table} ORDER BY created_at DESC",  # noqa: S608
+                f"SELECT doc FROM {table} ORDER BY created_at DESC",  # noqa: S608 — table validated above
             ).fetchall()
         return [model_cls.model_validate_json(row["doc"]) for row in rows]
 
@@ -327,9 +352,10 @@ class SQLiteStore(Store):
         return UUID(row["run_id"]), api.SubjectResult.model_validate_json(row["doc"])
 
     def delete(self, table: str, doc_id: UUID) -> bool:  # noqa: D102
+        _check_table(table)
         with self._lock, self._connect() as conn:
             cur = conn.execute(
-                f"DELETE FROM {table} WHERE id = ?",  # noqa: S608
+                f"DELETE FROM {table} WHERE id = ?",  # noqa: S608 — table validated above
                 (str(doc_id),),
             )
             return cur.rowcount > 0

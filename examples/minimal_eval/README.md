@@ -38,6 +38,5 @@ shipped here; replace with your own JSONL file where each line is
 
 ## Single-tenancy note
 
-Open Arena is single-tenant by design: each ModelFactory org-node runs its
-own instance.  Authentication is optional (`OPEN_ARENA_API_TOKEN`; defaults
+Open Arena is single-tenant by design: each deployment runs its own instance.  Authentication is optional (`OPEN_ARENA_API_TOKEN`; defaults
 to the built-in dev token for local testing).

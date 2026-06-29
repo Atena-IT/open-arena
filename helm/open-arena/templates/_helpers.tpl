@@ -64,12 +64,12 @@ Create the name of the service account to use.
 {{/*
 Compute the ingress hostname.
 When .Values.ingress.useOrgHostPattern is true and .Values.org is set,
-renders: arena.<org>.dev.reply-modelfactory.com
+renders: arena.<org>.<.Values.ingress.baseDomain>
 Otherwise falls back to the first host in .Values.ingress.hosts.
 */}}
 {{- define "open-arena.ingressHost" -}}
 {{- if and .Values.ingress.useOrgHostPattern .Values.org }}
-{{- printf "arena.%s.dev.reply-modelfactory.com" .Values.org }}
+{{- printf "arena.%s.%s" .Values.org (default "example.com" .Values.ingress.baseDomain) }}
 {{- else if .Values.ingress.hosts }}
 {{- (index .Values.ingress.hosts 0).host }}
 {{- else }}
@@ -93,5 +93,18 @@ Respects existingSecret override.
 {{- .Values.existingSecret }}
 {{- else }}
 {{- printf "%s-secret" (include "open-arena.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Validate security posture. Hard-fails the render when an API token is required
+(.Values.security.requireApiToken) but neither secrets.OPEN_ARENA_API_TOKEN nor
+existingSecret is set. Otherwise renders nothing (a NOTES warning covers the
+non-strict case). Invoked from deployment.yaml so it runs on every install,
+upgrade, and `helm template` / `--dry-run`.
+*/}}
+{{- define "open-arena.validateSecurity" -}}
+{{- if and .Values.security.requireApiToken (not .Values.existingSecret) (not .Values.secrets.OPEN_ARENA_API_TOKEN) }}
+{{- fail "security.requireApiToken is true but no API token is configured: set secrets.OPEN_ARENA_API_TOKEN to a strong value or provide an existingSecret. (Refusing to deploy with the insecure built-in dev token 'open-arena-dev-token'.)" }}
 {{- end }}
 {{- end }}

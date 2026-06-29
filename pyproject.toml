@@ -79,7 +79,7 @@ mlflow = [
 ]
 
 # `e2b` SandboxProvider adapter (WS6) — runs verifiers in E2B-compatible
-# sandboxes (CubeSandbox lands in ModelFactory soon). Select with
+# sandboxes. Select with
 # OPEN_ARENA_SANDBOX=e2b and E2B_API_KEY=...  Install with `uv sync --extra e2b`.
 e2b = [
     "e2b>=1.0",
