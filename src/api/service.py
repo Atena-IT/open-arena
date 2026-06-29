@@ -147,6 +147,12 @@ class ArenaAPIService:
             self._sandbox = built.sandbox
 
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='arena-api')
+        # P2-2: per-task sandbox fan-out concurrency cap, from
+        # OPEN_ARENA_TASK_CONCURRENCY (default 8). Single-tenant — a plain
+        # per-backend cap, no org-level fair scheduling.
+        from src.api.settings import get_settings
+
+        self._task_concurrency: int = get_settings().task_concurrency
 
     # discovery -----------------------------------------------------------------
     def metric_kinds(self) -> api.DiscoveryIdentifierListResponse:
@@ -724,9 +730,6 @@ class ArenaAPIService:
         # ----------------------------------------------------------------
         return self._run_per_task_fan_out(mode, execution, pending)
 
-    # P2-2 maximum concurrent tasks per provider (single-tenant).
-    _PER_TASK_CONCURRENCY: int = 8
-
     def _run_per_task_fan_out(
         self,
         mode: api.RunMode,
@@ -741,8 +744,9 @@ class ArenaAPIService:
         and assembles the results into :class:`~open_arena_core.models.SubjectResult`
         objects using the same logic as the whole-run path.
 
-        Concurrency is bounded by :attr:`_PER_TASK_CONCURRENCY` via the
-        ``max_workers`` cap on the :class:`~concurrent.futures.ThreadPoolExecutor`,
+        Concurrency is bounded by :attr:`_task_concurrency` (from
+        ``OPEN_ARENA_TASK_CONCURRENCY``, default 8) via the ``max_workers``
+        cap on the :class:`~concurrent.futures.ThreadPoolExecutor`,
         single-tenant, no org-level fairness scheduling.
 
         Each task receives a unique ephemeral scratch directory tag of the
@@ -752,7 +756,7 @@ class ArenaAPIService:
         Heterogeneous policies are naturally handled: each task carries its
         own policy from its inline environment definition (or ``None``).
         """
-        concurrency = self._PER_TASK_CONCURRENCY
+        concurrency = self._task_concurrency
         results_ordered: list[api.SubjectResult | BaseException] = [None] * len(pending)  # type: ignore[list-item]
 
         def _run_one(idx: int, item: PendingSubject) -> None:
