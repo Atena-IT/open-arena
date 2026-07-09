@@ -35,6 +35,7 @@ The reward is in [0, 1]. A fresh metric is built per call, so concurrent scoring
 import math
 
 import synalinks
+from synalinks.src.backend import JsonDataModel
 from synalinks.src.backend.common.json_utils import in_mask_json, out_mask_json
 from synalinks.src.rewards.reward import Reward
 
@@ -111,6 +112,18 @@ def _value_kind(value):
     if isinstance(value, (int, float)):
         return "numeric"
     return "text"  # str / list / dict -> token-Jaccard (exact for one token)
+
+
+def _submodel(json_obj, keys, props):
+    """A JsonDataModel holding only `keys` of `json_obj` — top-level selection
+    with the values' subtrees intact (unlike in_mask, which filters by key name
+    at every nesting level and would empty nested objects)."""
+    sub = {k: json_obj[k] for k in keys if k in json_obj}
+    schema = {
+        "type": "object",
+        "properties": {k: (props or {}).get(k) or {} for k in keys},
+    }
+    return JsonDataModel(schema=schema, json=sub)
 
 
 class MetricReward(Reward):
@@ -193,6 +206,14 @@ class MetricReward(Reward):
                 return kind
         return _value_kind(value)
 
+    def _drop_out_masked(self, json_obj):
+        """Apply the user's out_mask (list + pattern) recursively to a raw dict."""
+        if self.out_mask or self.out_mask_pattern:
+            return out_mask_json(
+                json_obj, mask=self.out_mask, pattern=self.out_mask_pattern
+            )
+        return json_obj
+
     async def call(self, y_true, y_pred):
         if y_pred is None or y_true is None:
             return 0.0
@@ -223,8 +244,18 @@ class MetricReward(Reward):
                 )
                 parts.append((hits / len(group_keys), len(group_keys)))
             else:
-                m = self._build_metric(_AUTO_KIND_METRIC[kind], "macro", in_mask=group_keys)
-                parts.append((_to_scalar(await m(y_true, y_pred)), len(group_keys)))
+                # Select the group's keys by building TOP-LEVEL sub-models, not
+                # via the metric's in_mask: in_mask keeps only the listed key
+                # names at every nesting level, so masking a key whose value
+                # holds nested objects (tool_calls, an array-of-objects schema
+                # property) would strip the nested fields and leave the metric
+                # nothing to compare (score pinned to 0 for any prediction).
+                # The user's out_mask IS applied recursively here, so volatile
+                # nested keys (the tool-call `id`) stay out of the score.
+                m = self._build_metric(_AUTO_KIND_METRIC[kind], "macro", in_mask=[])
+                sub_true = _submodel(self._drop_out_masked(true_json), group_keys, props)
+                sub_pred = _submodel(self._drop_out_masked(pred_json), group_keys, props)
+                parts.append((_to_scalar(await m(sub_true, sub_pred)), len(group_keys)))
 
         total_w = sum(w for _, w in parts)
         if not total_w:
