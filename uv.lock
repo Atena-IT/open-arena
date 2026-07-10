@@ -3039,7 +3039,7 @@ requires-dist = [
     { name = "pyjwt", extras = ["crypto"], marker = "extra == 'keycloak'", specifier = ">=2.8" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "sqlalchemy", marker = "extra == 'postgres'", specifier = ">=2.0" },
-    { name = "synalinks", specifier = ">=0.9.4" },
+    { name = "synalinks", specifier = ">=0.9.7" },
     { name = "unitycatalog-client", marker = "extra == 'unity-catalog'", specifier = ">=0.3.0" },
     { name = "uvicorn", specifier = ">=0.30.0" },
 ]
@@ -4912,7 +4912,7 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.9.4"
+version = "0.9.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -4947,9 +4947,9 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/3f/fa2992f589084c7ef9c7f4adfcc5c001ee2b2e4df361166e46060a6cb739/synalinks-0.9.4.tar.gz", hash = "sha256:f677580bd34eccd1d9af07b4a28ca630ade7a2f7c1b8035aef531b23efbcd450", size = 886927 }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/97/25d72ccab4bddfbf136cce04f737d2f0c69da21ade25193584102d4bb883/synalinks-0.9.7.tar.gz", hash = "sha256:cfd54c7783543322d724f00e9c7cf283831cdafdbced9e95f00521e78b6f4bbe", size = 935049 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/f8/350b41a64be27d3d73b7fb727e7fef467a641b1173347b34fa4cdea9d765/synalinks-0.9.4-py3-none-any.whl", hash = "sha256:d3a6d8c9571b05b80118898c76a446a35e32a7f9a4de41823b0ab8a6ed119619", size = 1165387 },
+    { url = "https://files.pythonhosted.org/packages/ae/9c/5f30bbc20ecd8bb82e3ed2714a5cba945a06539daa563acedcc0bc9b2014/synalinks-0.9.7-py3-none-any.whl", hash = "sha256:1dd4d1cdea6fdb904c7744d51ded907366bec71a2b12cba43dc3f62b4045f0a8", size = 1243289 },
 ]
 
 [[package]]

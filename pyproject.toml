@@ -36,7 +36,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "synalinks>=0.9.006",
+    "synalinks>=0.9.007",
     "uvicorn>=0.30.0",
     # workspace packages -- installed together with the engine
     "open-arena-core",

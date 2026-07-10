@@ -413,7 +413,15 @@ async def run_sweep(
             ),
             global_metrics,
         )
-        metric_instances = [m for _, m, _, _ in ds_metrics]
+        # `ds_metrics` (and its instances) is used only for the aliases /
+        # directions / objectives metadata below. It must NOT be reused as the
+        # per-model programs' metrics: operational metrics are stateful — each
+        # binds to its program's LanguageModel on compile, and bind_program
+        # OVERWRITES the previous binding — so a single instance shared across
+        # the per-model programs ends up bound to the LAST model only, and every
+        # other model's trial then reads that LM's counters and records zero ops
+        # (tokens/latency/cost). Each program gets its own freshly-instantiated
+        # set instead (below).
 
         # Build one program per language_model upfront. kt's HP-discovery
         # call and every real trial then resolve `hypermodel(hp)` to a
@@ -421,15 +429,26 @@ async def run_sweep(
         # callback.
         programs: dict[str, synalinks.Program] = {}
         for model_id in model_ids:
+            # Fresh, per-model metric instances (see note above): each program's
+            # operational metrics must bind to that program's own LanguageModel.
+            model_metrics = [
+                m for _, m, _, _ in _merge_metrics(
+                    _instantiate_metrics(
+                        cfg.dataset_metrics(ds_name),
+                        context=f"datasets.{ds_name}.metrics",
+                    ),
+                    _instantiate_metrics(cfg.metrics, context="metrics"),
+                )
+            ]
             if agent_cfg is not None:
                 programs[model_id] = await build_agent(
                     model_id, ds, agent_cfg, reward,
-                    metrics=metric_instances or None,
+                    metrics=model_metrics or None,
                 )
             else:
                 programs[model_id] = await build_program(
                     model_id, ds, gen_kwargs, reward,
-                    metrics=metric_instances or None,
+                    metrics=model_metrics or None,
                 )
 
         def hypermodel(hp, programs=programs):
