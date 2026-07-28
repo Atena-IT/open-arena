@@ -612,6 +612,7 @@ class ArenaAPIService:
             done = self.get_run(run_id).model_copy(update={'status': api.RunStatus.succeeded, 'completed_at': _now()})
             self.store.save_run(done, idempotency_key=run_create.idempotency_key)
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Background run %s failed", run_id)
             failed = self.get_run(run_id).model_copy(update={
                 'status': api.RunStatus.failed,
                 'completed_at': _now(),

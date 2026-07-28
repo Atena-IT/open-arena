@@ -1,11 +1,11 @@
 # =============================================================================
 # Open Arena — Helm values
 #
-# Designed to be deployed standalone OR as a managed sub-chart of the
-# ModelFactory org-node chart. When used as a sub-chart, prefix every value
-# with `open-arena.` in the parent chart's values file.
+# Designed to be deployed standalone OR as a managed sub-chart of a parent
+# (umbrella) chart. When used as a sub-chart, prefix every value with
+# `open-arena.` in the parent chart's values file.
 #
-# Org-node injection pattern:
+# Sub-chart injection pattern:
 #   open-arena:
 #     org: acme
 #     image:
@@ -15,8 +15,8 @@
 # =============================================================================
 
 # Organization identifier — used in ingress hostname templating:
-#   arena.<org>.dev.reply-modelfactory.com
-# Injected by the org-node chart per-org values; override here for standalone.
+#   arena.<org>.<ingress.baseDomain>
+# Injected by the parent chart's per-org values; override here for standalone.
 org: ""
 
 # -----------------------------------------------------------------------------
@@ -91,9 +91,13 @@ ingress:
   annotations: {}
     # cert-manager.io/cluster-issuer: letsencrypt-prod
     # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-  # Host is templated from `org` when provided, otherwise use `hosts` below.
-  # Pattern: arena.<org>.dev.reply-modelfactory.com
+  # Host is templated from `org` + `baseDomain` when `useOrgHostPattern` is true
+  # and `org` is set, otherwise the first entry in `hosts` below is used.
+  # Pattern: arena.<org>.<baseDomain>
   useOrgHostPattern: true
+  # Base DNS domain for the per-org host pattern above. Set this to your own
+  # cluster domain (e.g. arena.acme.example.com -> baseDomain: example.com).
+  baseDomain: "example.com"
   hosts:
     - host: arena.local
       paths:
@@ -186,10 +190,16 @@ env:
 # Secret environment variables (goes into a Kubernetes Secret)
 # Provide values here or reference an existing secret via `existingSecret`.
 # Plain-text values here are base64-encoded by Helm at template time.
-# In production use an external secrets manager (e.g. External Secrets Operator).
+#
+# In production, do NOT inline secrets here — reference an externally-managed
+# Secret via `existingSecret`, populated by the External Secrets Operator (ESO).
+# Example ExternalSecret wiring is documented in the chart README.
 # -----------------------------------------------------------------------------
 secrets:
-  # API auth
+  # API auth. REQUIRED: if left empty (and no `existingSecret` is set) the API
+  # silently falls back to the built-in development token `open-arena-dev-token`,
+  # which is public knowledge and unsafe outside local dev. Set a strong value,
+  # or set `security.requireApiToken: true` to hard-fail the install instead.
   OPEN_ARENA_API_TOKEN: ""
   # Gitea
   GITEA_TOKEN: ""
@@ -208,6 +218,17 @@ secrets:
 # Reference an existing secret instead of letting Helm manage one.
 # When set, the `secrets:` block above is ignored for the named keys.
 existingSecret: ""
+
+# -----------------------------------------------------------------------------
+# Security posture
+# -----------------------------------------------------------------------------
+security:
+  # When true, `helm install/upgrade` HARD-FAILS unless an API token is provided
+  # (either a non-empty `secrets.OPEN_ARENA_API_TOKEN` or an `existingSecret`).
+  # Recommended for any non-local deployment so the insecure built-in dev token
+  # can never be used by accident. When false (default), an empty token only
+  # produces a prominent NOTES warning.
+  requireApiToken: false
 
 # -----------------------------------------------------------------------------
 # Node selection / tolerations / affinity

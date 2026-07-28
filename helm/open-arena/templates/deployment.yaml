@@ -1,3 +1,4 @@
+{{- include "open-arena.validateSecurity" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

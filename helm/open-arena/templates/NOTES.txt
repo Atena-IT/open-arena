@@ -41,12 +41,19 @@ Namespace:       {{ .Release.Namespace }}
 4. View logs:
     kubectl logs --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "open-arena.name" . }}" -f
 
-{{- if not .Values.secrets.OPEN_ARENA_API_TOKEN }}
+{{- if and (not .Values.secrets.OPEN_ARENA_API_TOKEN) (not .Values.existingSecret) }}
 
-WARNING: OPEN_ARENA_API_TOKEN is not set. The API will reject all authenticated requests.
-  Set it in your values file:
+WARNING: no API token is configured (secrets.OPEN_ARENA_API_TOKEN is empty and
+  no existingSecret is set). The API will START, but it falls back to the built-in
+  development token "open-arena-dev-token" — which is public knowledge, so anyone
+  can call your API with it. Do NOT run like this outside local development.
+
+  Fix by setting a strong token:
     secrets:
-      OPEN_ARENA_API_TOKEN: "your-secret-token"
-  Or reference an existing secret:
-    existingSecret: "your-existing-secret"
+      OPEN_ARENA_API_TOKEN: "<a-long-random-secret>"
+  or by referencing an externally-managed secret (recommended for production):
+    existingSecret: "open-arena-secrets"   # e.g. populated by External Secrets Operator
+  or hard-fail installs that forget it:
+    security:
+      requireApiToken: true
 {{- end }}

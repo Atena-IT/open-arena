@@ -95,7 +95,7 @@ helm upgrade --install open-arena helm/open-arena \
 ```
 
 The ingress hostname follows the pattern:
-`arena.<org>.dev.reply-modelfactory.com`
+`arena.<org>.<ingress.baseDomain>` (`baseDomain` defaults to `example.com`)
 
 Override with `ingress.hosts[0].host` and set
 `ingress.useOrgHostPattern=false` if you need a custom host.
@@ -110,12 +110,13 @@ image:
 ingress:
   enabled: true
   className: nginx
+  baseDomain: example.com
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   tls:
     - secretName: open-arena-acme-tls
       hosts:
-        - arena.acme.dev.reply-modelfactory.com
+        - arena.acme.example.com
 secrets:
   OPEN_ARENA_API_TOKEN: "..."
   GITEA_TOKEN: "..."
@@ -136,9 +137,9 @@ helm upgrade --install open-arena-acme helm/open-arena \
   --values values-acme.yaml
 ```
 
-### ModelFactory org-node sub-chart
+### Parent-chart (umbrella) sub-chart
 
-Embed open-arena as a sub-chart of the ModelFactory org-node chart.
+Embed open-arena as a sub-chart of a parent (umbrella) chart.
 See [`helm/open-arena/README.md`](../helm/open-arena/README.md) for the
 full parent-chart integration pattern.
 
@@ -165,7 +166,7 @@ All variable names are exact — no aliases.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `OPEN_ARENA_API_TOKEN` | Yes | — | Bearer token for all API requests (`Authorization: Bearer <token>`). |
+| `OPEN_ARENA_API_TOKEN` | Yes | `open-arena-dev-token` (insecure dev fallback) | Bearer token for all API requests (`Authorization: Bearer <token>`). If unset, the API falls back to the public built-in dev token — set a strong value outside local development. |
 
 ### Database
 

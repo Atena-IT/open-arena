@@ -101,11 +101,11 @@ any application logic.
 
 ### Ports at a glance
 
-| Port | Default adapter | MF connector | Selecting env var |
+| Port | Default adapter | Alternative adapter(s) | Selecting env var |
 |---|---|---|---|
-| `Store` | `SQLiteStore` (`.open-arena/api.db`) | `SQLAlchemyStore` (Postgres + JSONB + Alembic) | `OPEN_ARENA_STORE=postgres` + `DATABASE_URL` |
-| `EnvironmentBackend` | `InlineEnvironmentBackend` | `GitEnvironmentBackend` (Gitea / GitHub) | `OPEN_ARENA_ENV_BACKEND=git` + `GITEA_BASE_URL` / `GITEA_TOKEN` / `GITEA_ORG` |
-| `DatasetResolver` | `LegacyDatasetResolver` | `UnityCatalogDataset` (Delta / Parquet over S3) | `OPEN_ARENA_DATASET_RESOLVER=unity_catalog` + `UNITY_CATALOG_API_URL` / `UC_TOKEN` |
+| `Store` | `SQLiteStore` (`.open-arena/api.db`) | `SqlAlchemyStore` (Postgres + JSONB + Alembic) | `OPEN_ARENA_STORE=postgres` + `DATABASE_URL` |
+| `EnvironmentBackend` | `DispatchingEnvironmentBackend` (routes by `source.kind`) | `InlineEnvironmentBackend`, `GitEnvironmentBackend` (Gitea / GitHub), `PrimeEnvHubBackend` (Prime Intellect Hub) | `OPEN_ARENA_ENV_BACKEND=inline\|git\|prime_hub` |
+| `DatasetResolver` | `LegacyDatasetResolver` (dispatches every provider, incl. Unity Catalog) | — | `OPEN_ARENA_DATASET_RESOLVER=legacy` |
 | `ResultsSink` | `StoreResultsSink` | `MlflowResultsSink` | `OPEN_ARENA_RESULTS_SINK=mlflow` + `MLFLOW_TRACKING_URI` |
 | `SandboxProvider` | `LocalSandboxProvider` | `E2BSandboxProvider` | `OPEN_ARENA_SANDBOX=e2b` + `E2B_API_KEY` |
 | `AuthProvider` | `StaticBearerAuthProvider` (`OPEN_ARENA_API_TOKEN`) | `KeycloakAuthProvider` (OIDC JWT) | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` |
@@ -114,8 +114,8 @@ All defaults reproduce the original behaviour — no configuration change requir
 for existing deployments. See `src/api/ports/README.md` for the full contract
 and instructions for adding new adapters.
 
-**Single-tenant by design** — each ModelFactory org-node runs its own Open
-Arena instance; there is no shared multi-tenant data plane.  Keycloak OIDC
+**Single-tenant by design** — each deployment runs its own Open Arena
+instance; there is no shared multi-tenant data plane.  Keycloak OIDC
 authentication is available but optional.
 
 ### CLI command overview
@@ -153,7 +153,7 @@ docker compose --profile full up     # + MinIO + MLflow
 ```
 
 Deploy to Kubernetes via the bundled Helm chart
-(org-node ready — one release per org, ingress at `arena.<org>.dev.reply-modelfactory.com`):
+(one release per org, ingress templated as `arena.<org>.<baseDomain>`):
 
 ```bash
 helm upgrade --install open-arena helm/open-arena \
@@ -163,7 +163,7 @@ helm upgrade --install open-arena helm/open-arena \
 ```
 
 See `deploy/README.md` for the full environment variable contract and
-`helm/open-arena/README.md` for the ModelFactory org-node sub-chart pattern.
+`helm/open-arena/README.md` for the parent-chart (umbrella) sub-chart pattern.
 ## Launch the autoresearch agent
 
 A coding agent (Claude Code, Codex, Cursor, etc.) reads `AGENTS.md` /

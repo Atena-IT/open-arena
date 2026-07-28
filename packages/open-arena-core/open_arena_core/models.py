@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Any, Literal
 from uuid import UUID
 
@@ -248,7 +248,15 @@ class ContextBinding(BaseModel):
     required: bool | None = True
 
 
-class Direction(StrEnum):
+# NOTE(#74): ``Direction`` is a plain ``Enum`` (not ``StrEnum``).  This is what
+# datamodel-codegen emits for this schema, and it is required for correctness:
+# downstream code (src/api/service.py ``_direction_value``) normalises the value
+# with ``isinstance(direction, str)`` -> return as-is, else ``direction.value``.
+# A ``StrEnum`` member passes that ``isinstance(str)`` check and leaks the enum
+# object into the YAML run-config (yaml.safe_dump cannot represent it).  A plain
+# ``Enum`` takes the ``.value`` branch and yields the str "max".  Do not change
+# this back to ``StrEnum`` on regen.
+class Direction(Enum):
     max = 'max'
     min = 'min'
 
@@ -262,7 +270,14 @@ class MetricDefinition(BaseModel):
     weight: confloat(ge=0.0)
     deterministic: bool | None = False
     objective: bool | None = False
-    direction: Direction | None = 'max'
+    # NOTE(#74): default must be the enum member (``Direction.max``), not the
+    # bare string ``'max'``.  datamodel-codegen emits ``= 'max'`` for an enum
+    # field with ``default: max`` in openapi.yaml, but a str default makes
+    # Pydantic v2 raise PydanticSerializationUnexpectedValue on serialization
+    # (and cascade misleading warnings through the discriminated unions that
+    # embed MetricDefinition).  Keep this as ``Direction.max`` after any regen;
+    # the wire value is identical ("max").
+    direction: Direction | None = Direction.max
     backbone: str | None = Field(
         None,
         description='Provider/model/class backing the metric, for example `openai/gpt-4o`, `anthropic/claude-sonnet-4.5`, or `exact_match`.',
@@ -389,7 +404,11 @@ class ReuseScope(StrEnum):
 
 class ReusePolicy(BaseModel):
     enabled: bool | None = True
-    reuse_scope: ReuseScope | None = 'global'
+    # NOTE(#74): default must be the enum member (``ReuseScope.global_``), not
+    # the bare string ``'global'`` — same Pydantic v2 serializer-warning issue
+    # as MetricDefinition.direction above.  Keep after regen; wire value is
+    # identical ("global").
+    reuse_scope: ReuseScope | None = ReuseScope.global_
     key_fields: list[str] | None = [
         'model_version',
         'environment_version',

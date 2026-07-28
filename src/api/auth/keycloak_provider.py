@@ -24,7 +24,7 @@ Org / multi-tenancy scoping
 whose ``org`` field is derived by :func:`_derive_org`.  The rule today is:
 
 1. If the JWT carries a ``groups`` claim, scan for the first group name that
-   matches ``factory-<org>-*`` (the ModelFactory convention) and extract
+   matches ``factory-<org>-*`` (the org-group naming convention) and extract
    ``<org>`` as the tenant identifier.
 2. Fall back to the ``organization`` claim (a plain string) if present.
 3. Fall back to the ``azp`` claim (the OAuth client ID) if present.
@@ -49,14 +49,18 @@ helper that wraps every query with a ``WHERE org = ?`` clause.
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 import time
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx  # httpx is in core deps; imported at module level so tests can patch it
 
 from src.api.ports.auth_provider import AuthProvider, Principal
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Org derivation
@@ -71,7 +75,7 @@ def _derive_org(claims: dict[str, Any]) -> str | None:
     The lookup order is:
 
     1. **groups claim** — scan for the first entry matching
-       ``factory-<org>-*`` (ModelFactory group naming convention).
+       ``factory-<org>-*`` (the org-group naming convention).
        The captured ``<org>`` segment (everything between the first and
        second ``-``) is returned.
     2. **organization claim** — a plain-string org identifier sometimes
@@ -90,7 +94,7 @@ def _derive_org(claims: dict[str, Any]) -> str | None:
     Returns:
         A non-empty org string, or ``None``.
     """
-    # 1. groups claim — ModelFactory convention: factory-<org>-<role>
+    # 1. groups claim — org-group naming convention: factory-<org>-<role>
     groups: list[str] = claims.get("groups") or []
     for group in groups:
         m = _FACTORY_GROUP_RE.match(group)
@@ -184,6 +188,14 @@ class KeycloakAuthProvider(AuthProvider):
         )
         self._cache = _JwksCache(ttl=ttl)
 
+        if not self._client_id:
+            logger.warning(
+                "OIDC_CLIENT_ID is not configured: JWT audience verification is "
+                "DISABLED. Any validly-signed token from the issuer will be accepted "
+                "regardless of its intended audience. Set OIDC_CLIENT_ID before "
+                "relying on Keycloak authentication in production."
+            )
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -258,12 +270,42 @@ class KeycloakAuthProvider(AuthProvider):
         resp.raise_for_status()
         jwks_uri: str = resp.json()["jwks_uri"]
 
+        # SSRF guard: the discovery document is fetched from the trusted issuer,
+        # but its contents are otherwise untrusted. Only follow a `jwks_uri` that
+        # shares the issuer's scheme+host so a tampered/spoofed discovery endpoint
+        # cannot redirect the key fetch at an internal or arbitrary target.
+        self._assert_same_origin_as_issuer(jwks_uri)
+
         jwks_resp = httpx.get(jwks_uri, timeout=10)
         jwks_resp.raise_for_status()
         keys: list[dict[str, Any]] = jwks_resp.json()["keys"]
 
         self._cache.set(keys)
         return keys
+
+    def _assert_same_origin_as_issuer(self, url: str) -> None:
+        """Reject *url* unless its scheme+host(+port) match the configured issuer.
+
+        The OIDC ``jwks_uri`` is read from the discovery document, which is
+        attacker-influenceable in principle (a spoofed or compromised discovery
+        endpoint could return an arbitrary URL). Constraining the fetch target to
+        the issuer's own origin neutralises that SSRF vector while still allowing
+        the standard Keycloak layout where the JWKS lives under the issuer host.
+
+        Raises:
+            RuntimeError: if *url* does not share the issuer's origin.
+        """
+        issuer = urlsplit(self._issuer)
+        target = urlsplit(url)
+        if (target.scheme, target.hostname, target.port) != (
+            issuer.scheme,
+            issuer.hostname,
+            issuer.port,
+        ):
+            raise RuntimeError(
+                f"Refusing to fetch JWKS from {url!r}: its scheme/host does not "
+                f"match the configured OIDC issuer {self._issuer!r}."
+            )
 
     def _decode_token(
         self,
@@ -388,7 +430,9 @@ class KeycloakAuthProvider(AuthProvider):
         from src.api.service import ApiError
 
         if not self._client_id:
-            # No client ID configured — skip audience check (dev/test shortcut)
+            # No client ID configured — skip audience check (dev/test shortcut).
+            # A prominent startup warning is emitted from __init__ so this relaxed
+            # mode is never silently relied on in production.
             return
 
         aud = claims.get("aud")

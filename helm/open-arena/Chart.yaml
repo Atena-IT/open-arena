@@ -20,6 +20,3 @@ sources:
 maintainers:
   - name: Athena-Reply
     email: open-arena@reply.it
-annotations:
-  # ModelFactory org-node integration marker
-  modelfactory/component: open-arena

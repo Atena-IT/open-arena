@@ -14,7 +14,7 @@ Current backend implementation:
 
 ## M1–M5 milestones + cross-cutting workstreams
 
-| # | Workstream | Status | Port ABC | Default adapter | MF connector / extra adapter | Selecting env var | PR |
+| # | Workstream | Status | Port ABC | Default adapter | Alternative adapter | Selecting env var | PR |
 |---|---|---|---|---|---|---|---|
 | WS-PORTS | Repository-pattern ports layer | **Done** | All port ABCs in `src/api/ports/` | — | — | — | #50 |
 | WS1 | Store — Postgres/SQLAlchemy + Alembic | **Done** | `Store` (`src/api/ports/store.py`) | `SQLiteStore` | `SQLAlchemyStore` (Postgres + JSONB) | `OPEN_ARENA_STORE=postgres` + `DATABASE_URL` | #56 |
@@ -24,9 +24,9 @@ Current backend implementation:
 | WS5 | ResultsSink — MLflow | **Done** | `ResultsSink` (`src/api/ports/results_sink.py`) | `StoreResultsSink` | `MlflowResultsSink` | `OPEN_ARENA_RESULTS_SINK=mlflow` + `MLFLOW_TRACKING_URI` | #52 |
 | WS6 | SandboxProvider — E2B | **Done** | `SandboxProvider` (`src/api/ports/sandbox_provider.py`) | `LocalSandboxProvider` | `E2BSandboxProvider` | `OPEN_ARENA_SANDBOX=e2b` + `E2B_API_KEY` | #51 |
 | WS7 | AuthProvider — Keycloak OIDC JWT | **Done** | `AuthProvider` (`src/api/ports/auth_provider.py`) | `StaticBearerAuthProvider` (`OPEN_ARENA_API_TOKEN`) | `KeycloakAuthProvider` | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | #54 |
-| WS8 | Deployment — Docker Compose + Helm | **Done** | — | — | Dockerfile + `docker-compose.yml` + `helm/open-arena/` (org-node ready) | — | #47 |
+| WS8 | Deployment — Docker Compose + Helm | **Done** | — | — | Dockerfile + `docker-compose.yml` + `helm/open-arena/` (per-org release ready) | — | #47 |
 | WS9 | CLI resource sub-groups + local run mode | **Done** | — | — | `arena env/verifier/leaderboard/run/discover` + `arena serve` / `arena request` | — | #53 |
-| WS10 | Single-tenant by design — each ModelFactory org-node runs its own OA instance; Keycloak auth is optional (`OPEN_ARENA_AUTH=keycloak`) | **N/A (by design)** | `AuthProvider` → `Principal.org` | — | `KeycloakAuthProvider` derives org from JWT `groups` claim | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — |
+| WS10 | Single-tenant by design — each deployment runs its own OA instance; Keycloak auth is optional (`OPEN_ARENA_AUTH=keycloak`) | **N/A (by design)** | `AuthProvider` → `Principal.org` | — | `KeycloakAuthProvider` derives org from JWT `groups` claim | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | — |
 | WS11 | Docs + API compliance matrix (this file) | **Done** | — | — | — | — | — |
 | WS12 | 3-package uv workspace (standalone CLI) | **Done** | — | — | `open-arena-core` / `open-arena-cli` / `open-arena` | — | #58 |
 
@@ -49,9 +49,9 @@ Current backend implementation:
 
 ---
 
-## Known gaps — ModelFactory Hub contract
+## Known gaps — upstream Hub contract
 
-The following fields are present in the ModelFactory Hub OpenAPI contract but not yet returned by the Open Arena implementation.
+The following fields are present in the upstream Hub OpenAPI contract but not yet returned by the Open Arena implementation.
 
 ### Leaderboard entry fields
 
