@@ -5,8 +5,9 @@
 The sources are keyed by the vendor's own spelling, so every
 `openrouter/...` id used to answer "none announced" even when the vendor had
 published a date for exactly that model. These pin the unwrapping that fixed
-it, without asking the network: the Azure schedule falls back to the snapshot
-shipped beside the module, litellm reads the cost map it ships with, and
+it, without asking the network and without depending on what a release of
+litellm happens to carry: litellm's table is stubbed with the dates below, the
+Azure schedule falls back to the snapshot shipped beside the module, and
 OpenRouter's model list is stubbed (offline, it adds nothing).
 """
 
@@ -27,6 +28,21 @@ from openarena.lookups.eol import (
     model_eol,
     parse_openrouter_models,
 )
+
+
+# What litellm's table says, as far as these tests are concerned: a vendor's announced date for one
+# model. The real table changes with every litellm release; the logic under test does not.
+LITELLM_DATES = {"anthropic/claude-sonnet-5": "2027-03-01"}
+
+
+@pytest.fixture(autouse=True)
+def litellm_dates(monkeypatch):
+    """litellm's table, reduced to `LITELLM_DATES`: no other model has a provider date."""
+    monkeypatch.setattr(
+        eol_module,
+        "litellm_model_info",
+        lambda model_id: {"deprecation_date": LITELLM_DATES[model_id]} if model_id in LITELLM_DATES else None,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -63,7 +79,7 @@ def test_an_aggregator_id_unwraps_to_the_vendors_own(model_id, expected):
 def test_a_date_announced_for_a_model_is_found_through_openrouter_too():
     # Same model, same shutdown day, whoever is proxying it.
     direct = model_eol("anthropic/claude-sonnet-5")
-    assert direct is not None, "litellm no longer carries this date; pick another model"
+    assert direct == ("2027-03-01", "provider")
     assert model_eol("openrouter/anthropic/claude-sonnet-5") == direct
 
 
