@@ -79,6 +79,7 @@ datasets:
       limit: 50
       input_template: '{"question": {{ (question ~ "\n" ~ (choices | map("string") | list | join("\n"))) | tojson }}}'
       output_template: '{"answer": {{ "ABCD"[answer] | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
       output_schema:
         type: object
         properties:
@@ -103,7 +104,15 @@ head -2 data/rows.jsonl
 render; with `output_schema` the model answers in that structure (an `enum`
 stops "Option B" where "B" is expected, a field `description` is the
 instruction for that field). Keep `additionalProperties: false` and list
-`required`. Leave them out for free-text answers.
+`required`.
+
+**Give both whenever a template renders anything but chat messages**, which is
+nearly always: without `input_schema` a row is read as a list of chat messages
+(`{"messages": [...]}`), and without `output_schema` the expected answer as one
+chat message (`{"role": ..., "content": ...}`), so `{"question": ...}` and
+`{"answer": ...}` fail when the run reads the rows. A free-text answer still
+gets a schema: one `string` field, no `enum`. Retrieval datasets are the
+exception: their shapes are set for them.
 
 ## Providers (`type`) and their `config`
 
@@ -123,6 +132,13 @@ instruction for that field). Keep `additionalProperties: false` and list
 
 Every provider also takes `limit`, `batch_size`, `input_template`,
 `output_template`, `input_schema`, `output_schema`.
+
+The platform providers (`langfuse`, `langsmith`, `opik`, `phoenix`,
+`braintrust`, `unity_catalog`) need their SDK: an extra of openarena named
+after the provider (`unity-catalog` for Unity Catalog, `all` for every one),
+e.g. `uv tool install "openarena[langfuse] @ git+https://github.com/Atena-IT/open-arena"`.
+Without it the run says which extra to install; tell the user rather than
+installing packages yourself.
 
 ## What answers each row: one kind block at most
 
@@ -152,7 +168,8 @@ datasets:
 ```
 
 Tool calls: the output renders the gold `tool_calls` (`{name, arguments}`
-each); set no `output_schema`; `tool_calls_accuracy` scores it.
+each), with an `output_schema` for that target (it shapes only the target: the model's
+answer is its chat message, tool calls included); `tool_calls_accuracy` scores it.
 
 ```yaml
 datasets:
@@ -162,6 +179,8 @@ datasets:
       path: calls.jsonl                # {"question": "...", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]}
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"tool_calls": {{ calls | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {tool_calls: {type: array, description: The gold calls}}, required: [tool_calls]}
     tools:
       instructions: Call the function that answers the question.
       tool_schemas:

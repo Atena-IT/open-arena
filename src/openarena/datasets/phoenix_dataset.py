@@ -1,6 +1,7 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 class PhoenixDataset(Dataset):
@@ -75,7 +76,10 @@ class PhoenixDataset(Dataset):
 
         # Imported lazily so the project doesn't require the phoenix client
         # unless this dataset type is actually used.
-        from phoenix.client import Client
+        try:
+            from phoenix.client import Client
+        except ImportError as e:
+            raise missing('phoenix', 'arize-phoenix-client', 'phoenix') from e
 
         self._client = Client()
         self._dataset = self._client.datasets.get_dataset(

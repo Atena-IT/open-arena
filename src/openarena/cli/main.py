@@ -98,7 +98,8 @@ def init(dest: Path, *, template: str = "default", force: bool = False) -> list[
     skills = sorted(p for p in SKILLS.glob("openarena-*/**/*") if p.is_file() and "__pycache__" not in p.parts)
     files += skills
     targets += [dest / AGENT_SKILLS / f.relative_to(SKILLS) for f in skills]
-    taken = [t for t in targets if t.exists()]
+    # A link counts as in the way even when it leads nowhere: `exists()` alone would miss it.
+    taken = [t for t in targets if t.exists() or t.is_symlink()]
     if taken and not force:
         raise FileExistsError(
             f"already in {dest}: " + ", ".join(str(t.relative_to(dest)) for t in taken) + " (use --force to overwrite)"

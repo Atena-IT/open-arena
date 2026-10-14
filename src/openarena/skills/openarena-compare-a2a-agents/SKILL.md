@@ -37,6 +37,8 @@ datasets:
       path: support.jsonl              # {"question": "...", "expected": "..."}
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"answer": {{ expected | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
     a2a: {}                            # always empty: the agents come from the evaluation
     reward: judge
 evaluations:

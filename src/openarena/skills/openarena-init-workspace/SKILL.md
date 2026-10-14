@@ -82,6 +82,9 @@ GSM8K rows) and `harbor` (Harbor tasks and terminal rows, `gpt-4o-mini`).
 - An empty registry is `<registry>: {}`, never a bare `<registry>:`.
 - Jinja templates are single-quoted YAML strings; a single quote inside one
   is doubled (`''####''`). See openarena-add-dataset.
+- A dataset's templates come with their `input_schema` / `output_schema`:
+  without them a row is read as chat messages, and `{"question": ...}` fails
+  when the run reads it. See openarena-add-dataset.
 
 ## The loop
 

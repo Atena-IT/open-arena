@@ -1,6 +1,7 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 class OpikDataset(Dataset):
@@ -78,7 +79,10 @@ class OpikDataset(Dataset):
 
         # Imported lazily so the project doesn't require the opik package
         # unless this dataset type is actually used.
-        from opik import Opik
+        try:
+            from opik import Opik
+        except ImportError as e:
+            raise missing('opik', 'opik', 'opik') from e
 
         self._client = Opik()
         ds = self._client.get_dataset(name=dataset_name)

@@ -4,6 +4,7 @@ import os
 import re
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 def _sanitize_name(name: str) -> str:
@@ -277,10 +278,7 @@ class UnityCatalogDataset(Dataset):
         try:
             from deltalake import DeltaTable
         except ImportError as exc:
-            raise ImportError(
-                "The `deltalake` package is required to read Delta tables. "
-                "Install it with: pip install 'open-arena[unity_catalog]'"
-            ) from exc
+            raise missing('unity_catalog', 'deltalake', 'unity-catalog') from exc
 
         kwargs: dict = {"storage_options": storage_options}
         if self.version is not None:
@@ -307,10 +305,7 @@ class UnityCatalogDataset(Dataset):
         try:
             import pyarrow.dataset as pad
         except ImportError as exc:
-            raise ImportError(
-                "The `pyarrow` package is required to read Parquet tables. "
-                "Install it with: pip install 'open-arena[unity_catalog]'"
-            ) from exc
+            raise missing('unity_catalog', 'pyarrow', 'unity-catalog') from exc
 
         # Build the filesystem for S3-compatible stores.
         fs = self._build_pyarrow_fs(path, storage_options)

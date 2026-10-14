@@ -86,6 +86,7 @@ datasets:
       limit: 50
       input_template: '{"question": {{ (question ~ "\n" ~ (choices | map("string") | list | join("\n"))) | tojson }}}'
       output_template: '{"answer": {{ "ABCD"[answer] | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
       output_schema:
         type: object
         properties:
@@ -103,7 +104,15 @@ datasets:
 render. With an `output_schema` the model answers in that structure: an `enum`
 keeps "Option B" out where "B" is expected, and a field's `description` is the
 instruction for that field. Keep `additionalProperties: false` and list
-`required`. Leave them out for free-text answers.
+`required`.
+
+**Give both whenever a template renders anything but chat messages**, which is
+nearly always: without `input_schema` a row is read as a list of chat messages
+(`{"messages": [...]}`), and without `output_schema` the expected answer as one
+chat message (`{"role": ..., "content": ...}`), so `{"question": ...}` and
+`{"answer": ...}` fail when the run reads the rows. A free-text answer still
+gets a schema: one `string` field, no `enum`. Retrieval datasets are the
+exception: their shapes are set for them.
 
 ## Providers
 
@@ -124,6 +133,16 @@ instruction for that field. Keep `additionalProperties: false` and list
 Every provider also takes `limit`, `batch_size`, the templates and the schemas.
 The [API reference](../api/datasets.md) documents each provider's settings.
 
+The platform providers need their SDK, an extra of openarena named after the
+provider: `langfuse`, `langsmith`, `opik`, `phoenix`, `braintrust`,
+`unity-catalog`, or `all` for every one:
+
+```shell
+uv tool install "openarena[langfuse] @ git+https://github.com/Atena-IT/open-arena"
+```
+
+Without it, the provider says which extra to install when it reads its rows.
+
 ## What answers each row
 
 At most one block. Without one, a model answers in one call.
@@ -141,7 +160,8 @@ At most one block. Without one, a model answers in one call.
 
 The input renders a `query` and the `chunks` to search, the expected answer the
 gold `chunks`. The embedding model under test ranks the chunks, the top `k`
-are returned, and `retrieval_recall` scores them.
+are returned, and `retrieval_recall` scores them. No schemas to write: an embedding
+dataset gets these shapes by default.
 
 ```yaml
 datasets:
@@ -160,7 +180,8 @@ datasets:
 
 The model gets the declared functions and answers with the calls it would
 make; nothing is executed. The expected answer renders the gold `tool_calls`,
-each `{name, arguments}`; set no `output_schema`.
+each `{name, arguments}`, with an `output_schema` saying so. That schema only shapes the
+expected answer: the model's answer is its chat message, tool calls included.
 
 ```yaml
 datasets:
@@ -170,6 +191,8 @@ datasets:
       path: calls.jsonl                # {"question": "...", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]}
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"tool_calls": {{ calls | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {tool_calls: {type: array, description: The gold calls}}, required: [tool_calls]}
     tools:
       instructions: Call the function that answers the question.
       tool_schemas:

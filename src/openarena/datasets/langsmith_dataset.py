@@ -4,6 +4,7 @@ from datetime import datetime
 from datetime import timezone
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 def _coerce_as_of(as_of):
@@ -89,7 +90,10 @@ class LangSmithDataset(Dataset):
 
         # Imported lazily so the project doesn't require the langsmith package
         # unless this dataset type is actually used.
-        from langsmith import Client
+        try:
+            from langsmith import Client
+        except ImportError as e:
+            raise missing('langsmith', 'langsmith', 'langsmith') from e
 
         self._client = Client()
 

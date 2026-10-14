@@ -36,6 +36,13 @@ jobs:
         run: uv sync --frozen --group docs
       - name: Build
         run: uv run --frozen --group docs zensical build --clean --strict
+      # Zensical can report a clean build and write no page at all (when it cannot watch the
+      # files it reads, for one): count the pages, every one of `nav` has its own.
+      - name: Every page was written
+        run: |
+          pages=$(find site -name index.html | wc -l)
+          echo "$pages pages"
+          test "$pages" -ge 25
       - uses: actions/upload-artifact@v7
         with:
           name: site

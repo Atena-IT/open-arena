@@ -20,6 +20,18 @@ dependencies = [
     "harbor[e2b]>=0.23",
 ]
 
+# The SDKs of the dataset providers that read a platform, one extra per provider
+# (`openarena[langfuse]`); `all` has every one. Each is imported only when its
+# provider reads a dataset, which says which extra to install when it is missing.
+[project.optional-dependencies]
+langfuse = ["langfuse>=3.10.1"]
+langsmith = ["langsmith"]
+opik = ["opik"]
+phoenix = ["arize-phoenix-client"]
+braintrust = ["braintrust"]
+unity-catalog = ["deltalake"]
+all = ["openarena[langfuse,langsmith,opik,phoenix,braintrust,unity-catalog]"]
+
 [project.urls]
 Homepage = "https://github.com/Atena-IT/open-arena"
 Documentation = "https://atena-it.github.io/open-arena/"

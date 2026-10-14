@@ -60,6 +60,8 @@ datasets:
       limit: 5
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
     harbor:
       environment: python              # an environments.yaml name
       agent: terminus-2

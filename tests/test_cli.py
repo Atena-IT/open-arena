@@ -274,3 +274,19 @@ def test_a_run_reads_the_workspace_env(tmp_path, monkeypatch):
     assert ok.exit_code == 0, ok.output
     assert seen == {"key": "from-env-file", "kept": "shell"}  # never over what the shell set
     monkeypatch.delenv("ARENA_TEST_KEY", raising=False)
+
+
+def test_init_leaves_a_claude_md_already_there_alone(tmp_path):
+    """Whatever is at CLAUDE.md, a file or a link leading nowhere, is in the way: nothing is written without --force."""
+    (tmp_path / "CLAUDE.md").write_text("my own notes\n")
+    with pytest.raises(FileExistsError, match="CLAUDE.md"):
+        init(tmp_path)
+    assert (tmp_path / "CLAUDE.md").read_text() == "my own notes\n"
+    assert not (tmp_path / "AGENTS.md").exists()
+
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "CLAUDE.md").symlink_to("nowhere.md")
+    with pytest.raises(FileExistsError, match="CLAUDE.md"):
+        init(other)
+    assert os.readlink(other / "CLAUDE.md") == "nowhere.md"

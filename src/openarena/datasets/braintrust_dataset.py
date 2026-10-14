@@ -1,6 +1,7 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 class BraintrustDataset(Dataset):
@@ -93,7 +94,10 @@ class BraintrustDataset(Dataset):
 
         # Imported lazily so the project doesn't require the braintrust
         # package unless this dataset type is actually used.
-        from braintrust import init_dataset
+        try:
+            from braintrust import init_dataset
+        except ImportError as e:
+            raise missing('braintrust', 'braintrust', 'braintrust') from e
 
         self._dataset = init_dataset(
             project=project,

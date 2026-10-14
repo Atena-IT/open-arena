@@ -6,8 +6,8 @@
 #     config:                    # the provider's kwargs, plus:
 #       input_template: ...      #   Jinja2 over a row's columns: what each row asks (JSON its schema describes)
 #       output_template: ...     #   the expected answer; optional when a judge scores
-#       input_schema: {...}      #   optional JSON Schemas of both, for structured output
-#       output_schema: {...}
+#       input_schema: {...}      #   the JSON Schema of what each template renders: needed whenever a
+#       output_schema: {...}     #   template renders anything but chat messages (embedding: set for you)
 #       limit: 20                #   rows to use; batch_size: rows sent at once
 #     <kind>: ...                # what answers each row, one block at most (none: a plain generator):
 #                                #   generator  a model, one call: instructions, chain_of_thought
@@ -81,6 +81,8 @@ datasets:
       limit: 5
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
     harbor:
       environment: python              # an `environments` key
       agent: terminus-2
@@ -91,8 +93,13 @@ datasets:
   # A model calling MCP tools (an `mcp_servers` key):
   # gsm8k-tools:
   #   type: huggingface
-  #   config: {path: openai/gsm8k, name: main, split: test, limit: 10,
-  #            input_template: '{"question": {{ question | tojson }}}'}
+  #   config:
+  #     path: openai/gsm8k
+  #     name: main
+  #     split: test
+  #     limit: 10
+  #     input_template: '{"question": {{ question | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
   #   agent:
   #     mcp_servers: [fetch]
   #   reward: judge
@@ -100,7 +107,10 @@ datasets:
   # Answered by A2A agents; the evaluation's `language_models` are `a2a_agents` keys:
   # ask-agents:
   #   type: local
-  #   config: {path: questions.jsonl, input_template: '{"question": {{ question | tojson }}}'}
+  #   config:
+  #     path: questions.jsonl
+  #     input_template: '{"question": {{ question | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
   #   a2a: {}
   #   reward: judge
 
@@ -112,6 +122,8 @@ datasets:
   #     path: calls.jsonl
   #     input_template: '{"question": {{ question | tojson }}}'
   #     output_template: '{"tool_calls": {{ calls | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
+  #     output_schema: {type: object, properties: {tool_calls: {type: array}}, required: [tool_calls]}
   #   tools:
   #     instructions: Call the function that answers the question.
   #     tool_schemas:

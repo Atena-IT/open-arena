@@ -27,8 +27,9 @@ async def build_tools(model_id: str, dataset, tools_kwargs: dict, reward, metric
     `tools_kwargs` is the dataset's `tools:` block: `tool_schemas` (a list of
     `{"type": "function", "function": {...}}` declarations) and any other
     `Generator` kwarg, `instructions` for one. The output is the
-    model's chat message, tool calls included, so the dataset must not set an
-    output schema of its own.
+    model's chat message, tool calls included, whatever the dataset's
+    `output_schema` says: that schema only shapes the target, the gold
+    `{"tool_calls": [...]}` the reward compares with.
     """
     kwargs = dict(tools_kwargs)
     tool_schemas = kwargs.pop("tool_schemas", None)

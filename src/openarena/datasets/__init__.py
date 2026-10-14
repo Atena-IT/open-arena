@@ -147,6 +147,16 @@ def load_dataset_from_config(
     # not by the Dataset constructor — strip them before forwarding kwargs
     # so providers don't see unknown keywords (HuggingFace's `load_dataset`
     # raises on unknown BuilderConfig keys, for instance).
+    # An embedding dataset's rows are always a query and the chunks to search, and its target the
+    # gold chunks: the program's own shapes, unless the entry says otherwise. Without them the rows
+    # would be read as chat messages, which `{query, chunks}` is not.
+    if entries[name].get("embedding") is not None:
+        from openarena.programs.embedding_program import INPUT_SCHEMA, OUTPUT_SCHEMA
+
+        if entry.get("input_schema") is None and entry.get("input_data_model") is None:
+            entry["input_schema"] = INPUT_SCHEMA
+        if entry.get("output_template") is not None and entry.get("output_schema") is None and entry.get("output_data_model") is None:
+            entry["output_schema"] = OUTPUT_SCHEMA
     for k in (*KIND_BLOCKS, "reward", "metrics"):
         entry.pop(k, None)
 

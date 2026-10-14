@@ -35,8 +35,9 @@ environments/<name>/environment/   an environment's build context
   a provider: the skills list the real ones, and `openarena check` names the
   valid choices when one is wrong.
 - **Templates render JSON.** A dataset's `input_template` / `output_template`
-  are Jinja2 over a row's columns; pipe every value through `| tojson`.
-  Look at real rows before writing them.
+  are Jinja2 over a row's columns; pipe every value through `| tojson`, and
+  give each its `input_schema` / `output_schema`: without them a row is read
+  as chat messages, and `{"question": ...}` fails. Look at real rows first.
 - **Check after every edit**, run small before running big: `limit: 5` on a
   dataset first, then the full size. A run costs a model call per row per
   model, plus one per judge.

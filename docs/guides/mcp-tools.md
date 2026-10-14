@@ -39,6 +39,8 @@ datasets:
       path: questions.jsonl            # {"question": "...", "answer": "..."}
       input_template: '{"question": {{ question | tojson }}}'
       output_template: '{"answer": {{ answer | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
     agent:
       mcp_servers: [fetch]             # mcp_servers.yaml names, at least one
     reward: judge

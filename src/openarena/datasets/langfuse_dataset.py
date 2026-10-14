@@ -4,6 +4,7 @@ from datetime import datetime
 from datetime import timezone
 
 from openarena.datasets.dataset import Dataset
+from openarena.datasets.extras import missing
 
 
 def _coerce_version(version):
@@ -102,7 +103,10 @@ class LangfuseDataset(Dataset):
 
         # Imported lazily so the project doesn't require the langfuse package
         # unless this dataset type is actually used.
-        from langfuse import get_client
+        try:
+            from langfuse import get_client
+        except ImportError as e:
+            raise missing('langfuse', 'langfuse', 'langfuse') from e
 
         self._client = get_client()
         self._dataset = (

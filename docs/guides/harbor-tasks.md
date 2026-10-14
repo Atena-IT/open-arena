@@ -62,7 +62,7 @@ go in the image: Harbor brings them in after the agent is done.
 
 Harbor's verifier runs it in the sandbox after the agent. It writes the score:
 
-- `/logs/verifier/reward.txt`: one number, `1` solved, `0` not (fractions allowed);
+- `/logs/verifier/reward.txt`: one number from 0 to 1, `1` solved, `0` not, fractions allowed;
 - or `/logs/verifier/reward.json`: several named scores, `{"reward": 1, "style": 0.5}`.
 
 ```bash
@@ -75,7 +75,8 @@ else
 fi
 ```
 
-Test the outcome, not the method.
+A score outside 0–1 is clamped to it, and one that is not a number scores 0, each with a
+warning in the run's log. Test the outcome, not the method.
 
 ### solution/solve.sh
 
