@@ -1,0 +1,10 @@
+/* Tables read as reference: let them take the page's width. */
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+}
+
+/* Field names in reference tables stay on one line. */
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}

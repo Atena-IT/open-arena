@@ -1,0 +1,36 @@
+# Lint and tests on every pull request and on main.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Ruff and pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      MLFLOW_DISABLE_AGENT_HINT: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install
+        run: uv sync --frozen
+      - name: Lint
+        run: uvx ruff@0.15.18 check .
+      - name: Test
+        run: uv run --frozen pytest -q

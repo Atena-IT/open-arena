@@ -1,0 +1,35 @@
+# Rewards: name -> a catalog reward (`type`), its kwargs (`config`), and
+# which way is better on the leaderboard. A dataset's `reward:` names one.
+#
+#   <name>:
+#     type: <catalog reward>     # required: exact_match, lm_as_judge, rubrics_as_judge, harbor_verifier, ...
+#     direction: max             # `max` (higher is better) or `min`
+#     config: {}                 # the reward's kwargs; a model setting is a models.yaml key
+#     description: ...
+#     tags: [...]
+rewards:
+  exact-match:
+    type: exact_match
+    direction: max
+    description: One when the answer is exactly the reference, zero otherwise.
+    tags: [strict]
+  harbor-tests:
+    type: harbor_verifier
+    direction: max
+    description: The score a Harbor task's own tests/test.sh gave; for `harbor_tasks` datasets.
+    tags: [harbor]
+
+  # A grader model reads the answer, with the reference when there is one:
+  # judge:
+  #   type: lm_as_judge
+  #   direction: max
+  #   config:
+  #     language_model: gpt-4o-mini      # a models.yaml key
+  #     instructions: Score the answer against the reference.
+
+  # One score per criterion:
+  # rubrics:
+  #   type: rubrics_as_judge
+  #   config:
+  #     language_model: gpt-4o-mini
+  #     rubrics: ["The result is correct", "The explanation is clear"]

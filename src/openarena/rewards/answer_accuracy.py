@@ -1,0 +1,216 @@
+"""`answer_accuracy` — grade every field of the answer with the metric that fits it.
+
+The deterministic graders in `metrics` (token-Jaccard `accuracy`,
+plus the `binary_*` / `categorical_*` families) are Metrics, not Rewards, so
+they can't go in a `reward:` block directly. This wraps them as one
+`rewards.Reward` that picks the right metric **per key**, scores each
+key, and averages:
+
+- With an ``output_schema``, each field is routed by its schema type —
+  ``enum``/``const`` → categorical accuracy, ``boolean`` → binary accuracy,
+  ``number``/``integer`` → exact match, anything else → token-Jaccard accuracy.
+- Without one it falls back to the value's runtime type (booleans → binary,
+  numbers → exact, everything else → token-Jaccard, which collapses to exact
+  match for single-token labels).
+
+The accuracy family is used rather than F1 so a correct negative (boolean
+``False``, an absent label) scores 1.0; it stays Jaccard-based, so multi-token
+and multi-label fields keep partial credit. A multi-field output is graded
+field-appropriately and the per-key scores averaged.
+
+```yaml
+reward:
+  name: answer_accuracy
+  in_mask: [verdict, rationale, label]
+  schema: {...}            # optional output_schema for schema-aware routing
+```
+
+The reward is in [0, 1]. A fresh metric is built per call, so concurrent
+scoring never shares mutable metric state.
+"""
+
+import math
+
+import synalinks
+from synalinks.src.backend import JsonDataModel
+from synalinks.src.backend.common.json_utils import in_mask_json, out_mask_json
+from synalinks.src.rewards.reward import Reward
+
+# Each per-key "kind" maps to the metric used for that group. "numeric" is
+# handled by exact equality (no token metric fits a bare number). The accuracy
+# family is used (not F1) because per-example it is symmetric: a correct
+# negative (boolean `False`, the absent label) scores 1.0, whereas token/set-F1
+# only counts the positive class and would score it 0.0. The framework's accuracy
+# metrics are still Jaccard-based, so text/multi-label fields keep partial
+# credit (|A∩B|/|A∪B|) rather than collapsing to all-or-nothing.
+_KIND_METRIC = {
+    "categorical": synalinks.metrics.CategoricalAccuracy,
+    "binary": synalinks.metrics.BinaryAccuracy,
+    "text": synalinks.metrics.Accuracy,
+}
+
+
+def _to_scalar(result):
+    """Collapse a metric `result()` (scalar, per-field list, or None) to a float."""
+    if result is None:
+        return 0.0
+    if isinstance(result, (list, tuple)):
+        values = [float(v) for v in result]
+        return sum(values) / len(values) if values else 0.0
+    return float(result)
+
+
+def _clamp(value):
+    """Bound a reward to [0, 1]; map NaN to 0.0."""
+    if math.isnan(value):
+        return 0.0
+    return max(0.0, min(1.0, value))
+
+
+def _schema_kind(node):
+    """Per-field metric kind from its JSON-schema node, or None if undecidable."""
+    if not isinstance(node, dict):
+        return None
+    if "enum" in node or "const" in node:
+        return "categorical"
+    node_type = node.get("type")
+    if node_type == "boolean":
+        return "binary"
+    if node_type in ("number", "integer"):
+        return "numeric"
+    if node_type == "array":
+        items = node.get("items")
+        if isinstance(items, dict) and ("enum" in items or "const" in items):
+            return "categorical"
+    return "text"
+
+
+def _value_kind(value):
+    """Per-field metric kind from the runtime value (schema-free fallback)."""
+    if isinstance(value, bool):
+        return "binary"
+    if isinstance(value, (int, float)):
+        return "numeric"
+    return "text"  # str / list / dict -> token-Jaccard (exact for one token)
+
+
+def _submodel(json_obj, keys, props):
+    """A JsonDataModel holding only `keys` of `json_obj` — top-level selection
+    with the values' subtrees intact (unlike in_mask, which filters by key name
+    at every nesting level and would empty nested objects)."""
+    sub = {k: json_obj[k] for k in keys if k in json_obj}
+    schema = {
+        "type": "object",
+        "properties": {k: (props or {}).get(k) or {} for k in keys},
+    }
+    return JsonDataModel(schema=schema, json=sub)
+
+
+class AnswerAccuracy(Reward):
+    """Grade each field of the answer with the deterministic metric that fits its type, and average.
+
+    Args:
+        schema: Optional ``output_schema`` (JSON Schema) for schema-aware routing
+            of fields to categorical / binary / numeric / text.
+        in_mask / out_mask / in_mask_pattern / out_mask_pattern: field selection.
+        name: reward instance name.
+    """
+
+    def __init__(
+        self,
+        schema=None,
+        in_mask=None,
+        out_mask=None,
+        in_mask_pattern=None,
+        out_mask_pattern=None,
+        name="answer_accuracy",
+    ):
+        super().__init__(name=name)
+        self.schema = schema
+        self.in_mask = in_mask
+        self.out_mask = out_mask
+        self.in_mask_pattern = in_mask_pattern
+        self.out_mask_pattern = out_mask_pattern
+
+    def _candidate_keys(self, true_json):
+        """Keys of the gold to score, after applying the user's in/out masks.
+
+        Mirrors how the framework's metrics mask fields: in-mask first (list ``in_mask``
+        OR'd with regex ``in_mask_pattern``), then out-mask — so pattern-based
+        masking configured in YAML reaches the routing too.
+        """
+        masked = true_json
+        if self.in_mask or self.in_mask_pattern:
+            masked = in_mask_json(masked, mask=self.in_mask, pattern=self.in_mask_pattern)
+        if self.out_mask or self.out_mask_pattern:
+            masked = out_mask_json(masked, mask=self.out_mask, pattern=self.out_mask_pattern)
+        return list(masked)
+
+    def _key_kind(self, key, value, props):
+        """Route a key to a metric kind: schema first, runtime value as fallback."""
+        if props is not None and isinstance(props.get(key), dict):
+            kind = _schema_kind(props[key])
+            if kind is not None:
+                return kind
+        return _value_kind(value)
+
+    def _drop_out_masked(self, json_obj):
+        """Apply the user's out_mask (list + pattern) recursively to a raw dict."""
+        if self.out_mask or self.out_mask_pattern:
+            return out_mask_json(json_obj, mask=self.out_mask, pattern=self.out_mask_pattern)
+        return json_obj
+
+    async def call(self, y_true, y_pred):
+        if y_pred is None or y_true is None:
+            return 0.0
+        # Group the gold's keys by metric kind (schema-driven, value as
+        # fallback), score each group with the type-appropriate metric, then
+        # average weighted by key count (= mean of per-key scores).
+        true_json = y_true.get_json() or {}
+        pred_json = y_pred.get_json() or {}
+        keys = self._candidate_keys(true_json)
+        if not keys:
+            return 0.0
+        props = self.schema.get("properties") if isinstance(self.schema, dict) else None
+
+        groups: dict[str, list] = {}
+        for k in keys:
+            groups.setdefault(self._key_kind(k, true_json[k], props), []).append(k)
+
+        parts = []  # (score, weight)
+        for kind, group_keys in groups.items():
+            if kind == "numeric":
+                hits = sum(1.0 for k in group_keys if k in pred_json and pred_json[k] == true_json[k])
+                parts.append((hits / len(group_keys), len(group_keys)))
+            else:
+                # Select the group's keys by building TOP-LEVEL sub-models, not
+                # via the metric's in_mask: in_mask keeps only the listed key
+                # names at every nesting level, so masking a key whose value
+                # holds nested objects (tool_calls, an array-of-objects schema
+                # property) would strip the nested fields and leave the metric
+                # nothing to compare (score pinned to 0 for any prediction).
+                # The user's out_mask IS applied recursively here, so volatile
+                # nested keys (the tool-call `id`) stay out of the score.
+                m = _KIND_METRIC[kind](in_mask=[], average="macro")
+                sub_true = _submodel(self._drop_out_masked(true_json), group_keys, props)
+                sub_pred = _submodel(self._drop_out_masked(pred_json), group_keys, props)
+                parts.append((_to_scalar(await m(sub_true, sub_pred)), len(group_keys)))
+
+        total_w = sum(w for _, w in parts)
+        if not total_w:
+            return 0.0
+        return _clamp(sum(s * w for s, w in parts) / total_w)
+
+    def get_config(self):
+        return {
+            "schema": self.schema,
+            "in_mask": self.in_mask,
+            "out_mask": self.out_mask,
+            "in_mask_pattern": self.in_mask_pattern,
+            "out_mask_pattern": self.out_mask_pattern,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)

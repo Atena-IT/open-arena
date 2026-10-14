@@ -1,0 +1,159 @@
+# License Apache 2.0: (c) 2026 Atena-Reply
+
+import yaml
+
+from openarena.config.entries import KIND_BLOCKS
+from openarena.datasets.braintrust_dataset import BraintrustDataset
+from openarena.datasets.dataset import Dataset
+from openarena.datasets.folder_dataset import FolderDataset
+from openarena.datasets.harbor_tasks_dataset import HarborTasksDataset
+from openarena.datasets.huggingface_dataset import HuggingFaceDataset
+from openarena.datasets.langfuse_dataset import LangfuseDataset
+from openarena.datasets.langsmith_dataset import LangSmithDataset
+from openarena.datasets.local_dataset import LocalDataset
+from openarena.datasets.mlflow_dataset import MLflowDataset
+from openarena.datasets.opik_dataset import OpikDataset
+from openarena.datasets.phoenix_dataset import PhoenixDataset
+from openarena.datasets.unity_catalog_dataset import UnityCatalogDataset
+
+_DATASET_TYPES = {
+    "braintrust": BraintrustDataset,
+    "folder": FolderDataset,
+    # Harbor task folders, one row each, scored by their own tests.
+    "harbor_tasks": HarborTasksDataset,
+    "huggingface": HuggingFaceDataset,
+    "langfuse": LangfuseDataset,
+    "langsmith": LangSmithDataset,
+    "local": LocalDataset,
+    # The engine's own loader, read from the source server (`MLFLOW_SOURCE_TRACKING_URI`).
+    "mlflow": MLflowDataset,
+    "opik": OpikDataset,
+    "phoenix": PhoenixDataset,
+    "unity_catalog": UnityCatalogDataset,
+}
+
+
+def get(name: str) -> type[Dataset]:
+    """Look up a `Dataset` subclass by its snake_case provider name.
+
+    Args:
+        name: Provider identifier, e.g. `"huggingface"`.
+
+    Returns:
+        The matching `Dataset` subclass (uninstantiated).
+
+    Raises:
+        KeyError: If no provider is registered under `name`.
+    """
+    cls = _DATASET_TYPES.get(name)
+    if cls is None:
+        known = ", ".join(sorted(_DATASET_TYPES))
+        raise KeyError(f"Unknown dataset provider {name!r}. Known: {known}")
+    return cls
+
+
+def load_dataset_from_yaml(yaml_path: str, name: str | None = None) -> Dataset:
+    """Instantiate a dataset declared in a YAML config.
+
+    Expected layout:
+
+    ```yaml
+    datasets:
+      gsm8k_train:
+        type: huggingface
+        path: gsm8k
+        name: main
+        split: train
+        input_template: |
+          {"question": {{ question | tojson }}}
+        output_template: |
+          {"answer": {{ answer.split("####")[-1].strip() | tojson }}}
+        batch_size: 8
+        limit: 1000
+
+    default: gsm8k_train
+    ```
+
+    The `type` key dispatches to a `Dataset` subclass via `_DATASET_TYPES`
+    (`huggingface`, `local`, `folder`, `mlflow`, `langfuse`, `langsmith`, `opik`,
+    `phoenix`, `braintrust`). All other keys are forwarded verbatim as
+    keyword arguments to the subclass constructor — so any provider-
+    specific parameter (HuggingFace `revision` / `streaming` / `data_files`
+    / `token`, Langfuse `dataset_name` / `host`, …) can be set from YAML.
+    Note that the HF `name` parameter coexists with the top-level dataset
+    selector key (the YAML mapping key under `datasets:`); they don't
+    collide because they live at different nesting levels.
+
+    `input_data_model` / `output_data_model` are intentionally not exposed
+    here — they default to `ChatMessages` inside the dataset.
+
+    For task-specific structured output, set `input_schema:` and
+    `output_schema:` instead — each takes a literal JSON Schema (as a YAML
+    map or as a JSON-encoded string). Rows are then wrapped as
+    `JsonDataModel(schema=..., json=...)`, the schema flows into
+    the LM as a structured-output constraint, and `y_true` / `y_pred` no
+    longer carry ChatMessage auxiliary noise (`thinking`, `tool_calls`, …).
+
+    Args:
+        yaml_path: Filesystem path to the YAML config.
+        name: Selector under `datasets:`. When `None`, the value of the
+            top-level `default` key is used.
+
+    Returns:
+        A constructed `Dataset` instance, ready to be called: `ds()` returns
+        the generator passed to `program.fit(x=...)`.
+    """
+    with open(yaml_path) as f:
+        config = yaml.safe_load(f)
+    return load_dataset_from_config(config, name=name, yaml_path=yaml_path)
+
+
+def load_dataset_from_config(
+    config: dict, name: str | None = None, yaml_path: str = "<config>"
+) -> Dataset:
+    """Build a `Dataset` from an already-parsed config mapping.
+
+    Same behaviour as `load_dataset_from_yaml`, but takes the parsed YAML dict
+    instead of a path. A caller building many datasets from one config (e.g.
+    `evaluate.run_sweep`) should parse the file ONCE and call this per dataset —
+    `load_dataset_from_yaml` re-reads and re-parses the whole file every call,
+    which is O(datasets × filesize) and dominates startup for large configs
+    (a 12 MB / 450-dataset config takes ~21 s to parse, so ~450 re-parses cost
+    hours). `yaml_path` is used only to label error messages.
+    """
+    entries = config.get("datasets")
+    if not entries:
+        raise ValueError(f"{yaml_path}: missing or empty `datasets:` section.")
+
+    if name is None:
+        name = config.get("default")
+        if name is None:
+            raise ValueError(
+                f"{yaml_path}: no `name` provided and no `default` key in config."
+            )
+
+    if name not in entries:
+        available = ", ".join(sorted(entries))
+        raise KeyError(
+            f"{yaml_path}: dataset {name!r} not found. Available: {available}"
+        )
+
+    entry = dict(entries[name])
+    type_name = entry.pop("type", None)
+    if type_name is None:
+        raise ValueError(f"{yaml_path}: dataset {name!r} is missing a `type` field.")
+
+    # Arena-level keys are consumed by libraries/openarena/src/openarena/evaluate.py / libraries/openarena/src/openarena/programs/,
+    # not by the Dataset constructor — strip them before forwarding kwargs
+    # so providers don't see unknown keywords (HuggingFace's `load_dataset`
+    # raises on unknown BuilderConfig keys, for instance).
+    for k in (*KIND_BLOCKS, "reward", "metrics"):
+        entry.pop(k, None)
+
+    try:
+        cls = get(type_name)
+    except KeyError as e:
+        raise ValueError(f"{yaml_path}: dataset {name!r}: {e}") from e
+
+    return cls(**entry)
+

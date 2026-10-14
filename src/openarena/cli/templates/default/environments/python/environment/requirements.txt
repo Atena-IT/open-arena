@@ -1,0 +1,3 @@
+# The build context of the `python` environment (configs/environments.yaml): its Dockerfile
+# installs these packages in the sandbox. Add files beside it and COPY them in the Dockerfile.
+numpy

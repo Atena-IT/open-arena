@@ -1,185 +1,106 @@
-# Open Arena 🚀
+# Open Arena
 
 <img src="open-arena.png" width="28%" align="right" alt="Open Arena logo">
 
-Open Arena is a lightweight evaluation framework for benchmarking LLMs and tool-enabled workflows against curated datasets. It combines LiteLLM, Langfuse, LangChain, and optional MCP integrations so experiments can be executed, traced, and scored from a single Python project.
+**openarena** compares language models, and agents, on datasets: it runs every
+model on every dataset you name, scores each answer, and ranks the models on
+leaderboards. Everything is declared in YAML and run from one command,
+`openarena`, on your own machine. No server and no web app: files in, files out.
 
-## ✨ Key Features
+- **Any model litellm routes**: OpenAI, Anthropic, Gemini, Mistral, Ollama, vLLM, ...
+- **Any dataset source**: Hugging Face, local files, MLflow, Langfuse, LangSmith,
+  Opik, Phoenix, Braintrust, Unity Catalog, each row shaped by Jinja2 templates.
+- **Scored your way**: exact match, judge models, rubrics, multi-judge panels,
+  agent judges, tool-call accuracy, retrieval recall.
+- **Beyond one call**: models calling MCP tools, remote A2A agents, and agents
+  working [Harbor](https://harborframework.com) tasks in a sandbox.
+- **Ranked**: leaderboards weighing reward, cost, tokens and latency, with
+  budgets and the Pareto frontier.
+- **Ready for a coding agent**: every workspace comes with an `AGENTS.md` and
+  one Agent Skill per task.
 
-- **Experiment orchestration**: run multiple model configurations against the same dataset and compare their outputs consistently.
-- **Tool-enabled evaluation**: support MCP-backed tool calling alongside standard LLM completions.
-- **Langfuse observability**: capture dataset uploads, execution traces, experiment runs, and evaluation scores in one place.
-- **Pluggable dataset sources**: fetch evaluation items from local CSV/Excel, HuggingFace, Langfuse, LangSmith, Arize Phoenix, Opik (Comet), Braintrust, Weave, or MLflow — shaped into `(input, expected_output, metadata)` via Jinja2 templates.
-- **Config-driven workflows**: a single `config.yaml` describes the dataset source, templates, experiments, and evaluation in one document.
-- **Extensible Python architecture**: add a new dataset source by dropping a module in `src/datasets/dataset_adapters/`; evaluators and LLM clients are similarly modular.
+**Documentation: [atena-it.github.io/open-arena](https://atena-it.github.io/open-arena/)**
 
-## ⚡ Quickstart
+## Quickstart
 
-### Prerequisites
+```shell
+uv tool install "git+https://github.com/Atena-IT/open-arena"
 
-- Python 3.12+
-- Access to the LLM providers and Langfuse instance you want to use
-- `uv` recommended for environment management
-
-### Install
-
-```sh
-git clone https://github.com/Atena-IT/open-arena.git
-cd open-arena
-uv sync
+openarena init my-arena && cd my-arena
+cp .env.template .env                # the keys your models need
+openarena check configs              # every registry: problems, lines, fixes
+openarena evaluations run smoke      # 20 GSM8K questions, results in .open-arena/smoke/
+openarena leaderboards run overall   # rank every finished run
 ```
 
-For local development, install the project in editable mode so module and entrypoint changes are picked up immediately:
+`smoke` runs a model on a local [Ollama](https://ollama.com)
+(`ollama pull qwen3.8:27b-mlx`); point it at `gpt-4o-mini` in
+`configs/evaluations.yaml` to use `OPENAI_API_KEY` instead.
 
-```sh
-uv pip install -e .
+## A workspace
+
+`openarena init` writes a workspace that runs as it is:
+
 ```
-
-To verify the Open Arena CLI entry point is available:
-
-```sh
-arena --help
+configs/                          one registry per YAML, each field explained in comments
+  models.yaml  rewards.yaml  datasets.yaml  mcp_servers.yaml  a2a_agents.yaml
+  environments.yaml  evaluations.yaml  leaderboards.yaml
+tasks/hello-world/                a Harbor task: task.toml, instruction.md, environment/,
+                                  tests/test.sh, solution/solve.sh
+environments/python/environment/  an environment's build context
+.agents/skills/                   one Agent Skill per task
+AGENTS.md                         the guide a coding agent reads first (CLAUDE.md links to it)
+.env.template  .gitignore  README.md
 ```
-
-### Configure secrets
-
-Copy the example environment file and fill in the required keys:
-
-```sh
-cp .env.example .env
-```
-
-At minimum, configure the Langfuse values plus any provider credentials required by the models defined in `config.yaml` or `config.example.yaml`.
-
-### Configure experiments
-
-The runtime configuration lives in a single YAML file (see `config.example.yaml` for a fully annotated example). It defines:
-
-- the dataset source and Jinja2 templates that shape each row
-- the system prompt applied to every experiment
-- the list of experiments (LiteLLM model config + optional MCP tool servers)
-- the evaluator (`llm_as_judge` or `llm_as_verifier`) and grader model
-
-The YAML schema is validated against the Pydantic models in `src/config/types.py`.
-
-### Run the pipeline
-
-```sh
-arena --config config.yaml
-```
-
-To reuse an existing Langfuse dataset (skip the upload step):
-
-```sh
-arena --config config.yaml --skip-upload
-```
-
-When `dataset.source.provider` is `"langfuse"`, the upload is skipped automatically — items already live in Langfuse.
-
-## 📚 Dataset Sources
-
-The `dataset.source.provider` field selects which adapter fetches raw rows. Every adapter produces a stream of dicts; two Jinja2 templates (`input` and `expected_output`) turn each dict into a Record. Columns not referenced by a template flow through as metadata.
-
-| Provider | Fetches from | Notes |
-|----------|--------------|-------|
-| `local` | CSV / Excel file on disk | `path`, `format` (`csv` \| `excel`) |
-| `huggingface` | `datasets.load_dataset(repo, config, split)` | Streaming by default; supports `revision` pinning |
-| `langfuse` | `get_client().get_dataset(name).items` | Upload is skipped automatically (items already in Langfuse) |
-| `langsmith` | `Client().list_examples(dataset_name=...)` | Server-side `limit` push-down |
-| `phoenix` | Arize Phoenix `datasets.get_dataset(...)` | Works against self-hosted or cloud; optional `version_id` pin |
-| `opik` | `Opik().get_dataset(name).get_items()` | Comet Opik; server-side `nb_samples` push-down |
-| `braintrust` | `init_dataset(project, name).fetch()` | Requires `project`; optional `version` pin |
-| `weave` | `weave.ref("<name>:<version>").get()` | W&B Weave; requires `project="entity/project"` |
-| `mlflow` | `mlflow.genai.datasets.get_dataset(name=...)` | Requires MLflow 3 with GenAI datasets |
-
-Each adapter supports `limit: N` to cap the number of rows processed — useful for smoke tests. A source config looks like:
 
 ```yaml
-dataset:
-  name: "MMLU Anatomy"
-  source:
-    provider: "huggingface"
-    repo: "cais/mmlu"
-    config: "anatomy"
-    split: "test"
-  input: "{{ question }}\nA) {{ choices[0] }}\nB) {{ choices[1] }}..."
-  expected_output: "{{ ['A','B','C','D'][answer] }}"
-  limit: 100
+# configs/datasets.yaml
+datasets:
+  gsm8k-20:
+    type: huggingface
+    config:
+      path: openai/gsm8k
+      name: main
+      split: test
+      limit: 20
+      input_template: '{"question": {{ question | tojson }}}'
+      output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+    generator:
+      instructions: Solve the problem. Reply with the final number only.
+    reward: exact-match
 ```
 
-See `config.example.yaml` for per-provider snippets.
+See the [guides](https://atena-it.github.io/open-arena/) for every registry.
 
-## 👁️ Observability
+## Development
 
-Langfuse is used to capture experiment execution and evaluation metadata so model runs can be inspected and compared more easily. Depending on the workflow you use, Open Arena can track:
-
-- uploaded dataset items
-- experiment traces and model outputs
-- evaluation results and judge scores
-- metadata for MCP-enabled executions
-
-## ⚠️ Limitations
-
-- **Tracing is Langfuse-only**: experiment traces and evaluation scores are written to Langfuse regardless of which dataset source you use. A Langfuse instance (self-hosted or cloud) is therefore required.
-- **Single dataset per run**: each `config.yaml` describes one dataset. Running multiple datasets means multiple invocations.
-
-## 🧱 Project Layout
-
-```text
-open-arena/
-├── config.yaml
-├── config.example.yaml
-├── pyproject.toml
-├── resources/
-├── src/
-│   ├── config/
-│   ├── datasets/
-│   │   ├── base.py
-│   │   ├── dataset_adapters/        # one file per provider
-│   │   └── langfuse_upload.py
-│   ├── evaluation/                  # evaluators (llm_as_judge, llm_as_verifier)
-│   ├── execution/                   # experiment executor
-│   ├── llms/                        # SimpleCaller + AgentCaller
-│   └── main_cli.py                  # `arena` entrypoint
-└── tests/
-    └── datasets/                    # offline adapter tests (mocked clients)
+```shell
+git clone https://github.com/Atena-IT/open-arena && cd open-arena
+uv sync
+uv run openarena --help
+uv run pytest                                          # no network needed
+uvx ruff check .
+uv run --group docs zensical build --clean --strict    # the docs site, into site/
+uv run --group docs zensical serve -a localhost:8100   # preview while editing
 ```
 
-## 🧪 Validation
+| path | |
+| --- | --- |
+| `src/openarena/config/` | the schema: one model per registry entry, a run's config, `check` |
+| `src/openarena/evaluate.py` | `run_sweep`, every model × dataset cell |
+| `src/openarena/programs/` | the program each dataset kind is answered by |
+| `src/openarena/datasets/` | dataset providers |
+| `src/openarena/rewards/` | the reward catalog and openarena's own rewards |
+| `src/openarena/leaderboard.py` | `board` gathers results, `rank` scores them |
+| `src/openarena/harbor.py` | Harbor tasks, agents and sandboxes |
+| `src/openarena/cli/` | the `openarena` command and its `init` template |
+| `src/openarena/skills/` | the Agent Skills `init` copies into a workspace |
+| `docs/`, `mkdocs.yml` | the documentation site, built by [Zensical](https://zensical.org) |
 
-Run the offline test suite (no credentials required — all provider clients are mocked):
+The tests keep the docs and skills honest: every YAML example in them is
+checked against the engine (`tests/test_docs.py`, `tests/test_skills.py`), and
+the CLI reference must name every command and option.
 
-```sh
-uv run --with pytest pytest
-```
+## License
 
-For a quick syntax check:
-
-```sh
-uv run python -m compileall src
-```
-
-The YAML configuration is validated against `src/config/types.py` at load time, so bad shapes fail fast before any model call is made.
-
-## 🤝 Contributing
-
-Open issues and pull requests are welcome. Please keep documentation and configuration examples aligned with the current runtime behavior when changing the evaluation pipeline.
-
-Suggested workflow:
-
-1. Fork the repository and create a focused branch from `develop`.
-2. Install dependencies with `uv sync` and configure `.env` from `.env.example`.
-3. Make the smallest possible change that solves the issue.
-4. Run the relevant validation for the area you touched.
-5. Update documentation or examples when behavior changes.
-6. Open a pull request with a clear description of the change.
-
-### Commit Convention
-
-This repository follows **Conventional Commits**. Please use commit messages such as:
-
-- `feat: add structured dataset validation`
-- `fix: handle missing Langfuse dataset items`
-- `docs: expand README contribution guidance`
-
-Using the convention keeps the history easier to scan and makes release or changelog automation more reliable.
+[Apache 2.0](LICENSE).

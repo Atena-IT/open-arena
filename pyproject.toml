@@ -1,67 +1,44 @@
 [project]
-name = "open-arena"
+name = "openarena"
 version = "0.1.0"
-description = "Open Arena evaluation framework for general datasets using Langfuse, LiteLLM, and multi-metric analysis."
+description = "Compare language models and agents on datasets, score them, and rank them on leaderboards."
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12"
-license = { file = "LICENSE.md" }
-authors = [
-    { name = "Atena Reply" }
-]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-    "Intended Audience :: Developers",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Utilities",
-    "Environment :: Console",
-]
 dependencies = [
-    "langchain",
-    "langchain-core",
-    "langchain-litellm",
-    "langchain-mcp-adapters",
-    "arize-phoenix-client",
-    "braintrust",
-    # Constrain chardet to the range `requests` certifies (>=3.0.2,<6.0.0):
-    # without this, polyfile-weave (via weave) pulls chardet 7.x, which
-    # triggers a RequestsDependencyWarning on every import of `requests`.
-    "chardet>=5.2,<6",
-    "langfuse>=3.10.1",
-    "langgraph>=0.6.6",
-    "langsmith",
-    "litellm>=1.80.15",
-    "mlflow>=3.0",
-    "opik",
-    "openai",
-    "datasets",
-    "jinja2",
-    "polars",
-    "fastexcel",
-    "pydantic>=2",
-    "python-dotenv",
-    "pyyaml",
-    "weave",
+    "synalinks>=0.10.6",
+    "keras-tuner>=1.4.8",
+    "a2a-sdk>=1.2.1",
+    "datasets>=5.0",
+    "pydantic>=2.13",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "jinja2>=3.1",
+    "numpy>=2.5",
+    "click>=8.5.0",
+    "rich>=15.0.0",
+    "harbor[e2b]>=0.23",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Atena-IT/open-arena"
+Documentation = "https://atena-it.github.io/open-arena/"
+Repository = "https://github.com/Atena-IT/open-arena"
 
 [project.scripts]
-arena = "src.main_cli:main"
+openarena = "openarena.cli.main:cli"
 
 [dependency-groups]
-dev = [
-    "pytest>=8",
+dev = ["pytest>=8"]
+docs = [
+    "mkdocstrings[python]>=1.0",
+    "zensical>=0.0.70",
 ]
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-where = ["."]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::UserWarning:pydantic",
-]
+

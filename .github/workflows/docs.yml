@@ -1,0 +1,66 @@
+# The documentation site (docs/, built by Zensical from mkdocs.yml). A pull
+# request builds it strictly, so a broken page or link fails there; a push to
+# main builds it and publishes the static site to the gh-pages branch, which
+# GitHub Pages serves.
+name: Docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two deploys race on the gh-pages branch.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Docs, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MLFLOW_DISABLE_AGENT_HINT: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      # The engine (the API pages import it) and its docs toolchain: the `docs` group.
+      - name: Install
+        run: uv sync --frozen --group docs
+      - name: Build
+        run: uv run --frozen --group docs zensical build --clean --strict
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: site
+          retention-days: 7
+
+  publish:
+    name: Docs, publish
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: site
+          path: site
+      - uses: astral-sh/setup-uv@v10.2.0
+      - name: Configure Git
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      # The static site, alone, onto gh-pages: Zensical only builds.
+      - name: Publish to gh-pages
+        run: uvx ghp-import --no-jekyll --push --force --message "Deployed ${{ github.sha }} with Zensical" site

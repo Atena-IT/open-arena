@@ -1,0 +1,21 @@
+# Evaluations: saved sweeps, every listed model on every listed dataset.
+# `openarena evaluations run <name>` runs one into .open-arena/<name>/.
+#
+#   <name>:
+#     language_models: [...]     # required: `models` keys (`a2a_agents` keys for an a2a dataset)
+#     datasets: [...]            # required: `datasets` keys
+#     batch_size: 4              # rows at once for every dataset, overriding each one's own
+#     metrics: [...]             # metrics added to every dataset
+#     seed: 0
+#     description: ...
+#     tags: [...]
+evaluations:
+  smoke:
+    description: A first run on the local model.
+    language_models: [qwen38]          # `models` keys
+    datasets: [gsm8k-20]               # `datasets` keys
+    batch_size: 4
+  harbor:
+    description: Harbor tasks and terminal rows, the agent driven by the hosted baseline.
+    language_models: [gpt-4o-mini]
+    datasets: [hello-tasks, gsm8k-terminal]
