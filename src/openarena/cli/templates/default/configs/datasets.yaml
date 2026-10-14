@@ -1,0 +1,135 @@
+# Datasets: name -> where its rows come from, what answers each row, and the
+# reward that scores it.
+#
+#   <name>:
+#     type: <provider>           # required: huggingface, local, folder, mlflow, langfuse, ..., harbor_tasks
+#     config:                    # the provider's kwargs, plus:
+#       input_template: ...      #   Jinja2 over a row's columns: what each row asks (JSON its schema describes)
+#       output_template: ...     #   the expected answer; optional when a judge scores
+#       input_schema: {...}      #   the JSON Schema of what each template renders: needed whenever a
+#       output_schema: {...}     #   template renders anything but chat messages (embedding: set for you)
+#       limit: 20                #   rows to use; batch_size: rows sent at once
+#     <kind>: ...                # what answers each row, one block at most (none: a plain generator):
+#                                #   generator  a model, one call: instructions, chain_of_thought
+#                                #   agent      a model calling MCP tools (mcp_servers.yaml)
+#                                #   a2a        A2A agents (a2a_agents.yaml); the evaluation lists agents
+#                                #   embedding  retrieval of the row's chunks with an embedding model
+#                                #   tools      one call with tool schemas, no server behind them
+#                                #   harbor     an agent the model drives in a Harbor sandbox
+#     reward: <rewards key>      # required to run an evaluation
+#     metrics: [...]             # extra per-dataset metrics
+#     description: ...
+#     tags: [...]
+datasets:
+  # A model answers each question; exact-match compares with the reference.
+  gsm8k-20:
+    type: huggingface
+    description: Grade-school math word problems, GSM8K test split, 20 rows.
+    tags: [math, reasoning]
+    config:
+      path: openai/gsm8k
+      name: main
+      split: test
+      limit: 20
+      batch_size: 4
+      # Jinja2 over the row's columns, each rendering to the JSON its schema describes.
+      input_template: '{"question": {{ question | tojson }}}'
+      # The reference is what follows `####`, commas removed.
+      output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+      input_schema:
+        type: object
+        properties:
+          question: {type: string, description: The question to answer}
+        required: [question]
+        additionalProperties: false
+      output_schema:
+        type: object
+        properties:
+          answer: {type: string, description: "The final numeric answer only, no units or commas"}
+        required: [answer]
+        additionalProperties: false
+    generator:
+      chain_of_thought: true
+      instructions: Solve the problem. Reply with the final number only, no units, no commas.
+    reward: exact-match                # a `rewards` key
+
+  # Harbor task folders, run as Harbor runs them: every folder under tasks/
+  # (beside configs/) holding a task.toml is a row, and its own tests score it.
+  hello-tasks:
+    type: harbor_tasks
+    description: The Harbor tasks of this workspace, scored by their own tests.
+    tags: [harbor]
+    config:
+      path: tasks                      # beside configs/, as in a workspace
+      # tasks: [hello-world]           # only these folders; none runs every task
+    harbor:
+      agent: terminus-2                # terminus-2, claude-code, codex, gemini-cli, openhands, ...
+      # timeout_sec: 600               # how long the agent may work on one task
+    reward: harbor-tests               # harbor_verifier: what tests/test.sh wrote
+
+  # Rows over an environment: each row's question becomes a task in the
+  # `python` environment (environments.yaml), the agent writes its answer to a
+  # file, and the dataset's reward scores it on the arena's side.
+  gsm8k-terminal:
+    type: huggingface
+    description: GSM8K worked in a terminal, 5 rows, the answer written to a file.
+    tags: [math, harbor]
+    config:
+      path: openai/gsm8k
+      name: main
+      split: test
+      limit: 5
+      input_template: '{"question": {{ question | tojson }}}'
+      output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
+    harbor:
+      environment: python              # an `environments` key
+      agent: terminus-2
+      instructions: Solve the problem; you may use Python.
+      answer_file: /app/answer.txt     # read back once the agent is done; blank scores its last message
+    reward: exact-match
+
+  # A model calling MCP tools (an `mcp_servers` key):
+  # gsm8k-tools:
+  #   type: huggingface
+  #   config:
+  #     path: openai/gsm8k
+  #     name: main
+  #     split: test
+  #     limit: 10
+  #     input_template: '{"question": {{ question | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
+  #   agent:
+  #     mcp_servers: [fetch]
+  #   reward: judge
+
+  # Answered by A2A agents; the evaluation's `language_models` are `a2a_agents` keys:
+  # ask-agents:
+  #   type: local
+  #   config:
+  #     path: questions.jsonl
+  #     input_template: '{"question": {{ question | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
+  #   a2a: {}
+  #   reward: judge
+
+  # Tool calling with no server behind it: the model's calls are scored, nothing runs.
+  # Each row of calls.jsonl: {"question": "...", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]}
+  # weather-calls:
+  #   type: local
+  #   config:
+  #     path: calls.jsonl
+  #     input_template: '{"question": {{ question | tojson }}}'
+  #     output_template: '{"tool_calls": {{ calls | tojson }}}'
+  #     input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
+  #     output_schema: {type: object, properties: {tool_calls: {type: array}}, required: [tool_calls]}
+  #   tools:
+  #     instructions: Call the function that answers the question.
+  #     tool_schemas:
+  #       - type: function
+  #         function:
+  #           name: get_weather
+  #           description: The weather in a city.
+  #           parameters: {type: object, properties: {city: {type: string}}, required: [city]}
+  #   reward: tool-calls               # type: tool_calls_accuracy

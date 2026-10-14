@@ -1,0 +1,36 @@
+# Environments: name -> the Harbor sandbox a `harbor:` dataset's agent works
+# in. Its build context is environments/<name>/environment/ (beside
+# configs/): whatever the Dockerfile copies lives there.
+#
+#   <name>:
+#     docker_image: python:3.12-slim   # a prebuilt image, or:
+#     dockerfile: |                    # the Dockerfile built from the folder
+#       FROM ...
+#     workdir: /app              # where the agent starts
+#     cpus: 1                    # resources; blank leaves them to the sandbox provider
+#     memory_mb: 2048
+#     storage_mb: ...
+#     gpus: 0
+#     network_mode: public       # public, no-network, or allowlist (with allowed_hosts: [...])
+#     env: {}                    # environment variables in the container
+#     build_timeout_sec: 600
+#     healthcheck: {command: ..., interval_sec: 5, retries: 3}
+#     mcp_servers: []            # `mcp_servers` keys the agent is given
+#     description: ...
+#     tags: [...]
+#
+# The sandbox provider is ARENA_HARBOR_SANDBOX: E2B with E2B_API_KEY, else the local Docker.
+environments:
+  python:
+    description: Python 3.12 with tmux (terminus-2 works its terminal through it).
+    tags: [python]
+    dockerfile: |
+      FROM python:3.12-slim
+      RUN apt-get update && apt-get install -y --no-install-recommends tmux && rm -rf /var/lib/apt/lists/*
+      WORKDIR /app
+      COPY requirements.txt /tmp/requirements.txt
+      RUN pip install --no-cache-dir -r /tmp/requirements.txt
+    workdir: /app
+    cpus: 1
+    memory_mb: 2048
+    network_mode: public

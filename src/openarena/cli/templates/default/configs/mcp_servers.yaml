@@ -1,0 +1,29 @@
+# MCP servers: name -> one connection to a tool server. An `agent:` dataset
+# names them (`agent.mcp_servers`), and so can an environment.
+#
+#   <name>:
+#     transport: stdio           # stdio (spawn a command), streamable_http, sse or websocket
+#     command: npx               # stdio: the executable, its args, env and cwd
+#     args: [...]
+#     env: {}
+#     cwd: ...
+#     url: http://...            # the other transports: the endpoint, and headers
+#     headers: {}
+#     description: ...
+#     tags: [...]
+mcp_servers: {}
+
+  # A local process:
+  # fetch:
+  #   transport: stdio
+  #   command: uvx
+  #   args: [mcp-server-fetch]
+  #   description: Fetches a URL and returns it as markdown.
+  #   tags: [web]
+
+  # A remote server:
+  # docs:
+  #   transport: streamable_http
+  #   url: http://localhost:8080/mcp
+  #   headers:
+  #     Authorization: Bearer <token>

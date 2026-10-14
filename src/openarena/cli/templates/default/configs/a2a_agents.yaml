@@ -1,0 +1,19 @@
+# A2A agents: name -> a remote agent speaking the Agent2Agent protocol. An
+# `a2a: {}` dataset is answered by them, and an evaluation on it lists these
+# keys as its `language_models`: the agents are what is compared.
+#
+#   <name>:
+#     url: http://...            # required; the card is read from <url>/.well-known/agent-card.json
+#     card_path: ...             # the card elsewhere, relative to url
+#     headers: {}                # sent on every request, e.g. Authorization
+#     timeout_sec: 300           # how long one row may take
+#     description: ...
+#     tags: [...]
+a2a_agents: {}
+
+  # helper:
+  #   url: http://localhost:9999
+  #   headers:
+  #     Authorization: Bearer <token>
+  #   timeout_sec: 120
+  #   description: A local agent to compare.

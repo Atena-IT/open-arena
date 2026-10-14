@@ -1,0 +1,32 @@
+# Models: name -> the litellm id it calls. Datasets, rewards and evaluations
+# name models by these keys, never by id, so two entries calling one id are
+# two models. `openarena models list` shows them.
+#
+#   <name>:
+#     model: <provider>/<id>     # required; the prefix picks the provider (ollama/, openai/, anthropic/,
+#                                # gemini/, vllm/ via HOSTED_VLLM_API_BASE, ...); hosted ones need their *_API_KEY
+#     type: llm                  # `llm` (default) or `embedding`
+#     params: {}                 # what the type takes: temperature, max_tokens, reasoning_effort, ...
+#     modalities: [text]         # what it reads: text, image, audio, ...
+#     description: ...
+#     tags: [...]                # labels for browsing
+models:
+  qwen38:
+    model: ollama/qwen3.8:27b-mlx     # a local Ollama, no API key needed
+    type: llm
+    description: Qwen 3.8 27B (MLX) served by a local Ollama, no API key needed.
+    params:
+      temperature: 0
+    tags: [local]
+  gpt-4o-mini:
+    model: openai/gpt-4o-mini          # needs OPENAI_API_KEY
+    description: OpenAI's small model, the hosted baseline.
+    params:
+      temperature: 0
+    tags: [openai, hosted]
+
+  # An embedding model, for a retrieval dataset (`embedding:` in datasets.yaml):
+  # minilm:
+  #   model: ollama/all-minilm
+  #   type: embedding
+  #   tags: [local]

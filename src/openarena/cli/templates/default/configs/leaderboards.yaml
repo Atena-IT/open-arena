@@ -1,0 +1,29 @@
+# Leaderboards: saved ways of ranking the scores of finished runs.
+# `openarena leaderboards run <name>` prints one.
+#
+#   <name>:
+#     title: ...                 # required
+#     datasets: []               # `datasets` keys in scope; empty: every dataset scored
+#     models: []                 # `models` keys in scope; empty: every model scored
+#     shares: {}                 # percent of the score per metric (reward, cost, avg_latency, ...);
+#                                # empty: reward first, the other measurements break ties
+#     budgets: []                # hard limits, a model breaking one is left out:
+#                                #   - {metric: cost, op: lte, value: 0.05}
+#     group_shares: {}           # weight per group of datasets (an import's suites); left out weighs 1
+#     dataset_shares: {}         # weight per dataset in its group; 0 leaves it out of the score
+#     description: ...
+#     tags: [...]
+leaderboards:
+  overall:
+    title: Overall
+    description: Every model on every dataset, reward first.
+    datasets: []                       # `datasets` keys
+    models: []                         # `models` keys
+    shares: {}
+  math:
+    title: Math, quality only
+    description: Grade-school math, the reward alone decides.
+    tags: [math]
+    datasets: [gsm8k-20]
+    shares:
+      reward: 100

@@ -2,373 +2,107 @@
 
 <img src="open-arena.png" width="28%" align="right" alt="Open Arena logo">
 
-Autoresearch loop for reward-R&D and model selection in the modern
-LM ops stack — between post-training evals and the next round of
-fine-tuning / RL. An agent iterates on candidate rewards built-ins 
-(`exact_match`, `cosine_similarity`, `lm_as_judge`), custom rewards
-under `src/rewards/` (`multi_judge_panel`, `recursive_lm_as_judge`),
-and any `deepeval.metrics` class via the `deep_eval` wrapper.
-Validates them by running an evaluation sweep across a (model ×
-dataset) grid, and keeps the rewards whose rankings best agree with
-each dataset's task-specific primary reward. **Configured entirely
-from YAML**; experiment management on top of `keras-tuner`.
+**openarena** compares language models, and agents, on datasets: it runs every
+model on every dataset you name, scores each answer, and ranks the models on
+leaderboards. Everything is declared in YAML and run from one command,
+`openarena`, on your own machine. No server and no web app: files in, files out.
 
-Plugs into every major LM provider — OpenAI, Anthropic, Gemini,
-Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure,
-AWS Bedrock, Doubleword, plus self-hosted Ollama / vLLM — and pulls
-eval datasets from Langfuse, LangSmith, Opik, Arize Phoenix, and
-Braintrust (or any HF / local / folder source). Each dataset can run
-as a single-shot `Generator` eval or as a multi-step
-`FunctionCallingAgent` driven by MCP tools.
+- **Any model litellm routes**: OpenAI, Anthropic, Gemini, Mistral, Ollama, vLLM, ...
+- **Any dataset source**: Hugging Face, local files, MLflow, Langfuse, LangSmith,
+  Opik, Phoenix, Braintrust, Unity Catalog, each row shaped by Jinja2 templates.
+- **Scored your way**: exact match, judge models, rubrics, multi-judge panels,
+  agent judges, tool-call accuracy, retrieval recall.
+- **Beyond one call**: models calling MCP tools, remote A2A agents, and agents
+  working [Harbor](https://harborframework.com) tasks in a sandbox.
+- **Ranked**: leaderboards weighing reward, cost, tokens and latency, with
+  budgets and the Pareto frontier.
+- **Ready for a coding agent**: every workspace comes with an `AGENTS.md` and
+  one Agent Skill per task.
 
-## Install
+**Documentation: [atena-it.github.io/open-arena](https://atena-it.github.io/open-arena/)**
 
-### Option A: Thin CLI only (remote operations, no engine)
+## Quickstart
 
-Interact with a running Open Arena server without installing the heavy evaluation engine:
+```shell
+uv tool install "git+https://github.com/Atena-IT/open-arena"
 
-```bash
-pip install open-arena-cli
-arena env list --server http://your-arena-server:8000
-arena request GET /v1/metric-kinds
+openarena init my-arena && cd my-arena
+cp .env.template .env                # the keys your models need
+openarena check configs              # every registry: problems, lines, fixes
+openarena evaluations run smoke      # 20 GSM8K questions, results in .open-arena/smoke/
+openarena leaderboards run overall   # rank every finished run
 ```
 
-### Option B: Full install (engine + local sweep + `arena serve`)
+`smoke` runs a model on a local [Ollama](https://ollama.com)
+(`ollama pull qwen3.8:27b-mlx`); point it at `gpt-4o-mini` in
+`configs/evaluations.yaml` to use `OPENAI_API_KEY` instead.
 
-Includes the evaluation engine, the local sweep, and the ability to run the API server:
+## A workspace
 
-```bash
-pip install open-arena
+`openarena init` writes a workspace that runs as it is:
+
 ```
-
-Or from source with [`uv`](https://github.com/astral-sh/uv):
-
-```bash
-git clone <this repo> && cd open-arena
-uv sync                # installs the full workspace (engine + CLI)
-cp .env.example .env   # fill in only the providers you actually use
-cp config.example.yaml config.yaml
+configs/                          one registry per YAML, each field explained in comments
+  models.yaml  rewards.yaml  datasets.yaml  mcp_servers.yaml  a2a_agents.yaml
+  environments.yaml  evaluations.yaml  leaderboards.yaml
+tasks/hello-world/                a Harbor task: task.toml, instruction.md, environment/,
+                                  tests/test.sh, solution/solve.sh
+environments/python/environment/  an environment's build context
+.agents/skills/                   one Agent Skill per task
+AGENTS.md                         the guide a coding agent reads first (CLAUDE.md links to it)
+.env.template  .gitignore  README.md
 ```
-
-For local LLMs, point `OLLAMA_API_BASE` at your Ollama server (defaults to
-`http://localhost:11434`). Cloud providers are routed through litellm — any
-`*_API_KEY` variable from `.env.example` works (OpenAI, Anthropic, Gemini,
-Mistral, Cohere, Groq, Together, DeepSeek, xAI, OpenRouter, Azure, AWS).
-
-## Run
-
-```bash
-arena                          # uses ./config.yaml
-arena -c configs/eval.yaml     # different config
-arena --no-cache               # discard the .open-arena/ trial cache and start over
-arena --state-dir runs/exp1    # store trial state + TSVs here instead of .open-arena/
-```
-
-Use a distinct `--state-dir` per run to keep multiple runs side by side
-without their trial caches (and `last_run.tsv` / `frontier.tsv`) colliding.
-
-`arena --help` for the full option list.
-
-## Serve the API
-
-The repository now ships a persistent FastAPI backend backed by
-`.open-arena/api.db`.
-
-```bash
-export OPEN_ARENA_API_TOKEN=open-arena-dev-token
-arena serve
-```
-
-Useful CLI entry points:
-
-```bash
-arena                     # local config-driven run
-arena request GET /v1/metric-kinds
-```
-
-The API requires an `Authorization` header with the configured API token
-on every `/v1/*` endpoint. `/healthz` stays unauthenticated for local
-checks.
-
-
-## Architecture: ports & connectors
-
-Open Arena uses a **repository-pattern ports/adapters** architecture. Every
-external concern is hidden behind a port ABC; the concrete implementation
-is selected at startup via environment variables. This means you can swap
-storage, auth, environment resolution, or the results sink without touching
-any application logic.
-
-### Ports at a glance
-
-| Port | Default adapter | MF connector | Selecting env var |
-|---|---|---|---|
-| `Store` | `SQLiteStore` (`.open-arena/api.db`) | `SQLAlchemyStore` (Postgres + JSONB + Alembic) | `OPEN_ARENA_STORE=postgres` + `DATABASE_URL` |
-| `EnvironmentBackend` | `InlineEnvironmentBackend` | `GitEnvironmentBackend` (Gitea / GitHub) | `OPEN_ARENA_ENV_BACKEND=git` + `GITEA_BASE_URL` / `GITEA_TOKEN` / `GITEA_ORG` |
-| `DatasetResolver` | `LegacyDatasetResolver` | `UnityCatalogDataset` (Delta / Parquet over S3) | `OPEN_ARENA_DATASET_RESOLVER=unity_catalog` + `UNITY_CATALOG_API_URL` / `UC_TOKEN` |
-| `ResultsSink` | `StoreResultsSink` | `MlflowResultsSink` | `OPEN_ARENA_RESULTS_SINK=mlflow` + `MLFLOW_TRACKING_URI` |
-| `SandboxProvider` | `LocalSandboxProvider` | `E2BSandboxProvider` | `OPEN_ARENA_SANDBOX=e2b` + `E2B_API_KEY` |
-| `AuthProvider` | `StaticBearerAuthProvider` (`OPEN_ARENA_API_TOKEN`) | `KeycloakAuthProvider` (OIDC JWT) | `OPEN_ARENA_AUTH=keycloak` + `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` |
-
-All defaults reproduce the original behaviour — no configuration change required
-for existing deployments. See `src/api/ports/README.md` for the full contract
-and instructions for adding new adapters.
-
-**Single-tenant by design** — each ModelFactory org-node runs its own Open
-Arena instance; there is no shared multi-tenant data plane.  Keycloak OIDC
-authentication is available but optional.
-
-### CLI command overview
-
-```bash
-# Local sweep (default)
-arena                              # reads ./config.yaml
-arena -c configs/eval.yaml
-arena --no-cache
-arena --state-dir runs/exp1
-
-# API server
-arena serve                        # binds to 127.0.0.1:8000
-
-# API client (works with thin install too)
-arena request GET /v1/metric-kinds
-arena request POST /v1/leaderboards --file lb.json
-
-# Resource sub-commands
-arena env list --server http://your-server:8000
-arena verifier list
-arena leaderboard list
-arena run submit --file run.json
-arena discover metric-kinds
-```
-
-### Deployment
-
-Run locally with Docker Compose (lean stack: SQLite + Postgres forward,
-or full stack with MinIO + MLflow):
-
-```bash
-docker compose up --build            # lean stack
-docker compose --profile full up     # + MinIO + MLflow
-```
-
-Deploy to Kubernetes via the bundled Helm chart
-(org-node ready — one release per org, ingress at `arena.<org>.dev.reply-modelfactory.com`):
-
-```bash
-helm upgrade --install open-arena helm/open-arena \
-  --namespace open-arena --create-namespace \
-  --set secrets.OPEN_ARENA_API_TOKEN=your-token \
-  --set org=myorg
-```
-
-See `deploy/README.md` for the full environment variable contract and
-`helm/open-arena/README.md` for the ModelFactory org-node sub-chart pattern.
-## Launch the autoresearch agent
-
-A coding agent (Claude Code, Codex, Cursor, etc.) reads `AGENTS.md` /
-`CLAUDE.md` on startup. Both files instruct the agent: when the user
-asks to **start the research loop**, the agent should open
-`AUTORESEARCH.md`, walk through Setup with you (run tag, branch,
-smoke-tests, baseline `results.tsv`), wait for confirmation, then enter
-the autonomous experiment loop and not stop until you interrupt it.
-
-Trigger phrases (any of these, or an obvious paraphrase, kicks it off):
-
-- "start the research loop"
-- "begin autoresearch"
-- "run autoresearch"
-- "kick off the autoresearch loop"
-
-After confirmation, the agent edits `src/rewards/`, commits, runs
-`uv run arena > .open-arena/run.log 2>&1`, reads `.open-arena/last_run.tsv` directly
-to score the sweep (computing whatever agreement / correlation /
-trade-off statistics fit the iteration), and either advances or
-reverts the branch — repeating indefinitely. See `AUTORESEARCH.md`
-for the full protocol.
-
-## Configure
-
-A minimal `config.yaml`:
 
 ```yaml
+# configs/datasets.yaml
 datasets:
-  mmlu_test:
+  gsm8k-20:
     type: huggingface
-    path: cais/mmlu
-    name: all
-    split: test
-    streaming: true
-    limit: 50
-    batch_size: 1
-    input_template: |
-      {"messages": [{"role": "user", "content": {{ ("Q: " ~ question ~ "\nA) " ~ choices[0] ~ " B) " ~ choices[1] ~ " C) " ~ choices[2] ~ " D) " ~ choices[3]) | tojson }}}]}
-    output_template: |
-      {"role": "assistant", "content": {{ ["A","B","C","D"][answer] | tojson }}}
+    config:
+      path: openai/gsm8k
+      name: main
+      split: test
+      limit: 20
+      input_template: '{"question": {{ question | tojson }}}'
+      output_template: '{"answer": {{ answer.split(''####'')[-1] | replace('','', '''') | trim | tojson }}}'
+      input_schema: {type: object, properties: {question: {type: string, description: The question to answer}}, required: [question]}
+      output_schema: {type: object, properties: {answer: {type: string, description: The answer only}}, required: [answer]}
     generator:
-      temperature: 0.0
-      instructions: "Reply with one letter: A, B, C, or D."
-    reward:
-      name: exact_match
-      in_mask: [content]
-
-default: mmlu_test
-
-experiments:
-  language_models:
-    - ollama/mistral
-    - ollama/llama3.2
-  datasets:
-    - mmlu_test
+      instructions: Solve the problem. Reply with the final number only.
+    reward: exact-match
 ```
 
-Each `datasets:` entry carries its own `generator:` (instructions,
-temperature, etc.) and `reward:` because both are task-dependent. The
-sweep iterates the cross product `experiments.language_models ×
-experiments.datasets`.
+See the [guides](https://atena-it.github.io/open-arena/) for every registry.
 
-`config.example.yaml` is the full menu — every dataset provider and
-reward type with annotated examples.
+## Development
 
-### Dataset providers
-
-| `type:` | Source |
-|---|---|
-| `huggingface` | HuggingFace `datasets` library |
-| `local` | JSONL / CSV / Parquet on disk |
-| `folder` | Folder of files, one record per file (JSON / YAML / text / markdown) |
-| `langfuse` | [Langfuse](https://langfuse.com) datasets |
-| `langsmith` | [LangSmith](https://smith.langchain.com) datasets |
-| `opik` | [Comet Opik](https://www.comet.com/docs/opik/) datasets |
-| `phoenix` | [Arize Phoenix](https://arize.com/docs/phoenix) datasets |
-| `braintrust` | [Braintrust](https://www.braintrust.dev) datasets |
-
-All providers stream rows through Jinja2 templates that render to JSON
-matching the input/output data models (the defaults are chat-message
-shapes — a list of `{role, content}` for inputs, a single message for
-outputs).
-
-### Rewards
-
-| `name:` | What it does |
-|---|---|
-| `exact_match` | String-equality on the masked fields |
-| `cosine_similarity` | Cosine over `embedding_model` outputs |
-| `lm_as_judge` | Single-LM judge |
-| `recursive_lm_as_judge` | RLM agent inside a `ProgramAsJudge` — inspects the (gold, prediction) pair with code, recursively delegates semantic comparisons to a sub-LM |
-| `multi_judge_panel` | M small LMs vote in parallel; on disagreement (max-min spread > `agreement_threshold`) a smart LM breaks the tie |
-| `deep_eval` | Wraps any `deepeval.metrics` class (`GEval`, `FaithfulnessMetric`, `ToolCorrectnessMetric`, `PIILeakageMetric`, …). Per-slot mask routing maps `LLMTestCase` slots (input / actual_output / expected_output / context / retrieval_context / tools_called / expected_tools) to data-model fields independently. Install with `uv sync --extra deepeval`. |
-
-**Masking — different rule for comparison vs judge rewards:**
-
-- **Comparison rewards** (`exact_match`, `cosine_similarity`, regex / length
-  checks): pass `in_mask: [content]` so the comparison only sees the answer
-  field — `role` and friends would otherwise drive the score to 0.
-- **Judge rewards** (`lm_as_judge`, `recursive_lm_as_judge`, `multi_judge_panel`,
-  `deep_eval`): leave `in_mask` *unset*. The harness builds the eval
-  program with `Generator(return_inputs=True, …)`, so `y_pred` carries the
-  original input `messages` alongside the answer; the judge needs that
-  prompt to score whether the answer addresses the task. `in_mask: [content]`
-  would discard `messages` and leave the judge grading in a vacuum. See
-  `REWARDS_BUILDING.md` for the full rationale.
-
-### Agent mode (function-calling + MCP)
-
-A dataset that declares an `agent:` block runs as a multi-step
-`FunctionCallingAgent` instead of a single Generator call.
-MCP servers are declared once in a top-level `mcp_servers:` registry
-and referenced by name from each agentic dataset:
-
-```yaml
-mcp_servers:
-  math:
-    transport: stdio
-    command: python
-    args: ["/abs/path/to/math_server.py"]
-  weather:
-    transport: streamable_http
-    url: http://localhost:8000/mcp
-
-datasets:
-  agentic_math_eval:
-    type: folder
-    path: data/agent_cases
-    pattern: "*.json"
-    batch_size: 1
-    input_template: |
-      {"messages":[{"role":"user","content":{{ question | tojson }}}]}
-    agent:
-      type: function_calling          # only supported value
-      mcp_servers: [math]             # references the registry above
-      max_iterations: 5
-      autonomous: true
-      use_chain_of_thought: true
-      instructions: "Solve step by step using the available tools."
-    reward:
-      name: deep_eval
-      metric: ToolCorrectnessMetric
+```shell
+git clone https://github.com/Atena-IT/open-arena && cd open-arena
+uv sync
+uv run openarena --help
+uv run pytest                                          # no network needed
+uvx ruff check .
+uv run --group docs zensical build --clean --strict    # the docs site, into site/
+uv run --group docs zensical serve -a localhost:8100   # preview while editing
 ```
 
-`agent:` and `generator:` are mutually exclusive on a dataset. Tools
-are loaded from the listed MCP servers at trial-build time via
-`MultiServerMCPClient.get_tools()` so a misconfigured server fails the
-trial fast rather than producing a tool-less agent. Any
-`FunctionCallingAgent` constructor kwarg can be set under `agent:`
-except `language_model`/`tools`/`data_model`/`schema`, which are wired
-from the model and the dataset.
+| path | |
+| --- | --- |
+| `src/openarena/config/` | the schema: one model per registry entry, a run's config, `check` |
+| `src/openarena/evaluate.py` | `run_sweep`, every model × dataset cell |
+| `src/openarena/programs/` | the program each dataset kind is answered by |
+| `src/openarena/datasets/` | dataset providers |
+| `src/openarena/rewards/` | the reward catalog and openarena's own rewards |
+| `src/openarena/leaderboard.py` | `board` gathers results, `rank` scores them |
+| `src/openarena/harbor.py` | Harbor tasks, agents and sandboxes |
+| `src/openarena/cli/` | the `openarena` command and its `init` template |
+| `src/openarena/skills/` | the Agent Skills `init` copies into a workspace |
+| `docs/`, `mkdocs.yml` | the documentation site, built by [Zensical](https://zensical.org) |
 
-### Extra scoring functions via top-level `metrics:`
-
-To score every `(model, dataset)` trial with additional scoring functions
-beyond the dataset's primary `reward:`, list them under the top-level
-`metrics:` block. Any reward identifier (e.g. `lm_as_judge`,
-`cosine_similarity`, `multi_judge_panel`, `recursive_lm_as_judge`,
-`deep_eval`) is auto-wrapped in `synalinks.metrics.MeanMetricWrapper`
-so it rides the primary `evaluate()` pass — no extra K× model-call cost:
-
-```yaml
-metrics:
-  - class: lm_as_judge
-    alias: lm_judge
-    objective: true              # promote to oracle objective for ranking
-    language_model: ollama/llama3.2
-    instructions: "Score 0.0–1.0 on factual correctness."
-  - class: recursive_lm_as_judge
-    alias: rlm_judge
-    objective: true
-    # `language_model` drives code generation + structured submit, so it
-    # must be a capable model — small Ollama models can't do this reliably.
-    # `sub_language_model` (used for `llm_query`) can be cheap.
-    language_model: openai/gpt-4o
-    sub_language_model: openai/gpt-4o-mini
-    max_iterations: 8
-    max_llm_calls: 10
-    instructions: "Score 0.0–1.0 on factual correctness."
-```
-
-Each one becomes a column in the result matrix. With `objective: true`,
-the entry joins the dataset's tuner objective list (Pareto-ranked
-alongside the primary `reward:` and any other tagged entries).
-
-## Layout
-
-```
-src/
-  evaluate.py                         `arena` entrypoint — sweep runner, writes .open-arena/last_run.tsv (+ optional --json)
-  program.py                          Editable program graphs: build_program / build_agent
-  config.py                           Pydantic schema + validators for config.yaml
-  datasets/                           One file per provider + the registry
-  rewards/
-    deep_eval.py                      Wraps any DeepEval metric (per-slot mask routing)
-    multi_judge_panel.py
-    recursive_language_model_reward.py
-config.yaml                           Active config
-config.example.yaml                   Reference config (every provider / reward / agent example)
-.env.example                          Provider env vars
-AGENTS.md / CLAUDE.md                 Notes for AI coding agents
-AUTORESEARCH.md                       Autonomous experiment-loop protocol
-```
+The tests keep the docs and skills honest: every YAML example in them is
+checked against the engine (`tests/test_docs.py`, `tests/test_skills.py`), and
+the CLI reference must name every command and option.
 
 ## License
 
-Apache 2.0 — see file headers.
+[Apache 2.0](LICENSE).

@@ -1,0 +1,10 @@
+# Keys and endpoints (copy .env.template)
+.env
+
+# Runs: configs snapshots, results, Harbor trials
+.open-arena/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/

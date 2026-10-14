@@ -1,1 +1,0 @@
-"""Open Arena API package."""

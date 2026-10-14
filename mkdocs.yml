@@ -1,0 +1,104 @@
+# The openarena documentation site, built by Zensical (which reads this file):
+#   uv run --group docs zensical build --clean          # into site/
+#   uv run --group docs zensical serve -a localhost:8100
+# Published to GitHub Pages by .github/workflows/docs.yml.
+site_name: openarena
+site_description: Compare language models and agents on datasets, score them, and rank them on leaderboards.
+site_url: https://atena-it.github.io/open-arena/
+repo_url: https://github.com/Atena-IT/open-arena
+repo_name: Atena-IT/open-arena
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  icon:
+    logo: material/scale-balance
+    repo: fontawesome/brands/github
+  features:
+    - content.code.copy
+    - content.tabs.link
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+
+nav:
+  - Quickstart: index.md
+  - Introduction: introduction.md
+  - The workspace: workspace.md
+  - Guides:
+      - Models: guides/models.md
+      - Rewards: guides/rewards.md
+      - Datasets: guides/datasets.md
+      - MCP tools: guides/mcp-tools.md
+      - A2A agents: guides/a2a-agents.md
+      - Environments: guides/environments.md
+      - Harbor tasks: guides/harbor-tasks.md
+      - Running evaluations: guides/evaluations.md
+      - Leaderboards: guides/leaderboards.md
+      - Reading results: guides/results.md
+      - Checking configs: guides/check.md
+  - With a coding agent: coding-agents.md
+  - CLI reference: cli.md
+  - API reference:
+      - api/index.md
+      - Configuration entries: api/entries.md
+      - Run configuration: api/config.md
+      - Checking: api/check.md
+      - Running a sweep: api/evaluate.md
+      - Leaderboards: api/leaderboard.md
+      - Dataset providers: api/datasets.md
+      - Rewards: api/rewards.md
+      - Harbor: api/harbor.md
