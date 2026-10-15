@@ -127,14 +127,37 @@ def test_a_group_weighs_its_share_whatever_its_size():
 
 
 def test_no_weights_is_the_plain_mean_and_weights_move_the_ranking():
-    cells = {("m", "x"): 1.0, ("m", "y"): 0.0, ("n", "x"): 0.0, ("n", "y"): 1.0, ("o", "x"): 0.5, ("o", "y"): 0.5}
+    # `n` wins `x`, `m` wins `y`: on a tie `m` sorts first, so only the weight can put `n` on top.
+    cells = {("m", "x"): 0.0, ("m", "y"): 1.0, ("n", "x"): 1.0, ("n", "y"): 0.0, ("o", "x"): 0.5, ("o", "y"): 0.5}
     data = _scores(cells)
     plain = {r["model"]: r["score"] for r in lb.rank(data, shares={"reward": 100})["rows"]}
     assert plain["m"] == pytest.approx(plain["n"])  # a tie on the plain mean
-    tilted = lb.rank(data, shares={"reward": 100}, dataset_shares={"x": 3})["rows"]
-    assert tilted[0]["model"] == "m"
-    top = tilted[0]
-    assert sum(top["dataset_contributions"].values()) == pytest.approx(top["score"])  # the score, decomposed
+    for weighed in ({"group_shares": {"x": 3}}, {"dataset_shares": {"x": 3}}):
+        tilted = lb.rank(data, shares={"reward": 100}, **weighed)["rows"]
+        assert [r["model"] for r in tilted] == ["n", "o", "m"], weighed
+        top = tilted[0]
+        assert top["score"] == pytest.approx((3 * 1.0 + 0.05) / 4)
+        assert sum(top["dataset_contributions"].values()) == pytest.approx(top["score"])  # the score, decomposed
+
+
+def test_dataset_shares_weigh_datasets_in_no_group():
+    # A CLI run names no groups: each dataset is its own, and its `dataset_shares` is its weight.
+    assert lb.dataset_weights(["x", "y"], None, None, {"x": 3}) == {"x": 3.0, "y": 1.0}
+    assert lb.dataset_weights(["x", "y"], None, {"x": 2}, {"x": 3, "y": 0}) == {"x": 6.0, "y": 0.0}
+    # Next to a real group, an ungrouped dataset still counts as a group of one.
+    w = lb.dataset_weights(["a1", "a2", "b"], {"a1": "a", "a2": "a"}, None, {"a1": 3, "b": 2})
+    assert w == {"a1": 0.75, "a2": 0.25, "b": 2.0}
+
+
+def test_dataset_shares_split_a_named_group_as_before():
+    # An import's groups, even a group of one, split their share among their datasets.
+    groups = {"a1": "a", "a2": "a", "b": "b"}
+    assert lb.dataset_weights(["a1", "a2", "b"], groups, None, {"a1": 3, "b": 5}) == {"a1": 0.75, "a2": 0.25, "b": 1.0}
+    cells = {("m", "a1"): 1.0, ("m", "a2"): 0.0, ("m", "b"): 0.0, ("n", "a1"): 0.0, ("n", "a2"): 1.0, ("n", "b"): 1.0}
+    data = _scores(cells, groups)
+    ranked = lb.rank(data, shares={"reward": 100}, dataset_shares={"a1": 3, "b": 5})["rows"]
+    # m: (0.75 * 1 + 0.25 * 0.05 + 1 * 0.05) / 2; n: (0.75 * 0.05 + 0.25 * 1 + 1 * 1) / 2
+    assert {r["model"]: r["score"] for r in ranked} == pytest.approx({"m": 0.40625, "n": 0.64375})
 
 
 def test_a_dataset_weighed_zero_is_neither_scored_nor_required():

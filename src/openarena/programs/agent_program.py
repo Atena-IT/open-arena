@@ -15,6 +15,17 @@ import synalinks
 from openarena.programs.utils import language_model as _language_model, safe_name
 
 
+class McpToolsUnavailable(RuntimeError):
+    """The agent's MCP servers gave no tools: one is down, its command is not on the PATH, or it exposes none."""
+
+
+def _reason(e: BaseException) -> str:
+    """What went wrong, as one line: the first error inside an exception group (the MCP client opens servers in a task group)."""
+    while isinstance(e, BaseExceptionGroup) and e.exceptions:
+        e = e.exceptions[0]
+    return " ".join(f"{type(e).__name__}: {e}".split())
+
+
 async def build_agent(
     model_id: str,
     dataset,
@@ -33,8 +44,10 @@ async def build_agent(
       - `type` (str): only `"function_calling"` is supported today.
       - `mcp_servers` (dict): `{server_name: connection_dict}` passed to
         `MultiServerMCPClient`. Tool list is loaded eagerly via
-        `client.get_tools()` so a missing server fails the trial fast
-        rather than silently producing a tool-less agent.
+        `client.get_tools()` so a server that is down, a command not on
+        the PATH or a server with no tools raises `McpToolsUnavailable`
+        rather than silently producing a tool-less agent; the sweep then
+        fails that cell, saying why, and runs the others.
       - `return_inputs` (bool): prepend the row's input fields to the answer,
         as `Generator(return_inputs=True)` does. Default False.
     `return_inputs_with_trajectory` (default True) keeps the
@@ -83,9 +96,14 @@ async def build_agent(
             cfg["data_model"] = dataset.output_data_model
 
     client = synalinks.MultiServerMCPClient(connections=server_connections)
-    tools = await client.get_tools()
+    try:
+        tools = await client.get_tools()
+    except Exception as e:  # noqa: BLE001 - any way the servers fail is the same failure
+        raise McpToolsUnavailable(
+            f"agent: could not load the MCP tools of {sorted(server_connections)}: {_reason(e)}"
+        ) from e
     if not tools:
-        raise ValueError(
+        raise McpToolsUnavailable(
             f"agent: no MCP tools loaded from servers {sorted(server_connections)} "
             f"— check that each server is reachable and exposes at least one tool."
         )

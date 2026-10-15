@@ -18,6 +18,7 @@ Harbor sandbox, a sweep's grid), which the app also takes alone to check or laun
 
 from __future__ import annotations
 
+import re
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
@@ -71,20 +72,43 @@ def _clean_mapping(mapping: dict[str, str], what: str) -> dict[str, str]:
 
 # -- metrics and the agent block ---------------------------------------------
 
+# The measurements where less is better: what the calls spend (tokens, money,
+# time) and how often they fail, read off the metric's snake_case name, so the
+# reward / embedding / optimizer / per-call variants (`reward_cost`,
+# `avg_embedding_latency`, `avg_output_tokens_per_call`) follow. Rates
+# (`throughput`, `tokens_per_second`, `cache_hit_rate`) and cached tokens are
+# better higher.
+_LOWER_IS_BETTER = re.compile(
+    r"((?<!cached_)tokens|token_share|cost|latency|time_to_[a-z_]+|elapsed_time|error_rate|failed_calls|fallback_activations)"
+    r"(_per_call|_per_invocation)?$"
+)
+
+
+def metric_direction(class_name: str) -> Direction:
+    """Which way is better for a metric written without `direction:`: `min` for a cost, tokens or latency measurement, else `max`."""
+    snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", class_name).lower()
+    return "min" if _LOWER_IS_BETTER.search(snake) else "max"
+
 
 class MetricEntry(BaseModel):
     """One entry of a `metrics:` list (an evaluation's or a dataset's).
 
     Written as a bare string (`- total_tokens`) or a mapping with `class:`
     plus an optional `alias:` / `direction:` / `objective:` and any
-    constructor kwargs; the string is read as `{class: ...}`.
+    constructor kwargs; the string is read as `{class: ...}`. Without
+    `direction:`, a measurement of what the calls spend (`cost`,
+    `total_tokens`, `avg_latency`, ...) is better lower and anything else
+    higher (`metric_direction`).
     """
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     class_name: str = Field(alias="class")
     alias: str | None = None
-    direction: Direction = "max"
+    direction: Direction | None = Field(
+        default=None,
+        description="Which way is better. Unset, `min` for a cost, tokens or latency measurement, `max` for anything else.",
+    )
     objective: bool = False
 
     @model_validator(mode="before")
@@ -93,6 +117,12 @@ class MetricEntry(BaseModel):
         if isinstance(value, str):
             return {"class": value}
         return value
+
+    @model_validator(mode="after")
+    def _default_direction(self) -> MetricEntry:
+        if self.direction is None:
+            self.direction = metric_direction(self.class_name)
+        return self
 
     @property
     def kwargs(self) -> dict[str, Any]:

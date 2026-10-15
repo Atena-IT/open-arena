@@ -68,6 +68,7 @@ from openarena.config.entries import (
     McpServerSpec as McpServerSpec,
     McpTransport as McpTransport,
     MetricEntry as MetricEntry,
+    metric_direction as metric_direction,
     ModelEntry as ModelEntry,
     ModelSpec as ModelSpec,
     Name as Name,
@@ -247,6 +248,11 @@ class Config(BaseModel):
         }
 
     def _id(self, value: Any, wanted: ModelType, where: str) -> Any:
+        """The model a reward, a metric or the evaluation names by key: its id, or `{model, **params}` when its entry has params.
+
+        `rewards.get` (and `rewards.build_models`) builds the mapping with
+        those params, as the models under test are built with `lm_kwargs`.
+        """
         if not isinstance(value, str) or not value:
             return value  # unset: the default model
         entry = self.models.get(value)
@@ -254,10 +260,11 @@ class Config(BaseModel):
             raise ValueError(f"{where}: {value!r} is not in `models:`; declared: {sorted(self.models) or ['(empty registry)']}.")
         if entry.type != wanted:
             raise ValueError(f"{where}: {value!r} is {A_MODEL[entry.type]}; this setting needs {A_MODEL[wanted]}.")
-        return entry.model
+        params = self.lm_kwargs(value)
+        return {"model": entry.model, **params} if params else entry.model
 
     def _resolve(self, kwargs: dict[str, Any], where: str) -> dict[str, Any]:
-        """`kwargs` with every model it names by key turned into that entry's id."""
+        """`kwargs` with every model it names by key turned into that entry's id, or `{model, **params}` (`_id`)."""
         out = dict(kwargs)
         for key, wanted in MODEL_KWARGS.items():
             if key in out:
@@ -282,12 +289,14 @@ class Config(BaseModel):
 
     @classmethod
     def load(cls, path: str | Path) -> "Config":
-        """Parse + validate a YAML config file."""
+        """Parse + validate a YAML config file, each `${NAME}` in it replaced by the environment variable (`files.expand`)."""
+        from openarena.config.files import expand
+
         path = Path(path)
         with path.open() as f:
             raw = yaml.safe_load(f) or {}
         try:
-            return cls.model_validate(raw)
+            return cls.model_validate(expand(raw))
         except ValidationError as e:
             raise ValueError(f"{path}: invalid config:\n{e}") from e
 
@@ -307,12 +316,18 @@ class Config(BaseModel):
         return self.evaluation.batch_size
 
     @property
-    def default_language_model(self) -> str | None:
-        return self._id(self.evaluation.default_language_model, "llm", "evaluation.default_language_model")
+    def default_language_model(self) -> Any:
+        """The evaluation's default language model: its id, or the model built with its entry's params."""
+        from openarena.rewards import build_models
+
+        return build_models({"language_model": self._id(self.evaluation.default_language_model, "llm", "evaluation.default_language_model")})["language_model"]
 
     @property
-    def default_embedding_model(self) -> str | None:
-        return self._id(self.evaluation.default_embedding_model, "embedding", "evaluation.default_embedding_model")
+    def default_embedding_model(self) -> Any:
+        """The evaluation's default embedding model: its id, or the model built with its entry's params."""
+        from openarena.rewards import build_models
+
+        return build_models({"embedding_model": self._id(self.evaluation.default_embedding_model, "embedding", "evaluation.default_embedding_model")})["embedding_model"]
 
     @property
     def metrics(self) -> list[MetricEntry]:
@@ -329,7 +344,7 @@ class Config(BaseModel):
         return entry.model if entry is not None else name
 
     def lm_kwargs(self, name: str) -> dict[str, Any]:
-        """Keyword arguments for `LanguageModel(model=self.model_id(name), ...)`.
+        """Keyword arguments for `LanguageModel(model=self.model_id(name), ...)`, or `EmbeddingModel(...)` for an embedding model.
 
         Empty for a model with no params, in which case the program builders
         hand the framework the bare id.

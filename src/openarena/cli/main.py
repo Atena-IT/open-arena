@@ -67,7 +67,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from openarena.config.files import evaluation_config, load_yaml, registries
+from openarena.config.files import evaluation_config, expand, load_yaml, registries
 
 TEMPLATES = Path(__file__).parent / "templates"
 # The engine's Agent Skills, one per action; `init` copies them into the workspace's `.agents/skills/`.
@@ -463,7 +463,8 @@ def evaluations_run(
         console.print(f"Read [bold]{configs.parent / '.env'}[/]")
     try:
         raw = evaluation_config(configs, name)
-        Config.model_validate(raw)
+        # Validated as the run will read it, `${NAME}`s replaced; the snapshot below keeps the references.
+        Config.model_validate(expand(raw))
     except (FileNotFoundError, ValueError) as e:
         raise click.ClickException(str(e)) from None
     except KeyError as e:
@@ -507,6 +508,11 @@ def evaluations_run(
     _results(result)
     if json_out is not None:
         _write_json(json_out, result)
+    # The scores are written either way; a cell that gave none makes the run fail, so a script or CI sees it.
+    failed = sorted({(r["model"], r["dataset"]) for r in result["rows"] if str(r.get("status")) in ("FAILED", "INVALID")})
+    if failed:
+        console.print(f"[red]{len(failed)} cell(s) failed[/]: " + ", ".join(f"{m} × {d}" for m, d in failed))
+        raise SystemExit(1)
 
 
 @leaderboards.command("run")
@@ -525,6 +531,15 @@ def leaderboards_run(name: str, configs: Path, state_dir: Path, no_eol: bool, js
         raise click.ClickException(str(e)) from None
     except KeyError as e:
         raise click.ClickException(e.args[0]) from None
+    # Validated as `openarena check` validates it: a budget or a share the schema refuses is never ranked by.
+    from openarena.config.check import check_registry
+
+    errors = check_registry("leaderboards", {name: saved}).errors
+    if errors:
+        said = "\n".join(f"  {p.where}: {p.message}" + ("\n    fix: " + p.fix.replace("\n", "\n         ") if p.fix else "") for p in errors)
+        raise click.ClickException(
+            f"the leaderboard {name!r} does not validate:\n{said}\nsee each problem with its line: `openarena check {configs / 'leaderboards.yaml'}`"
+        )
     runs = finished_runs(state_dir)
     if not runs:
         raise click.ClickException(f"no finished runs under {state_dir}; run one with `openarena evaluations run`")

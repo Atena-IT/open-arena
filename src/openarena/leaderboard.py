@@ -134,19 +134,26 @@ def dataset_weights(
 ) -> dict[str, float]:
     """Each dataset's weight in a model's score: its group's share, split among the group's datasets by theirs.
 
-    A group weighs what its share says whatever the number of datasets in it
-    (a dataset in no group is a group of one); a share left out is 1, so with
-    no shares every dataset weighs the same and the score is the plain mean.
+    A group weighs what its share says whatever the number of datasets in it;
+    a share left out is 1, so with no shares every dataset weighs the same and
+    the score is the plain mean:
+
+        weight(d) = group_shares[group(d)] * dataset_shares[d] / sum of dataset_shares in group(d)
+
+    A dataset in no group (every dataset of a CLI run, which names none) is a
+    group of one keyed by its name, with nothing to split: dividing by its own
+    share would cancel it, so it weighs `group_shares[d] * dataset_shares[d]`.
     """
     groups, group_shares, dataset_shares = groups or {}, group_shares or {}, dataset_shares or {}
     group_of = {d: groups.get(d, d) for d in datasets}
     totals: dict[str, float] = {}
     for d in datasets:
         totals[group_of[d]] = totals.get(group_of[d], 0.0) + dataset_shares.get(d, 1.0)
-    return {
-        d: group_shares.get(group_of[d], 1.0) * dataset_shares.get(d, 1.0) / totals[group_of[d]] if totals[group_of[d]] > 0 else 0.0
-        for d in datasets
-    }
+    weights = {}
+    for d in datasets:
+        total = totals[group_of[d]] if d in groups else 1.0
+        weights[d] = group_shares.get(group_of[d], 1.0) * dataset_shares.get(d, 1.0) / total if total > 0 else 0.0
+    return weights
 
 
 def default_datasets(data: dict) -> list[str]:

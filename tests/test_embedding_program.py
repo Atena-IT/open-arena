@@ -5,6 +5,8 @@
 import asyncio
 import os
 
+import pytest
+
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 from synalinks.src.backend import JsonDataModel
@@ -47,3 +49,57 @@ def test_recall_over_the_gold_chunks():
     gold = JsonDataModel(json={"chunks": ["a", "b"]}, schema={"type": "object", "properties": {"chunks": {"type": "array"}}})
     pred = JsonDataModel(json={"chunks": [" a ", "z"]}, schema={"type": "object", "properties": {"chunks": {"type": "array"}}})
     assert asyncio.run(reward(gold, pred)) == 0.5
+
+
+def test_the_model_under_test_is_built_with_its_dimensions():
+    from openarena.programs.embedding_program import build_embedding
+    from openarena.rewards import get
+
+    class Rows:
+        input_schema = None
+
+    program = asyncio.run(build_embedding("openai/text-embedding-3-small", Rows(), {"k": 2}, get("retrieval_recall"), lm_kwargs={"dimensions": 256}))
+    [retriever] = [m for m in program._flatten_modules(recursive=True) if isinstance(m, EmbeddingRetriever)]
+    assert retriever.embedding_model.model == "openai/text-embedding-3-small"
+    assert retriever.embedding_model.default_kwargs == {"dimensions": 256}
+
+
+def test_a_sweep_hands_the_model_under_test_its_dimensions(tmp_path, monkeypatch):
+    import json
+
+    import yaml
+
+    import openarena.evaluate as evaluate
+
+    seen = {}
+
+    class Stop(Exception):
+        pass
+
+    async def build(model_id, dataset, embedding_kwargs, reward, metrics=None, lm_kwargs=None):
+        seen.update(model=model_id, lm_kwargs=lm_kwargs)
+        raise Stop
+
+    monkeypatch.setattr(evaluate, "build_embedding", build)
+    (tmp_path / "rows.jsonl").write_text(json.dumps({"query": "q", "passages": ["a", "b"], "gold": ["a"]}) + "\n")
+    config = {
+        "models": {"minilm": {"model": "ollama/all-minilm", "type": "embedding", "params": {"dimensions": 384}}},
+        "rewards": {"recall": {"type": "retrieval_recall"}},
+        "datasets": {
+            "passages": {
+                "type": "local",
+                "config": {
+                    "path": str(tmp_path / "rows.jsonl"),
+                    "input_template": '{"query": {{ query | tojson }}, "chunks": {{ passages | tojson }}}',
+                    "output_template": '{"chunks": {{ gold | tojson }}}',
+                },
+                "embedding": {"k": 1},
+                "reward": "recall",
+            }
+        },
+        "evaluation": {"name": "e", "language_models": ["minilm"], "datasets": ["passages"]},
+    }
+    (tmp_path / "config.yaml").write_text(yaml.safe_dump(config))
+    with pytest.raises(Stop):
+        asyncio.run(evaluate.run_sweep(str(tmp_path / "config.yaml"), state_dir=tmp_path / "state"))
+    assert seen == {"model": "ollama/all-minilm", "lm_kwargs": {"dimensions": 384}}
