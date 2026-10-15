@@ -415,7 +415,7 @@ that model runs. `--no-cache` starts the evaluation over.
     gives no score. With a missing key (`Missing credentials ...
     OPENAI_API_KEY`) or a model Ollama has not pulled, every call fails, and
     the cell ends with
-    `qwen38 failed: no row got an answer: all N call(s) failed; the first: <error>`
+    `qwen38 failed: no row got an answer: all N row(s) failed; the first error: <error>`
     and `—` in the table. The other cells still run, and at the end the
     command prints `1 cell(s) failed: qwen38 × gsm8k-20` and exits 1.
 

@@ -354,7 +354,7 @@ Things go wrong at three levels:
 | level | what happens | what you see |
 |---|---|---|
 | a row | a model call fails five times: the row gets no answer and scores 0 | `All retries failed for ...` in the log; a lower reward |
-| a cell | an error the cell cannot get past (a template naming a missing column, an agent whose MCP servers give no tools), or no row got an answer at all (a missing key, a model server that is down, a model id the provider does not know): the cell is recorded as failed, and the run moves on | `<model> failed: <why>`, for example `no row got an answer: all 20 call(s) failed; the first: <error>`; `—` in the table; a status other than `COMPLETED` in `result.json` |
+| a cell | an error the cell cannot get past (a template naming a missing column, an agent whose MCP servers give no tools), or no row got an answer at all (a missing key, a model server that is down, a model id the provider does not know): the cell is recorded as failed, and the run moves on | `<model> failed: <why>`, for example `no row got an answer: all 20 row(s) failed; the first error: <error>`; `—` in the table; a status other than `COMPLETED` in `result.json` |
 | the run | every cell runs, however many fail; then, if any cell failed, the command exits 1 | after the table and `result.json`, `N cell(s) failed: <model> × <dataset>, ...` |
 
 A row an A2A agent does not answer (an error, a task that did not complete,

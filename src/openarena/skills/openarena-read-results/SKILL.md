@@ -97,7 +97,7 @@ python3 -c "import json,sys; t=json.load(open(sys.argv[1])); print(t['hyperparam
 
 A provider error on one row does not fail the cell: that row gets no answer
 and scores 0, with a warning. When **no** row got an answer, the cell is
-`FAILED` with `no row got an answer: all N call(s) failed; the first: <the
+`FAILED` with `no row got an answer: all N row(s) failed; the first error: <the
 error>`: a missing key or an unreachable server shows there, not as a 0. A
 plain rerun runs the failed cells again, so after fixing the cause no
 `--no-cache` is needed. A `COMPLETED` cell is reused as it is, its 0s too:

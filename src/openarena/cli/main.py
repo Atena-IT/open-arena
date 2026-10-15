@@ -463,8 +463,10 @@ def evaluations_run(
         console.print(f"Read [bold]{configs.parent / '.env'}[/]")
     try:
         raw = evaluation_config(configs, name)
-        # Validated as the run will read it, `${NAME}`s replaced; the snapshot below keeps the references.
-        Config.model_validate(expand(raw))
+        # As the run will read it, `${NAME}`s replaced: validated, and what the folders below are copied from.
+        # The snapshot keeps the references, not the values.
+        resolved = expand(raw)
+        Config.model_validate(resolved)
     except (FileNotFoundError, ValueError) as e:
         raise click.ClickException(str(e)) from None
     except KeyError as e:
@@ -475,14 +477,14 @@ def evaluations_run(
     config_path = run_dir / "config.yaml"
     config_path.write_text(yaml.safe_dump(raw, sort_keys=False))
     # Each environment's task folder beside the config, as the app snapshots it: what the tasks build from.
-    for environment in raw.get("environments") or {}:
+    for environment in resolved.get("environments") or {}:
         source, copy = configs.parent / "environments" / environment, run_dir / "environments" / environment
         # As it is now: a file removed since the last run must not linger in this one.
         shutil.rmtree(copy, ignore_errors=True)
         if source.is_dir():
             shutil.copytree(source, copy)
     # A `harbor_tasks` dataset's task folders, read from its `path` relative to the config, as the app copies them.
-    for dataset in (raw.get("datasets") or {}).values():
+    for dataset in (resolved.get("datasets") or {}).values():
         tasks = (dataset.get("config") or {}).get("path") if dataset.get("type") == "harbor_tasks" else None
         if tasks and not Path(tasks).is_absolute():
             source, copy = configs.parent / tasks, run_dir / tasks

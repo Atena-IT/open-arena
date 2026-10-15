@@ -120,8 +120,8 @@ there.
 A cell fails alone and the run goes on to the next one. It fails when its
 program cannot be built (an agent whose MCP servers give no tools:
 `could not load the MCP tools of [...]`), when an error stops it, or when
-**no row got an answer** (`no row got an answer: all N call(s) failed; the
-first: <the provider's error>`): a missing key, a model server that is down,
+**no row got an answer** (`no row got an answer: all N row(s) failed; the
+first error: <the provider's error>`): a missing key, a model server that is down,
 an unknown model id, an A2A agent that cannot be reached. A row that alone
 gets no answer (a flaky call, an A2A row the agent does not answer) scores 0,
 with a warning, and the cell goes on.

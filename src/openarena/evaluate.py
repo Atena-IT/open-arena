@@ -191,20 +191,14 @@ class _RunMonitor(synalinks.callbacks.Monitor):
 
 
 class _Tally(synalinks.hooks.Hook):
-    """Count one answering module's calls by outcome for `_NoAnswerGuard`: answered, or nothing back and why."""
+    """Keep the first error an answering module's call met, for `_NoAnswerGuard` to say why no row got an answer."""
 
     def __init__(self, guard):
         super().__init__()
         self._guard = guard
 
     def on_call_end(self, call_id, parent_call_id=None, outputs=None, exception=None):
-        if outputs is not None:
-            # The calls that build the program are symbolic: no row is answered there.
-            if _as_json(outputs) is not None:
-                self._guard.answered += 1
-            return
-        self._guard.unanswered += 1
-        if self._guard.first_error is None:
+        if outputs is None and self._guard.first_error is None:
             self._guard.first_error = exception or self._why()
 
     def _why(self) -> str | None:
@@ -222,14 +216,17 @@ class _Tally(synalinks.hooks.Hook):
 class _NoAnswerGuard(synalinks.callbacks.Callback):
     """Fail a cell none of whose rows got an answer, with the first error a call met.
 
-    Every call failing is a missing key, a model server that is down, a model
-    id the provider does not know or an agent that cannot be reached, not the
-    model under test; scored 0 it would be cached and sit on the leaderboard
-    as the model's result. The calls are counted on the modules that answer a
-    row (the program's language and embedding models, an A2A agent); a cell
-    where some call got an answer keeps its 0 for the rows that did not, as a
-    flaky call. Raised at the end of the cell's evaluation, it fails the
-    cell's trial, which a resume runs again. A Harbor cell has its own guard
+    Every row unanswered is a missing key, a model server that is down, a
+    model id the provider does not know or an agent that cannot be reached,
+    not the model under test; scored 0 it would be cached and sit on the
+    leaderboard as the model's result. Rows are counted on the program's
+    predictions (`compute_metrics`, as `_tee_samples` reads them), so an agent
+    whose tool calls went through but whose final answers all failed counts
+    as unanswered; the hooks on the modules that answer (language and
+    embedding models, an A2A agent) only keep the first error. A cell where
+    some row got an answer keeps its 0 for the rows that did not, as a flaky
+    call. Raised at the end of the cell's evaluation, it fails the cell's
+    trial, which a resume runs again. A Harbor cell has its own guard
     (`no_answer_guard`).
     """
 
@@ -244,12 +241,30 @@ class _NoAnswerGuard(synalinks.callbacks.Callback):
                 tally = _Tally(self)
                 tally.set_module(module)
                 module.add_hook(tally)
+        inner = program.compute_metrics
+        # As in `_tee_samples`: the framework's build-time call on the first batch is not a row answered.
+        builds = not all(m.built for m in program._flatten_modules())
+
+        async def compute_metrics(x, y, y_pred):
+            compiled = getattr(program, "_compile_metrics", None)
+            building = builds and compiled is not None and not compiled.built
+            rows = len(x) if x is not None else 0
+            if not building and rows > 0 and _as_json(x[0]) is not None:
+                for i in range(rows):
+                    answer = _as_json(y_pred[i]) if y_pred is not None and i < len(y_pred) else None
+                    if answer is None:
+                        self.unanswered += 1
+                    else:
+                        self.answered += 1
+            return await inner(x, y, y_pred)
+
+        program.compute_metrics = compute_metrics
 
     def on_test_end(self, logs=None):
         if self.unanswered and not self.answered:
             why = " ".join(str(self.first_error or "see the warnings above").split())
             raise keras_tuner.errors.FailedTrialError(
-                f"no row got an answer: all {self.unanswered} call(s) failed; the first: {why[:500]}"
+                f"no row got an answer: all {self.unanswered} row(s) failed; the first error: {why[:500]}"
             )
 
 

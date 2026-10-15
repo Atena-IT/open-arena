@@ -146,9 +146,11 @@ def dataset_weights(
     """
     groups, group_shares, dataset_shares = groups or {}, group_shares or {}, dataset_shares or {}
     group_of = {d: groups.get(d, d) for d in datasets}
+    # Only the datasets a group names share its weight: one in no group that bears a group's name is not in it.
     totals: dict[str, float] = {}
     for d in datasets:
-        totals[group_of[d]] = totals.get(group_of[d], 0.0) + dataset_shares.get(d, 1.0)
+        if d in groups:
+            totals[groups[d]] = totals.get(groups[d], 0.0) + dataset_shares.get(d, 1.0)
     weights = {}
     for d in datasets:
         total = totals[group_of[d]] if d in groups else 1.0

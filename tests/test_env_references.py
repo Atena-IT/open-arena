@@ -75,3 +75,40 @@ def test_check_warns_about_a_variable_set_nowhere_and_reads_the_env_file(tmp_pat
     assert problems() == []
     (tmp_path / ".env").write_text("BOT_URL=bot.example.com\nBOT_TOKEN=t\n")
     assert [level for level, where in problems() if where.startswith("a2a_agents.bot.url")] == ["error"]
+
+
+def test_an_unset_value_is_not_judged_by_its_entry_rules_either(tmp_path, monkeypatch):
+    # A streamable-HTTP server checks its url's scheme on the entry, not the field: an unset `${MCP_URL}` must not trip it.
+    monkeypatch.delenv("MCP_URL", raising=False)
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    servers = {"mcp_servers": {"docs": {"transport": "streamable_http", "url": "${MCP_URL}"}}}
+    (configs / "mcp_servers.yaml").write_text(yaml.safe_dump(servers))
+    assert [(p.level, p.where) for r in check_folder(configs) for p in r.problems] == [("warning", "mcp_servers.docs.url")]
+    # An error of its own on the same entry still shows.
+    servers["mcp_servers"]["docs"]["timeout"] = 5
+    (configs / "mcp_servers.yaml").write_text(yaml.safe_dump(servers))
+    assert ("error", "mcp_servers.docs.timeout") in [(p.level, p.where) for r in check_folder(configs) for p in r.problems]
+
+
+def test_a_task_folder_named_by_a_variable_is_copied_into_the_run(tmp_path, monkeypatch):
+    import openarena.evaluate as evaluate
+
+    async def fake_sweep(config_path, **kwargs):
+        return {"meta": {"models": [], "datasets": [], "metrics": ["reward"]}, "rows": []}
+
+    monkeypatch.setattr(evaluate, "run_sweep", fake_sweep)
+    monkeypatch.delenv("TASK_DIR", raising=False)
+    init(tmp_path)
+    path = tmp_path / "configs" / "datasets.yaml"
+    datasets = yaml.safe_load(path.read_text())
+    [name] = [n for n, e in datasets["datasets"].items() if e.get("type") == "harbor_tasks"]
+    datasets["datasets"][name]["config"]["path"] = "${TASK_DIR}"
+    path.write_text(yaml.safe_dump(datasets))
+    (tmp_path / ".env").write_text("TASK_DIR=tasks\n")
+    state = tmp_path / "state"
+    ran = CliRunner().invoke(cli, ["evaluations", "run", "harbor", "--configs", str(tmp_path / "configs"), "--state-dir", str(state)])
+    monkeypatch.delenv("TASK_DIR", raising=False)  # set by the run's `.env`
+    assert ran.exit_code == 0, ran.output
+    assert (state / "harbor" / "tasks" / "hello-world" / "task.toml").is_file()
+    assert "${TASK_DIR}" in (state / "harbor" / "config.yaml").read_text()

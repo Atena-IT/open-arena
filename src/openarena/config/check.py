@@ -58,6 +58,9 @@ from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN
 from openarena.config.errors import Invalid
 from openarena.config.files import SECTIONS, expand, gather, load_yaml, references
 
+# What an unset `${NAME}` is checked as: a value most fields take (a string, a url).
+UNSET_PROBE = "https://unset.invalid"
+
 # The names the app accepts as keys.
 NAME = re.compile(NAME_PATTERN)
 
@@ -928,8 +931,12 @@ def check_file(path: Path, *, beside: Path | None = None) -> Report:
             f"`${{{name}}}` is not set in your shell or in {env_file}; a run that reads it refuses to start",
             f"add `{name}=...` to {env_file}, or export it",
         )
-    body = expand(body, environ, keep_unset=True)
-    found = expand(_beside(folder, path, report), environ, keep_unset=True)
+    # An unset value is checked as a neutral one, so neither its field's rule nor its entry's (a url's
+    # scheme, a transport's url) judges the reference's own text; the warning above says it.
+    beside = _beside(folder, path, report)
+    probe = {**{name: UNSET_PROBE for _, name in references(body) + references(beside)}, **environ}
+    body = expand(body, probe)
+    found = expand(beside, probe)
     found[section] = {k: v or {} for k, v in body.items()}
     _check_entries(
         report,
@@ -940,7 +947,7 @@ def check_file(path: Path, *, beside: Path | None = None) -> Report:
         f"`openarena check {path} --configs DIR`",
         folder,
     )
-    # A value still holding an unset `${NAME}` cannot be judged by its own rule (a url's scheme): the warning says it.
+    # A field holding an unset `${NAME}` is not judged on the probe's value (a reference to a model, say): the warning says it.
     held = {where for where, _ in unset}
     report.problems = [p for p in report.problems if p.level == "warning" or p.where not in held]
     for problem in report.problems:

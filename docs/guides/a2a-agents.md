@@ -473,8 +473,8 @@ evaluation's references, without contacting any agent
 answers in the expected shape shows only when the run reaches it. A row the
 agent does not answer scores 0 and the run warns `A2A agent <url>: <why>`;
 the cell goes on. A cell where no row got an answer (the agent is down, every
-request is refused) fails with `no row got an answer: all N call(s) failed;
-the first: <why>`, and `openarena evaluations run` exits 1. Fix the cause and
+request is refused) fails with `no row got an answer: all N row(s) failed;
+the first error: <why>`, and `openarena evaluations run` exits 1. Fix the cause and
 run the same command again: failed cells run again, cells already scored are
 kept. A cell that scored with some rows at 0 is kept too: rerun it with
 `--no-cache` once the cause is fixed.

@@ -276,7 +276,7 @@ python -c "import json,sys; t=json.load(open(sys.argv[1])); print(t['hyperparame
 
 | symptom | likely cause | fix |
 |---|---|---|
-| `no row got an answer: all N call(s) failed; the first: <error>` | every call of the cell failed; the error after `the first:` says why, as in the rows below | fix it and run again: the failed cell runs, no `--no-cache` needed |
+| `no row got an answer: all N row(s) failed; the first error: <error>` | no row of the cell got an answer; the error after `the first error:` says why, as in the rows below | fix it and run again: the failed cell runs, no `--no-cache` needed |
 | an authentication error | the provider's key is not set | set it in `.env`, run again (it resumes) |
 | connection refused | no Ollama running, or `HOSTED_VLLM_API_BASE` unset | start the model server |
 | model not found | a wrong id in `models.yaml` | fix `model:` |

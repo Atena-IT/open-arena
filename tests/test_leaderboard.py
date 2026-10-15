@@ -160,6 +160,11 @@ def test_dataset_shares_split_a_named_group_as_before():
     assert {r["model"]: r["score"] for r in ranked} == pytest.approx({"m": 0.40625, "n": 0.64375})
 
 
+def test_a_dataset_in_no_group_does_not_share_a_group_named_like_it():
+    # `a` stands alone; the group `a` holds `a1` only, which keeps its whole share.
+    assert lb.dataset_weights(["a1", "a"], {"a1": "a"}) == {"a1": 1.0, "a": 1.0}
+
+
 def test_a_dataset_weighed_zero_is_neither_scored_nor_required():
     data = _scores({("m", "x"): 1.0, ("m", "diag"): 0.2, ("n", "x"): 0.4}, {"x": "main", "diag": "diagnostic"})
     assert [r["model"] for r in lb.rank(data, shares={"reward": 100})["rows"]] == ["m"]  # n lacks diag

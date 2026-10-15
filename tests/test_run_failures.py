@@ -87,3 +87,34 @@ def test_a_run_whose_cells_all_scored_exits_0(tmp_path, monkeypatch):
     init(tmp_path)
     run = CliRunner().invoke(cli, ["evaluations", "run", "smoke", "--configs", str(tmp_path / "configs"), "--state-dir", str(tmp_path / "state")])
     assert run.exit_code == 0, run.output
+
+
+def test_a_cell_is_judged_on_its_rows_answers_not_on_its_model_calls():
+    import keras_tuner
+    import pytest
+    from synalinks.src.backend import JsonDataModel
+
+    from openarena.evaluate import _NoAnswerGuard
+
+    class Program:
+        """An agent's program, built: its model calls (tool requests) went through, its final answers did not."""
+
+        _compile_metrics = None
+
+        def _flatten_modules(self):
+            return []
+
+        async def compute_metrics(self, x, y, y_pred):
+            return {}
+
+    row = JsonDataModel(json={"question": "2 + 2?"}, schema=_SCHEMAS["input_schema"])
+    program = Program()
+    guard = _NoAnswerGuard(program)
+    asyncio.run(program.compute_metrics([row, row], [None, None], [None, None]))
+    with pytest.raises(keras_tuner.errors.FailedTrialError, match=r"all 2 row\(s\) failed"):
+        guard.on_test_end()
+
+    answered = Program()
+    guard = _NoAnswerGuard(answered)
+    asyncio.run(answered.compute_metrics([row, row], [None, None], [None, JsonDataModel(json={"answer": "4"}, schema=_SCHEMAS["output_schema"])]))
+    guard.on_test_end()  # one row answered: the cell keeps its score
