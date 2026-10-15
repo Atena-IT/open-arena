@@ -9,7 +9,7 @@ A Harbor task is a folder: what the agent is told, the sandbox it works in,
 the tests that score it, and a reference solution. openarena runs task
 folders exactly as [Harbor](https://harborframework.com/docs/tasks) defines
 them, one trial per task, the model under test driving a Harbor agent.
-In depth: [Harbor tasks](https://atena-it.github.io/atena-arena/guides/harbor-tasks/).
+In depth: [Harbor tasks](https://atena-it.github.io/open-arena/guides/harbor-tasks/).
 
 ## The folder
 
