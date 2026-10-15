@@ -96,16 +96,18 @@ class EmbeddingRetriever(Module):
         return {"embedding_model": getattr(self.embedding_model, "model", None), "k": self.k, "name": self.name}
 
 
-async def build_embedding(model_id: str, dataset, embedding_kwargs: dict, reward, metrics=None):
+async def build_embedding(model_id: str, dataset, embedding_kwargs: dict, reward, metrics=None, lm_kwargs=None):
     """Build (and compile) the retrieval program for one embedding model.
 
     `embedding_kwargs` is the dataset's `embedding:` block; `k` is how many
     chunks to return (default 1). The dataset's input template must render a
-    `query` and `chunks`; its output template the gold `chunks`.
+    `query` and `chunks`; its output template the gold `chunks`. `lm_kwargs`
+    are the model's params (`dimensions`), forwarded to every embedding call;
+    without any, the framework builds the bare id.
     """
     inputs = synalinks.Input(schema=dataset.input_schema or INPUT_SCHEMA)
     outputs = await EmbeddingRetriever(
-        embedding_model=model_id,
+        embedding_model=synalinks.EmbeddingModel(model=model_id, **lm_kwargs) if lm_kwargs else model_id,
         k=embedding_kwargs.get("k", 1),
         name=f"retriever_{safe_name(model_id)}",
     )(inputs)

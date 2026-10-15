@@ -10,6 +10,9 @@ card (`<url>/.well-known/agent-card.json`) on first use, opens a client on
 the interface the card prefers, then sends each row as one user message and
 waits for the answer: a message, or a task it polls until it ends. The text
 of the answer (the message's parts, else the task's artifacts) is the output.
+A row it does not answer (an error, a task that did not complete, the
+timeout, no JSON where JSON is expected) is warned about and predicts
+nothing, so it scores 0 and the cell goes on.
 
 A dataset with an output template expects the agent to answer JSON matching
 that schema (a fenced block is unwrapped); an inputs-only dataset takes the
@@ -22,6 +25,7 @@ import asyncio
 import json
 import re
 import time
+import warnings
 from typing import Any
 
 import synalinks
@@ -130,6 +134,8 @@ class A2aAgent(Module):
         self.schema = schema or CHAT_MESSAGE_SCHEMA
         self._http = None
         self._client = None
+        # What the last row the agent did not answer said: the sweep says it when no row got an answer.
+        self.last_failure: str | None = None
         self.built = True
 
     @property
@@ -172,8 +178,15 @@ class A2aAgent(Module):
     async def call(self, inputs, training=False):
         if inputs is None:
             return None
-        text = await self.ask(json.dumps(inputs.get_json()))
-        return JsonDataModel(json=self._shape(text), schema=self.schema, name=self.name)
+        # A row the agent did not answer (no JSON, a task that did not complete, the timeout) predicts nothing and
+        # scores 0, as a model's failed call does: one bad row must not cost the rows the agent did answer.
+        try:
+            text = await self.ask(json.dumps(inputs.get_json()))
+            return JsonDataModel(json=self._shape(text), schema=self.schema, name=self.name)
+        except Exception as e:  # noqa: BLE001 - said, then scored as no answer
+            self.last_failure = f"no answer within {self.timeout_sec:g}s" if isinstance(e, TimeoutError) else str(e) or type(e).__name__
+            warnings.warn(f"A2A agent {self.url}: {self.last_failure}")
+            return None
 
     async def aclose(self) -> None:
         """Close the client and its connections, once the program that holds them is done."""

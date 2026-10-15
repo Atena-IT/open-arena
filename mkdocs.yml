@@ -68,6 +68,7 @@ plugins:
             docstring_style: google
             show_source: false
             show_root_heading: true
+            show_bases: false
             show_root_full_path: false
             members_order: source
             merge_init_into_class: true

@@ -17,8 +17,10 @@ likely not as meant. Three layers:
 2. Each entry, against its registry's strict model (`entries.ENTRIES`, the
    same the app's registries validate with: a field it does not know is an
    error), then what a model cannot know alone: a reward's type and kwargs
-   against the catalog (`rewards.accepted_kwargs`), a dataset's provider
-   settings against the provider.
+   against the catalog (`rewards.accepted_kwargs`, `reduction` only where the
+   constructor takes it) and the settings it cannot be built without, a
+   dataset's provider settings against the provider (with the ones it
+   refuses to load without), and the `harbor:` keys task folders ignore.
 3. References, against the registries beside the file (the other
    `*.yaml` of its folder): a dataset's reward and MCP servers, an
    environment's MCP servers, an evaluation's models and datasets, the models a reward's judge names. An
@@ -34,12 +36,14 @@ from __future__ import annotations
 
 import difflib
 import inspect
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
+from dotenv import dotenv_values
 from pydantic import ValidationError
 
 from openarena.config import (
@@ -50,9 +54,12 @@ from openarena.config import (
     Config,
     flatten_dataset,
 )
-from openarena.config.entries import ENTRIES, NAME_PATTERN
+from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN
 from openarena.config.errors import Invalid
-from openarena.config.files import SECTIONS, gather, load_yaml
+from openarena.config.files import SECTIONS, expand, gather, load_yaml, references
+
+# What an unset `${NAME}` is checked as: a value most fields take (a string, a url).
+UNSET_PROBE = "https://unset.invalid"
 
 # The names the app accepts as keys.
 NAME = re.compile(NAME_PATTERN)
@@ -89,6 +96,10 @@ PLACEHOLDERS: dict[str, str] = {
     "path": "rows.jsonl",
     "dataset_name": "<dataset name>",
     "table": "<catalog.schema.table>",
+}
+# A registry's own placeholder for a field another registry also has.
+SECTION_PLACEHOLDERS: dict[str, dict[str, str]] = {
+    "a2a_agents": {"url": "http://localhost:9999"},
 }
 
 # Keys of a flat dataset the sweep reads rather than the provider.
@@ -169,6 +180,11 @@ def _replace_value(value: Any, choices, what: str) -> str:
     return f"use one of the {what}: {_one_of(choices)}"
 
 
+def _bound(value: Any) -> Any:
+    """A bound as written in YAML: `0`, not `0.0`."""
+    return int(value) if isinstance(value, float) and value.is_integer() else value
+
+
 def _sentence(message: str) -> str:
     return message.removeprefix("Value error, ").removeprefix("Assertion failed, ")
 
@@ -178,11 +194,16 @@ def _validation_fix(err: dict, where: str) -> str | None:
     kind, ctx = err["type"], err.get("ctx") or {}
     key = _leaf(where)
     if kind == "missing":
-        return f"add `{key}: {PLACEHOLDERS.get(key, '<value>')}` to {_parent(where)}"
-    if kind in ("greater_than_equal", "greater_than"):
-        return f"set `{key}:` to {ctx.get('ge', ctx.get('gt'))} or more"
-    if kind in ("less_than_equal", "less_than"):
-        return f"set `{key}:` to {ctx.get('le', ctx.get('lt'))} or less"
+        placeholder = SECTION_PLACEHOLDERS.get(where.split(".", 1)[0], {}).get(key) or PLACEHOLDERS.get(key, "<value>")
+        return f"add `{key}: {placeholder}` to {_parent(where)}"
+    if kind == "greater_than_equal":
+        return f"set `{key}:` to {_bound(ctx.get('ge'))} or more"
+    if kind == "greater_than":
+        return f"set `{key}:` to more than {_bound(ctx.get('gt'))}"
+    if kind == "less_than_equal":
+        return f"set `{key}:` to {_bound(ctx.get('le'))} or less"
+    if kind == "less_than":
+        return f"set `{key}:` to less than {_bound(ctx.get('lt'))}"
     if kind in ("too_short", "string_too_short"):
         return f"give `{key}:` a value; it cannot be empty"
     if kind == "literal_error":
@@ -217,9 +238,11 @@ def _validation_fix(err: dict, where: str) -> str | None:
 class _Context:
     """The registries beside the file, for references, and the report they are written to."""
 
-    def __init__(self, report: Report, found: dict[str, dict], missing_ok: set[str], missing_fix: str):
+    def __init__(self, report: Report, found: dict[str, dict], missing_ok: set[str], missing_fix: str, folder: Path | None = None):
         self.report = report
         self.found = found
+        # Where the registries beside it were read from; None when they were given in memory.
+        self.folder = folder
         self._said: set[str] = set()
         self._missing_ok = missing_ok
         self._missing_fix = missing_fix
@@ -258,7 +281,10 @@ class _Context:
             at = where + "".join(f"[{x}]" if isinstance(x, int) else f".{x}" for x in err["loc"])
             cause = (err.get("ctx") or {}).get("error")
             if isinstance(cause, Invalid):
-                self.report.error(at, str(cause), cause.fix)
+                fix = cause.fix
+                if section == "models" and err["loc"] == () and isinstance(entry.get("params"), dict):
+                    fix = _with_environment(fix, entry["params"])
+                self.report.error(at, str(cause), fix)
             elif err["type"] == "extra_forbidden":
                 self.report.error(at, f"not a field of a `{section}` entry", _extra_fix(section, entry, err["loc"], at))
             elif err["type"] == "missing":
@@ -302,7 +328,8 @@ class _Context:
         self.report.error(where, f"{value!r} is not in `models`", fix)
 
 
-# Call options a model entry keeps under `params:`, recognised when written beside `model:`.
+# Call options of a provider's API a model entry may be written with, recognised when written beside `model:`.
+# Only those its type lists (`model_types.MODEL_TYPES`) are kept under `params:`; the others are not supported.
 _MODEL_PARAMS = {
     "temperature",
     "max_tokens",
@@ -315,23 +342,81 @@ _MODEL_PARAMS = {
     "frequency_penalty",
     "presence_penalty",
     "timeout",
-    "api_base",
+    "dimensions",
 }
+# Connection settings a model entry cannot hold: they are the provider's, read from the environment.
+_ENVIRONMENT_KEYS = {
+    "api_base": "a base URL",
+    "base_url": "a base URL",
+    "api_key": "a key",
+}
+_ENVIRONMENT_FIX = "set it in the environment instead (`.env`), per provider: e.g. `OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`"
+
+
+def _model_kind(entry: dict):
+    """The model type an entry names, `llm` when it names none; None when it names no known type."""
+    from openarena.config.model_types import MODEL_TYPES
+
+    return MODEL_TYPES.get(entry.get("type") or "llm")
+
+
+def _with_environment(fix: str | None, params: dict) -> str | None:
+    """A `params:` fix, told where the connection settings it holds go instead."""
+    held = sorted(k for k in params if k in _ENVIRONMENT_KEYS)
+    if not held:
+        return fix
+    said = ", ".join(f"`{k}:`" for k in held)
+    return f"{fix}; {said} is not a param: {_ENVIRONMENT_FIX}" if fix else f"remove {said}; {_ENVIRONMENT_FIX}"
+
+
+def _model_extra_fix(entry: dict, key: str) -> str | None:
+    """How to fix a call option or connection setting written beside `model:`; None for any other key."""
+    if key == "provider":
+        return "remove `provider:`; the provider is read off the model id"
+    near_env = key if key in _ENVIRONMENT_KEYS else _close(key, _ENVIRONMENT_KEYS)
+    if near_env:
+        return f"remove `{key}:`; {_ENVIRONMENT_KEYS[near_env]} is not a model setting: {_ENVIRONMENT_FIX}"
+    kind = _model_kind(entry)
+    takes = [p.name for p in kind.params] if kind is not None else []
+    param = None if key in _MODEL_PARAMS and key not in takes else _close(key, takes)
+    if param:
+        spelled = f" (spelled `{param}:`)" if param != key else ""
+        return f"move it under `params:`{spelled}:\nparams:\n  {param}: {entry.get(key)!r}"
+    if key in _MODEL_PARAMS or _close(key, _MODEL_PARAMS):
+        label = kind.label.lower() if kind is not None else "model"
+        article = "an" if label[0] in "aeiou" else "a"
+        return f"remove `{key}:`; it is not supported: {article} {label} takes only {', '.join(takes) or 'no params'} under `params:`"
+    return None
 
 
 def _extra_fix(section: str, entry: dict, loc: tuple, where: str) -> str:
     """How to fix a field the entry's model does not know."""
     key = str(loc[-1])
     if len(loc) == 1 and section == "models":
-        if key == "provider":
-            return "remove `provider:`; the provider is read off the model id"
-        param = _close(key, _MODEL_PARAMS)
-        if param:
-            spelled = f" (spelled `{param}:`)" if param != key else ""
-            return f"move it under `params:`{spelled}:\nparams:\n  {param}: {entry.get(key)!r}"
+        fix = _model_extra_fix(entry, key)
+        if fix:
+            return fix
+    if len(loc) == 1 and section == "rewards":
+        fix = _reward_extra_fix(entry, key)
+        if fix:
+            return fix
     if len(loc) == 1:
         return _rename_or_remove(key, where, FIELDS[section], "an entry reads")
     return f"remove `{key}:` from {_parent(where)}, or check its spelling"
+
+
+def _reward_extra_fix(entry: dict, key: str) -> str | None:
+    """How to fix a constructor kwarg written beside `type:` rather than in `config:`; None for any other key."""
+    from openarena import rewards
+
+    type_ = entry.get("type")
+    if type_ not in rewards._REWARD_TYPES:
+        return None
+    if key in _accepted(type_):
+        return f"move it under `config:`:\nconfig:\n  {key}: {entry.get(key)!r}"
+    if key == "reduction":
+        return f"remove `reduction:`; {type_} does not take it"
+    return None
 
 
 def _reward_type(ctx: _Context, type_: str, where: str) -> bool:
@@ -344,11 +429,60 @@ def _reward_type(ctx: _Context, type_: str, where: str) -> bool:
     return True
 
 
-def _reward_kwargs(ctx: _Context, type_: str, kwargs: dict[str, Any], where: str) -> None:
-    """Every key of `kwargs` is one the (registered) reward `type_` takes."""
+def _accepted(type_: str) -> set[str]:
+    """The `config` keys the registered reward `type_` takes: the catalog's, less `reduction` when its constructor has none."""
     from openarena import rewards
 
     allowed = rewards.accepted_kwargs(type_)
+    if "reduction" not in inspect.signature(rewards._REWARD_TYPES[type_].__init__).parameters:
+        allowed = allowed - {"reduction"}
+    return allowed
+
+
+# Rewards in the catalog an entry cannot build: why, and what to use instead.
+_UNBUILDABLE_REWARDS = {
+    "agent_as_judge": (
+        "agent_as_judge cannot be built from an entry: it needs `tools`, which an entry cannot give",
+        "use `rlm_as_judge` or `deep_agent_as_judge`, which need no tools, "
+        "or a judge such as `lm_as_judge` over the agent's `messages`",
+    ),
+}
+
+
+def _reward_needs(ctx: _Context, type_: str, config: dict[str, Any], where: str) -> None:
+    """The settings a reward cannot be built without, which its constructor leaves optional."""
+    allowed = _accepted(type_)
+    # A required setting misspelled is one problem, said once as the rename.
+    renamed = {_close(k, allowed) for k in config if k not in allowed}
+
+    def missing(key: str) -> bool:
+        return key not in renamed and not config.get(key)
+
+    if type_ == "rubrics_as_judge" and missing("rubrics"):
+        ctx.report.error(
+            f"{where}.rubrics",
+            "rubrics_as_judge needs `rubrics`: the criteria it grades",
+            f"list them under {where}:\nconfig:\n  rubrics:\n    - The final answer is correct\n"
+            "    - {name: shows_steps, description: Each step is written out.}",
+        )
+    if type_ == "multi_judge_panel":
+        if missing("panel_language_models"):
+            ctx.report.error(
+                f"{where}.panel_language_models",
+                "multi_judge_panel needs `panel_language_models`: at least one judge",
+                f"list the judges under {where}:\nconfig:\n  panel_language_models: [<a models key>, <a models key>]",
+            )
+        if missing("smart_language_model"):
+            ctx.report.error(
+                f"{where}.smart_language_model",
+                "multi_judge_panel needs `smart_language_model`: the judge that settles a split panel",
+                f"add `smart_language_model: <a models key>` under {where}",
+            )
+
+
+def _reward_kwargs(ctx: _Context, type_: str, kwargs: dict[str, Any], where: str) -> None:
+    """Every key of `kwargs` is one the (registered) reward `type_` takes."""
+    allowed = _accepted(type_)
     for key in kwargs:
         if key not in allowed:
             ctx.report.error(
@@ -394,8 +528,19 @@ def _rewards(ctx: _Context, name: str, entry: dict, where: str) -> None:
     if reward is None:
         return
     if _reward_type(ctx, reward.type, f"{where}.type"):
+        if reward.type in _UNBUILDABLE_REWARDS:
+            ctx.report.error(f"{where}.type", *_UNBUILDABLE_REWARDS[reward.type])
         _reward_kwargs(ctx, reward.type, reward.config, f"{where}.config")
+        _reward_needs(ctx, reward.type, reward.config, f"{where}.config")
     ctx.model_refs(reward.config, f"{where}.config")
+
+
+# Settings a provider refuses to load without, though its signature defaults them to None: each group needs one of its keys.
+_PROVIDER_NEEDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "braintrust": (("project", "project_id"), ("dataset_name",)),
+    "mlflow": (("name", "dataset_id"),),
+}
+_PROVIDER_PLACEHOLDERS = {"project": "<project name>", "dataset_name": "<dataset name>", "name": "<dataset name>"}
 
 
 def _provider(ctx: _Context, entry: dict, where: str) -> None:
@@ -421,6 +566,16 @@ def _provider(ctx: _Context, entry: dict, where: str) -> None:
     for key, param in named.items():
         if param.default is inspect.Parameter.empty and key not in settings and key not in renamed:
             ctx.report.error(f"{at}.{key}", f"the {type_} provider needs `{key}`", f"add `{key}: {PLACEHOLDERS.get(key, '<value>')}` under {at}")
+    # What the provider refuses at load time although its signature leaves it optional: one key of each group.
+    for group in _PROVIDER_NEEDS.get(type_, ()):
+        if not any(settings.get(k) is not None or k in renamed for k in group):
+            key = group[0]
+            either = " or ".join(f"`{k}`" for k in group)
+            ctx.report.error(
+                f"{at}.{key}",
+                f"the {type_} provider needs {either}",
+                f"add `{key}: {_PROVIDER_PLACEHOLDERS.get(key, '<value>')}` under {at}",
+            )
     if not takes_any:
         for key in settings:
             if key not in named:
@@ -429,6 +584,19 @@ def _provider(ctx: _Context, entry: dict, where: str) -> None:
                     f"not a setting of the {type_} provider",
                     _rename_or_remove(key, f"{at}.{key}", offered, f"the {type_} provider takes"),
                 )
+
+
+# `harbor:` keys a `harbor_tasks` dataset does not read: what goes wrong, and where it belongs instead.
+_NOT_FOR_TASK_FOLDERS = {
+    "instructions": (
+        "a `harbor_tasks` dataset runs each task as written: `instructions` is never said to the agent",
+        "write what the agent is told in each task's `instruction.md`",
+    ),
+    "answer_file": (
+        "a `harbor_tasks` dataset is scored by each task's own tests: `answer_file` is never written, and leaves the answer empty",
+        "a task's `tests/` read what the agent left in the sandbox",
+    ),
+}
 
 
 def _datasets(ctx: _Context, name: str, entry: dict, where: str) -> None:
@@ -449,6 +617,11 @@ def _datasets(ctx: _Context, name: str, entry: dict, where: str) -> None:
     harbor = entry.get("harbor")
     if isinstance(harbor, dict) and harbor.get("environment"):
         ctx.ref("environments", harbor["environment"], f"{where}.harbor.environment")
+    # Task folders are run as they are written: what the block would add to a generated task has no effect on them.
+    if entry.get("type") == HARBOR_TASKS and isinstance(harbor, dict):
+        for key, (message, fix) in _NOT_FOR_TASK_FOLDERS.items():
+            if str(harbor.get(key) or "").strip():
+                ctx.report.error(f"{where}.harbor.{key}", message, f"remove `{key}:` from {where}.harbor; {fix}")
 
 
 def _whole_fix(message: str) -> str | None:
@@ -498,11 +671,13 @@ def _evaluations(ctx: _Context, name: str, entry: dict, where: str) -> None:
                 message = _sentence(err["msg"])
                 ctx.report.error(where, message, _whole_fix(message))
             elif not any(p.level == "warning" and p.where == where for p in ctx.report.problems):
-                ctx.report.warning(
-                    where,
-                    f"not validated whole: `{err['loc'][0]}` it names does not read",
-                    f"fix that registry first: `openarena check configs/{err['loc'][0]}.yaml`",
+                section = err["loc"][0]
+                fix = (
+                    f"fix that registry first: `openarena check {ctx.folder / f'{section}.yaml'}`"
+                    if ctx.folder is not None
+                    else f"fix the `{section}` registry first"
                 )
+                ctx.report.warning(where, f"not validated whole: `{section}` it names does not read", fix)
 
 
 def _leaderboards(ctx: _Context, name: str, entry: dict, where: str) -> None:
@@ -634,10 +809,12 @@ def _line_of(where: str, lines: dict[tuple, int]) -> int | None:
     return best
 
 
-def _check_entries(report: Report, section: str, entries: dict, found: dict[str, dict] | None, missing_fix: str) -> None:
-    """Each entry of `entries` into `report`; references against `found`, none checked when it is None."""
+def _check_entries(
+    report: Report, section: str, entries: dict, found: dict[str, dict] | None, missing_fix: str, folder: Path | None = None
+) -> None:
+    """Each entry of `entries` into `report`; references against `found` (read from `folder`), none checked when it is None."""
     missing_ok = set(SECTIONS) if found is None else set(SECTIONS) - _REFERS_TO[section]
-    ctx = _Context(report, found or {}, missing_ok=missing_ok, missing_fix=missing_fix)
+    ctx = _Context(report, found or {}, missing_ok=missing_ok, missing_fix=missing_fix, folder=folder)
     for name, entry in entries.items():
         where = f"{section}.{name}"
         report.names.append(str(name))
@@ -742,7 +919,24 @@ def check_file(path: Path, *, beside: Path | None = None) -> Report:
         )
         body = {}
 
-    found = _beside(Path(beside) if beside is not None else path.parent, path, report)
+    folder = Path(beside) if beside is not None else path.parent
+    # `${NAME}`s checked as the run will read them: the shell's variables, else the workspace's `.env`.
+    # One set nowhere is a warning (the run refuses it); the rest is checked with the reference in place.
+    env_file = folder.parent / ".env"
+    environ = {**(dotenv_values(env_file) if env_file.is_file() else {}), **os.environ}
+    unset = [(where, name) for where, name in references(body, section) if name not in environ]
+    for where, name in unset:
+        report.warning(
+            where,
+            f"`${{{name}}}` is not set in your shell or in {env_file}; a run that reads it refuses to start",
+            f"add `{name}=...` to {env_file}, or export it",
+        )
+    # An unset value is checked as a neutral one, so neither its field's rule nor its entry's (a url's
+    # scheme, a transport's url) judges the reference's own text; the warning above says it.
+    beside = _beside(folder, path, report)
+    probe = {**{name: UNSET_PROBE for _, name in references(body) + references(beside)}, **environ}
+    body = expand(body, probe)
+    found = expand(beside, probe)
     found[section] = {k: v or {} for k, v in body.items()}
     _check_entries(
         report,
@@ -751,7 +945,11 @@ def check_file(path: Path, *, beside: Path | None = None) -> Report:
         found,
         "put {section}.yaml in the same folder, or point at the folder that has it: "
         f"`openarena check {path} --configs DIR`",
+        folder,
     )
+    # A field holding an unset `${NAME}` is not judged on the probe's value (a reference to a model, say): the warning says it.
+    held = {where for where, _ in unset}
+    report.problems = [p for p in report.problems if p.level == "warning" or p.where not in held]
     for problem in report.problems:
         if problem.line is None:
             problem.line = _line_of(problem.where, lines)

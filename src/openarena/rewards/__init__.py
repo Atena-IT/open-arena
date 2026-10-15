@@ -12,12 +12,14 @@ the framework since 0.10. `get(spec)` instantiates a
 reward from either a string name (`"exact_match"`) or a YAML-shaped dict;
 string `language_model:` / `embedding_model:` values flow straight into
 the reward constructor — the framework resolves them via
-`language_models.get` / `embedding_models.get`.
+`language_models.get` / `embedding_models.get` — and a `{model, ...params}`
+mapping (a models.yaml entry with params) is built into that model first.
 """
 
 import inspect
 
 import synalinks
+from synalinks.src import ops, tree
 from synalinks.src.rewards import ALL_OBJECTS as _SYNALINKS_REWARDS
 from synalinks.src.rewards.batch_reward import BatchReward, BatchRewardFunctionWrapper
 from synalinks.src.rewards.reward_wrappers import RewardFunctionWrapper, ProgramAsJudge
@@ -163,6 +165,89 @@ def category(name: str) -> str:
     return "lm_judge" if needs(cls) == "language_model" else "deterministic"
 
 
+# The spec key naming the answer's fields a reward is scoped to (`AnswerFields`); not a constructor kwarg.
+ANSWER_FIELDS = "answer_fields"
+
+# Constructor kwargs that name one model, or several, and the kind of model each builds.
+_MODEL_KWARGS = {
+    "language_model": "llm",
+    "smart_language_model": "llm",
+    "sub_language_model": "llm",
+    "embedding_model": "embedding",
+}
+_MODEL_LIST_KWARGS = {"panel_language_models": "llm"}
+
+
+class AnswerFields(synalinks.rewards.Reward):
+    """`reward` scored on the named top-level fields of both sides, each field's value whole.
+
+    What the program returns beside its answer (returned inputs, a chain of
+    thought, a message's `content`) stays out of the score. A mask cannot do
+    this: `in_mask` keeps the names it lists at every nesting level, so it
+    would empty an answer field that holds objects (each tool call, a nested
+    answer) and score every prediction the same.
+    """
+
+    def __init__(self, reward, fields, name=None):
+        super().__init__(name=name or reward.name, reduction=reward.reduction)
+        self.reward = reward
+        self.fields = list(fields)
+        # Where the program's metrics look for the models a reward calls.
+        self.rewards = [reward]
+
+    def _keep(self, data):
+        if data is None:
+            return None
+        return ops.convert_to_json_data_model(data).in_mask(mask=self.fields, recursive=False)
+
+    async def __call__(self, y_true, y_pred):
+        return await self.reward(tree.map_structure(self._keep, y_true), tree.map_structure(self._keep, y_pred))
+
+    def get_config(self):
+        from synalinks.src.saving import serialization_lib
+
+        return {
+            "reward": serialization_lib.serialize_synalinks_object(self.reward),
+            "fields": self.fields,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        from synalinks.src.saving import serialization_lib
+
+        config = dict(config)
+        config["reward"] = serialization_lib.deserialize_synalinks_object(config["reward"])
+        return cls(**config)
+
+
+def _model(value, kind: str):
+    """A `{model, ...params}` mapping built into the model it describes; anything else as it is."""
+    if not isinstance(value, dict) or "model" not in value:
+        return value
+    if kind == "embedding":
+        return synalinks.EmbeddingModel(**value)
+    from openarena.programs.utils import language_model
+
+    return language_model(value["model"], {k: v for k, v in value.items() if k != "model"})
+
+
+def build_models(kwargs: dict) -> dict:
+    """A reward's or a metric's kwargs, each model given as `{model, ...params}` built with its params.
+
+    A model named by its bare id is left to the framework, which builds it
+    with no params of its own.
+    """
+    out = dict(kwargs)
+    for key, kind in _MODEL_KWARGS.items():
+        if key in out:
+            out[key] = _model(out[key], kind)
+    for key, kind in _MODEL_LIST_KWARGS.items():
+        if isinstance(out.get(key), list):
+            out[key] = [_model(v, kind) for v in out[key]]
+    return out
+
+
 def get(spec, **kwargs):
     """Resolve a reward spec into an instantiated `rewards.Reward`.
 
@@ -178,7 +263,11 @@ def get(spec, **kwargs):
         Every key besides `name` is forwarded as a kwarg to the reward
         constructor. String `language_model:` / `embedding_model:` values
         pass through verbatim — the framework resolves them into concrete
-        `LanguageModel` / `EmbeddingModel` instances on demand.
+        `LanguageModel` / `EmbeddingModel` instances on demand. A model
+        given as a mapping, `{model: openai/gpt-4o, temperature: 0.0}`
+        (what `Config` resolves a models.yaml entry with params to), is
+        built here with those params. An `answer_fields:` list scopes the
+        reward to those top-level fields (`AnswerFields`).
 
     Args:
         spec: Snake_case name or config dict (see above).
@@ -198,4 +287,6 @@ def get(spec, **kwargs):
     if cls is None:
         known = ", ".join(sorted(_REWARD_TYPES))
         raise KeyError(f"Unknown reward {name!r}. Known: {known}")
-    return cls(**kwargs)
+    fields = kwargs.pop(ANSWER_FIELDS, None)
+    reward = cls(**build_models(kwargs))
+    return AnswerFields(reward, fields) if fields else reward

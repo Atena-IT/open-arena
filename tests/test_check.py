@@ -2,6 +2,8 @@
 
 """`openarena <registry> check FILE`: every problem of a registry file, where it is and what is wrong."""
 
+import shutil
+
 import pytest
 import yaml
 from click.testing import CliRunner
@@ -345,3 +347,201 @@ def test_an_a2a_sweep_names_a2a_agents_on_its_axis(configs):
     _write(configs, "evaluations", {"e": {"language_models": ["helper", "ghost"], "datasets": ["tasks"]}})
     report = check_file(configs / "evaluations.yaml")
     assert _problems(report) == {("error", "evaluations.e.language_models[1]")}
+
+
+def test_a_call_option_is_moved_under_params_only_when_params_takes_it(tmp_path):
+    """The fix suggests only what then passes: an option the model's type does not take is said to be unsupported."""
+    report = check_file(
+        _write(
+            tmp_path,
+            "models",
+            {
+                "top-p": {"model": "ollama/qwen3", "top_p": 0.9},
+                "seed": {"model": "ollama/qwen3", "seed": 1},
+                "base": {"model": "ollama/qwen3", "api_base": "http://gpu:11434"},
+                "vectors": {"model": "ollama/nomic", "type": "embedding", "dimensions": 256},
+                "vectors-hot": {"model": "ollama/nomic", "type": "embedding", "temperature": 0},
+                "base-in-params": {"model": "ollama/qwen3", "params": {"api_base": "http://gpu:11434"}},
+            },
+        ))
+    assert _fix(report, "models.top-p.top_p") == (
+        "remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, temperature, max_tokens under `params:`"
+    )
+    assert _fix(report, "models.seed.seed").startswith("remove `seed:`; it is not supported")
+    assert _fix(report, "models.base.api_base").startswith("remove `api_base:`; a base URL is not a model setting: set it in the environment")
+    assert "OLLAMA_API_BASE" in _fix(report, "models.base.api_base")
+    assert _fix(report, "models.vectors.dimensions") == "move it under `params:`:\nparams:\n  dimensions: 256"
+    assert _fix(report, "models.vectors-hot.temperature") == (
+        "remove `temperature:`; it is not supported: an embedding model takes only dimensions under `params:`"
+    )
+    assert "`api_base:` is not a param: set it in the environment" in _fix(report, "models.base-in-params")
+    # What a `move it under params:` fix suggests then passes.
+    moved = check_file(_write(tmp_path, "models", {"vectors": {"model": "ollama/nomic", "type": "embedding", "params": {"dimensions": 256}}}))
+    assert moved.problems == []
+
+
+def test_a2a_fixes_suit_an_a2a_agent(tmp_path):
+    report = check_file(_write(tmp_path, "a2a_agents", {"a": {"timeout_sec": 0}}))
+    assert _fix(report, "a2a_agents.a.url") == "add `url: http://localhost:9999` to a2a_agents.a"
+    assert _fix(report, "a2a_agents.a.timeout_sec") == "set `timeout_sec:` to more than 0"
+    # A `ge` bound keeps its "or more".
+    evaluations = _registry_fixes("evaluations", {"e": {"language_models": ["m"], "datasets": ["d"], "batch_size": 0}})
+    assert evaluations["evaluations.e.batch_size"] == "set `batch_size:` to 1 or more"
+    environments = _registry_fixes("environments", {"e": {"docker_image": "x", "build_timeout_sec": 0}})
+    assert environments["environments.e.build_timeout_sec"] == "set `build_timeout_sec:` to more than 0"
+
+
+def _registry_fixes(section, entries):
+    from openarena.config import check_registry
+
+    return {p.where: p.fix for p in check_registry(section, entries).problems}
+
+
+def test_provider_settings_the_provider_refuses_to_load_without(configs):
+    ds = yaml.safe_load((configs / "datasets.yaml").read_text())["datasets"]["gsm8k-20"]
+    templates = {k: v for k, v in ds["config"].items() if k.endswith(("_template", "_schema"))}
+    base = {"generator": {}, "reward": "exact-match"}
+    report = check_file(
+        _write(
+            configs,
+            "datasets",
+            {
+                "bt": {"type": "braintrust", "config": templates, **base},
+                "bt-ok": {"type": "braintrust", "config": {**templates, "project_id": "p1", "dataset_name": "qa"}, **base},
+                "ml": {"type": "mlflow", "config": templates, **base},
+                "ml-ok": {"type": "mlflow", "config": {**templates, "dataset_id": "d-1"}, **base},
+            },
+        ))
+    assert _problems(report) == {
+        ("error", "datasets.bt.config.project"),
+        ("error", "datasets.bt.config.dataset_name"),
+        ("error", "datasets.ml.config.name"),
+    }
+    assert _message(report, "datasets.bt.config.project") == "the braintrust provider needs `project` or `project_id`"
+    assert _fix(report, "datasets.bt.config.dataset_name") == "add `dataset_name: <dataset name>` under datasets.bt.config"
+    assert _message(report, "datasets.ml.config.name") == "the mlflow provider needs `name` or `dataset_id`"
+    assert _fix(report, "datasets.ml.config.name") == "add `name: <dataset name>` under datasets.ml.config"
+
+
+def test_rewards_that_cannot_be_built_without_a_setting(configs):
+    report = check_file(
+        _write(
+            configs,
+            "rewards",
+            {
+                "rubrics": {"type": "rubrics_as_judge", "config": {"language_model": "qwen38"}},
+                "rubric-typo": {"type": "rubrics_as_judge", "config": {"language_model": "qwen38", "rubric": ["ok"]}},
+                "panel": {"type": "multi_judge_panel", "config": {"panel_language_models": []}},
+                "panel-ok": {"type": "multi_judge_panel", "config": {"panel_language_models": ["qwen38"], "smart_language_model": "gpt-4o-mini"}},
+            },
+        ))
+    assert _problems(report) == {
+        ("error", "rewards.rubrics.config.rubrics"),
+        ("error", "rewards.rubric-typo.config.rubric"),  # said once, as the rename
+        ("error", "rewards.panel.config.panel_language_models"),
+        ("error", "rewards.panel.config.smart_language_model"),
+    }
+    assert _message(report, "rewards.rubrics.config.rubrics") == "rubrics_as_judge needs `rubrics`: the criteria it grades"
+    assert "rubrics:\n    - The final answer is correct" in _fix(report, "rewards.rubrics.config.rubrics")
+    assert _fix(report, "rewards.panel.config.smart_language_model") == (
+        "add `smart_language_model: <a models key>` under rewards.panel.config"
+    )
+    assert "panel_language_models: [<a models key>" in _fix(report, "rewards.panel.config.panel_language_models")
+
+
+def test_reduction_only_where_the_reward_takes_it(configs):
+    from openarena import rewards
+
+    report = check_file(
+        _write(
+            configs,
+            "rewards",
+            {
+                "judge": {"type": "lm_as_judge", "config": {"language_model": "qwen38", "reduction": "mean"}},
+                **{
+                    t: {"type": t, "config": {"reduction": "mean"}}
+                    for t in ("exact_match", "cosine_similarity", "answer_accuracy", "retrieval_recall", "tool_calls_accuracy", "harbor_verifier")
+                },
+                "top-judge": {"type": "lm_as_judge", "reduction": "mean", "config": {"language_model": "qwen38"}},
+                "top-exact": {"type": "exact_match", "reduction": "mean"},
+            },
+        ))
+    deterministic = {"exact_match", "cosine_similarity", "answer_accuracy", "retrieval_recall", "tool_calls_accuracy", "harbor_verifier"}
+    assert _problems(report) == {
+        *{("error", f"rewards.{t}.config.reduction") for t in deterministic},
+        ("error", "rewards.top-judge.reduction"),
+        ("error", "rewards.top-exact.reduction"),
+    }
+    assert _message(report, "rewards.exact_match.config.reduction") == "exact_match does not take `reduction`"
+    assert _fix(report, "rewards.top-judge.reduction") == "move it under `config:`:\nconfig:\n  reduction: 'mean'"
+    assert _fix(report, "rewards.top-exact.reduction") == "remove `reduction:`; exact_match does not take it"
+    # Every reward whose constructor takes `reduction` still may set it.
+    import inspect
+
+    from openarena.config.check import _accepted
+
+    for name, cls in rewards._REWARD_TYPES.items():
+        assert ("reduction" in _accepted(name)) == ("reduction" in inspect.signature(cls.__init__).parameters)
+
+
+def test_agent_as_judge_is_refused_with_what_to_use_instead(configs):
+    report = check_file(_write(configs, "rewards", {"agent": {"type": "agent_as_judge", "config": {"language_model": "qwen38"}}}))
+    assert _problems(report) == {("error", "rewards.agent.type")}
+    assert "needs `tools`, which an entry cannot give" in _message(report, "rewards.agent.type")
+    fix = _fix(report, "rewards.agent.type")
+    assert "`rlm_as_judge`" in fix and "`deep_agent_as_judge`" in fix and "`messages`" in fix
+
+
+def test_harbor_tasks_refuse_what_task_folders_ignore(configs):
+    ds = yaml.safe_load((configs / "datasets.yaml").read_text())["datasets"]
+    tasks = ds["hello-tasks"]
+    report = check_file(
+        _write(
+            configs,
+            "datasets",
+            {
+                **ds,
+                "tasks-extra": {**tasks, "harbor": {**tasks["harbor"], "answer_file": "/app/answer.txt", "instructions": "Be brief."}},
+                "tasks-blank": {**tasks, "harbor": {**tasks["harbor"], "instructions": "  "}},
+            },
+        ))
+    assert _problems(report) == {("error", "datasets.tasks-extra.harbor.answer_file"), ("error", "datasets.tasks-extra.harbor.instructions")}
+    assert "leaves the answer empty" in _message(report, "datasets.tasks-extra.harbor.answer_file")
+    assert _fix(report, "datasets.tasks-extra.harbor.instructions").startswith("remove `instructions:` from datasets.tasks-extra.harbor;")
+    # A dataset over rows still takes both (the template's `gsm8k-terminal`).
+    assert not any(p.where.startswith("datasets.gsm8k-terminal") for p in report.problems)
+
+
+def test_not_validated_whole_names_the_actual_file(tmp_path):
+    folder = tmp_path / "elsewhere"
+    init(tmp_path / "ws")
+    shutil.copytree(tmp_path / "ws" / "configs", folder)
+    models = yaml.safe_load((folder / "models.yaml").read_text())["models"]
+    models["qwen38"]["temprature"] = 0
+    _write(folder, "models", models)
+    report = check_file(folder / "evaluations.yaml")
+    warning = next(p for p in report.warnings if "not validated whole" in p.message)
+    assert warning.fix == f"fix that registry first: `openarena check {folder / 'models.yaml'}`"
+    # Registries held in memory have no file to name.
+    from openarena.config import check_registry
+
+    held = check_registry(
+        "evaluations",
+        {"e": {"language_models": ["qwen38"], "datasets": ["gsm8k-20"]}},
+        registries={s: yaml.safe_load((folder / f"{s}.yaml").read_text())[s] for s in ("models", "datasets", "rewards")},
+    )
+    assert [p.fix for p in held.warnings if "not validated whole" in p.message] == ["fix the `models` registry first"]
+
+
+def test_leaderboards_run_validates_the_saved_entry(configs, tmp_path):
+    runner = CliRunner()
+    _write(
+        configs,
+        "leaderboards",
+        {"bad": {"title": "Bad", "shares": {"reward": -1}, "budgets": [{"metric": "cost", "op": "under", "value": 1}]}},
+    )
+    result = runner.invoke(cli, ["leaderboards", "run", "bad", "--configs", str(configs), "--state-dir", str(tmp_path / "state")])
+    assert result.exit_code == 1, result.output
+    assert "the leaderboard 'bad' does not validate" in result.output
+    assert "leaderboards.bad.shares" in result.output and "leaderboards.bad.budgets[0].op" in result.output
+    assert "fix: set `op:` to one of" in result.output

@@ -67,7 +67,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from openarena.config.files import evaluation_config, load_yaml, registries
+from openarena.config.files import evaluation_config, expand, load_yaml, registries
 
 TEMPLATES = Path(__file__).parent / "templates"
 # The engine's Agent Skills, one per action; `init` copies them into the workspace's `.agents/skills/`.
@@ -425,8 +425,8 @@ def check_command(path: Path, configs: Path | None) -> None:
     """Check PATH: a configs folder, every registry file in it (default: ./configs), or one registry file.
 
     Each problem is printed with its line, what is wrong and how to fix the
-    YAML. A file's registry is read off its name (`datasets.yaml`), else off
-    its top-level key. Exits 1 on an error.
+    YAML. A file's registry is read off its name only (`datasets.yaml`); a
+    file with any other name is an error. Exits 1 on an error.
     """
     from openarena.config.check import check_file, check_folder
 
@@ -463,7 +463,10 @@ def evaluations_run(
         console.print(f"Read [bold]{configs.parent / '.env'}[/]")
     try:
         raw = evaluation_config(configs, name)
-        Config.model_validate(raw)
+        # As the run will read it, `${NAME}`s replaced: validated, and what the folders below are copied from.
+        # The snapshot keeps the references, not the values.
+        resolved = expand(raw)
+        Config.model_validate(resolved)
     except (FileNotFoundError, ValueError) as e:
         raise click.ClickException(str(e)) from None
     except KeyError as e:
@@ -474,14 +477,14 @@ def evaluations_run(
     config_path = run_dir / "config.yaml"
     config_path.write_text(yaml.safe_dump(raw, sort_keys=False))
     # Each environment's task folder beside the config, as the app snapshots it: what the tasks build from.
-    for environment in raw.get("environments") or {}:
+    for environment in resolved.get("environments") or {}:
         source, copy = configs.parent / "environments" / environment, run_dir / "environments" / environment
         # As it is now: a file removed since the last run must not linger in this one.
         shutil.rmtree(copy, ignore_errors=True)
         if source.is_dir():
             shutil.copytree(source, copy)
     # A `harbor_tasks` dataset's task folders, read from its `path` relative to the config, as the app copies them.
-    for dataset in (raw.get("datasets") or {}).values():
+    for dataset in (resolved.get("datasets") or {}).values():
         tasks = (dataset.get("config") or {}).get("path") if dataset.get("type") == "harbor_tasks" else None
         if tasks and not Path(tasks).is_absolute():
             source, copy = configs.parent / tasks, run_dir / tasks
@@ -507,6 +510,11 @@ def evaluations_run(
     _results(result)
     if json_out is not None:
         _write_json(json_out, result)
+    # The scores are written either way; a cell that gave none makes the run fail, so a script or CI sees it.
+    failed = sorted({(r["model"], r["dataset"]) for r in result["rows"] if str(r.get("status")) in ("FAILED", "INVALID")})
+    if failed:
+        console.print(f"[red]{len(failed)} cell(s) failed[/]: " + ", ".join(f"{m} × {d}" for m, d in failed))
+        raise SystemExit(1)
 
 
 @leaderboards.command("run")
@@ -525,6 +533,15 @@ def leaderboards_run(name: str, configs: Path, state_dir: Path, no_eol: bool, js
         raise click.ClickException(str(e)) from None
     except KeyError as e:
         raise click.ClickException(e.args[0]) from None
+    # Validated as `openarena check` validates it: a budget or a share the schema refuses is never ranked by.
+    from openarena.config.check import check_registry
+
+    errors = check_registry("leaderboards", {name: saved}).errors
+    if errors:
+        said = "\n".join(f"  {p.where}: {p.message}" + ("\n    fix: " + p.fix.replace("\n", "\n         ") if p.fix else "") for p in errors)
+        raise click.ClickException(
+            f"the leaderboard {name!r} does not validate:\n{said}\nsee each problem with its line: `openarena check {configs / 'leaderboards.yaml'}`"
+        )
     runs = finished_runs(state_dir)
     if not runs:
         raise click.ClickException(f"no finished runs under {state_dir}; run one with `openarena evaluations run`")

@@ -40,6 +40,25 @@ ROWS = {
     "web-questions": {"question": "What is on example.com?", "answer": "An example page."},
     "support-questions": {"question": "How do I reset my password?", "expected": "From the sign-in page."},
     "ask-agents": _ASK,
+    "support-open": {"question": "How do I reset my password?"},
+    "gsm8k-clean": _GSM8K,
+    "gsm8k-pinned": _GSM8K,
+    "gsm8k-smoke": _GSM8K,
+    "gsm8k-full": _GSM8K,
+    "ticket-routing": {"subject": "Charged twice", "body": "My card was billed twice this month.", "product": "Pro plan", "expected_team": " Billing "},
+    "chat-replies": {"prompt": "Say hello.", "reply": "Hello!"},
+    "qa-local": {"question": "How many legs does a spider have?", "answer": 8},
+    # a folder row: the file's own keys plus `_filename`, `_stem`, `_path`
+    "cases": {"question": "Is the contract valid?", "answer": "Yes.", "_filename": "case-01.json", "_stem": "case-01", "_path": "case-01.json"},
+    # platform rows, as each provider hands them over
+    "support-golden": {"input": {"question": "How do I reset my password?"}, "expected_output": {"answer": "From the sign-in page."}, "metadata": {"tier": "pro"}},
+    "lf-golden": {"input": {"question": "How do I reset my password?"}, "expected_output": {"answer": "From the sign-in page."}, "metadata": {}},
+    "ls-golden": {"inputs": {"question": "How do I reset my password?"}, "outputs": {"answer": "From the sign-in page."}, "metadata": {}},
+    "opik-regressions": {"input": {"question": "How do I reset my password?"}, "expected_output": {"answer": "From the sign-in page."}, "metadata": {}},
+    "phoenix-golden": {"input": {"question": "How do I reset my password?"}, "output": {"answer": "From the sign-in page."}, "metadata": {}},
+    "bt-golden": {"input": {"question": "How do I reset my password?"}, "expected": {"answer": "From the sign-in page."}, "metadata": {}},
+    "mlflow-golden": {"inputs": {"question": "How do I reset my password?"}, "expectations": {"answer": "From the sign-in page."}},
+    "uc-questions": {"question": "How do I reset my password?", "reference_answer": "From the sign-in page."},
 }
 
 

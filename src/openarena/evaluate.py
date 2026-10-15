@@ -23,6 +23,7 @@ Run a sweep with:
 import copy
 import functools
 import json
+import sys
 import traceback
 import warnings
 from pathlib import Path
@@ -45,9 +46,10 @@ from openarena.datasets import load_dataset_from_config  # noqa: E402
 from openarena.lookups.prices import ensure_priced  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
-from openarena.programs.a2a_program import close_program  # noqa: E402
+from openarena.programs.a2a_program import A2aAgent, close_program  # noqa: E402
+from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
 from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
-from openarena.rewards import _REWARD_TYPES, get as get_reward  # noqa: E402
+from openarena.rewards import _REWARD_TYPES, build_models, get as get_reward  # noqa: E402
 
 
 class SweepCancelled(keras_tuner.errors.FatalError):
@@ -188,6 +190,84 @@ class _RunMonitor(synalinks.callbacks.Monitor):
         self._run = None
 
 
+class _Tally(synalinks.hooks.Hook):
+    """Keep the first error an answering module's call met, for `_NoAnswerGuard` to say why no row got an answer."""
+
+    def __init__(self, guard):
+        super().__init__()
+        self._guard = guard
+
+    def on_call_end(self, call_id, parent_call_id=None, outputs=None, exception=None):
+        if outputs is None and self._guard.first_error is None:
+            self._guard.first_error = exception or self._why()
+
+    def _why(self) -> str | None:
+        # Read in the calling task right after the call: a model's failed call leaves its error there,
+        # an A2A agent the last row it did not answer.
+        if isinstance(self.module, A2aAgent):
+            return self.module.last_failure
+        if isinstance(self.module, synalinks.LanguageModel):
+            from synalinks.src.modules.language_models.language_model import current_call_usage
+
+            return (current_call_usage() or {}).get("error")
+        return None
+
+
+class _NoAnswerGuard(synalinks.callbacks.Callback):
+    """Fail a cell none of whose rows got an answer, with the first error a call met.
+
+    Every row unanswered is a missing key, a model server that is down, a
+    model id the provider does not know or an agent that cannot be reached,
+    not the model under test; scored 0 it would be cached and sit on the
+    leaderboard as the model's result. Rows are counted on the program's
+    predictions (`compute_metrics`, as `_tee_samples` reads them), so an agent
+    whose tool calls went through but whose final answers all failed counts
+    as unanswered; the hooks on the modules that answer (language and
+    embedding models, an A2A agent) only keep the first error. A cell where
+    some row got an answer keeps its 0 for the rows that did not, as a flaky
+    call. Raised at the end of the cell's evaluation, it fails the cell's
+    trial, which a resume runs again. A Harbor cell has its own guard
+    (`no_answer_guard`).
+    """
+
+    def __init__(self, program):
+        super().__init__()
+        self.answered = 0
+        self.unanswered = 0
+        self.first_error: str | None = None
+        answering = (synalinks.LanguageModel, synalinks.EmbeddingModel, A2aAgent)
+        for module in {id(m): m for m in program._flatten_modules()}.values():
+            if isinstance(module, answering):
+                tally = _Tally(self)
+                tally.set_module(module)
+                module.add_hook(tally)
+        inner = program.compute_metrics
+        # As in `_tee_samples`: the framework's build-time call on the first batch is not a row answered.
+        builds = not all(m.built for m in program._flatten_modules())
+
+        async def compute_metrics(x, y, y_pred):
+            compiled = getattr(program, "_compile_metrics", None)
+            building = builds and compiled is not None and not compiled.built
+            rows = len(x) if x is not None else 0
+            if not building and rows > 0 and _as_json(x[0]) is not None:
+                for i in range(rows):
+                    answer = _as_json(y_pred[i]) if y_pred is not None and i < len(y_pred) else None
+                    if answer is None:
+                        self.unanswered += 1
+                    else:
+                        self.answered += 1
+            return await inner(x, y, y_pred)
+
+        program.compute_metrics = compute_metrics
+
+    def on_test_end(self, logs=None):
+        if self.unanswered and not self.answered:
+            why = " ".join(str(self.first_error or "see the warnings above").split())
+            raise keras_tuner.errors.FailedTrialError(
+                f"no row got an answer: all {self.unanswered} row(s) failed; the first error: {why[:500]}"
+            )
+
+
 def _num_batches(ds):
     try:
         return int(len(ds))
@@ -207,19 +287,21 @@ _MASK_KEYS = ("in_mask", "out_mask", "in_mask_pattern", "out_mask_pattern")
 
 
 def _scope_to_answer(spec: dict, target: list[str]) -> dict:
-    """A deterministic reward's `spec`, masked to the fields of the target.
+    """A deterministic reward's `spec`, scoped to the fields of the target.
 
     `target` is what the dataset's output template renders
     (`template_keys`), so the fields every target row has. A rule-based
     reward (exact match, ...) compares the prediction to the target field by
-    field; masked to the target's own fields it never sees what else the
-    program returns (returned inputs, a chain of thought, an agent's
-    trajectory), whatever that is. A judge keeps seeing all of it, that is
-    what it is for, and a mask the user set is theirs.
+    field; scoped to the target's own fields (`answer_fields`, read by
+    `rewards.get`) it never sees what else the program returns (returned
+    inputs, a chain of thought, an agent's trajectory), whatever that is,
+    while each field's value is compared whole, nested objects and all. A
+    judge keeps seeing all of it, that is what it is for, and a mask the
+    user set is theirs.
     """
     if not target or any(spec.get(k) for k in _MASK_KEYS):
         return spec
-    from openarena.rewards import SELF_SCORED, category
+    from openarena.rewards import ANSWER_FIELDS, SELF_SCORED, category
 
     if spec.get("name") in SELF_SCORED:
         return spec  # it reads a score the program produced, not the target's fields
@@ -229,7 +311,8 @@ def _scope_to_answer(spec: dict, target: list[str]) -> dict:
         return spec  # an unknown reward fails where it is built, with the list of known ones
     if not deterministic:
         return spec
-    return {**spec, "in_mask": list(target)}
+    # Not `in_mask`: a mask keeps the names it lists at every level, emptying a field that holds objects.
+    return {**spec, ANSWER_FIELDS: list(target)}
 
 
 def _beside(entry: dict, base: Path) -> dict:
@@ -260,8 +343,9 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
                 name=entry.alias or key,
             )
         elif entry.kwargs:
+            # A model with params (`{model, ...params}`) is built here; the framework would read it as a saved config.
             instance = synalinks.metrics.get(
-                {"class_name": entry.class_name, "config": entry.kwargs}
+                {"class_name": entry.class_name, "config": build_models(entry.kwargs)}
             )
         else:
             instance = synalinks.metrics.get(entry.class_name)
@@ -470,8 +554,7 @@ async def _run_cell(tuner, trial, **fit_kwargs) -> None:
     event loop. Outcomes land
     on the trial the way kt records them: COMPLETED with its metrics, FAILED
     for a `FailedTrialError`, INVALID for any other error, while a
-    `FatalError` (cancellation, the consecutive-failure limit) propagates and
-    ends the sweep, as before.
+    `FatalError` (cancellation) propagates and ends the sweep, as before.
     """
     tuner.on_trial_begin(trial)
     try:
@@ -793,6 +876,12 @@ async def run_sweep(
     view of its dataset batched to the run's `batch_size` (else the
     dataset's own): the batch is what the framework sends at once.
 
+    A cell that cannot give a score ends FAILED (or INVALID) with why, and the
+    other cells still run: an agent whose MCP servers gave no tools, a cell
+    none of whose rows got an answer (`_NoAnswerGuard`), any error raised
+    while it ran. A row that alone got no answer scores 0 and the cell goes
+    on. The result's rows carry each cell's `status`.
+
     `no_cache=True` drops every per-dataset cache before starting — use
     it when the model list or any dataset's reward / metric set changed.
     It is also what makes a run un-resumable, so a resume must never set it.
@@ -911,12 +1000,18 @@ async def run_sweep(
         # then resolve `hypermodel(hp)` to a pre-built Program by lookup —
         # no async acrobatics inside a sync callback.
         programs: dict[str, synalinks.Program] = {}
+        # Why a cell's program could not be built (an agent's MCP servers gave
+        # no tools): raised in that cell's trial, so it fails alone.
+        broken: dict[str, Exception] = {}
 
-        def hypermodel(hp, programs=programs):
+        def hypermodel(hp, programs=programs, broken=broken):
             # kt's discovery probe calls this once at tuner construction, before
             # any program exists, and discards the result; every real trial
             # then resolves to a pre-built program.
-            return programs.get(hp.Choice("language_model", values=model_ids))
+            model = hp.Choice("language_model", values=model_ids)
+            if model in broken:
+                raise broken[model]
+            return programs.get(model)
 
         objectives = [synalinks.tuners.Objective("reward", direction=reward_direction)]
         objective_axes = [("reward", reward_direction)]
@@ -935,12 +1030,12 @@ async def run_sweep(
             directory=str(state_dir),
             project_name=ds_name,
             overwrite=no_cache,
-            # kt gives up after 3 failures in a row, which on a sweep means
-            # three flaky cells can cost the whole matrix — and a cell that
-            # failed is a result too (`_collect_dataset_cells` records it).
-            # Give up only once every model in the grid has failed back to
-            # back, which is the case where something is genuinely broken.
-            max_consecutive_failed_trials=max(3, len(model_ids)),
+            # kt gives up after 3 failures in a row, raising out of the sweep,
+            # which would cost the whole matrix and every other dataset. A cell
+            # that failed is a result too (`_collect_dataset_cells` records it,
+            # a resume runs it again), so the limit is never reached: the run
+            # reports every failure instead.
+            max_consecutive_failed_trials=sys.maxsize,
         )
         # `overwrite=no_cache` above wiped the project when the caller asked
         # for a clean run; otherwise the tuner has just reloaded whatever the
@@ -1006,7 +1101,7 @@ async def run_sweep(
             elif kind == "embedding":
                 programs[model_id] = await build_embedding(
                     calls, ds, cfg.embedding_kwargs(ds_name), reward,
-                    metrics=model_metrics or None,
+                    metrics=model_metrics or None, lm_kwargs=lm_kwargs,
                 )
             elif kind == "tools":
                 programs[model_id] = await build_tools(
@@ -1014,14 +1109,19 @@ async def run_sweep(
                     metrics=model_metrics or None, lm_kwargs=lm_kwargs,
                 )
             elif agent_cfg is not None:
-                programs[model_id] = await build_agent(
-                    calls,
-                    ds,
-                    agent_cfg,
-                    reward,
-                    metrics=model_metrics or None,
-                    lm_kwargs=lm_kwargs,
-                )
+                # A server that is down fails this cell, not the run: the trial raises it.
+                try:
+                    programs[model_id] = await build_agent(
+                        calls,
+                        ds,
+                        agent_cfg,
+                        reward,
+                        metrics=model_metrics or None,
+                        lm_kwargs=lm_kwargs,
+                    )
+                except McpToolsUnavailable as e:
+                    broken[model_id] = e
+                    continue
             else:
                 programs[model_id] = await build_program(
                     calls,
@@ -1091,9 +1191,10 @@ async def run_sweep(
         # The run's `batch_size` (else its evaluation's) overrides the dataset's own; with neither, one row.
         view.batch_size = batch_size or cfg.batch_size or view.batch_size or 1
         callbacks = [_ProgressCallback(emit, item["name"], model_id, view)]
-        # A Harbor cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
-        if (guard := no_answer_guard(item["programs"][model_id])) is not None:
-            callbacks.insert(0, guard)
+        # A cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
+        # A cell whose program could not be built has no program: its trial raises why.
+        if (program := item["programs"].get(model_id)) is not None:
+            callbacks.insert(0, no_answer_guard(program) or _NoAnswerGuard(program))
         if mlflow_experiment and synalinks.is_observability_enabled():
             callbacks.append(
                 _RunMonitor(

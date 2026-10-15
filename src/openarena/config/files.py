@@ -5,12 +5,17 @@
 `registries` reads every file of a folder, merged by section;
 `evaluation_config` gathers one evaluation and what it names into the
 config `run_sweep` reads. `load_yaml` refuses a key written twice, which
-plain YAML would let the second silently win.
+plain YAML would let the second silently win. `expand` replaces each
+`${NAME}` with the environment variable, when a run loads its config.
 """
 
 from __future__ import annotations
 
+import os
+import re
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -35,6 +40,54 @@ def _mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False
 
 
 _UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _mapping)
+
+
+# `${NAME}` in a value is the environment variable NAME, read when a run loads its config;
+# `$${NAME}` writes `${NAME}` as it is. Jinja's `{{ ... }}` never matches.
+_REFERENCE = re.compile(r"\$(\$?)\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def references(value: Any, where: str = "") -> list[tuple[str, str]]:
+    """Every `${NAME}` in `value` (a config, an entry, a string), as `(where, NAME)`: `where` the dotted path to its string."""
+    if isinstance(value, str):
+        return [(where, m.group(2)) for m in _REFERENCE.finditer(value) if not m.group(1)]
+    if isinstance(value, dict):
+        return [ref for k, v in value.items() for ref in references(v, f"{where}.{k}" if where else str(k))]
+    if isinstance(value, list):
+        return [ref for i, v in enumerate(value) for ref in references(v, f"{where}[{i}]")]
+    return []
+
+
+def expand(value: Any, environ: Mapping[str, str] | None = None, *, keep_unset: bool = False) -> Any:
+    """`value` with every `${NAME}` replaced by the variable's value; a `ValueError` naming each one that is not set.
+
+    A config's secrets (an A2A agent's or an MCP server's `headers`, a
+    server's or an environment's `env`) can then stay in `.env` and out of
+    `configs/`; the run's `config.yaml` keeps the references, not the values.
+    `keep_unset` leaves a reference to an unset variable as it is, for
+    `check`, which warns about it instead.
+    """
+    environ = os.environ if environ is None else environ
+    unset = sorted({(where, name) for where, name in references(value) if name not in environ})
+    if unset and not keep_unset:
+        said = "; ".join(f"{name} (at {where})" for where, name in unset)
+        raise ValueError(f"not set in the environment: {said}. Add each to the workspace's .env, or export it in your shell.")
+
+    def one(m: re.Match) -> str:
+        if m.group(1) or m.group(2) not in environ:
+            return "${" + m.group(2) + "}" if m.group(1) else m.group(0)
+        return environ[m.group(2)]
+
+    def sub(v):
+        if isinstance(v, str):
+            return _REFERENCE.sub(one, v)
+        if isinstance(v, dict):
+            return {k: sub(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [sub(x) for x in v]
+        return v
+
+    return sub(value)
 
 
 def load_yaml(path: Path):
