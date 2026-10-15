@@ -298,10 +298,29 @@ quote numbers.
 Use `env` for settings the work needs: paths, flags, and a stdio MCP server's
 variables, which Harbor cannot hand to the server itself.
 
+A value can name a variable of your machine as `${NAME}`. When a run reads its
+config, after it has loaded the workspace's `.env`, the reference is replaced
+by the variable's value:
+
+```yaml
+environments:
+  search:
+    docker_image: python:3.12-slim
+    network_mode: public
+    env:
+      SEARCH_API_KEY: ${SEARCH_API_KEY}   # from your shell or the workspace's .env
+```
+
+The YAML, and the copy of it beside each run's config, keep `${SEARCH_API_KEY}`,
+not the value. A variable set nowhere stops the run before it starts, naming it;
+`openarena check` warns about it first. `$${NAME}` writes a literal `${NAME}`.
+
 !!! warning "Anything in `env` is the agent's"
-    The agent can read every variable, print it, and, with a network, send it
-    anywhere. Put in no key you would not hand to the model. The YAML is also
-    copied beside each run's config.
+    The value is set in the sandbox, so the agent can read every variable,
+    print it, and, with a network, send it anywhere. `${NAME}` keeps a key out
+    of your files, not out of the agent's reach. Put in no key you would not
+    hand to the model; prefer one scoped to the evaluation and easy to
+    revoke.
 
 ## Healthcheck
 
@@ -383,8 +402,8 @@ datasets:
 |---|---|---|
 | `environment` | none | the sandbox every row runs in; required unless the dataset is `harbor_tasks` |
 | `agent` | `terminus-2` | the Harbor agent the model drives ([Agents and models](harbor-tasks.md#agents-and-models)) |
-| `instructions` | none | said to the agent before every row's question |
-| `answer_file` | none | an absolute path in the sandbox; the agent is told to write its final answer there, and nothing else |
+| `instructions` | none | said to the agent before every row's question; not on a `harbor_tasks` dataset |
+| `answer_file` | none | an absolute path in the sandbox; the agent is told to write its final answer there, and nothing else; not on a `harbor_tasks` dataset |
 | `timeout_sec` | Harbor's | how long the agent may work on one row, in seconds |
 
 The question must render to `{"question": ...}`. The prediction is the
@@ -532,6 +551,7 @@ sandbox can serve quick and slow questions.
 | `cpus: 0` | `Input should be greater than or equal to 1` | 1 or more, or leave it blank |
 | an unknown MCP server | ``'nope' is not in `mcp_servers` `` | add it to `mcp_servers.yaml` |
 | a dataset naming an unknown environment | the dataset's `harbor.environment` is flagged | add the entry, or fix the name |
+| a `${NAME}` in `env` whose variable is set nowhere | a warning: `` `${NAME}` is not set in your shell or in <workspace>/.env; a run that reads it refuses to start `` | add `NAME=...` to `.env`, or export it |
 
 Checking an evaluation as a whole, `check` and `evaluations run` also refuse
 an agent that cannot work with a model or with the environment's network, and

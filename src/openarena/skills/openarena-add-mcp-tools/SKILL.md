@@ -32,7 +32,7 @@ mcp_servers:
     transport: streamable_http         # streamable_http | sse | websocket
     url: http://localhost:8080/mcp     # required; http://, https://, ws:// or wss://
     headers:                           # streamable_http and sse only
-      Authorization: Bearer <token>
+      Authorization: Bearer ${DOCS_MCP_TOKEN}   # from the workspace's .env
 ```
 
 - `stdio` reads `command` (required), `args`, `env`, `cwd`. `streamable_http`
@@ -43,11 +43,13 @@ mcp_servers:
   use the server's own flags in `args`.
 - **A stdio server does not see `.env`.** It gets only `HOME`, `LOGNAME`,
   `PATH`, `SHELL`, `TERM`, `USER`, plus its own `env:`. A server that needs an
-  API key gets it through `env:`, or loads it itself (`command: uv`,
-  `args: [run, --env-file, .env, my_server.py]`).
-- **No `${VAR}` expansion**: values are used as written, and copied into
-  `.open-arena/<evaluation>/config.yaml`. Prefer a value the user gives you,
-  or the `--env-file` route, over writing a token you were shown into the file.
+  API key gets it through `env:`, from the workspace's `.env`:
+  `env: {API_KEY: "${API_KEY}"}`.
+- **Secrets as `${NAME}`**: put the token or key in the workspace's `.env`
+  and reference it in `headers` or `env` as `${NAME}`; the run replaces it
+  when it reads its config, refuses to start if it is set nowhere, and
+  `.open-arena/<evaluation>/config.yaml` keeps the reference, not the value.
+  Never write a token you were shown into the file.
 - **Each tool call opens a new MCP session** (for stdio, a new process).
   Nothing the server keeps in memory survives between two calls, even within
   a row; state on disk or in a database does.
@@ -117,10 +119,12 @@ dataset's agent does:
    transport or command shows only at run time.
    `uv run openarena mcp-servers list --configs configs` shows what is saved.
 4. Run a few rows first (openarena-run-evaluation). Every server's tool list
-   is read while the run is prepared, before any cell and outside the
-   per-cell error handling: a server that is down, a command not on `PATH`, a
-   server with no tools, or a misspelled `agent:` key **stops the whole run**
-   with the error. Fix it and rerun.
+   is read while the run is prepared: a server that is down, a command not on
+   `PATH` or a server with no tools fails **that cell**
+   (`could not load the MCP tools of [...]: <why>`, or
+   `no MCP tools loaded from servers [...]`), and the run goes on and exits 1.
+   Fix it and rerun: the failed cells run again, no `--no-cache` needed. A
+   misspelled `agent:` key still stops the whole run.
 5. Read the result (openarena-read-results). The CLI does not trace into
    MLflow and does not save per-row trajectories; to read them, run from
    Python with `on_sample` or from the arena app. If every model scores alike

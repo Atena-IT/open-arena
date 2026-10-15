@@ -160,11 +160,12 @@ Pitfalls:
   passed on, so check cannot catch a misspelled one there.
 - `mlflow` reads from `tracking_uri`, else `MLFLOW_SOURCE_TRACKING_URI`, else
   the tracing server (`MLFLOW_TRACKING_URI`). It has no version to pin.
-- `check` does not flag a missing Braintrust `project` / `dataset_name` or
-  MLflow `name` / `dataset_id`; the run refuses it when it loads the dataset.
-  Make sure they are set.
-- Keys and endpoints go in the workspace's `.env`, never in `datasets.yaml`
-  (the env vars per provider are in `docs/guides/datasets.md`).
+- Braintrust needs `project` (or `project_id`) and `dataset_name`, MLflow
+  `name` or `dataset_id`: `check` refuses the entry without them.
+- Keys and endpoints go in the workspace's `.env`, never written out in
+  `datasets.yaml` (the env vars per provider are in `docs/guides/datasets.md`).
+  A value the entry itself must hold can reference one as `${NAME}`, replaced
+  when the run reads its config.
 
 The platform providers (`langfuse`, `langsmith`, `opik`, `phoenix`,
 `braintrust`, `unity_catalog`) need their SDK: an extra of openarena named
@@ -231,7 +232,7 @@ datasets:
 a catalog reward type, averaged over the rows (no extra call for a
 deterministic one), or a plain metric (`accuracy`, `f1_score`, ...); a bare name or a mapping with
 `class`, an `alias` (the column's name, never `reward`), `direction`
-(default `max`) and the type's settings:
+(optional, see below) and the type's settings:
 
 ```yaml
 datasets:
@@ -241,14 +242,15 @@ datasets:
     metrics:
       - answer_accuracy                          # partial credit beside the strict reward
       - {class: lm_as_judge, alias: judged, language_model: gpt-4o-mini}
-      - {class: cost, direction: min}            # USD spent on the model under test
-      - {class: avg_latency, direction: min}     # seconds per model call
+      - cost                                     # USD spent on the model under test
+      - avg_latency                              # seconds per model call
 ```
 
 Cost, tokens and latency are **not** kept unless listed here (or under the
 evaluation's `metrics`): `cost`, `reward_cost`, `embedding_cost`,
-`input_tokens`, `output_tokens`, `total_tokens`, `avg_latency`. Always give
-them `direction: min`; a bare `- cost` ranks the most expensive model best.
+`input_tokens`, `output_tokens`, `total_tokens`, `avg_latency`. Without
+`direction:`, a cost, tokens or latency measurement is better lower (`min`)
+and anything else higher (`max`); write `direction:` only to override that.
 See `docs/guides/evaluations.md`.
 
 ## Steps

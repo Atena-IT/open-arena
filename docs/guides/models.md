@@ -285,20 +285,19 @@ it out for a model with a fixed size.
 
 ### Where the params apply
 
-The params travel with the model when it is the model under test. When a model
-is named as a judge or a default, only its id is used.
+The params travel with the model wherever it is named: as the model under
+test, as a judge, as a metric's model or as a default.
 
 | the model is... | its params |
 |---|---|
 | under test on a generator, agent or tools dataset | sent with every call |
 | under test on a Harbor dataset | given to the Harbor agent where its options take them (`temperature`, `reasoning_effort`, `max_tokens`); what it does not take is logged and left out |
-| under test on a retrieval (`embedding:`) dataset | not passed: the retriever is built from the id |
-| a reward's or metric's model, or a `default_*_model` | not passed: it is built from the id |
+| under test on a retrieval (`embedding:`) dataset | `dimensions` sent with every embedding call |
+| a reward's or metric's model (`language_model`, `embedding_model`, a panel, ...) | sent with every call the reward or metric makes |
+| `default_language_model`, `default_embedding_model` | sent with every call, as for a reward's model |
 
-!!! warning "A judge runs on the provider's defaults"
-    A reward's `language_model: judge` resolves to the id of the `judge` entry
-    alone. Its `temperature` and other params are not sent with the judge's
-    calls. See [Choosing a judge](#choosing-a-judge-model).
+So a judge entry with `temperature: 0` grades at temperature 0. See
+[Choosing a judge](#choosing-a-judge-model).
 
 ## `modalities`
 
@@ -378,6 +377,8 @@ A judge reward ([Rewards](rewards.md#judged-rewards)) names an `llm` entry of
 models:
   judge:
     model: openai/gpt-4o
+    params:
+      temperature: 0                 # grade the same answer the same way every time
     description: The judge of the free-text rewards.
     tags: [openai, judge]
 ```
@@ -400,8 +401,12 @@ rewards:
 - **One judge for a whole comparison.** Scores from two judges are not on the
   same scale. Change the judge and you rerun every model.
 - **A dedicated entry.** Name it `judge`, not `gpt-4o`: you swap what it calls
-  in one place. Its params are not sent ([above](#where-the-params-apply)), so
-  pick a model whose default behaviour you trust.
+  in one place, and it keeps its own params apart from the `gpt-4o` you may
+  test.
+- **`temperature: 0`.** A judge's params are sent with its calls
+  ([above](#where-the-params-apply)). At 0 it grades an answer the same way
+  from row to row and from run to run, as far as the provider allows, so a
+  difference in score is the answers, not the judge's sampling.
 - **Cost.** A judge makes a call per row, counted apart as `reward_cost`. A
   local judge costs nothing but is usually weaker.
 
@@ -481,8 +486,10 @@ What it reports for a model, and the fix:
 | mistake | `check` says | fix |
 |---|---|---|
 | a param beside `model:` (`temperature: 0`) | `not a field of a models entry` | move it under `params:`; `check` prints the block |
+| an option the type does not take, beside `model:` (`top_p`, `seed`) | `not a field of a models entry`, fix: `` remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, temperature, max_tokens under `params:` `` | remove it |
+| an option the type does not take, under `params:` (`top_p`, `temperature` on an embedding model) | `Chat models take reasoning_effort, temperature, max_tokens, not top_p` | remove it |
+| a server address or key (`api_base`, `base_url`, `api_key`) | `not a field of a models entry`, fix: `` remove `api_base:`; a base URL is not a model setting: set it in the environment instead (`.env`) `` | set the provider's variable in `.env` (`OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`) |
 | `provider: openai` | `not a field of a models entry` | remove it: the provider is read off the id's prefix |
-| a param the type does not take (`top_p`, `api_base`, `temperature` on an embedding model) | `Chat models take reasoning_effort, temperature, max_tokens, not top_p` | remove it; set a server address in the environment |
 | `reasoning_effort: max` | `reasoning_effort: one of disable, low, medium, high` | use one of those |
 | `temperature: 3` | `temperature: between 0 and 2` | a value in range |
 | `modalities: [video]` | `Input should be 'text', 'image' or 'audio'` | one of those |

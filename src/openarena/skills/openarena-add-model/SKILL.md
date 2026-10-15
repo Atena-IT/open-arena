@@ -54,11 +54,12 @@ out to keep the provider's default. Where params actually apply:
 
 - Model under test on a generator, agent or tools dataset: sent with every call.
 - Model under test on a Harbor dataset: passed to the agent where it takes them.
-- A judge, a reward's or metric's model, a `default_*_model`: resolved to its
-  id only, **params dropped**. A judge runs on the provider's defaults; pick
-  one whose default behaviour you trust.
-- An embedding model under test (retrieval dataset): built from the id only,
-  so `dimensions` is not forwarded.
+- A judge, a reward's or metric's model, a `default_*_model`: built with its
+  entry's params too (an embedding model's `dimensions` included). Give a
+  judge's entry `temperature: 0` so its scores repeat as far as the provider
+  allows.
+- An embedding model under test (retrieval dataset): built with its
+  `dimensions`.
 
 For a setting ablation, add two entries for the same id (`o4-mini-low`,
 `o4-mini-high`) rather than editing one.
@@ -86,7 +87,9 @@ URL is per provider, so every `vllm/` entry hits the one server
 
 Put variables in the workspace's `.env` (beside `configs/`; copy
 `.env.template`). Only `openarena evaluations run` loads it, and it never
-overrides a variable already set in the shell.
+overrides a variable already set in the shell. A model entry has no field for
+a key or a base URL (`api_key:`, `api_base:` are refused): the provider reads
+its own variable.
 
 ### Type, cost, end of life
 

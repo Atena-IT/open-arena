@@ -140,16 +140,19 @@ openarena evaluations run math-compare
 ```
 
 1. **Reads `.env`** beside `configs/`, never over a variable already set.
-   That is where provider keys go.
+   That is where provider keys go, and the values of any `${NAME}` a config
+   uses ([Secrets in configs](workspace.md#secrets-in-configs)).
 2. **Gathers the evaluation**: the entry, the datasets it lists, and the
    rewards, MCP servers, environments and A2A agents those name. Every model
    is kept, since rewards and metrics name their models by key.
-3. **Validates it whole.** An unknown name, a judge that is not a chat model,
-   a chat model on an embedding dataset, a Harbor agent that cannot call the
-   model: the run stops here, before any call.
+3. **Validates it whole**, each `${NAME}` replaced by its variable. An unset
+   variable, an unknown name, a judge that is not a chat model, a chat model
+   on an embedding dataset, a Harbor agent that cannot call the model: the
+   run stops here, before any call.
 4. **Writes a snapshot** to `.open-arena/<evaluation>/config.yaml`, and copies
    the environments' build folders and the `harbor_tasks` folders beside it.
-   That snapshot is exactly what ran.
+   That snapshot is exactly what ran, with the `${NAME}` references kept
+   rather than the secrets.
 5. **Prepares each dataset**: reads its rows, renders each through
    `input_template` (the question) and `output_template` (the expected
    answer), and builds what answers it, once per model.
@@ -185,12 +188,14 @@ dataset's reward or metrics), add `--no-cache` to start over. See
 [Reading results](guides/results.md).
 
 !!! warning "A failed cell is a result, not a crash"
-    One model failing does not stop the others. A cell that hits a hard error
-    (a template naming a missing column, a Harbor cell where no task got an
-    answer) prints `<model> failed: <why>` and shows `—` in the table.
-    A missing key or a model server that is down is quieter: each row's call
-    fails after its retries, the cell finishes with a reward of 0, and that 0
-    is kept. Read the warnings and the failed lines before the scores.
+    One model failing does not stop the others: every cell runs, and every
+    failure is reported. A cell that cannot give a score (a template naming
+    a missing column, an agent whose MCP servers give no tools, a missing key
+    or a model server that is down, so that no row got an answer) prints
+    `<model> failed: <why>` and shows `—` in the table, and the command
+    exits 1 once the table is printed. A plain rerun runs those cells again.
+    A cell where only some rows failed finishes, and those rows score 0.
+    Read the warnings and the failed lines before the scores.
 
 ### Ranking is a separate step
 
@@ -324,7 +329,7 @@ leaderboard.
 
 | kind | examples | how it scores | pick it when | watch out for |
 |---|---|---|---|---|
-| deterministic | `exact_match`, `answer_accuracy`, `tool_calls_accuracy`, `retrieval_recall` | compares the answer with the fields `output_template` renders | there is one right answer: a number, a label, a choice, a call | an answer right in substance but different in form scores 0 (`"42"` and `"42.0"`); tighten the `output_schema` |
+| deterministic | `exact_match`, `answer_accuracy`, `tool_calls_accuracy`, `retrieval_recall` | compares the answer with the fields `output_template` renders, each field whole (a list of calls, a nested object); what else the program returns stays out of the score | there is one right answer: a number, a label, a choice, a call | an answer right in substance but different in form scores 0 (`"42"` and `"42.0"`); tighten the `output_schema` |
 | a model judges | `lm_as_judge`, `rubrics_as_judge`, `multi_judge_panel`, ... | a judge model (a `models` key) reads the answer, with the expected answer when there is one | the answer is open text: a summary, an explanation, an agent's report | every row costs a judge call; a judge has its biases; changing the judge changes every score |
 | the task's own tests | `harbor_verifier` | reads the score a Harbor task's `tests/` wrote | `type: harbor_tasks` datasets | the tests are the spec: a weak test passes a wrong solution |
 

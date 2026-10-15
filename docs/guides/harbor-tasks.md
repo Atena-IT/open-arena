@@ -340,9 +340,13 @@ The `harbor_verifier` reward takes one setting, `key`: the key of
 !!! warning "Not for task folders"
     `harbor.environment` is refused: each task brings its own sandbox.
     `harbor.instructions` and `harbor.answer_file` belong to a dataset over an
-    [environment](environments.md). A task folder runs as written, so neither
-    reaches its instruction, and an `answer_file` set here leaves the
-    `answer` empty.
+    [environment](environments.md), and `openarena check` refuses them here.
+    A task folder runs as written, so neither would reach its instruction:
+    `check` says `` a `harbor_tasks` dataset runs each task as written:
+    `instructions` is never said to the agent `` (write it in the task's
+    `instruction.md`) and `` a `harbor_tasks` dataset is scored by each task's
+    own tests: `answer_file` is never written, and leaves the answer empty ``
+    (the task's `tests/` read what the agent left in the sandbox).
 
 A Harbor dataset cannot share an evaluation with other kinds of dataset. Give
 it its own evaluation ([Running evaluations](evaluations.md)).

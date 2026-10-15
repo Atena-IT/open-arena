@@ -26,7 +26,9 @@ because it covers more and says more:
 - **It gives the line and the fix.** A run's error names the rule. `check`
   names the line, and the rename, value or snippet that fixes it.
 - **It costs nothing.** It reads files only. No model is called, no dataset
-  is downloaded, no sandbox starts, no key is needed.
+  is downloaded, no sandbox starts, no key is needed. The one thing it reads
+  besides the configs is the workspace's `.env`, without loading it, to tell
+  you whether each `${NAME}` a config uses is set.
 
 ## When to run it
 
@@ -200,7 +202,8 @@ Warnings come from a few places only:
 | A leaderboard names a dataset or model not in its registry: ``'retired' is not in `datasets`; only scores from runs made before it was removed can be ranked`` | A leaderboard ranks finished runs, which outlive the entries that made them. Scoping a board to a retired dataset is legitimate. | Keep it if you want the old scores ranked. Otherwise fix the name. |
 | A registry the file refers to is not beside it: ``no `rewards` registry to check references against; they are not checked`` | Nothing is wrong in this file; the check cannot see the other one. | Keep the file in its configs folder, or pass `--configs DIR`. |
 | A registry beside the file does not parse: `does not read; its entries are not used for references` | That file's own check reports the real error. | Fix it first: the fix gives the command. |
-| An evaluation names an entry that does not validate: ``not validated whole: `datasets` it names does not read`` | The error belongs to that entry and is reported in its own file. | Fix that registry, then check again. |
+| An evaluation names an entry that does not validate: ``not validated whole: `datasets` it names does not read`` | The error belongs to that entry and is reported in its own file. | Fix that registry, then check again: the fix names its file. |
+| A `${NAME}` set neither in your shell nor in the workspace's `.env`: `` `${SUPPORT_BOT_TOKEN}` is not set in your shell or in .env; a run that reads it refuses to start `` | The value is a secret you may keep out of the machine that checks (CI). The rest is checked as written; only the field holding the reference skips its own rule (a `url`'s scheme), since its value is not known yet. | Add `NAME=...` to `.env`, or export it, before running. |
 
 !!! warning "A missing-registry warning means not checked"
     When `check` cannot see a registry, it skips every reference to it. A
@@ -246,11 +249,11 @@ an error**, not something silently ignored. That is what catches typos.
 
 | Registry | Checked beyond types, bounds and required fields |
 |---|---|
-| `models` | No unknown field. A call option written beside `model:` (`temperature`, `max_tokens`, `top_p`, `seed`, `api_base`, ...) gets a fix that moves it under `params:`. `provider:` is refused: the provider comes from the model id. `params:` holds only what the model's `type` takes. See [Models](models.md). |
-| `rewards` | `type` is a reward in the catalog. Each key of `config:` is an argument that reward takes. `name` and `direction` are not inside `config:`. Every model a reward names (`language_model`, `smart_language_model`, `sub_language_model`, `embedding_model`, `panel_language_models`) is a `models` key of the right type. See [Rewards](rewards.md). |
-| `datasets` | `type` is a known provider. `config:` has every setting the provider requires and nothing it does not take (unless the provider accepts any setting). `config.input_template` is set and not blank. `config:` holds no top-level key (`reward`, `metrics`, a kind block). Only one of `generator`, `agent`, `a2a`, `embedding`, `tools`, `harbor`. `a2a: {}` takes no settings. `tools:` lists at least one `tool_schemas` entry. `agent:` names at least one MCP server and does not set `language_model` or `tools`. A `harbor_tasks` dataset has `harbor:` and no `harbor.environment`; a `harbor:` dataset over rows has `harbor.environment`. `harbor.agent` is a known Harbor agent. See [Datasets](datasets.md). |
+| `models` | No unknown field. A param the model's `type` takes, written beside `model:` (`temperature`, `max_tokens`, `reasoning_effort` for a chat model, `dimensions` for an embedding one), gets a fix that moves it under `params:`. A call option it does not take (`top_p`, `seed`, ...) is reported as not supported, with the params that type takes. `api_base`, `base_url` and `api_key` are refused, beside `model:` or under `params:`: they are set in the environment (`OLLAMA_API_BASE`, ...). `provider:` is refused: the provider comes from the model id. See [Models](models.md). |
+| `rewards` | `type` is a reward in the catalog, and one an entry can build: `agent_as_judge` is refused (it needs `tools`, which an entry cannot give), and the fix names `rlm_as_judge`, `deep_agent_as_judge` or a judge over the agent's `messages`. Each key of `config:` is an argument that reward takes; `reduction` only on a reward that takes it (a judge does, `exact_match` does not). An argument written beside `type:` gets a fix that moves it under `config:`. `name` and `direction` are not inside `config:`. `rubrics_as_judge` has `rubrics`; `multi_judge_panel` has `panel_language_models` and `smart_language_model`. Every model a reward names (`language_model`, `smart_language_model`, `sub_language_model`, `embedding_model`, `panel_language_models`) is a `models` key of the right type. See [Rewards](rewards.md). |
+| `datasets` | `type` is a known provider. `config:` has every setting the provider requires and nothing it does not take (unless the provider accepts any setting); that includes `braintrust`'s `project` (or `project_id`) and `dataset_name`, and `mlflow`'s `name` (or `dataset_id`), which it refuses to load without. `config.input_template` is set and not blank. `config:` holds no top-level key (`reward`, `metrics`, a kind block). Only one of `generator`, `agent`, `a2a`, `embedding`, `tools`, `harbor`. `a2a: {}` takes no settings. `tools:` lists at least one `tool_schemas` entry. `agent:` names at least one MCP server and does not set `language_model` or `tools`. A `harbor_tasks` dataset has `harbor:`, and no `harbor.environment`, `harbor.answer_file` or `harbor.instructions` (a task folder is run and scored as written); a `harbor:` dataset over rows has `harbor.environment`. `harbor.agent` is a known Harbor agent. See [Datasets](datasets.md). |
 | `mcp_servers` | `transport` is known. A `stdio` server has `command`; any other transport has a `url` starting `http://`, `https://`, `ws://` or `wss://`. No field the transport does not read (`url` on a stdio server, `command` on an `sse` one). No whitespace in `env` or `headers` keys. See [MCP tools](mcp-tools.md). |
-| `a2a_agents` | `url` starts `http://` or `https://`. Header values are text. `timeout_sec` is above 0. See [A2A agents](a2a-agents.md). |
+| `a2a_agents` | `url` is set and starts `http://` or `https://`. Header values are text. `timeout_sec` is above 0. See [A2A agents](a2a-agents.md). |
 | `environments` | Exactly one of `docker_image` and `dockerfile`. `network_mode: allowlist` needs `allowed_hosts`, and `allowed_hosts` needs `allowlist`. No whitespace in `env` keys. See [Environments](environments.md). |
 | `evaluations` | Types and bounds, e.g. `batch_size` is 1 or more. See [Evaluations](evaluations.md). |
 | `leaderboards` | `title` is set. Each share is 0 or more, and at least one is above 0 when `shares:` is set. Group and dataset weights are 0 or more. See [Leaderboards](leaderboards.md). |
@@ -311,9 +314,12 @@ axis, and that a Harbor environment's MCP servers resolve. See
 |---|---|---|
 | ``not a field of a `models` entry`` on `temperature` | Call options written beside `model:`. | Move them under `params:`; the fix shows the snippet. |
 | ``not a field of a `models` entry`` on `provider` | Copied from another tool's config. | Remove it. The provider is the prefix of the model id (`openai/...`). |
+| ``not a field of a `models` entry`` on `top_p`, fix ``it is not supported`` | A call option the model's type does not take. | Remove it; the fix lists the params that type takes. |
+| ``not a field of a `models` entry`` on `api_base` | A server address on the model. | Remove it and set the provider's variable in `.env` (`OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`). |
 | ``not a field of a `<registry>` entry`` | A typo, or a field from another registry. | Rename to the suggested field, or remove it; the fix lists what an entry reads. |
 | `unknown reward 'exact_matsh'` | Typo in `type:`, or a reward that does not exist. | Change to the suggested name. [Rewards](rewards.md) lists the catalog. |
 | ``lm_as_judge does not take `instruction` `` | A misspelled reward argument. | Rename as suggested (`instructions`). |
+| ``exact_match does not take `reduction` `` | `reduction` on a reward that does not take it. | Remove it. |
 | ``config cannot set direction: use `type` and `direction` `` | `direction:` written inside `config:`. | Move it beside `config:`. |
 | ``'openai/gpt-4o-mini' is not in `models` `` | A raw model id where a `models` key is expected. | Name the `models` entry that calls it. |
 | `'vectors' is an embedding model; this setting needs a language model` | The wrong model type for a judge or a sweep. | Name a model of the right `type`. |
@@ -343,9 +349,12 @@ axis, and that a Harbor environment's MCP servers resolve. See
 It reads files only. These pass `check` and show up when a run reaches them
 (see [Reading results](results.md)):
 
-- **Keys and environment.** `check` does not read `.env` and does not look
-  for `OPENAI_API_KEY` or any other variable. A missing key fails the first
-  call. See [The workspace](../workspace.md) for keys.
+- **Keys and environment.** `check` does not look for `OPENAI_API_KEY` or
+  any other provider variable; a missing key fails the cell at run time. The
+  only variables it looks up, in your shell and in the workspace's `.env`
+  (read, not loaded), are the `${NAME}`s your configs use, and one set
+  nowhere is a warning. See [The workspace](../workspace.md#env-keys-and-endpoints)
+  for keys.
 - **Reachability.** A model id is not tried. An MCP server is not started or
   connected to. An A2A agent's URL is not called. A Docker image is not
   pulled or built.
@@ -364,7 +373,8 @@ It reads files only. These pass `check` and show up when a run reaches them
 ## In CI and pre-commit
 
 The exit code is all CI needs: 0 passes, 1 fails. No key is needed, since
-`check` never calls a model.
+`check` never calls a model, and a `${NAME}` the CI job does not set is only
+a warning.
 
 === "GitHub Actions"
 

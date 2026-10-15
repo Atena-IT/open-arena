@@ -61,7 +61,7 @@ a2a_agents:
   support-prod:
     url: https://support-agent.example.com       # required: the agent's base URL
     headers:                                      # sent on every request, the card's included
-      Authorization: Bearer <token>
+      Authorization: Bearer ${SUPPORT_PROD_TOKEN}   # read from the environment or .env
     timeout_sec: 120                              # one row, from sending to the last word (default 300)
     description: The support agent, current release.
     tags: [support, prod]
@@ -69,7 +69,7 @@ a2a_agents:
     url: https://support-agent.staging.example.com
     card_path: /a2a/agent.json                    # the card is not at the well-known path
     headers:
-      Authorization: Bearer <staging-token>
+      Authorization: Bearer ${SUPPORT_STAGING_TOKEN}
     description: The support agent, release candidate.
     tags: [support, staging]
 ```
@@ -127,26 +127,40 @@ a2a_agents:
   vendor-agent:
     url: https://agents.vendor.example.com/support
     headers:
-      X-Api-Key: <key>
+      X-Api-Key: ${VENDOR_API_KEY}
       X-Tenant: arena-eval
 ```
 
 Header names cannot contain whitespace, and values are strings: quote a value
 YAML would read as a number.
 
-!!! warning "Header values are written in the file as they are"
-    `headers` takes literal values. openarena loads the workspace's `.env`
-    before a run, but it does not substitute variables into `a2a_agents.yaml`:
-    `Bearer ${TOKEN}` is sent as those characters. The token therefore sits in
-    the file. Use a key made for evaluation, scoped to the least it needs and
-    easy to revoke, and do not commit `a2a_agents.yaml` with a real token in it.
+Keep tokens out of the file with `${NAME}`. When a run reads its config, after
+it has loaded the workspace's `.env`, each `${NAME}` in a value is replaced by
+the environment variable `NAME`:
+
+```shell
+# .env, beside configs/
+VENDOR_API_KEY=...
+```
+
+- `a2a_agents.yaml` and the run's copy, `.open-arena/<evaluation>/config.yaml`,
+  keep `${VENDOR_API_KEY}`, not its value, so either can be committed.
+- A variable set neither in your shell nor in `.env` stops the run before it
+  starts, naming the variable and where it is used; `openarena check` warns
+  about it first.
+- `$${NAME}` writes a literal `${NAME}`.
+
+Any string value takes a reference, `url` included
+(`url: ${SUPPORT_AGENT_URL}`). Still use a key made for evaluation, scoped to
+the least it needs and easy to revoke.
 
 ### `timeout_sec`: how long a row may take
 
 `timeout_sec` bounds one whole row: sending the message, waiting for the
 answer, and polling a task until it ends. It is also the timeout of each HTTP
-request, the card's included. A row that runs past it fails, and so does its
-cell (see [when a row fails](#when-a-row-fails)).
+request, the card's included. A row that runs past it gets no answer and
+scores 0, with a warning; the cell goes on (see
+[when a row fails](#when-a-row-fails)).
 
 Set it from the agent's real behaviour, measured on a few rows:
 
@@ -156,7 +170,7 @@ Set it from the agent's real behaviour, measured on a few rows:
 | calls a few tools, searches | 120 to 300 (the default) |
 | long tasks: research, code, multi-step workflows | above 300 |
 
-Too low fails a cell over one slow row. Too high only costs time when the
+Too low scores a slow row 0, as if the agent had answered wrong. Too high only costs time when the
 agent hangs: the run waits that long before it says so. Rows of a batch are
 sent at once, so an agent under load is slower than the same agent answering
 one question alone: measure with the `batch_size` you will use.
@@ -249,8 +263,10 @@ The answer the agent must give depends on the dataset's `output_template`.
     never sees your `output_schema`, so tell it the format in the input, as
     `reply_format` does above.
 
-    A reply that is not a JSON object fails the row, and with it the cell.
-    Use this only with an agent that follows the instruction every time.
+    A reply that is not a JSON object gets no answer: the row scores 0, with
+    a warning, and the cell goes on. Use this only with an agent that
+    follows the instruction every time, or the zeros measure its formatting,
+    not its answers.
 
 === "Without an output template"
 
@@ -277,7 +293,7 @@ The answer the agent must give depends on the dataset's `output_template`.
 !!! warning "An output template without an output schema"
     The expected answer is then a chat message, and the agent must answer a
     JSON object of that shape (`{"role": ..., "content": ...}`) too: free text
-    fails the row. Give an `output_schema`, or drop the `output_template`.
+    scores the row 0. Give an `output_schema`, or drop the `output_template`.
 
 ### Message or task
 
@@ -288,15 +304,16 @@ An A2A agent replies in one of two ways, and openarena handles both:
   When it ends `completed`, the answer is the text of the task's artifacts,
   joined by new lines, or, when they hold no text, the text of the task's
   final status message. When it ends any other way (`failed`, `canceled`,
-  `rejected`, `input required`, `auth required`), the row fails with what the
-  agent said, e.g. `the agent's task ended input required: Which order?`.
+  `rejected`, `input required`, `auth required`), the row gets no answer and
+  scores 0, with a warning saying what the agent said, e.g.
+  `the agent's task ended input required: Which order?`.
 
 Only text parts are read. An agent that answers with file or data parts only
 gives an empty answer.
 
 !!! note "One turn only"
-    An agent that asks a clarifying question (`input required`) fails the row:
-    openarena does not answer back. Put everything the agent needs in the row.
+    An agent that asks a clarifying question (`input required`) scores the
+    row 0: openarena does not answer back. Put everything the agent needs in the row.
 
 ## The evaluation: agents on the axis
 
@@ -350,8 +367,12 @@ sequenceDiagram
   it is closed when the run ends.
 - openarena does not stream, even when the card says the agent can: it sends,
   then waits for the reply or polls the task.
-- There is no retry inside a cell. A row that fails fails its cell, and the
-  next run of the same command runs the cell again.
+- There is no retry inside a cell. A row the agent does not answer (an HTTP
+  error, a reply that is not JSON where JSON is expected, a task that does
+  not complete, the timeout) is warned about as `A2A agent <url>: <why>` and
+  scores 0; the other rows still count. When no row of a cell got an answer,
+  the cell fails instead, with `no row got an answer: ...` and the first
+  error, and the next run of the same command runs it again.
 
 ### What is recorded
 
@@ -359,6 +380,7 @@ sequenceDiagram
 |---|---|
 | each cell's reward (the mean over its rows) and status | `.open-arena/<evaluation>/result.json` ([Reading results](results.md)) |
 | why a cell failed | the run's output: `<agent> failed: <why>` |
+| why a row scored 0 without an answer | the run's output: `A2A agent <url>: <why>` |
 | the first rows of each cell: input, expected answer, the agent's answer as scored | handed to the caller of the run, which is how the arena app shows them; the CLI keeps scores only |
 
 What is **not** recorded: the agent's intermediate steps, its tool calls, the
@@ -434,9 +456,10 @@ evaluation's references, without contacting any agent
 | you wrote | `openarena check` reports | fix |
 |---|---|---|
 | `url: localhost:9999` | `` `url` must start with http:// or https:// `` | write the scheme: `http://localhost:9999` |
-| no `url` | `` `url:` is missing `` | add the agent's base URL |
+| no `url` | `` `url:` is missing ``, fix ``add `url: http://localhost:9999` `` | add the agent's base URL |
 | `streaming: true`, `retries: 3`, any field not in the table | `not a field of a a2a_agents entry` | remove it; an entry reads `card_path, description, headers, tags, timeout_sec, url` |
-| `timeout_sec: 0` | `Input should be greater than 0` | a positive number of seconds |
+| `timeout_sec: 0` | `Input should be greater than 0`, fix ``set `timeout_sec:` to more than 0`` | a positive number of seconds |
+| a `${NAME}` in a value whose variable is set nowhere | a warning: `` `${NAME}` is not set in your shell or in <workspace>/.env; a run that reads it refuses to start `` | add `NAME=...` to `.env`, or export it |
 | a header name with a space | `header '...' must not contain whitespace` | rename it |
 | a header value YAML reads as a number | `Input should be a valid string` | quote it |
 | `a2a: {agent: helper}` | `` `a2a:` takes no settings `` | write `a2a: {}`; list agents in the evaluation |
@@ -447,9 +470,14 @@ evaluation's references, without contacting any agent
 ### When a row fails
 
 `check` reads files only. Whether the agent is up, accepts your token and
-answers in the expected shape shows only when the run reaches it. A failed row
-fails its whole cell; fix the cause and run the same command again: cells
-already scored are kept.
+answers in the expected shape shows only when the run reaches it. A row the
+agent does not answer scores 0 and the run warns `A2A agent <url>: <why>`;
+the cell goes on. A cell where no row got an answer (the agent is down, every
+request is refused) fails with `no row got an answer: all N call(s) failed;
+the first: <why>`, and `openarena evaluations run` exits 1. Fix the cause and
+run the same command again: failed cells run again, cells already scored are
+kept. A cell that scored with some rows at 0 is kept too: rerun it with
+`--no-cache` once the cause is fixed.
 
 | the run says | likely cause | fix |
 |---|---|---|

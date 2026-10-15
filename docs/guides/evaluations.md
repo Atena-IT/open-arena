@@ -37,8 +37,8 @@ evaluations:
     datasets: [gsm8k-20]                     # the grid's columns: datasets keys, each with a reward
     batch_size: 4                            # rows in flight at once, for every dataset of this sweep
     metrics:                                 # extra columns, on every dataset
-      - {class: cost, direction: min}        # what the model under test cost, in USD
-      - {class: avg_latency, direction: min} # seconds per model call
+      - cost                                 # what the model under test cost, in USD; lower is better
+      - avg_latency                          # seconds per model call; lower is better
       - answer_accuracy                      # a catalog reward, averaged over the rows
     seed: 0                                  # seeds the engine's own randomness, not the model's sampling
 ```
@@ -56,7 +56,7 @@ keep it short.
 | `batch_size` | no | each dataset's own, else 1 | Rows sent at once, for every dataset of this sweep. 1 to 1024. |
 | `metrics` | no | none | Columns added beside `reward` on every dataset. |
 | `seed` | no | none | Seeds the engine's own random number generators before anything is built. |
-| `default_language_model` | no | none | The model a reward or metric uses when its config names none. A `models` key of type `llm`. |
+| `default_language_model` | no | none | The model a reward or metric uses when its config names none. A `models` key of type `llm`, called with its `params`. |
 | `default_embedding_model` | no | none | The same, for rewards and metrics that need an embedding model. A `models` key of type `embedding`. |
 | `description` | no | | One line for listings. |
 | `tags` | no | | Labels for listings, e.g. `math`, `weekly`. |
@@ -150,7 +150,9 @@ each cell; nothing makes two cells overlap.
     `All retries failed for ...`. The row scores 0 and the cell carries on.
     A batch size too high for your key therefore shows up as a reward that is
     too low, not as an error. If you see those warnings, lower `batch_size`
-    and run the evaluation again with `--no-cache`.
+    and run the evaluation again with `--no-cache`. (When every call of a
+    cell fails, the cell fails instead, and a plain rerun runs it again; see
+    [What can fail](#failures).)
 
 Where to set it: the dataset's `batch_size` is a property of the data (a
 Harbor dataset that should never run more than one sandbox at a time). The
@@ -171,9 +173,9 @@ Each entry is a bare name, or a mapping:
 |---|---|---|
 | `class` | required | a catalog reward (averaged over the rows), or a measurement such as `cost` |
 | `alias` | the class's name | the column's name; never `reward`, which is taken |
-| `direction` | `max` | `max` if higher is better, `min` if lower is better |
+| `direction` | `min` for a cost, tokens or latency measurement, else `max` | `max` if higher is better, `min` if lower is better |
 | `objective` | `false` | `true` puts the column on the dataset's Pareto frontier, beside `reward` |
-| anything else | | the class's own settings, e.g. a judge's `language_model` |
+| anything else | | the class's own settings, e.g. a judge's `language_model` (a `models` key, called with its `params`) |
 
 The measurements of a run are columns like any other. Only the columns you
 list are kept in `result.json`, so only those can be ranked on a leaderboard:
@@ -186,11 +188,15 @@ list are kept in `result.json`, so only those can be ranked on a leaderboard:
 | `input_tokens`, `output_tokens`, `total_tokens` | tokens consumed |
 | `avg_latency` | seconds per model call, on average |
 
-!!! warning "Give a measurement its `direction`"
-    `direction` defaults to `max` for every metric, `cost` included. Written
-    as a bare `- cost`, the column says that more expensive is better, and a
-    leaderboard ranks it that way. Write `{class: cost, direction: min}`, and
-    the same for tokens and latency.
+!!! note "Which way is better is read off the name"
+    Without `direction:`, a metric is `min` when it measures what the calls
+    spend or how often they fail: a name ending in `tokens` (but not
+    `cached_tokens`), `token_share`, `cost`, `latency`, `time_to_...`,
+    `elapsed_time`, `error_rate`, `failed_calls` or `fallback_activations`,
+    optionally followed by `_per_call`. So `cost`, `reward_cost`,
+    `total_tokens` and `avg_latency` rank the cheaper, faster model first.
+    Anything else is `max`, rates such as `cache_hit_rate` included. Write
+    `direction:` only to override it.
 
 `objective: true` asks the run for trade-offs. On a dataset with more than one
 objective, `result.json` lists the models no other model beats on every
@@ -204,7 +210,7 @@ evaluations:
     language_models: [qwen38, gpt-4o-mini, gpt-4o]
     datasets: [gsm8k-20]
     metrics:
-      - {class: cost, direction: min, objective: true}
+      - {class: cost, objective: true}
       - {class: lm_as_judge, alias: judged, language_model: gpt-4o-mini}
 ```
 
@@ -291,9 +297,12 @@ openarena evaluations run math-compare     # run one
 
 The run first reads the workspace's `.env` (beside `configs/`), without
 overriding a variable your shell already sets. It then gathers the evaluation
-and every entry it names into one config and validates it whole. It refuses to
-start on a problem: an unknown dataset, a dataset without a reward, a model of
-the wrong type, kinds that cannot share a run.
+and every entry it names into one config, replaces each `${NAME}` with its
+variable ([Secrets in configs](../workspace.md#secrets-in-configs)), and
+validates it whole. It refuses to start on a problem: a `${NAME}` not set, an
+unknown dataset, a dataset without a reward, a model of the wrong type, kinds
+that cannot share a run. The snapshot it writes keeps the `${NAME}`
+references, not their values.
 
 [CLI](../cli.md#openarena-evaluations-run) has every option in detail.
 
@@ -310,8 +319,10 @@ flowchart TD
 ```
 
 Every dataset is loaded and every program built before the first cell runs. A
-broken dataset or an MCP server that does not answer fails the run in its
-first minute, not after an hour of model calls.
+broken dataset fails the run in its first minute, not after an hour of model
+calls. An agent whose MCP servers give no tools (a server down, a command not
+found, a server with no tools) fails only its own cells, with
+`could not load the MCP tools of [...]`, and the other cells run.
 
 The cells then run **model by model**: every dataset for the first model, then
 every dataset for the second. A local server that holds one model at a time
@@ -343,8 +354,12 @@ Things go wrong at three levels:
 | level | what happens | what you see |
 |---|---|---|
 | a row | a model call fails five times: the row gets no answer and scores 0 | `All retries failed for ...` in the log; a lower reward |
-| a cell | an error the cell cannot get past (a template naming a missing column, a Harbor cell where no row got an answer): the cell is recorded as failed, and the run moves on | `<model> failed: <why>`; `—` in the table; a status other than `COMPLETED` in `result.json` |
-| the run | on one dataset, as many cells fail back to back as there are models (at least 3): something is broken for everyone, and the run stops | the error |
+| a cell | an error the cell cannot get past (a template naming a missing column, an agent whose MCP servers give no tools), or no row got an answer at all (a missing key, a model server that is down, a model id the provider does not know): the cell is recorded as failed, and the run moves on | `<model> failed: <why>`, for example `no row got an answer: all 20 call(s) failed; the first: <error>`; `—` in the table; a status other than `COMPLETED` in `result.json` |
+| the run | every cell runs, however many fail; then, if any cell failed, the command exits 1 | after the table and `result.json`, `N cell(s) failed: <model> × <dataset>, ...` |
+
+A row an A2A agent does not answer (an error, a task that did not complete,
+the timeout) is a row-level failure too: a warning, a 0 for that row, and the
+cell goes on.
 
 [Reading results](results.md#when-a-cell-failed-or-scored-0) lists the usual
 causes and their fixes.
@@ -359,9 +374,10 @@ same evaluation again picks up where it stopped:
 - cells never reached run for the first time.
 
 So after a crash or a `Ctrl-C`, run the same command and only what is
-missing runs. A missing key or a model server that was down is different: the
-cell finished with a reward of 0, so it is kept. Fix the cause and run with
-`--no-cache`.
+missing runs. The same goes for a missing key or a model server that was
+down: no row of those cells got an answer, so they failed rather than scoring
+0, and a plain rerun runs them once the cause is fixed. Only a cell where some
+rows answered is kept with 0 for the others; rerun it with `--no-cache`.
 
 The saved state does not record what a finished cell was computed from, so it
 keeps the cell even when its inputs changed. Use `--no-cache` to start over:
@@ -466,7 +482,7 @@ metric, read the cost per cell, and multiply by `rows / 5`.
 === "Comparing models"
 
     Every model on the same datasets, `temperature: 0` on each, `cost` and
-    `avg_latency` as columns with `direction: min`, a `seed`. When a new model
+    `avg_latency` as columns (both rank lower first on their own), a `seed`. When a new model
     comes out, add it to the list and run with `--no-cache`, or give it an
     evaluation of its own: a leaderboard puts them side by side either way.
 
@@ -518,13 +534,15 @@ metric, read the cost per cell, and multiply by `rows / 5`.
 What `check` cannot see:
 
 - **A missing key.** A hosted model without its key fails every call at run
-  time, and the cell finishes with a reward of 0. Set the key in `.env` and run
-  with `--no-cache`: a plain rerun keeps the 0.
+  time, and its cell fails with `no row got an answer: ...`. Set the key in
+  `.env` and run the same command again: the failed cell runs, the others are
+  read back.
 - **A batch too large for your rate limit.** It shows as `All retries failed`
   warnings and a low reward, not as an error.
 - **Saved cells from before a change.** The run reuses them silently. Add
   `--no-cache` after changing what they depend on.
-- **`cost` without `direction: min`.** Valid, and ranked the wrong way.
+- **A `${NAME}` set nowhere.** `check` only warns; the run refuses to start
+  and names it.
 
 [Checking configs](check.md) has every check.
 

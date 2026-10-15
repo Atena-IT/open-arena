@@ -73,7 +73,7 @@ don't bend one leaderboard to answer both.
 | `shares` | `{metric: number}`, each 0 or more | `{}` = the default preset | each metric's weight in the score |
 | `budgets` | list of `{metric, op, value}` | `[]` | hard limits; a model that breaks one is left out |
 | `group_shares` | `{group: number}`, each 0 or more | `{}` | a weight per group of datasets |
-| `dataset_shares` | `{dataset: number}`, each 0 or more | `{}` | a weight per dataset within its group; 0 takes it out |
+| `dataset_shares` | `{dataset: number}`, each 0 or more | `{}` | a weight per dataset; 0 takes it out |
 
 Any other key is refused by `openarena check`.
 
@@ -135,7 +135,7 @@ ranking. The run prints the shares as percents of their total.
 | `{reward: 100}` | quality only. Cost and latency don't count |
 | `{reward: 70, cost: 30}` | a trade-off; see [the arithmetic](#how-much-a-share-buys) |
 | a share of `0` | the metric doesn't count, the same as leaving it out |
-| a negative share, or every share at `0` | refused by `openarena check` |
+| a negative share, or every share at `0` | refused by `openarena check` and by `leaderboards run` |
 
 A metric can carry weight only if **every cell in scope records it**. A share
 on any other metric is dropped without an error. This covers a typo
@@ -206,39 +206,50 @@ How budgets apply:
 ### `group_shares` and `dataset_shares`: weighing datasets
 
 By default every dataset in scope counts the same, and a model's score is the
-plain mean of its per-dataset scores. Each dataset belongs to a group. Its
-weight is its group's share (1 if not given), split among the group's
-datasets in proportion to their `dataset_shares` (1 each if not given):
+plain mean of its per-dataset scores. A share left out is 1.
+
+Your own datasets, the ones `openarena evaluations run` scores, belong to no
+group. Each one weighs its `group_shares` entry times its `dataset_shares`
+entry, both keyed by the dataset's name:
+
+```
+weight(d) = group_shares[d] × dataset_shares[d]
+```
+
+Imported benchmarks name their suites, and those suites are groups. A group
+weighs its share whatever the number of datasets in it, split among its
+datasets in proportion to their `dataset_shares`:
 
 ```
 weight(d) = group_shares[group(d)] × dataset_shares[d] / sum of dataset_shares in group(d)
 ```
 
-Groups come from imported benchmarks, which name their suites. Runs made with
-`openarena evaluations run` carry no groups, so **each of your datasets is a
-group of its own**. That has two consequences:
-
 === "Weighing your own datasets"
 
-    Use `group_shares`, keyed by dataset name:
+    Use `dataset_shares`, keyed by dataset name:
 
     ```yaml
     leaderboards:
       support-mix:
         title: Support, weighted by traffic
         datasets: [faq-answers, refund-requests, escalations]
-        group_shares:
+        dataset_shares:
           faq-answers: 6       # 60% of the traffic
           refund-requests: 3
           escalations: 1
         shares: {reward: 80, cost: 20}
     ```
 
-=== "What `dataset_shares` does here"
+    `group_shares` keyed by the same names gives the same weights, since each
+    dataset is weighed by the product of the two. Write one of them, not
+    both, so a reader sees each weight once.
 
-    A dataset alone in its group always takes its group's full share, so a
-    `dataset_shares` value other than 0 has no effect on it. `dataset_shares:
-    {escalations: 0}` still works: it takes the dataset out of the score.
+=== "Weighing imported suites"
+
+    Use `group_shares`, keyed by suite, to say how much each suite counts,
+    and `dataset_shares` to weigh the datasets inside one suite against each
+    other. A suite with ten datasets then weighs no more than a suite with
+    two, unless its share says so.
 
 A dataset weighed 0 (through either field) is out of the score **and out of
 the requirement**. Models need no score on it to be ranked. Use this to keep a
@@ -257,23 +268,25 @@ in `meta.metrics` of its `result.json` ([Reading results](results.md)).
 | metric | where it comes from | better | scale |
 |---|---|---|---|
 | `reward` | the dataset's reward, the mean over its rows | the reward's `direction` ([Rewards](rewards.md#direction)) | linear |
-| `cost` | USD the model under test spent on the cell, from litellm's prices, when listed under `metrics:` | its `direction`: write `min` | log |
-| `input_tokens`, `output_tokens` | tokens the cell used, when listed under `metrics:` | its `direction`: write `min` | log |
-| latency | when listed under `metrics:`; use the name in `meta.metrics` (for example `avg_latency`) | its `direction`: write `min` | log |
+| `cost` | USD the model under test spent on the cell, from litellm's prices, when listed under `metrics:` | lower, unless its `direction` says otherwise | log |
+| `input_tokens`, `output_tokens` | tokens the cell used, when listed under `metrics:` | lower, unless its `direction` says otherwise | log |
+| latency | when listed under `metrics:`; use the name in `meta.metrics` (for example `avg_latency`) | lower, unless its `direction` says otherwise | log |
 | an extra metric's alias | `metrics:` on the dataset or the evaluation ([Datasets](datasets.md#extra-metrics)) | its `direction` | log, or linear (see below) |
 | `eol_days` | days left before the model's announced end of life, looked up when the board is built | higher | linear |
 
 You never write a direction in a leaderboard: each metric's direction comes
-from the run that recorded it. A metric listed under `metrics:` defaults to
-`direction: max`, so a `cost` listed without `direction: min` ranks the most
-expensive model best.
+from the run that recorded it. A metric listed under `metrics:` without a
+`direction:` gets one automatically: `min` for a cost, tokens or latency
+measurement (`cost`, `input_tokens`, `total_tokens`, `avg_latency`, ...), `max`
+for anything else. So a `cost` ranks the cheapest model best with nothing to
+write.
 
-!!! warning "Set `direction: min` on cost, tokens and latency"
-    Write it where you list the metric, on the dataset or the evaluation
-    ([Running evaluations](evaluations.md#metrics-the-columns-beside-reward)),
-    then run the evaluation again: the leaderboard reads the direction
-    stored in `result.json`, which is written from the config at the end of
-    each run.
+To read a metric the other way, write `direction:` where you list it, on the
+dataset or the evaluation
+([Running evaluations](evaluations.md#metrics-the-columns-beside-reward)): an
+explicit `direction:` always wins. Then run the evaluation again: the
+leaderboard reads the direction stored in `result.json`, which is written from
+the config at the end of each run.
 
 **Linear or log.** `reward` and `eol_days` are normalized linearly: 0.9
 against 0.8 counts as much as 0.6 against 0.5. Every other metric is
@@ -439,8 +452,19 @@ openarena leaderboards run overall --configs my-arena/configs --state-dir my-are
 | `--no-eol` | off | skip the end-of-life lookup, which goes online |
 | `--json FILE` | none | also write the ranking as JSON |
 
-`leaderboards run` reads the saved entry as it is and doesn't validate it.
-Run `openarena check configs` after editing ([Checking configs](check.md)).
+`leaderboards run` validates the saved entry as `openarena check` does before
+it ranks anything. An entry that does not validate (a negative share, a budget
+`op` that does not exist) is refused, and the command exits 1:
+
+```
+Error: the leaderboard 'math-value' does not validate:
+  leaderboards.math-value.budgets[0].op: Input should be 'lte' or 'gte'
+    fix: set `op:` to one of 'lte' or 'gte'
+see each problem with its line: `openarena check configs/leaderboards.yaml`
+```
+
+Run `openarena check configs` after editing ([Checking configs](check.md)) to
+see each problem with its line.
 
 The output, in outline:
 
@@ -595,8 +619,9 @@ scores range from 0.2 to 0.9.
 - Use the same `limit` and reward for a dataset across all the runs you rank.
   A cell scored on 5 rows and one scored on 200 rows look the same on the
   board.
-- Use `group_shares` to say which datasets matter more. Don't use it to fix
-  a dataset you shouldn't have included.
+- Use `dataset_shares` (or `group_shares` for imported suites) to say which
+  datasets matter more. Don't use it to fix a dataset you shouldn't have
+  included.
 
 ### Missing runs
 

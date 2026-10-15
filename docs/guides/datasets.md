@@ -682,8 +682,9 @@ loader. Keys and endpoints go in the workspace's `.env`
 
     **Extra**: `braintrust`.
 
-    **Pitfall**: `check` does not catch a missing `project` or
-    `dataset_name`; the run refuses the dataset when it loads it.
+    **Pitfall**: the provider loads nothing without a project and a
+    dataset name. `openarena check` reports either one missing
+    (``the braintrust provider needs `project` or `project_id` ``).
 
 === "mlflow"
 
@@ -726,6 +727,8 @@ loader. Keys and endpoints go in the workspace's `.env`
     - Evaluation datasets need an MLflow server backed by a database, not a
       plain `./mlruns` folder.
     - There is no version to pin: the dataset is read as it is now.
+    - Without `name` or `dataset_id` there is nothing to read: `openarena
+      check` reports ``the mlflow provider needs `name` or `dataset_id` ``.
 
 === "unity_catalog"
 
@@ -805,7 +808,10 @@ loader. Keys and endpoints go in the workspace's `.env`
 
     No templates and no schemas: they are fixed, and each task's tests
     score it. The entry needs a `harbor:` block without `environment`,
-    since each task brings its own. `limit`, `batch_size` and `repeat` work
+    since each task brings its own, and without `instructions` or
+    `answer_file`: a task says what the agent is told in its
+    `instruction.md` and is scored by its own `tests/`, so `check` refuses
+    both. `limit`, `batch_size` and `repeat` work
     as for the other providers. [Harbor tasks](harbor-tasks.md) covers the
     folders, the agents and the trials.
 
@@ -1008,10 +1014,11 @@ datasets:
 ```
 
 Cost, tokens and latency reach `result.json` only when listed here or on the
-evaluation, by their measurement names. Give `cost` and the token counts
-`direction: min`: a metric's direction defaults to `max`, and the leaderboard
-ranks by the direction the run recorded
-([Running evaluations](evaluations.md#metrics-the-columns-beside-reward)).
+evaluation, by their measurement names. Their direction is set for you: a
+metric written without `direction:` is `min` when it measures cost, tokens or
+latency (`cost`, `total_tokens`, `avg_latency`, ...) and `max` otherwise. Write
+`direction:` to override it; the leaderboard ranks by the direction the run
+recorded ([Running evaluations](evaluations.md#metrics-the-columns-beside-reward)).
 
 ## Common mistakes
 
@@ -1025,10 +1032,12 @@ shows up when the run loads the dataset.
 | a misspelled setting, `pth:` | `check` | not a setting of the provider, with the fix "rename `pth:` to `path:`" |
 | a setting the provider does not take, `as_of:` on `langfuse` | `check` | the list of settings the provider takes |
 | a required setting missing, `table:` on `unity_catalog` | `check` | the provider needs it, with a placeholder to fill in |
+| no project or dataset name on `braintrust`, no `name` or `dataset_id` on `mlflow` | `check` | ``the braintrust provider needs `project` or `project_id` ``, with a placeholder to fill in |
 | no `input_template` | `check` | "nothing says what each row asks", with templates to paste |
 | `reward:` inside `config:` | `check` | arena-level keys in `config`, with the fix to move them up |
 | two answering blocks | `check` | the blocks are mutually exclusive |
 | `harbor_tasks` without `harbor:` | `check` | it needs a `harbor:` block, with `harbor: {agent: terminus-2}` to add |
+| `instructions` or `answer_file` in a `harbor_tasks` dataset's `harbor:` | `check` | they have no effect on task folders, with where each belongs instead |
 | a column the row does not have | the run | the template fails on the first row |
 | a value not piped through `tojson` | the run | the template renders invalid JSON |
 | a template that does not match its schema, or no schema | the run | the row is refused when read |

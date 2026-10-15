@@ -100,16 +100,20 @@ The model's answer is a JSON object, and so is the expected answer the
 dataset's `output_template` renders. Before scoring, the engine picks the
 fields each reward sees:
 
-- **A deterministic reward** sees only the fields the `output_template`
-  renders. Whatever else the program returns (the question, when the program
-  returns its inputs; a chain of thought's `thinking`; an agent's `messages`)
-  is left out, so it never costs a point.
+- **A deterministic reward** sees only the top-level fields the
+  `output_template` renders, and compares each one's value whole: a field
+  that holds an object or a list of objects (a nested answer, a list of tool
+  calls) is compared with everything inside it. Whatever else the program
+  returns (the question, when the program returns its inputs; a chain of
+  thought's `thinking`; an agent's `messages`) is left out, so it never costs
+  a point.
 - **A judge** sees every field the program returns, since judging them is its
   job. Two exceptions: on an [MCP agent](mcp-tools.md) dataset the agent's
   `messages` transcript is left out, and on a [Harbor](harbor-tasks.md)
   dataset only the agent's `answer` is read.
 
-Setting any mask yourself (below) turns this automatic choice off.
+Setting any mask yourself (below) turns this automatic choice off: the reward
+then sees what your mask keeps, applied as written.
 
 A judge reads the expected answer beside the answer, with the expected
 answer's fields prefixed `gold_`. It does **not** read the question unless the
@@ -128,7 +132,10 @@ datasets:
 
 ### Masks
 
-Every type takes four optional settings that choose the fields by hand.
+Every type takes four optional settings that choose the fields by hand. The
+automatic choice above fits most datasets; reach for a mask when a field the
+`output_template` renders should not count, or when a judge should not see a
+field.
 
 | field | values | default | effect |
 |---|---|---|---|
@@ -143,8 +150,10 @@ level of nesting: `in_mask: [answer]` on `{"answer": {"value": 1}}` keeps
 
 !!! warning "Masks and nested values"
     Because masks reach into nested objects, keeping a field whose value is an
-    object or a list of objects empties it. To leave a field out, prefer
-    `out_mask` over an `in_mask` naming the others.
+    object or a list of objects empties it, and every answer then scores the
+    same. The automatic choice does not have this problem: it keeps whole
+    values. To leave a field out, prefer `out_mask` over an `in_mask` naming
+    the others.
 
 ## Deterministic rewards
 
@@ -277,20 +286,14 @@ rewards:
   tool-calls:
     type: tool_calls_accuracy
     description: The right functions called with the right arguments.
-    config:
-      out_mask: [id]                 # see the warning below
 ```
 
 Arguments must match exactly: `{"city": "Paris"}` and `{"city": "paris"}`
 differ, and so do `{"limit": 10}` and `{"limit": "10"}`. Write the gold calls
 in the form the function declaration asks for.
 
-!!! warning "Set a mask on this reward"
-    Left to the automatic field choice, this reward keeps the `tool_calls`
-    field and, masks reaching into nested values, empties each call in it:
-    every row then scores 1. Setting any mask yourself turns the automatic
-    choice off. `out_mask: [id]` does it, and drops the call ids, which differ
-    from run to run anyway.
+It needs no mask: the automatic field choice keeps the `tool_calls` field
+whole, and a call's `id`, which differs from run to run, is never compared.
 
 ### harbor_verifier
 
@@ -497,9 +500,10 @@ the arbiter. A lower `agreement_threshold` sends more rows to the arbiter
 (cheaper, noisier). Panelists from different families also dilute any one
 family's bias.
 
-!!! warning
-    `openarena check` does not report a missing `smart_language_model` or an
-    empty panel: the run stops when it builds the reward.
+Both are required. `openarena check` reports a panel left empty
+(``multi_judge_panel needs `panel_language_models`: at least one judge``) and a
+missing arbiter (``multi_judge_panel needs `smart_language_model`: the judge
+that settles a split panel``).
 
 ### rlm_as_judge and deep_agent_as_judge
 
@@ -543,8 +547,11 @@ each row is a small agent run. Lower `max_iterations` to bound the cost, and
 keep them for rows a single read cannot decide.
 
 `agent_as_judge` is in the catalog too, but it needs tools to call, and a
-config entry cannot give it any: the run stops when it builds the reward. Use
-`rlm_as_judge` or `deep_agent_as_judge` instead.
+config entry cannot give it any. `openarena check` refuses it
+(``agent_as_judge cannot be built from an entry: it needs `tools`, which an
+entry cannot give``) and points to the alternatives: `rlm_as_judge` or
+`deep_agent_as_judge`, which need no tools, or a judge such as `lm_as_judge`
+over the agent's `messages`.
 
 ## Choosing and calibrating a judge
 
@@ -559,20 +566,23 @@ confused with a model under test:
 models:
   judge-4o:
     model: openai/gpt-4o
+    params:
+      temperature: 0                 # the same answer gets the same grade, as far as the provider allows
     description: The judge. Never under test.
     tags: [judge]
 ```
 
-!!! warning "A judge's `params` are not sent"
-    A reward reaches its model by id only: the entry's `params`
-    (`temperature`, `max_tokens`, `reasoning_effort`) are dropped, and the
-    judge runs at the provider's defaults. Setting `temperature: 0` on a judge
-    entry has no effect, so expect some spread between reruns and compare
-    rankings rather than exact scores.
+Give the judge entry `temperature: 0`. A judge's `params` (`temperature`,
+`max_tokens`, `reasoning_effort`) are sent with each of its calls, as a model
+under test's are ([Where the params apply](models.md#where-the-params-apply)).
+At 0 it grades steadily from row to row and from run to run; a sampling judge
+adds its own noise to every score. Even at 0, hosted providers do not promise
+identical answers, so expect a small spread between reruns.
 
 Keep the judge fixed across every run you compare: scores from two judges are
 not on the same scale. The evaluation's `seed` does not make a judge
 reproducible; it seeds local randomness, not the provider's sampling.
+`temperature: 0` is what steadies the judge.
 
 ### Self-preference
 
@@ -607,7 +617,9 @@ rank on it first. Any other reward can score the same rows as an extra column,
 under a dataset's or an evaluation's `metrics:`
 ([Extra metrics](datasets.md#extra-metrics)). There, a catalog reward is named
 with `class:`, its settings written inline, an `alias` naming the column, and
-its own `direction`.
+its own `direction`. A metric written without `direction:` is read as `max`,
+except a cost, tokens or latency measurement, read as `min`; write
+`direction:` to say otherwise, as `toxicity` does below.
 
 ```yaml
 datasets:
@@ -672,15 +684,15 @@ reports:
 | a litellm id instead of a model name | ``'openai/gpt-4o-mini' is not in `models` ``; the fix names the entry that calls it |
 | an embedding model as a judge, or the reverse | `'minilm' is an embedding model; this setting needs a language model` |
 | a dataset naming a reward that does not exist | the dataset's `reward` is not in `rewards`, with the closest name |
+| `rubrics_as_judge` without `rubrics` | ``rubrics_as_judge needs `rubrics`: the criteria it grades``, with an example list as the fix |
+| `multi_judge_panel` without its panel or its arbiter | ``multi_judge_panel needs `panel_language_models`: at least one judge``, ``multi_judge_panel needs `smart_language_model`: the judge that settles a split panel`` |
+| `reduction` on a deterministic reward | ``exact_match does not take `reduction` ``; only judges take it |
+| a judge's setting beside `type:` instead of under `config:` (`reduction: mean`) | `` not a field of a `rewards` entry ``, with the fix ``move it under `config:` `` |
+| `agent_as_judge` | ``agent_as_judge cannot be built from an entry: it needs `tools`, which an entry cannot give``, with the alternatives |
 
 What only the run finds:
 
 - a dataset with no `reward`: the run refuses it.
-- `rubrics_as_judge` without `rubrics`, `multi_judge_panel` without
-  `smart_language_model` or panel, any `agent_as_judge`: the reward cannot be
-  built.
-- `reduction` on a deterministic reward: `check` accepts it, the reward does
-  not take it. Set `reduction` on judges only, if at all.
 - a judge whose provider key is missing: the cell fails
   ([Reading results](results.md#when-a-cell-failed-or-scored-0)).
 - every row scoring 0 with `exact_match`: compare an answer with its expected

@@ -20,7 +20,7 @@ a2a_agents:
     url: http://localhost:9999         # required: http:// or https://; the card is read here
     # card_path: /.well-known/agent.json   # the card elsewhere, a path under url
     headers:                           # sent on every request (card, messages, task polls)
-      Authorization: Bearer <token>    # literal: ${VAR} is NOT expanded
+      Authorization: Bearer ${HELPER_TOKEN}   # HELPER_TOKEN set in the workspace's .env
     timeout_sec: 120                   # one whole row, polls included (default 300, > 0)
     description: The support agent, current version.
     tags: [support]
@@ -31,9 +31,12 @@ a2a_agents:
 
 Only these six fields exist: `url`, `card_path`, `headers`, `timeout_sec`,
 `description`, `tags`. There is no streaming, retry or rate-limit field; any
-other key is an error. Header values are sent as written, so the token sits in
-the file: use a revocable evaluation key and do not commit it. Quote a header
-value YAML would read as a number.
+other key is an error. Keep a token out of the file: put it in the
+workspace's `.env` (`HELPER_TOKEN=...`) and reference it as `${NAME}`; the run
+replaces it when it reads its config, refuses to start when it is set nowhere,
+and the run's `config.yaml` keeps the reference. `openarena check` warns about
+a variable set neither in the shell nor in `.env`. Still prefer a revocable
+evaluation key. Quote a header value YAML would read as a number.
 
 `url` is only where the card is read. Messages go to the address the card's
 interfaces advertise. An agent behind a proxy or tunnel that advertises an
@@ -46,7 +49,7 @@ What the agent must reply depends on the dataset's `output_template`:
 
 - **With `output_template` and `output_schema`**: the agent must answer a
   JSON object (a reply that is a single fenced `json` block is unwrapped).
-  Prose fails the row. The agent never sees the schema, so tell it the format
+  Prose scores 0 on that row. The agent never sees the schema, so tell it the format
   in the input, as `reply_format` does below. Any reward then works against
   the reference (`exact_match`, a judge).
 - **With no output template** (inputs only): the reply is kept as free text,
@@ -93,11 +96,16 @@ Rules the run enforces:
 
 - Every dataset of the evaluation must be `a2a`: mixing with model datasets
   is refused. Run agents and models as two evaluations.
-- Any failed row fails the whole cell: a non-JSON or non-object reply where
-  JSON is needed, a task ending `failed`, `canceled`, `rejected`,
-  `input required` or `auth required` (no second turn is sent), a timeout, a
-  connection or HTTP error. Rows are not retried; rerunning the same command
-  reruns the failed cells and keeps the scored ones.
+- A row the agent does not answer scores 0, with a warning
+  (`A2A agent <url>: <why>`), and the cell goes on: a non-JSON or non-object
+  reply where JSON is needed, a task ending `failed`, `canceled`, `rejected`,
+  `input required` or `auth required` (no second turn is sent), a timeout
+  (`no answer within <timeout_sec>s`), a connection or HTTP error. Rows are
+  not retried.
+- A cell where **no** row got an answer (the agent down, a wrong token, a
+  card advertising an unreachable address) fails with
+  `no row got an answer: ...`, and the run exits 1. Rerunning the same
+  command reruns the failed cells and keeps the scored ones.
 - No streaming, even if the card offers it, and no rate limiting: keep
   `batch_size` within the agent's quota, low for production.
 - Only the final answer is recorded: no trajectory, tool calls, tokens or

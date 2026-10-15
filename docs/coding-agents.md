@@ -135,30 +135,38 @@ agent leans on:
 | behaviour | command | what the agent does with it |
 |---|---|---|
 | exit code 1 on an error | `openarena check` | edit, check, read the problems, fix, check again until it exits 0. Warnings alone exit 0 |
+| exit code 1 on a failed cell | `evaluations run` | every cell still runs and `result.json` is written; the last line names each failed `<model> × <dataset>` |
 | a line, a location and a fix per problem | `openarena check` | the `fix` line is often the YAML to write, so the agent does not guess field names |
 | refuse instead of overwrite | `openarena init` | writes nothing and names every file in the way; `--force` is the only way past it |
-| errors that name the choices | `evaluations run`, `leaderboards run` | an unknown evaluation or leaderboard name fails with `choose one of: ...` |
+| errors that name the choices | `evaluations run`, `leaderboards run` | an unknown evaluation or leaderboard name fails with `choose one of: ...`; a leaderboard entry that does not validate is refused with its problems |
 | a listing per registry | `openarena <registry> list` | what is already defined, before adding a duplicate |
 | results as JSON on disk | `evaluations run` writes `.open-arena/<name>/result.json`; `--json FILE` on both `run` commands writes another copy | the agent reads numbers from JSON with a short script, not from a printed table |
 | the exact config that ran | `.open-arena/<name>/config.yaml` | when a result looks wrong, compare what ran with what was meant |
-| resume by default | `evaluations run` | a rerun after fixing a key only pays for the cells that did not finish |
+| resume by default | `evaluations run` | a rerun after fixing a key only pays for the cells that failed or did not finish |
 
 The printed output is tables for people. The JSON files are what an agent
 should read, and the `openarena-read-results` skill tells it to read them
 with a script, not by eye.
 
-!!! warning "A failed cell does not fail the command"
-    `openarena evaluations run` exits 0 when it finishes, even if some cells
-    failed. A failed cell prints `<model> failed: <why>` after its dataset and
-    has `value: null` and a status other than `COMPLETED` in `result.json`. Ask
-    the agent to check the status of every cell, not just the exit code.
+!!! warning "A failed cell fails the command, after the others ran"
+    `openarena evaluations run` runs every cell whatever fails, writes
+    `result.json`, prints the table, and exits 1 if any cell failed, with
+    `N cell(s) failed: <model> × <dataset>, ...`. Each failed cell also
+    printed `<model> failed: <why>` after its dataset and has `value: null`
+    and a status other than `COMPLETED` in `result.json`. Exit 0 does not
+    mean every row answered: a cell where only some rows failed completes
+    with those rows at 0. Ask the agent to read the warnings and every cell's
+    reward, not just the exit code.
 
 Two more details to know:
 
 - **`.env` is read for `evaluations run`**, from the folder above `configs/`,
   never over a variable already set. The agent does not need to export keys,
   and should never print or commit `.env` (the workspace's `.gitignore`
-  already leaves it out).
+  already leaves it out). A secret a config field must carry (an agent's
+  `headers`) is written as `${NAME}` and set in `.env`
+  ([Secrets in configs](workspace.md#secrets-in-configs)); `check` warns when
+  a `${NAME}` is set nowhere.
 - **The cache does not notice config changes.** After changing a dataset, a
   model's params or a reward, a rerun reuses old cells unless it gets
   `--no-cache`. See [Running evaluations](guides/evaluations.md#resuming-and-starting-over).
@@ -233,7 +241,7 @@ size on its first try can spend real money on a broken config.
 | a smoke evaluation | a second evaluation with one cheap or local model | before adding paid models to the sweep |
 | `batch_size` | on the evaluation, or `--batch-size N` for one run | lower it for a local model, a rate-limited key, or Harbor on a small machine |
 | ask for the size first | "tell me rows times models before you run" in the prompt or in `AGENTS.md` | any run with paid models or judges |
-| resume, do not restart | rerun the same name after a fix; `--no-cache` only when the config changed | after a missing key or a server that was down |
+| resume, do not restart | rerun the same name after a fix; `--no-cache` only when the config changed | after a missing key or a server that was down: those cells failed, and a plain rerun runs them again |
 
 A dataset with a limit looks like this (other fields left out):
 

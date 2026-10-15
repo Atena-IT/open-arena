@@ -87,7 +87,7 @@ my-arena/
 | local data files (JSONL, CSV, ...) | you | `local` and `folder` datasets | yes if small and shareable, else keep them elsewhere |
 | `.agents/skills/`, `AGENTS.md`, `CLAUDE.md` | `init` | coding agents | yes, so everyone's agent works the same way |
 | `README.md`, `.env.template`, `.gitignore` | `init` | people | yes |
-| `.env` | you | `evaluations run` | never: it holds secrets |
+| `.env` | you | `evaluations run`; `check` looks up `${NAME}`s in it | never: it holds secrets |
 | `.open-arena/` | `evaluations run` | `leaderboards run`, you | no, by default (see [Versioning](#versioning)) |
 
 ## configs/: the registries
@@ -227,6 +227,8 @@ The registries never hold an API key: a model entry's `params` only take
 generation settings (`temperature`, `max_tokens`, `reasoning_effort`, and
 `dimensions` for embeddings). Keys and server addresses come from the
 environment, which keeps them out of git and lets each person use their own.
+A field that must carry a secret (a header, a server's `env`) names the
+variable with `${NAME}` ([Secrets in configs](#secrets-in-configs)).
 
 ```shell
 cp .env.template .env      # then uncomment and fill in what your models need
@@ -237,8 +239,9 @@ How it is loaded:
 - `openarena evaluations run` reads `.env` from **the folder that holds
   `configs/`** (the parent of `--configs`), before anything else.
 - A variable already set in your shell wins: `.env` never overrides it.
-- No other command reads `.env`. `check`, `list` and `leaderboards run` make no
-  model calls and need no keys.
+- No other command loads `.env`. `check`, `list` and `leaderboards run` make
+  no model calls and need no keys; `check` only reads the file to look up the
+  [`${NAME}` references](#secrets-in-configs) a config holds.
 - The file is optional. Without one, the run uses your shell's environment.
 
 | setting comes from | wins over |
@@ -305,12 +308,38 @@ editing the file.
     `openarena evaluations run` itself does not switch tracing on in this
     version: its record is `result.json`.
 
-!!! warning "Values in YAML are not expanded"
-    `${VAR}` in a registry file stays the literal text `${VAR}`. A secret that
-    must go in a field, such as an MCP server's `headers` or `env`, is written
-    as it is into `configs/` and into every run's `config.yaml` snapshot.
-    Prefer an MCP server that reads its key from its own environment, and keep
-    such files out of public repositories.
+### Secrets in configs
+
+Some fields have to carry a secret: an A2A agent's or an MCP server's
+`headers`, a stdio server's or an environment's `env`. Write a reference to an
+environment variable there instead of the value, and put the value in `.env`:
+
+```yaml
+a2a_agents:
+  support-bot:
+    url: https://support-agent.example.com
+    headers:
+      Authorization: "Bearer ${SUPPORT_BOT_TOKEN}"
+```
+
+```shell
+# .env
+SUPPORT_BOT_TOKEN=...
+```
+
+- Any string value in any registry may hold `${NAME}`. When a run reads its
+  config (`openarena evaluations run`, and the arena app when it launches
+  one), each reference is replaced by the variable, after `.env` is loaded,
+  so the shell still wins over the file.
+- A variable that is not set makes the run refuse to start, before any call,
+  naming each variable and where it is used.
+- The run's snapshot, `.open-arena/<evaluation>/config.yaml`, keeps the
+  `${NAME}` references, not the values, so it can be shared.
+- `$${NAME}` writes a literal `${NAME}`. Jinja's `{{ ... }}` in templates is
+  not touched.
+- `openarena check` looks each `${NAME}` up in your shell and in the
+  workspace's `.env`, and warns about one set in neither. It is a warning, not
+  an error: CI can check configs without the secrets.
 
 ## .open-arena/: the runs
 
@@ -427,7 +456,8 @@ comes from two options and the folder you run in.
     `.env`. A few habits keep it workable:
 
     - **Add every key a run needs to `.env.template`**, commented, so a new
-      member sees what to set.
+      member sees what to set, the variables your configs name as `${NAME}`
+      included.
     - **Prefix names by project or owner** when several people add entries
       (`team-a-gsm8k`, `judge-v2`): a name is shared by the whole registry,
       and the same key written twice is an error.

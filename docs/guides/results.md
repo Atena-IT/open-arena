@@ -36,7 +36,7 @@ default ([`--state-dir`](../cli.md#openarena-evaluations-run)).
 
 | file | written | read it for |
 |---|---|---|
-| `config.yaml` | at the start of every run | what actually ran: models, params, rewards, templates, after the registries were gathered |
+| `config.yaml` | at the start of every run | what actually ran: models, params, rewards, templates, after the registries were gathered; a `${NAME}` stays a reference, never the secret |
 | `result.json` | at the end, only when the sweep finishes | the scores; this is what [leaderboards](leaderboards.md) read |
 | `<dataset>/trial_N/trial.json` | as each cell ends | a failed cell's full error; this is also the resume cache |
 | `harbor/trials.jsonl` | as each Harbor row ends | the row-level view of a Harbor cell |
@@ -67,6 +67,8 @@ gsm8k-20
 
 `done` lists every number the cell measured. `failed` is the last line of the
 cell's error; the full traceback is in its `trial.json` ([When a cell failed](#when-a-cell-failed-or-scored-0)).
+After the tables, a run with failed cells names them all,
+`N cell(s) failed: <model> × <dataset>, ...`, and exits 1.
 
 At the end it prints one table per dataset: a row per model, a column per
 metric, four decimals, `—` where a cell has no value. Add `-v` for a progress
@@ -104,7 +106,7 @@ bar, `-vv` for a line per batch.
 | `datasets` | the datasets, in the evaluation's order |
 | `metrics` | every column: `reward` first, then each extra metric's alias, across all datasets |
 | `directions` | per dataset, the direction of its `reward` (`max` unless the reward says `min`) |
-| `metric_directions` | per extra metric, its direction as written in `metrics:` |
+| `metric_directions` | per extra metric, its direction: as written in `metrics:`, else `min` for a cost, tokens or latency measurement and `max` for anything else |
 | `objectives_by_ds` | per dataset, the axes of its Pareto frontier: `reward`, plus every metric marked `objective: true` |
 | `frontier_by_ds` | per dataset, the models no other model beats on every axis; empty when the dataset has one axis |
 
@@ -126,8 +128,8 @@ needs to be read alone.
 | status | meaning | what to do |
 |---|---|---|
 | `COMPLETED` | every row was asked and scored | read the value |
-| `FAILED` | the cell raised a deliberate failure, such as a Harbor cell where no row got an answer | read the error; it is the setup, not the model |
-| `INVALID` | the cell raised any other error: a key, a connection, a template, a reward that cannot be built | read the error, fix, run again |
+| `FAILED` | the cell gave no score: no row got an answer (a missing key, a model server down, an unknown model id), an agent's MCP servers gave no tools, a Harbor cell where no task got an answer | read the error; it is the setup, not the model. Fix it and run again: the cell runs again |
+| `INVALID` | the cell raised any other error: a template, a reward that cannot be built | read the error, fix, run again |
 | `null` | the cell has no trial | the run did not reach it |
 
 !!! warning "A 0 is not a failure, and a failure is not a 0"
@@ -198,10 +200,10 @@ evaluations:
   math-compare:
     # ...
     metrics:
-      - {class: cost, direction: min}
-      - {class: output_tokens, direction: min}
-      - {class: avg_latency, direction: min}
-      - {class: answer_accuracy, alias: accuracy}
+      - cost                    # min: lower is better, from the name
+      - output_tokens           # min
+      - avg_latency             # min
+      - {class: answer_accuracy, alias: accuracy}   # max
 ```
 
 | name | unit | what it counts |
@@ -217,10 +219,14 @@ evaluations:
 | `reward_cost` | USD | what the reward's model calls spent: the judge, apart from the model under test |
 | `embedding_cost` | USD | the embedding model's spend, for retrieval datasets |
 
-!!! warning "Write `direction: min` on cost, tokens and latency"
-    A metric's direction is what its `metrics:` entry says, and the default is
-    `max`. Left out, `cost` is recorded as "higher is better": the frontier and
-    every leaderboard built on the run then favour the most expensive model.
+!!! note "Cost, tokens and latency rank lower first"
+    Without `direction:`, a metric measuring what the calls spend (a name
+    ending in `tokens`, `cost`, `latency`, `time_to_...`, `elapsed_time`,
+    `error_rate`, `failed_calls`, ... with an optional `_per_call`) is `min`;
+    every other metric, `avg_cached_tokens_per_call`, `throughput` and
+    `tokens_per_second` included, is `max`. An explicit `direction:` wins.
+    [Running evaluations](evaluations.md#metrics-the-columns-beside-reward)
+    has the full rule.
 
 !!! tip "When cost reads 0"
     A local model (`ollama/...`, `vllm/...`) costs 0 by design. A hosted model at
@@ -246,7 +252,7 @@ datasets:
   gsm8k-20:
     # ...
     metrics:
-      - {class: cost, direction: min, objective: true}
+      - {class: cost, objective: true}
 ```
 
 A model is then on the frontier when no other model is at least as good on
@@ -270,19 +276,21 @@ python -c "import json,sys; t=json.load(open(sys.argv[1])); print(t['hyperparame
 
 | symptom | likely cause | fix |
 |---|---|---|
-| authentication error | the provider's key is not set | set it in `.env`, run again (it resumes) |
+| `no row got an answer: all N call(s) failed; the first: <error>` | every call of the cell failed; the error after `the first:` says why, as in the rows below | fix it and run again: the failed cell runs, no `--no-cache` needed |
+| an authentication error | the provider's key is not set | set it in `.env`, run again (it resumes) |
 | connection refused | no Ollama running, or `HOSTED_VLLM_API_BASE` unset | start the model server |
 | model not found | a wrong id in `models.yaml` | fix `model:` |
+| `could not load the MCP tools of [...]` | an agent's MCP server is down, its command is not on the `PATH`, or it exposes no tools | start the server or fix its entry; only that agent's cells failed |
 | an error reading the dataset | a wrong `path`, `name` or `split`, or a template naming a missing column | look at a real row, fix `config` |
 | reward 0 everywhere, answers look right | the answer's form differs from the expected one (`"42"` and `"42.0"`, `"B"` and `"B) ..."`) | tighten the `output_schema` or the template, or use `answer_accuracy` or a judge |
 | a judge reward fails | the judge model's key is not set | set its provider's key |
 | `none of the N Harbor task(s) got an answer` | the sandbox: no Docker or E2B key, a failed image build, no `tmux` | read `harbor/trials.jsonl` |
 
-!!! note "When every model fails"
-    A dataset tolerates failed cells back to back up to the number of models
-    (at least three). When every model fails on it in a row, something is
-    broken for all of them, and the run stops there: no `result.json` is
-    written. The trial state stays, so the next run resumes.
+!!! note "Every cell runs"
+    A failed cell never stops the run, however many fail in a row: every
+    cell runs, `result.json` is written with every failure in it, and the
+    command exits 1. The trial state stays, so the next run resumes and runs
+    only the failed cells.
 
 ## Model or infrastructure
 
@@ -299,11 +307,13 @@ between them. Rule out the last two before blaming the first.
 | a Harbor line `answered` with an `error` | the agent ran but stopped short (a timeout, nothing in the answer file); the score is the model's |
 | scores move when only `batch_size` changes | rate limits, or a struggling local server |
 
-!!! warning "A provider error on one row does not fail the cell"
-    When a call fails on one row, that row gets no answer and scores 0, and the
-    cell still completes. A flaky key or a rate limit therefore shows as a lower
-    reward, not as an error. Add `output_tokens` to the metrics: a model that
-    scored low because it never answered spent no output tokens.
+!!! warning "A provider error on some rows does not fail the cell"
+    When a call fails on one row, or an A2A agent does not answer it, that row
+    gets no answer and scores 0, with a warning, and the cell still completes.
+    A rate limit therefore shows as a lower reward, not as an error, and the
+    cell is kept on a rerun. Only a cell where no row got an answer fails. Add
+    `output_tokens` to the metrics: a model that scored low because it never
+    answered spent no output tokens.
 
 ## From a number to the rows
 

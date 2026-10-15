@@ -22,9 +22,11 @@ Full reference: `docs/guides/results.md`.
 
 ## Did it work?
 
-`openarena evaluations run` exits 0 even when cells failed. Always check the
-statuses. Do not rely on the exit code. A failed cell prints
-`<model> failed: <last line of the error>` after its dataset.
+`openarena evaluations run` exits 1 when any cell failed, after printing
+`N cell(s) failed: <model> × <dataset>, ...`; `result.json` is written
+either way. A failed cell also prints `<model> failed: <last line of the
+error>` after its dataset. Exit 0 means every cell scored, not that the
+scores are good: still read the statuses and values.
 
 ## result.json
 
@@ -51,15 +53,16 @@ statuses. Do not rely on the exit code. A failed cell prints
   reward over its rows, usually 0 to 1. Its `direction` is the reward's own.
 - `metrics` is `reward` plus only the aliases listed under a dataset's or
   the evaluation's `metrics:`. Cost, tokens and latency appear only when they
-  are listed there, and they need `direction: min` because the default is `max`:
+  are listed there; written bare they are better lower (`direction: min`),
+  any other metric higher, unless the entry sets `direction:`:
 
   ```yaml
   evaluations:
     smoke:
       # ...
       metrics:
-        - {class: cost, direction: min}
-        - {class: output_tokens, direction: min}
+        - cost
+        - output_tokens
   ```
 
 - `frontier_by_ds` is empty and every `on_frontier` is `false` unless a metric is
@@ -68,9 +71,9 @@ statuses. Do not rely on the exit code. A failed cell prints
 
 | status | meaning |
 |---|---|
-| `COMPLETED` | every row was asked and scored. The value can still be 0 |
-| `FAILED` | a deliberate failure, e.g. a Harbor cell where no row got an answer |
-| `INVALID` | any other error: key, connection, template, reward |
+| `COMPLETED` | every row was asked and scored, at least one got an answer. The value can still be 0 |
+| `FAILED` | no row got an answer (a key, a model server or an A2A agent unreachable), or an agent's MCP servers gave no tools |
+| `INVALID` | any other error: template, reward, ... |
 | `null` | no trial: the run never reached the cell |
 
 A failed cell has `value: null`. Read the file with a script, not by eye:
@@ -92,24 +95,29 @@ python3 -c "import json,sys; t=json.load(open(sys.argv[1])); print(t['hyperparam
   .open-arena/smoke/gsm8k-20/trial_0/trial.json
 ```
 
-A provider error on a row does not fail the cell. The row gets no answer and
-scores 0. So a missing key or an unreachable server usually shows as a
-`COMPLETED` cell with reward 0 (and `output_tokens` near 0, if you listed it).
-That 0 is cached, so after fixing the cause, rerun with `--no-cache`. A plain
-rerun only retries the failed cells.
+A provider error on one row does not fail the cell: that row gets no answer
+and scores 0, with a warning. When **no** row got an answer, the cell is
+`FAILED` with `no row got an answer: all N call(s) failed; the first: <the
+error>`: a missing key or an unreachable server shows there, not as a 0. A
+plain rerun runs the failed cells again, so after fixing the cause no
+`--no-cache` is needed. A `COMPLETED` cell is reused as it is, its 0s too:
+rerun with `--no-cache` to redo one where only some rows failed.
 
 | symptom | likely cause | fix |
 |---|---|---|
-| one model at 0, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE` | set the key in `.env`; ask the user to start the server (do not start it yourself); rerun with `--no-cache` |
+| one model `FAILED`, `no row got an answer`, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE` | set the key in `.env`; ask the user to start the server (do not start it yourself); rerun |
+| `FAILED`, `could not load the MCP tools of [...]` | an MCP server down, its command not on the PATH, or it exposes no tools | openarena-add-mcp-tools; rerun |
 | model not found | a wrong id in `models.yaml` | fix `model:` |
 | `INVALID` at the dataset | wrong `path` / `name` / `split`, or a template naming a missing column | look at a real row; fix `config` (openarena-add-dataset) |
 | every model at 0, answers look right | the answer's form differs from the reference (`"42"` vs `"42.0"`, `"B"` vs `"B) ..."`) | tighten `output_schema` or the template, or use `answer_accuracy` / a judge |
 | a judge reward fails | the judge's `language_model` has no key | set that provider's key |
+| the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` in the config is set neither in the shell nor in `.env` | add `NAME=...` to the workspace's `.env` |
 | `none of the N Harbor task(s) got an answer` (`FAILED`) | the sandbox: no Docker / E2B key, image build failed, `tmux` missing | `harbor/trials.jsonl`, below |
 
-On one dataset, the run stops after `max(3, number of models)` failed cells in
-a row. When that happens, no `result.json` is written and the previous one stays
-in place. Trial state is kept, so the next run resumes.
+However many cells fail, the run goes on to the end and writes
+`result.json`. Only an interruption (Ctrl-C, a crash) leaves no new
+`result.json`; the previous one stays in place, and the trial state is kept,
+so the next run resumes.
 
 To see why a 0 happened row by row outside Harbor, run the sweep from Python with
 `run_sweep(..., on_sample=..., samples_per_cell=N)` and a fresh `state_dir`.

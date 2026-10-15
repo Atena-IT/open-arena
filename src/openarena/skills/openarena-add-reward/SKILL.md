@@ -1,6 +1,6 @@
 ---
 name: openarena-add-reward
-description: Use when an openarena dataset needs something to score its answers (rewards.yaml) — choosing between an exact comparison and a judge model, writing the reward entry with its catalog type, its kwargs and its direction, and naming it from a dataset. Lists every catalog reward with the kwargs it accepts, and the mistakes `openarena check` does not catch.
+description: Use when an openarena dataset needs something to score its answers (rewards.yaml) — choosing between an exact comparison and a judge model, writing the reward entry with its catalog type, its kwargs and its direction, and naming it from a dataset. Lists every catalog reward with the kwargs it accepts, and what `openarena check` refuses.
 ---
 
 # openarena-add-reward
@@ -31,27 +31,27 @@ rewards:
     type: rubrics_as_judge
     config:
       language_model: judge-4o
-      rubrics:                       # required; check does not catch it missing
+      rubrics:                       # required
         - The final answer is correct
         - name: units
           description: The answer states its unit.
           weight: 0.5
   tool-calls:
-    type: tool_calls_accuracy
-    config:
-      out_mask: [id]                 # required in practice, see below
+    type: tool_calls_accuracy        # no kwargs, no mask needed
 ```
 
 `type`, `direction`, `description`, `tags` sit beside `config`; `name` or
 `direction` inside `config` is an error, and so is a kwarg the type does not
-take, or a model setting naming an id instead of a `models` key (or a model of
-the wrong `type`: `embedding_model` needs `type: embedding`, the others `llm`).
+take (`reduction` included, on a type whose constructor has none), or a model
+setting naming an id instead of a `models` key (or a model of the wrong
+`type`: `embedding_model` needs `type: embedding`, the others `llm`).
 
 Every type also takes the masks `in_mask`, `out_mask`, `in_mask_pattern`,
 `out_mask_pattern` (field names or regexes, applied to both sides at every
 nesting level). Setting any mask turns off the automatic field choice: a
-deterministic reward otherwise sees only the fields the `output_template`
-renders, a judge sees everything the program returns.
+deterministic reward otherwise sees only the top-level fields the
+`output_template` renders, each value compared whole (nested objects and
+lists included), and a judge sees everything the program returns.
 
 ## Choosing a reward
 
@@ -70,9 +70,9 @@ Deterministic (the dataset's `output_template` must give the expected answer):
 rendered as text (`{{ x | string | tojson }}`) is compared by tokens; render it
 as a number (`{{ x | tojson }}`) to compare it as one.
 
-`tool_calls_accuracy` **needs a mask**: left automatic, it gets
-`in_mask: [tool_calls]`, which empties every call, so every row scores 1.0.
-Set `out_mask: [id]` (it also drops the call ids, which differ per run).
+`tool_calls_accuracy` needs no mask: scoped to `tool_calls`, it compares each
+call's name and arguments, and the call ids (which differ per run) do not
+count.
 
 A model judges (reference optional; the judge reads it as `gold_` fields):
 
@@ -84,8 +84,8 @@ A model judges (reference optional; the judge reads it as `gold_` fields):
 | `rlm_as_judge`, `deep_agent_as_judge` | `language_model`, `sub_language_model`, `instructions`, `max_iterations`, `timeout`, `use_chain_of_thought` |
 
 `agent_as_judge` is listed by the engine but cannot be built from YAML (its
-`tools` cannot be set): `check` passes it, the run fails. Use `rlm_as_judge`
-or `deep_agent_as_judge` instead.
+`tools` cannot be set): `check` refuses it. Use `rlm_as_judge` or
+`deep_agent_as_judge` instead.
 
 Ready-made rubric judges, each taking only `language_model` and `instructions`:
 `answer_relevancy`, `faithfulness`, `hallucination`, `citation_faithfulness`,
@@ -116,8 +116,9 @@ reproducible.
   `default_language_model`.
 - Give the judge its **own** `models.yaml` entry (openarena-add-model), never
   one of the evaluation's `language_models`, and preferably from another
-  provider than the candidates (self-preference). A judge is called with the
-  entry's `model` id only: its `params` (temperature, ...) are dropped.
+  provider than the candidates (self-preference). A judge is called with its
+  entry's `params`: give it `temperature: 0` so its scores are as repeatable
+  as the provider allows.
 - The judge does not see the question unless the program returns it: set
   `generator: {return_inputs: true}` in the dataset when grading needs it
   (relevancy, instruction following).
@@ -131,13 +132,19 @@ reproducible.
 
 `direction: min` is for a reward where lower is better; leaderboards flip it.
 
-## What `openarena check` does not catch (the run fails)
+## What `openarena check` refuses
+
+Beyond an unknown type or kwarg, these are errors, each with its fix:
 
 - `rubrics_as_judge` without `rubrics`.
-- `multi_judge_panel` without `smart_language_model`, or with an empty panel.
+- `multi_judge_panel` without `smart_language_model`, or with an empty
+  `panel_language_models`.
 - Any `agent_as_judge`.
-- `reduction` on a deterministic reward: `check` accepts it on every type, the
-  deterministic ones crash on it. Leave `reduction` unset.
+- `reduction` on a reward that does not take it (the deterministic ones);
+  a judge takes it under `config:`.
+
+It does not call the judge: a wrong `instructions` or an inverted
+`direction` shows only in the scores.
 
 ## Steps
 
@@ -146,5 +153,4 @@ reproducible.
    `models.yaml` key (openarena-add-model).
 3. Point the dataset at it: `reward: judge` (openarena-add-dataset). Extra
    rewards go under the dataset's `metrics:` (`class:`, `alias:`).
-4. `uv run openarena check my-arena/configs`, then rule out the cases above
-   by eye.
+4. `uv run openarena check my-arena/configs` until it exits 0.

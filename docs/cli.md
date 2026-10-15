@@ -69,24 +69,35 @@ that uses it, and goes after the command (`openarena evaluations run smoke
 
 | code | when |
 |---|---|
-| `0` | the command did what it was asked. For `check`: no error (warnings are allowed). For `evaluations run`: the sweep finished, **even if some cells failed** |
-| `1` | an error the command reports as `Error: ...`: no configs folder, an unknown evaluation or leaderboard name, files in the way of `init`, no finished runs to rank, an invalid evaluation config. Also `check` finding at least one error, a crash inside a run (a traceback), and an interrupt (Ctrl-C prints `Aborted!`) |
+| `0` | the command did what it was asked. For `check`: no error (warnings are allowed). For `evaluations run`: the sweep finished and every cell gave a score (a 0 included) |
+| `1` | an error the command reports as `Error: ...`: no configs folder, an unknown evaluation or leaderboard name, files in the way of `init`, no finished runs to rank, an invalid evaluation config, a `${NAME}` whose variable is not set, a leaderboard entry that does not validate. Also `evaluations run` when a cell ended `FAILED` or `INVALID`, `check` finding at least one error, a crash inside a run (a traceback), and an interrupt (Ctrl-C prints `Aborted!`) |
 | `2` | a usage error, found before anything runs: an unknown command or option, a missing `NAME`, `--batch-size 0`, an unknown `--template` |
 
-!!! warning "A finished run is not a successful run"
-    `openarena evaluations run` exits `0` when the sweep completes, whatever
-    its cells scored. A cell that hit a hard error is printed as
-    `<model> failed: <why>` and recorded in `result.json` with `value: null`
-    and a status other than `COMPLETED`. A missing key or an unreachable model
-    is quieter: the cell completes with a reward of 0. In CI, check the
-    statuses and the rewards yourself ([Reading results](guides/results.md)).
+!!! warning "A run that exits 1 still wrote its results"
+    `openarena evaluations run` runs every cell, whatever fails. A cell that
+    gave no score (a hard error, an agent whose MCP servers gave no tools,
+    no row answered because of a missing key or an unreachable model) is
+    printed as `<model> failed: <why>` and recorded in `result.json` with
+    `value: null` and a status other than `COMPLETED`. After writing
+    `result.json` and printing the table, the command prints
+    `N cell(s) failed: <model> × <dataset>, ...` and exits 1. A cell where
+    only some rows failed completes, with those rows at 0, and does not
+    change the exit code: read the warnings for those
+    ([Reading results](guides/results.md)).
 
 ### Environment variables
 
 The CLI has no environment variables of its own. `openarena evaluations run`
 loads the workspace's `.env` (beside `configs/`) before anything else, and
 never overrides a variable your shell already set; when it finds one it prints
-`Read <path>/.env`. No other command reads `.env`.
+`Read <path>/.env`. No other command loads `.env`; `openarena check` only
+reads it to look up the `${NAME}` references a config holds.
+
+Any string in a registry may name a variable as `${NAME}` (an agent's
+`headers`, a server's `env`). The run replaces each one after loading `.env`,
+and refuses to start, naming each variable and where it is used, when one is
+not set. The snapshot `config.yaml` keeps the references. See
+[Secrets in configs](workspace.md#secrets-in-configs).
 
 What a run reads from the environment, through that file or your shell:
 
@@ -188,6 +199,8 @@ folder, any other `.yaml` or `.yml` file is reported too, since nothing reads it
 run refuses a config `check` rejects, and `check` is fast, offline and free.
 It reads files only. It does not call a model, download a dataset or start a
 sandbox, so a wrong dataset path or a missing key still shows up at run time.
+It does look each `${NAME}` up in your shell and the workspace's `.env`, and
+warns (without failing) about one set in neither.
 
 ```shell
 openarena check                                  # ./configs
@@ -266,19 +279,22 @@ What it does, in order:
 1. Loads `.env` from the parent of `--configs`, without overriding your shell.
 2. Gathers the evaluation and every entry it names (its datasets, their
    rewards and MCP servers, Harbor environments, A2A agents; all models) into
-   one config, and validates it. An invalid config exits 1 before any call.
+   one config, replaces each `${NAME}` with its variable, and validates it.
+   An invalid config, or a variable that is not set, exits 1 before any call.
 3. Writes that config to `<state-dir>/NAME/config.yaml`: the exact record of
-   what ran.
+   what ran, with the `${NAME}` references rather than their values.
 4. Copies the Harbor folders the run uses beside it, fresh each time:
    `environments/<name>/` for each Harbor environment, and the folder of each
    `harbor_tasks` dataset (`tasks/`). A file deleted from the source is gone
    from the copy too.
-5. Runs the sweep. It prints each dataset, then each model as it starts and
-   finishes with its metrics, then `<model> failed: <why>` for any cell that
-   failed.
+5. Runs the sweep, every cell whatever fails. It prints each dataset, then
+   each model as it starts and finishes with its metrics, then
+   `<model> failed: <why>` for any cell that failed.
 6. Writes `<state-dir>/NAME/result.json`, prints a table per dataset (a row
    per model, a column per metric, `—` where a cell has no value), and writes
    `--json FILE` if asked.
+7. If any cell ended `FAILED` or `INVALID`, prints
+   `N cell(s) failed: <model> × <dataset>, ...` and exits 1.
 
 ```
 .open-arena/NAME/
@@ -302,9 +318,12 @@ or were never reached. So:
 - **Interrupted** (Ctrl-C, a closed laptop, a crash): run the same command
   again.
 - **A cell failed** (`<model> failed: <why>`): fix the cause, run the same
-  command again. Only the failed cells run.
-- **A cell scored 0** because of a missing key or a model server that was
-  down: fix that, and run with `--no-cache`. A plain rerun keeps the 0.
+  command again. Only the failed cells run. A missing key, a model server
+  that was down or an unknown model id fails the cell
+  (`no row got an answer: ...`), so this covers them too: no `--no-cache`.
+- **Some rows scored 0** in a finished cell (a rate limit, a flaky call):
+  the cell is kept as it is. To score those rows again, run with
+  `--no-cache`.
 - **You changed what a finished cell depends on** (a dataset's rows or
   templates, a reward, a model's params, the model list): add `--no-cache`.
   Without it, the old cells are reused and the table mixes old and new.
@@ -362,18 +381,14 @@ keep a history. Its format is in
     cd my-arena
     openarena check configs                       # exit 1 on any config error
     openarena evaluations run nightly --no-cache --json out/nightly.json
-    # The run exits 0 even when cells failed: fail the job on them.
-    python -c "
-    import json, sys
-    r = json.load(open('out/nightly.json'))
-    bad = [(x['dataset'], x['model'], x['status']) for x in r['rows']
-           if x['metric'] == 'reward' and x['status'] != 'COMPLETED']
-    print(*bad, sep='\n'); sys.exit(1 if bad else 0)"
+    # exit 1 when a cell failed, after writing out/nightly.json
     openarena leaderboards run overall --no-eol --json out/ranking.json
     ```
 
-    `--no-cache` makes each nightly run independent of the last one; drop it
-    if you would rather a retried job resume. `--no-eol` keeps the ranking
+    The run exits 1 when any cell failed, so `set -e` stops the job there,
+    with `out/nightly.json` already written for the artifacts. `--no-cache`
+    makes each nightly run independent of the last one; drop it if you would
+    rather a retried job resume. `--no-eol` keeps the ranking
     from depending on the network. Keys come from CI secrets, which win over
     any `.env`.
 
@@ -397,7 +412,11 @@ openarena leaderboards run NAME [--configs DIR] [--state-dir DIR] [--no-eol] [--
 | `--no-eol` | flag | off | leave out `eol_days`, the days before each model's announced end of life, which is looked up online |
 | `--json FILE` | file | none | also write the ranking to `FILE`; parent folders are created |
 
-It reads every `result.json` under `--state-dir`, newest first, keeps the
+It first validates the saved entry as `openarena check` does; one that does
+not validate (a share or a budget the schema refuses) exits 1 with
+`the leaderboard 'NAME' does not validate:`, each problem and its fix, and a
+pointer to `openarena check configs/leaderboards.yaml`. Then it reads every
+`result.json` under `--state-dir`, newest first, keeps the
 newest score of each cell, applies the leaderboard's scope, weights and
 budgets, and prints the datasets in scope, the share of each metric, and a
 table: rank, model, score, each metric with ↑ or ↓ for which way is better,
@@ -408,7 +427,7 @@ missing) or `Over budget <model>: <limit>`.
 | exit | when |
 |---|---|
 | `0` | a ranking was printed, even if some models were not ranked |
-| `1` | no configs folder; no leaderboard `NAME`; no `result.json` under `--state-dir` |
+| `1` | no configs folder; no leaderboard `NAME`; the entry does not validate; no `result.json` under `--state-dir` |
 
 **About `--no-eol`.** End-of-life dates come from litellm's pricing table,
 Azure's published retirement schedule, and OpenRouter for `openrouter/...` ids.

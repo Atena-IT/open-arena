@@ -70,10 +70,12 @@ environments:
   call their model from there: checking the evaluation refuses them with
   `no-network`, and with `allowlist` the model provider's host must be
   listed. `terminus-2` runs on your machine and works with any mode.
-- **`env` is not secret**: `${VAR}` is not expanded in the YAML, so values
-  are written in clear and copied beside each run's config, and the agent
-  can read every one (and, with a network, send it anywhere). Put in no key
-  you would not hand to the model.
+- **`env` is not secret**: keep a key out of the file by putting it in the
+  workspace's `.env` and writing `env: {API_KEY: "${API_KEY}"}`; the run
+  replaces the reference when it reads its config, and the run's copy keeps
+  the reference. But the agent can still read every value in the sandbox
+  (and, with a network, send it anywhere): put in no key you would not hand
+  to the model.
 - **MCP servers**: Harbor carries `stdio`, `sse` and `streamable_http` only,
   and no `headers`, stdio `env` or `cwd`; a stdio command runs inside the
   sandbox, so the image must have it.

@@ -167,9 +167,10 @@ rewards:
 ```
 
 No templates. Set only `agent` and `timeout_sec` in `harbor:`:
-`environment` is refused (each task brings its own), and `instructions` and
-`answer_file` are for environment datasets: on task folders they do
-nothing, and an `answer_file` even empties the answer. A name in
+`environment` is refused (each task brings its own), and so are
+`instructions` and `answer_file`, which are for environment datasets (what
+the agent is told is each task's `instruction.md`; its tests read what it
+left in the sandbox). A name in
 `config.tasks` without a `task.toml` stops the run. A Harbor dataset needs
 its own evaluation, naming the models that drive the agent
 (openarena-run-evaluation). Pair agents and models with care:

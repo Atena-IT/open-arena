@@ -78,7 +78,7 @@ and it also prefixes the server's tool names (see
         transport: streamable_http
         url: http://localhost:8080/mcp     # required: the endpoint
         headers:                           # sent on every request
-          Authorization: Bearer <token>
+          Authorization: Bearer ${DOCS_TOKEN}   # read from the environment or .env
         description: Search over the product documentation.
         tags: [search]
     ```
@@ -91,7 +91,7 @@ and it also prefixes the server's tool names (see
         transport: sse
         url: http://localhost:8000/sse
         headers:
-          X-Api-Key: <key>
+          X-Api-Key: ${SEARCH_API_KEY}
     ```
 
 === "websocket"
@@ -136,8 +136,9 @@ wrong transport or path shows when the run connects, not in `openarena check`.
     The run reads the workspace's `.env`, but a stdio server does not inherit
     the run's environment. It gets a short safe list (`HOME`, `LOGNAME`,
     `PATH`, `SHELL`, `TERM`, `USER` on Linux and macOS) plus what `env:` sets.
-    A server that needs `GITHUB_TOKEN` or `BRAVE_API_KEY` fails unless that
-    variable reaches it some other way ([Secrets](#secrets)).
+    A server that needs `GITHUB_TOKEN` or `BRAVE_API_KEY` fails unless `env:`
+    passes it: `env: {GITHUB_TOKEN: "${GITHUB_TOKEN}"}` hands it the value
+    from your shell or `.env` ([Secrets](#secrets)).
 
 - **One process per tool call.** The tool list is read once, when the run
   prepares a model's program. After that, every tool call opens a fresh
@@ -154,21 +155,52 @@ wrong transport or path shows when the run connects, not in `openarena check`.
 
 The server must be up before the run starts, and reachable from the machine
 that runs `openarena`. The run reads every server's tool list while it
-prepares, before any cell runs: a server that is down then stops the run
-with the error. A server that goes down mid-run fails the tool call, which
-the model sees as an error ([below](#how-a-row-runs)).
+prepares, before any cell runs. A server that is down, a `command` that is not
+found, or servers that list no tools fail the cells of every model on that
+dataset, with `could not load the MCP tools of [...]` and the cause, and the
+run goes on with the other datasets; `openarena evaluations run` then exits 1.
+Start the server and run the evaluation again: a plain resume runs the failed
+cells. A server that goes down mid-run
+fails the tool call, which the model sees as an error
+([below](#how-a-row-runs)).
 
 ### Secrets
 
-Values in `mcp_servers.yaml` are used as written: there is no `${VAR}`
-substitution. A key in `env:` or `headers:` sits in the file, and in the
-run's copy of it, `.open-arena/<evaluation>/config.yaml`.
+Write a key as `${NAME}`, never as its value. When a run reads its config,
+after it has loaded the workspace's `.env`, every `${NAME}` in a string is
+replaced by the environment variable `NAME`:
 
-- Keep `.open-arena/` out of git (a new workspace's `.gitignore` does), and
-  do not commit a `mcp_servers.yaml` that holds a real key.
-- Prefer a stdio server that reads its own key, so the YAML holds no secret.
-  For example, have `uv` load the workspace's `.env` into the process:
-  `command: uv`, `args: [run, --env-file, .env, my_server.py]`.
+```yaml
+mcp_servers:
+  github:
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-github"]
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN}   # passes the value on to the process
+  docs:
+    transport: streamable_http
+    url: http://localhost:8080/mcp
+    headers:
+      Authorization: Bearer ${DOCS_TOKEN}
+```
+
+```shell
+# .env, beside configs/
+GITHUB_TOKEN=ghp_...
+DOCS_TOKEN=...
+```
+
+- **The file holds no secret.** `mcp_servers.yaml` and the run's copy,
+  `.open-arena/<evaluation>/config.yaml`, keep `${GITHUB_TOKEN}`, not its
+  value, so either can be committed or shared.
+- **This is how a stdio server gets a key.** It inherits only the safe list
+  above plus its `env:`, so a variable in `.env` reaches it only when `env:`
+  names it: `env: {API_KEY: "${API_KEY}"}`.
+- **An unset variable stops the run before it starts**, naming the variable
+  and where it is used. `openarena check` warns about a `${NAME}` set neither
+  in your shell nor in the workspace's `.env`.
+- `$${NAME}` writes a literal `${NAME}`, for a value that must keep the
+  characters.
 - An HTTP server's token can only go in `headers:`. Use a key scoped to the
   evaluation, read-only where the server allows it.
 
@@ -409,11 +441,12 @@ What `check` cannot see shows up when the run reaches it
 
 | symptom | likely cause |
 |---|---|
-| the run stops while preparing: `no MCP tools loaded from servers [...]` | the server started but lists no tools |
-| the run stops while preparing: connection refused | the HTTP server is not running, or its URL or transport is wrong |
-| the run stops while preparing: command not found | `command` is not on `PATH`, or a relative path read from the wrong folder |
+| the dataset's cells fail: `no MCP tools loaded from servers [...]` | the server started but lists no tools |
+| the dataset's cells fail: `could not load the MCP tools of [...]`, connection refused | the HTTP server is not running, or its URL or transport is wrong |
+| the dataset's cells fail: `could not load the MCP tools of [...]: FileNotFoundError: ... No such file or directory` | `command` is not on `PATH`, or a relative path read from the wrong folder |
 | the run stops while preparing: an unexpected keyword | a misspelled `agent:` setting |
-| tool results read `error: ...` about a missing key | a stdio server's variable is in `.env` but does not reach the process |
+| the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` whose variable is neither exported nor in `.env` |
+| tool results read `error: ...` about a missing key | a stdio server's variable is in `.env` but `env:` does not pass it (`env: {KEY: "${KEY}"}`) |
 | every model scores about the same, and low | `max_iterations` too low, or models without tool calling |
 
 ## Commands
