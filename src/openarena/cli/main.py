@@ -425,8 +425,8 @@ def check_command(path: Path, configs: Path | None) -> None:
     """Check PATH: a configs folder, every registry file in it (default: ./configs), or one registry file.
 
     Each problem is printed with its line, what is wrong and how to fix the
-    YAML. A file's registry is read off its name (`datasets.yaml`), else off
-    its top-level key. Exits 1 on an error.
+    YAML. A file's registry is read off its name only (`datasets.yaml`); a
+    file with any other name is an error. Exits 1 on an error.
     """
     from openarena.config.check import check_file, check_folder
 
