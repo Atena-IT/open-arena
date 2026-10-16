@@ -1,0 +1,2384 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/cli/">
+      
+      
+      
+        <link rel="prev" href="../coding-agents/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>CLI reference - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        At a glance
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paths-global-options-and-exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Paths, global options and exit codes
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Paths, global options and exit codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-it-from-the-workspace-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run it from the workspace folder
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Global options
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Exit codes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Environment variables
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workspace-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Workspace commands
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workspace commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena init</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena check</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registry-listings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registry listings
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-and-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running and ranking
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running and ranking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena-evaluations-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena evaluations run</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="openarena evaluations run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resuming-and-when-to-use-no-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resuming, and when to use <code>--no-cache</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing <code>--batch-size</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-verbose-and-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>--verbose</code> and <code>--json</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use which setup
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena-leaderboards-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena leaderboards run</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        At a glance
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paths-global-options-and-exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Paths, global options and exit codes
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Paths, global options and exit codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-it-from-the-workspace-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Run it from the workspace folder
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Global options
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Exit codes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Environment variables
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workspace-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Workspace commands
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workspace commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena init</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena check</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registry-listings" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registry listings
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-and-ranking" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running and ranking
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running and ranking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena-evaluations-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena evaluations run</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="openarena evaluations run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resuming-and-when-to-use-no-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resuming, and when to use <code>--no-cache</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing <code>--batch-size</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-verbose-and-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>--verbose</code> and <code>--json</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use which setup
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena-leaderboards-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>openarena leaderboards run</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="cli-reference">CLI reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<p>Everything <code>openarena</code> does from a terminal: start a workspace, check it, list
+what it holds, run an evaluation, rank the results. This page lists every
+command, every option and every exit code. The guides explain what goes in the
+YAML; this page explains how to drive it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>openarena<span class="w"> </span>--help<span class="w">                      </span><span class="c1"># the command groups</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>--help<span class="w">      </span><span class="c1"># one command's options</span>
+</code></pre></div>
+<p>The command is installed with the package (<code>openarena</code> is its entry point).
+From a checkout of the library, prefix it with <code>uv run</code>:
+<code>uv run openarena check configs</code>.</p>
+<h2 id="at-a-glance">At a glance<a class="headerlink" href="#at-a-glance" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>command</th>
+<th>what it does</th>
+<th>reads</th>
+<th>writes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#openarena-init"><code>openarena init</code></a></td>
+<td>writes a new workspace</td>
+<td>the packaged template</td>
+<td><code>DEST/</code></td>
+</tr>
+<tr>
+<td><a href="#openarena-check"><code>openarena check</code></a></td>
+<td>validates registry files</td>
+<td><code>configs/</code></td>
+<td>nothing</td>
+</tr>
+<tr>
+<td><a href="#registry-listings"><code>openarena &lt;registry&gt; list</code></a></td>
+<td>prints one registry as a table</td>
+<td><code>configs/</code></td>
+<td>nothing</td>
+</tr>
+<tr>
+<td><a href="#openarena-evaluations-run"><code>openarena evaluations run</code></a></td>
+<td>runs a saved evaluation</td>
+<td><code>configs/</code>, <code>.env</code>, <code>tasks/</code>, <code>environments/</code></td>
+<td><code>.open-arena/&lt;name&gt;/</code></td>
+</tr>
+<tr>
+<td><a href="#openarena-leaderboards-run"><code>openarena leaderboards run</code></a></td>
+<td>ranks models from finished runs</td>
+<td><code>configs/</code>, <code>.open-arena/*/result.json</code></td>
+<td>nothing, unless <code>--json</code></td>
+</tr>
+</tbody>
+</table>
+<p>A typical session:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>openarena<span class="w"> </span>init<span class="w"> </span>my-arena<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>my-arena
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cp<span class="w"> </span>.env.template<span class="w"> </span>.env<span class="w">                 </span><span class="c1"># the keys your models need</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs<span class="w">               </span><span class="c1"># fix what it reports</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>smoke<span class="w"> </span>-v<span class="w">    </span><span class="c1"># a first, small run</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w">    </span><span class="c1"># rank what ran</span>
+</code></pre></div>
+<h2 id="paths-global-options-and-exit-codes">Paths, global options and exit codes<a class="headerlink" href="#paths-global-options-and-exit-codes" title="Permanent link">&para;</a></h2>
+<h3 id="run-it-from-the-workspace-folder">Run it from the workspace folder<a class="headerlink" href="#run-it-from-the-workspace-folder" title="Permanent link">&para;</a></h3>
+<p>Every command resolves its paths against the folder you run it from. Two
+defaults matter:</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>used by</th>
+<th>what it points at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--configs DIR</code></td>
+<td><code>configs</code></td>
+<td>every <code>list</code>, <code>evaluations run</code>, <code>leaderboards run</code></td>
+<td>the folder holding <code>models.yaml</code>, <code>datasets.yaml</code>, ... (<a href="../workspace/">The workspace</a>)</td>
+</tr>
+<tr>
+<td><code>--state-dir DIR</code></td>
+<td><code>.open-arena</code></td>
+<td><code>evaluations run</code>, <code>leaderboards run</code></td>
+<td>where runs are kept, one folder per evaluation</td>
+</tr>
+</tbody>
+</table>
+<p>From the workspace folder neither is needed. From anywhere else, pass both,
+and pass the same <code>--state-dir</code> to every command that should see the same runs.</p>
+<div class="admonition warning">
+<p class="admonition-title">The two paths resolve differently</p>
+<p><code>--state-dir</code> is relative to the folder you run from. The files around the
+configs are not: <code>evaluations run</code> reads <code>.env</code>, <code>tasks/</code> and
+<code>environments/</code> from the <strong>parent of <code>--configs</code></strong>. Run
+<code>openarena evaluations run smoke --configs my-arena/configs</code> from outside
+<code>my-arena</code>, and the keys and Harbor tasks come from <code>my-arena/</code>, but the run
+lands in <code>./.open-arena/smoke/</code>, not in <code>my-arena/.open-arena/</code>. A later
+<code>openarena leaderboards run</code> from inside <code>my-arena</code> will not find it.</p>
+</div>
+<h3 id="global-options">Global options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h3>
+<p>The top-level command takes only <code>--help</code>. There is no global <code>--configs</code>, no
+<code>--version</code> and no config file of its own: each option belongs to the command
+that uses it, and goes after the command (<code>openarena evaluations run smoke
+--configs DIR</code>, not <code>openarena --configs DIR evaluations run smoke</code>).</p>
+<h3 id="exit-codes">Exit codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>the command did what it was asked. For <code>check</code>: no error (warnings are allowed). For <code>evaluations run</code>: the sweep finished and every cell gave a score (a 0 included)</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>an error the command reports as <code>Error: ...</code>: no configs folder, an unknown evaluation or leaderboard name, files in the way of <code>init</code>, no finished runs to rank, an invalid evaluation config, a <code>${NAME}</code> whose variable is not set, a leaderboard entry that does not validate. Also <code>evaluations run</code> when a cell ended <code>FAILED</code> or <code>INVALID</code>, <code>check</code> finding at least one error, a crash inside a run (a traceback), and an interrupt (Ctrl-C prints <code>Aborted!</code>)</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>a usage error, found before anything runs: an unknown command or option, a missing <code>NAME</code>, <code>--batch-size 0</code>, an unknown <code>--template</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">A run that exits 1 still wrote its results</p>
+<p><code>openarena evaluations run</code> runs every cell, whatever fails. A cell that
+gave no score (a hard error, an agent whose MCP servers gave no tools,
+no row answered because of a missing key or an unreachable model) is
+printed as <code>&lt;model&gt; failed: &lt;why&gt;</code> and recorded in <code>result.json</code> with
+<code>value: null</code> and a status other than <code>COMPLETED</code>. After writing
+<code>result.json</code> and printing the table, the command prints
+<code>N cell(s) failed: &lt;model&gt; × &lt;dataset&gt;, ...</code> and exits 1. A cell where
+only some rows failed completes, with those rows at 0, and does not
+change the exit code: read the warnings for those
+(<a href="../guides/results/">Reading results</a>).</p>
+</div>
+<h3 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
+<p>The CLI has no environment variables of its own. <code>openarena evaluations run</code>
+loads the workspace's <code>.env</code> (beside <code>configs/</code>) before anything else, and
+never overrides a variable your shell already set; when it finds one it prints
+<code>Read &lt;path&gt;/.env</code>. No other command loads <code>.env</code>; <code>openarena check</code> only
+reads it to look up the <code>${NAME}</code> references a config holds.</p>
+<p>Any string in a registry may name a variable as <code>${NAME}</code> (an agent's
+<code>headers</code>, a server's <code>env</code>). The run replaces each one after loading <code>.env</code>,
+and refuses to start, naming each variable and where it is used, when one is
+not set. The snapshot <code>config.yaml</code> keeps the references. See
+<a href="../workspace/#secrets-in-configs">Secrets in configs</a>.</p>
+<p>What a run reads from the environment, through that file or your shell:</p>
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GEMINI_API_KEY</code>, ...</td>
+<td>the hosted models your <code>models.yaml</code> ids call (<a href="../guides/models/">Models</a>)</td>
+</tr>
+<tr>
+<td><code>OLLAMA_API_BASE</code>, <code>HOSTED_VLLM_API_BASE</code></td>
+<td>local model servers not on their default address</td>
+</tr>
+<tr>
+<td><code>E2B_API_KEY</code>, <code>ARENA_HARBOR_SANDBOX</code>, <code>ARENA_HARBOR_WORKDIR</code></td>
+<td>Harbor trials: the sandbox provider, and where task folders and trials go (<a href="../guides/environments/">Environments</a>)</td>
+</tr>
+<tr>
+<td><code>MLFLOW_TRACKING_URI</code>, <code>MLFLOW_EXPERIMENT_NAME</code>, <code>ARENA_MLFLOW_TRACING</code></td>
+<td>MLflow tracing, for the arena app and <code>run_sweep</code> called from Python; <code>openarena evaluations run</code> does not switch tracing on</td>
+</tr>
+</tbody>
+</table>
+<p>The full list, with what each one does, is in
+<a href="../workspace/#env-keys-and-endpoints">The workspace</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">In CI, prefer the shell</p>
+<p>Set the keys as CI secrets in the environment. They win over <code>.env</code>, so a
+<code>.env</code> left in the folder cannot override them.</p>
+</div>
+<h2 id="workspace-commands">Workspace commands<a class="headerlink" href="#workspace-commands" title="Permanent link">&para;</a></h2>
+<h3 id="openarena-init"><code>openarena init</code><a class="headerlink" href="#openarena-init" title="Permanent link">&para;</a></h3>
+<p>Writes a ready-to-use workspace: every registry file with each field explained
+in comments, an example Harbor task, an environment's build context, and what a
+coding agent needs to work in the folder.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>openarena<span class="w"> </span>init<span class="w"> </span><span class="o">[</span>DEST<span class="o">]</span><span class="w"> </span><span class="o">[</span>--template<span class="w"> </span>NAME<span class="o">]</span><span class="w"> </span><span class="o">[</span>--force<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>argument / option</th>
+<th>type</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DEST</code></td>
+<td>folder</td>
+<td><code>.</code> (here)</td>
+<td>where to write; created if missing</td>
+</tr>
+<tr>
+<td><code>--template NAME</code></td>
+<td>choice</td>
+<td><code>default</code></td>
+<td>the template to copy. <code>default</code> is the only one shipped today</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>flag</td>
+<td>off</td>
+<td>overwrite files already there</td>
+</tr>
+</tbody>
+</table>
+<p>It writes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>DEST/
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  configs/          one registry per file: models, rewards, datasets, mcp_servers,
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                    a2a_agents, environments, evaluations, leaderboards
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  tasks/            Harbor task folders (task.toml, instruction.md, environment/,
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>                    tests/test.sh, solution/solve.sh)
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  environments/     an environment's build context
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  .agents/skills/   the openarena Agent Skills, one per action
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  AGENTS.md         the guide a coding agent reads first; CLAUDE.md links to it
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  README.md  .env.template  .gitignore
+</code></pre></div>
+<p>Then it prints a table of the files and the entries each registry holds, and
+the next steps. <code>.sh</code> files are made executable, since Harbor runs them as
+they are. <code>CLAUDE.md</code> is a symbolic link to <code>AGENTS.md</code>; where links cannot be
+made, it is a copy.</p>
+<p><strong>Without <code>--force</code>, <code>init</code> is all or nothing.</strong> If any file it would write
+already exists, it writes nothing, names every file in the way, and exits 1.</p>
+<p><strong>When to use it.</strong> Once per workspace, into a fresh folder. Use <code>--force</code> on
+an existing workspace only to reset it to the template: it overwrites your
+<code>configs/*.yaml</code>, <code>AGENTS.md</code> and the example tasks with the template's, and
+leaves files the template does not have alone. To pick up newer Agent Skills
+after an upgrade without touching your configs, run <code>init</code> into an empty
+folder and copy its <code>.agents/skills/</code> over.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>openarena<span class="w"> </span>init<span class="w"> </span>my-arena<span class="w">               </span><span class="c1"># a new folder</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>openarena<span class="w"> </span>init<span class="w">                        </span><span class="c1"># the current folder</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>openarena<span class="w"> </span>init<span class="w"> </span>my-arena<span class="w"> </span>--force<span class="w">       </span><span class="c1"># back to the template; your configs are overwritten</span>
+</code></pre></div>
+<p>See <a href="../workspace/">The workspace</a> for what each file holds.</p>
+<h3 id="openarena-check"><code>openarena check</code><a class="headerlink" href="#openarena-check" title="Permanent link">&para;</a></h3>
+<p>Validates registry files against the same schema a run loads, and every
+reference between them (a dataset's <code>reward</code>, an evaluation's models). Each
+problem is printed with its line, the dotted path to the field, what is wrong
+and the edit that fixes it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>openarena<span class="w"> </span>check<span class="w"> </span><span class="o">[</span>PATH<span class="o">]</span><span class="w"> </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>argument / option</th>
+<th>type</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PATH</code></td>
+<td>folder or file</td>
+<td><code>configs</code></td>
+<td>a configs folder (every <code>&lt;registry&gt;.yaml</code> in it), or one registry file</td>
+</tr>
+<tr>
+<td><code>--configs DIR</code></td>
+<td>folder</td>
+<td>the file's own folder</td>
+<td>only for a single file: the folder whose registries its references are checked against. Ignored when <code>PATH</code> is a folder</td>
+</tr>
+</tbody>
+</table>
+<p>A file's registry is read off its name only (<code>datasets.yaml</code> holds <code>datasets</code>);
+a file with any other name is an error, whatever its top-level key. In a
+folder, any other <code>.yaml</code> or <code>.yml</code> file is reported too, since nothing reads it.</p>
+<table>
+<thead>
+<tr>
+<th>exit</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>no error; warnings are printed but allowed</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>at least one error; or <code>PATH</code> does not exist; or the folder has no registry files</td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to use it.</strong> After every edit, and as the first step of any CI job: a
+run refuses a config <code>check</code> rejects, and <code>check</code> is fast, offline and free.
+It reads files only. It does not call a model, download a dataset or start a
+sandbox, so a wrong dataset path or a missing key still shows up at run time.
+It does look each <code>${NAME}</code> up in your shell and the workspace's <code>.env</code>, and
+warns (without failing) about one set in neither.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>openarena<span class="w"> </span>check<span class="w">                                  </span><span class="c1"># ./configs</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs/datasets.yaml<span class="w">            </span><span class="c1"># one file, references against configs/</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>openarena<span class="w"> </span>check<span class="w"> </span>draft/datasets.yaml<span class="w"> </span>--configs<span class="w"> </span>configs<span class="w">   </span><span class="c1"># a draft, against the real registries</span>
+</code></pre></div>
+<p>Use the last form to validate a file before you move it into <code>configs/</code>.
+See <a href="../guides/check/">Checking configs</a> for how to read the output.</p>
+<h2 id="registry-listings">Registry listings<a class="headerlink" href="#registry-listings" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>openarena<span class="w"> </span>models<span class="w"> </span>list<span class="w">         </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>openarena<span class="w"> </span>rewards<span class="w"> </span>list<span class="w">        </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>openarena<span class="w"> </span>datasets<span class="w"> </span>list<span class="w">       </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>openarena<span class="w"> </span>mcp-servers<span class="w"> </span>list<span class="w">    </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>openarena<span class="w"> </span>a2a-agents<span class="w"> </span>list<span class="w">     </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>openarena<span class="w"> </span>environments<span class="w"> </span>list<span class="w">   </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>list<span class="w">    </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>list<span class="w">   </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span>
+</code></pre></div>
+<p>Each prints one registry of the configs folder as a table, a row per entry.
+They read the YAML as it is, without validating it: run <code>openarena check</code> for
+that. A registry with no file prints an empty table.</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>type</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--configs DIR</code></td>
+<td>folder</td>
+<td><code>configs</code></td>
+<td>the configs folder to read; exits 1 if it does not exist</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>command</th>
+<th>columns</th>
+<th>guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openarena models list</code></td>
+<td><code>model</code> (the litellm id), <code>type</code>, <code>description</code></td>
+<td><a href="../guides/models/">Models</a></td>
+</tr>
+<tr>
+<td><code>openarena rewards list</code></td>
+<td><code>type</code>, <code>direction</code>, <code>description</code></td>
+<td><a href="../guides/rewards/">Rewards</a></td>
+</tr>
+<tr>
+<td><code>openarena datasets list</code></td>
+<td><code>type</code>, <code>reward</code>, <code>description</code></td>
+<td><a href="../guides/datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td><code>openarena mcp-servers list</code></td>
+<td><code>transport</code>, <code>command</code>, <code>url</code></td>
+<td><a href="../guides/mcp-tools/">MCP tools</a></td>
+</tr>
+<tr>
+<td><code>openarena a2a-agents list</code></td>
+<td><code>url</code>, <code>description</code></td>
+<td><a href="../guides/a2a-agents/">A2A agents</a></td>
+</tr>
+<tr>
+<td><code>openarena environments list</code></td>
+<td><code>docker_image</code>, <code>cpus</code>, <code>memory_mb</code>, <code>network_mode</code></td>
+<td><a href="../guides/environments/">Environments</a></td>
+</tr>
+<tr>
+<td><code>openarena evaluations list</code></td>
+<td><code>language_models</code>, <code>datasets</code>, <code>description</code></td>
+<td><a href="../guides/evaluations/">Running evaluations</a></td>
+</tr>
+<tr>
+<td><code>openarena leaderboards list</code></td>
+<td><code>title</code>, <code>datasets</code>, <code>models</code>, <code>description</code>; an empty scope shows as <code>all</code></td>
+<td><a href="../guides/leaderboards/">Leaderboards</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to use them.</strong> To find the exact name to pass to
+<code>openarena evaluations run</code> or <code>openarena leaderboards run</code>, or to see which
+model id a name calls before you spend money on it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>list
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>openarena<span class="w"> </span>models<span class="w"> </span>list<span class="w"> </span>--configs<span class="w"> </span>../other-arena/configs
+</code></pre></div>
+<h2 id="running-and-ranking">Running and ranking<a class="headerlink" href="#running-and-ranking" title="Permanent link">&para;</a></h2>
+<h3 id="openarena-evaluations-run"><code>openarena evaluations run</code><a class="headerlink" href="#openarena-evaluations-run" title="Permanent link">&para;</a></h3>
+<p>Runs the evaluation saved as <code>NAME</code>: every model of its <code>language_models</code> on
+every dataset of its <code>datasets</code>, one cell per pair.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>NAME<span class="w"> </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--state-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--no-cache<span class="o">]</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">                               </span><span class="o">[</span>--batch-size<span class="w"> </span>N<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="w"> </span>FILE<span class="o">]</span><span class="w"> </span><span class="o">[</span>-v<span class="w"> </span><span class="p">|</span><span class="w"> </span>-vv<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>argument / option</th>
+<th>type</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NAME</code></td>
+<td>text</td>
+<td>required</td>
+<td>a key of <code>evaluations.yaml</code>; an unknown name exits 1 and lists the ones there</td>
+</tr>
+<tr>
+<td><code>--configs DIR</code></td>
+<td>folder</td>
+<td><code>configs</code></td>
+<td>the configs folder. Its parent is where <code>.env</code>, <code>tasks/</code> and <code>environments/</code> are read</td>
+</tr>
+<tr>
+<td><code>--state-dir DIR</code></td>
+<td>folder</td>
+<td><code>.open-arena</code></td>
+<td>where the run is kept, in <code>&lt;state-dir&gt;/NAME/</code>; relative to the current folder</td>
+</tr>
+<tr>
+<td><code>--no-cache</code></td>
+<td>flag</td>
+<td>off</td>
+<td>drop the run's saved state and start every cell over</td>
+</tr>
+<tr>
+<td><code>--batch-size N</code></td>
+<td>integer, at least 1</td>
+<td>the evaluation's <code>batch_size</code>, else each dataset's own, else 1</td>
+<td>rows sent at once, for every dataset of this run</td>
+</tr>
+<tr>
+<td><code>--json FILE</code></td>
+<td>file</td>
+<td>none</td>
+<td>also write the result to <code>FILE</code>; parent folders are created</td>
+</tr>
+<tr>
+<td><code>-v</code>, <code>--verbose</code></td>
+<td>count</td>
+<td>silent</td>
+<td><code>-v</code> a progress bar per cell, <code>-vv</code> a line per batch</td>
+</tr>
+</tbody>
+</table>
+<p>What it does, in order:</p>
+<ol>
+<li>Loads <code>.env</code> from the parent of <code>--configs</code>, without overriding your shell.</li>
+<li>Gathers the evaluation and every entry it names (its datasets, their
+   rewards and MCP servers, Harbor environments, A2A agents; all models) into
+   one config, replaces each <code>${NAME}</code> with its variable, and validates it.
+   An invalid config, or a variable that is not set, exits 1 before any call.</li>
+<li>Writes that config to <code>&lt;state-dir&gt;/NAME/config.yaml</code>: the exact record of
+   what ran, with the <code>${NAME}</code> references rather than their values.</li>
+<li>Copies the Harbor folders the run uses beside it, fresh each time:
+   <code>environments/&lt;name&gt;/</code> for each Harbor environment, and the folder of each
+   <code>harbor_tasks</code> dataset (<code>tasks/</code>). A file deleted from the source is gone
+   from the copy too.</li>
+<li>Runs the sweep, every cell whatever fails. It prints each dataset, then
+   each model as it starts and finishes with its metrics, then
+   <code>&lt;model&gt; failed: &lt;why&gt;</code> for any cell that failed.</li>
+<li>Writes <code>&lt;state-dir&gt;/NAME/result.json</code>, prints a table per dataset (a row
+   per model, a column per metric, <code>—</code> where a cell has no value), and writes
+   <code>--json FILE</code> if asked.</li>
+<li>If any cell ended <code>FAILED</code> or <code>INVALID</code>, prints
+   <code>N cell(s) failed: &lt;model&gt; × &lt;dataset&gt;, ...</code> and exits 1.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>.open-arena/NAME/
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  config.yaml            what ran
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  result.json            the scores
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  tasks/ environments/   copies of the Harbor folders, for Harbor datasets
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  harbor/                Harbor trials, for Harbor datasets
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Check first</p>
+<p>The run validates only the entries the evaluation names. Run
+<code>openarena check</code> before it to catch every problem at once, with the fix.</p>
+</div>
+<h4 id="resuming-and-when-to-use-no-cache">Resuming, and when to use <code>--no-cache</code><a class="headerlink" href="#resuming-and-when-to-use-no-cache" title="Permanent link">&para;</a></h4>
+<p>The run keeps each cell's state in <code>&lt;state-dir&gt;/NAME/</code>. Running the same
+<code>NAME</code> again with the same <code>--state-dir</code> skips every cell that completed,
+reading its scores back, and re-runs the cells that failed, were interrupted
+or were never reached. So:</p>
+<ul>
+<li><strong>Interrupted</strong> (Ctrl-C, a closed laptop, a crash): run the same command
+  again.</li>
+<li><strong>A cell failed</strong> (<code>&lt;model&gt; failed: &lt;why&gt;</code>): fix the cause, run the same
+  command again. Only the failed cells run. A missing key, a model server
+  that was down or an unknown model id fails the cell
+  (<code>no row got an answer: ...</code>), so this covers them too: no <code>--no-cache</code>.</li>
+<li><strong>Some rows scored 0</strong> in a finished cell (a rate limit, a flaky call):
+  the cell is kept as it is. To score those rows again, run with
+  <code>--no-cache</code>.</li>
+<li><strong>You changed what a finished cell depends on</strong> (a dataset's rows or
+  templates, a reward, a model's params, the model list): add <code>--no-cache</code>.
+  Without it, the old cells are reused and the table mixes old and new.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title"><code>--no-cache</code> throws away finished work</p>
+<p>It deletes the saved state before starting, so every cell is paid for
+again. Never add it to resume a run, and do not leave it in a script you
+rerun after a failure.</p>
+</div>
+<h4 id="choosing-batch-size">Choosing <code>--batch-size</code><a class="headerlink" href="#choosing-batch-size" title="Permanent link">&para;</a></h4>
+<p>A batch is the rows sent at once, so it is the concurrency knob. Higher is
+faster, until you hit a provider's rate limit, a local server's memory, or
+the number of sandboxes you can start for Harbor rows. The order of precedence
+is <code>--batch-size</code>, then the evaluation's <code>batch_size</code>, then each dataset's own,
+then 1.</p>
+<table>
+<thead>
+<tr>
+<th>situation</th>
+<th>batch size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a local model on one GPU (Ollama, vLLM)</td>
+<td>low, 1 to 4; raise it while the server keeps up</td>
+</tr>
+<tr>
+<td>a hosted API with a generous rate limit</td>
+<td>8 to 32</td>
+</tr>
+<tr>
+<td>rate-limit errors in the failed cells</td>
+<td>lower it, then rerun: only the failed cells run</td>
+</tr>
+<tr>
+<td>Harbor tasks, where each row is a sandbox</td>
+<td>as many sandboxes as your provider or Docker host can hold</td>
+</tr>
+<tr>
+<td>debugging one row's answer</td>
+<td>1, so errors are easy to follow</td>
+</tr>
+</tbody>
+</table>
+<p>Use the flag for a one-off change; put a value you want every time in
+<code>evaluations.yaml</code>.</p>
+<h4 id="-verbose-and-json"><code>--verbose</code> and <code>--json</code><a class="headerlink" href="#-verbose-and-json" title="Permanent link">&para;</a></h4>
+<p>Without <code>-v</code>, a run prints one line when each cell starts and ends: enough for
+CI logs. <code>-v</code> adds a progress bar per cell, useful in a terminal on a long
+dataset. <code>-vv</code> prints a line per batch, useful to see where a run stalls.</p>
+<p><code>result.json</code> is always written in the run folder. <code>--json FILE</code> writes the
+same content to a path you choose: an artifact path for CI, or a dated file to
+keep a history. Its format is in
+<a href="../guides/results/#resultjson">Reading results</a>.</p>
+<h4 id="when-to-use-which-setup">When to use which setup<a class="headerlink" href="#when-to-use-which-setup" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>goal</th>
+<th>command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a first smoke run, on a few rows (<code>limit: 5</code> on the datasets)</td>
+<td><code>openarena evaluations run smoke -v</code></td>
+</tr>
+<tr>
+<td>resume after an interruption or a fixed failure</td>
+<td><code>openarena evaluations run smoke</code> (the same command, no <code>--no-cache</code>)</td>
+</tr>
+<tr>
+<td>rerun after editing a dataset, reward or model</td>
+<td><code>openarena evaluations run smoke --no-cache</code></td>
+</tr>
+<tr>
+<td>a fast run on a hosted API</td>
+<td><code>openarena evaluations run compare --batch-size 16</code></td>
+</tr>
+<tr>
+<td>CI: a clean run with a result to archive</td>
+<td><code>openarena evaluations run nightly --no-cache --json out/nightly.json</code></td>
+</tr>
+<tr>
+<td>keep two variants' runs apart</td>
+<td><code>openarena evaluations run smoke --state-dir .open-arena-b</code></td>
+</tr>
+</tbody>
+</table>
+<details class="details">
+<summary>A CI job, step by step</summary>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">set</span><span class="w"> </span>-e
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nb">cd</span><span class="w"> </span>my-arena
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs<span class="w">                       </span><span class="c1"># exit 1 on any config error</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>nightly<span class="w"> </span>--no-cache<span class="w"> </span>--json<span class="w"> </span>out/nightly.json
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># exit 1 when a cell failed, after writing out/nightly.json</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w"> </span>--no-eol<span class="w"> </span>--json<span class="w"> </span>out/ranking.json
+</code></pre></div>
+<p>The run exits 1 when any cell failed, so <code>set -e</code> stops the job there,
+with <code>out/nightly.json</code> already written for the artifacts. <code>--no-cache</code>
+makes each nightly run independent of the last one; drop it if you would
+rather a retried job resume. <code>--no-eol</code> keeps the ranking
+from depending on the network. Keys come from CI secrets, which win over
+any <code>.env</code>.</p>
+</details>
+<p>See <a href="../guides/evaluations/">Running evaluations</a> for the <code>evaluations.yaml</code>
+fields, and <a href="../guides/harbor-tasks/">Harbor tasks</a> for sandboxed runs.</p>
+<h3 id="openarena-leaderboards-run"><code>openarena leaderboards run</code><a class="headerlink" href="#openarena-leaderboards-run" title="Permanent link">&para;</a></h3>
+<p>Ranks the models on the leaderboard saved as <code>NAME</code>, from the runs already
+finished. It runs no model.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>NAME<span class="w"> </span><span class="o">[</span>--configs<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--state-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--no-eol<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="w"> </span>FILE<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>argument / option</th>
+<th>type</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NAME</code></td>
+<td>text</td>
+<td>required</td>
+<td>a key of <code>leaderboards.yaml</code>; an unknown name exits 1 and lists the ones there</td>
+</tr>
+<tr>
+<td><code>--configs DIR</code></td>
+<td>folder</td>
+<td><code>configs</code></td>
+<td>the configs folder holding <code>leaderboards.yaml</code></td>
+</tr>
+<tr>
+<td><code>--state-dir DIR</code></td>
+<td>folder</td>
+<td><code>.open-arena</code></td>
+<td>where the runs are; every <code>*/result.json</code> under it is read</td>
+</tr>
+<tr>
+<td><code>--no-eol</code></td>
+<td>flag</td>
+<td>off</td>
+<td>leave out <code>eol_days</code>, the days before each model's announced end of life, which is looked up online</td>
+</tr>
+<tr>
+<td><code>--json FILE</code></td>
+<td>file</td>
+<td>none</td>
+<td>also write the ranking to <code>FILE</code>; parent folders are created</td>
+</tr>
+</tbody>
+</table>
+<p>It first validates the saved entry as <code>openarena check</code> does; one that does
+not validate (a share or a budget the schema refuses) exits 1 with
+<code>the leaderboard 'NAME' does not validate:</code>, each problem and its fix, and a
+pointer to <code>openarena check configs/leaderboards.yaml</code>. Then it reads every
+<code>result.json</code> under <code>--state-dir</code>, newest first, keeps the
+newest score of each cell, applies the leaderboard's scope, weights and
+budgets, and prints the datasets in scope, the share of each metric, and a
+table: rank, model, score, each metric with ↑ or ↓ for which way is better,
+and ★ on the Pareto frontier. Then a line for each model it left out:
+<code>Not ranked &lt;model&gt;: &lt;why&gt;</code> (not scored on a dataset in scope, or a metric
+missing) or <code>Over budget &lt;model&gt;: &lt;limit&gt;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>exit</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>a ranking was printed, even if some models were not ranked</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>no configs folder; no leaderboard <code>NAME</code>; the entry does not validate; no <code>result.json</code> under <code>--state-dir</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>About <code>--no-eol</code>.</strong> End-of-life dates come from litellm's pricing table,
+Azure's published retirement schedule, and OpenRouter for <code>openrouter/...</code> ids.
+The online sources are cached for a day, and a shipped snapshot answers when
+the network does not. Add <code>--no-eol</code> when you want the ranking to depend only
+on your runs: offline, in CI, or when a model's lifetime is not something you
+rank on. It removes the <code>eol_days</code> metric entirely, so a share you gave to
+<code>eol_days</code> in <code>leaderboards.yaml</code> has nothing to weigh.</p>
+<p><strong>The JSON.</strong> <code>--json FILE</code> writes <code>leaderboard</code> (the saved entry, with its
+<code>name</code>) and the ranking: <code>datasets</code>, <code>models</code>, <code>shares</code>, <code>axes</code>, <code>rows</code> (each
+with <code>rank</code>, <code>model</code>, <code>score</code>, <code>values</code>, <code>on_frontier</code>), <code>skipped</code>, <code>gaps</code> and
+<code>excluded</code>. Use it to feed a dashboard or to diff two rankings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>list
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>math<span class="w"> </span>--no-eol<span class="w"> </span>--json<span class="w"> </span>out/math.json
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w"> </span>--state-dir<span class="w"> </span>../shared-runs<span class="w">   </span><span class="c1"># rank runs kept elsewhere</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">One state folder, many evaluations</p>
+<p>A leaderboard ranks across every evaluation under the state folder. Run
+your evaluations into the same <code>--state-dir</code>, and one leaderboard can
+compare models that never ran in the same evaluation, as long as each is
+scored on every dataset in scope.</p>
+</div>
+<p>See <a href="../guides/leaderboards/">Leaderboards</a> for scope, shares, budgets and how
+the score is computed.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../coding-agents/" class="md-footer__link md-footer__link--prev" aria-label="Previous: With a coding agent">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                With a coding agent
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                API reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

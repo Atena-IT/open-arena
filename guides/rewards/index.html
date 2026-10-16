@@ -1,0 +1,2945 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/rewards/">
+      
+      
+      
+        <link rel="prev" href="../models/">
+      
+      
+        <link rel="next" href="../datasets/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Rewards - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Rewards
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-or-judged" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deterministic or judged
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-reward-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a reward compares
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a reward compares">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Masks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deterministic rewards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deterministic rewards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact_match" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        exact_match
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#answer_accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        answer_accuracy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosine_similarity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        cosine_similarity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval_recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        retrieval_recall
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool_calls_accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tool_calls_accuracy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#harbor_verifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        harbor_verifier
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#judged-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Judged rewards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Judged rewards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lm_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        lm_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rubrics_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rubrics_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ready-made-rubric-judges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ready-made rubric judges
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi_judge_panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        multi_judge_panel
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rlm_as_judge-and-deep_agent_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rlm_as_judge and deep_agent_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-and-calibrating-a-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing and calibrating a judge
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Choosing and calibrating a judge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-judge-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The judge model
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#self-preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Self-preference
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calibrating" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Calibrating
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Combining rewards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Direction
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-reward-for-which-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which reward for which dataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-or-judged" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deterministic or judged
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-reward-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a reward compares
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a reward compares">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Masks
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deterministic rewards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deterministic rewards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact_match" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        exact_match
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#answer_accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        answer_accuracy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cosine_similarity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        cosine_similarity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieval_recall" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        retrieval_recall
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool_calls_accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tool_calls_accuracy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#harbor_verifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        harbor_verifier
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#judged-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Judged rewards
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Judged rewards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lm_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        lm_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rubrics_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rubrics_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ready-made-rubric-judges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ready-made rubric judges
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi_judge_panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        multi_judge_panel
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rlm_as_judge-and-deep_agent_as_judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        rlm_as_judge and deep_agent_as_judge
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-and-calibrating-a-judge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing and calibrating a judge
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Choosing and calibrating a judge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-judge-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The judge model
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#self-preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Self-preference
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calibrating" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Calibrating
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Combining rewards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Direction
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-reward-for-which-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which reward for which dataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="rewards">Rewards<a class="headerlink" href="#rewards" title="Permanent link">&para;</a></h1>
+<p>A reward scores one answer, from 0 to 1. It is the number a run is about: the
+<code>reward</code> column of every cell, and the first thing a leaderboard ranks on.
+Pick the wrong reward and every number after it measures the wrong thing, so
+this page takes its time.</p>
+<p><code>configs/rewards.yaml</code> gives each reward a <strong>name</strong>. Behind the name sit a
+catalog reward (<code>type</code>), its settings (<code>config</code>) and which way is better
+(<code>direction</code>). A dataset names the reward that scores it with <code>reward:</code>, and a
+dataset cannot run without one.</p>
+<pre class="mermaid"><code>flowchart LR
+    row[dataset row] --&gt; prog[model under test]
+    row --&gt;|output_template| ref[expected answer]
+    prog --&gt; pred[answer]
+    ref --&gt; R{reward}
+    pred --&gt; R
+    R --&gt;|0 to 1, per row| cell[cell mean: the reward column]
+    cell --&gt; lb[leaderboard, read with direction]</code></pre>
+<h2 id="the-entry">The entry<a class="headerlink" href="#the-entry" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">exact-match</span><span class="p">:</span><span class="w">                       </span><span class="c1"># the name a dataset's `reward:` uses</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact_match</span><span class="w">                </span><span class="c1"># required: a catalog reward, see below</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max</span><span class="w">                   </span><span class="c1"># max (higher is better, the default) or min</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">One when the answer is exactly the reference, zero otherwise.</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">strict</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">judge</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_as_judge</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A grader model scores correctness against the reference.</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">judge</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">                          </span><span class="c1"># the type's settings, and only those</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o-mini</span><span class="w">    </span><span class="c1"># a models.yaml name, never a litellm id</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">        </span><span class="no">Score 1.0 when the answer is correct and complete, 0.0 when it is wrong.</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>a catalog reward, below</td>
+<td>required</td>
+<td>what computes the score</td>
+</tr>
+<tr>
+<td><code>direction</code></td>
+<td><code>max</code>, <code>min</code></td>
+<td><code>max</code></td>
+<td>which way is better on leaderboards and the Pareto frontier</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>the type's settings</td>
+<td><code>{}</code></td>
+<td>handed to the reward; models are resolved by name first</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>none</td>
+<td>shown by <code>openarena rewards list</code></td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>a list of labels</td>
+<td><code>[]</code></td>
+<td>for browsing; lower-cased and de-duplicated</td>
+</tr>
+</tbody>
+</table>
+<p><code>config</code> takes the type's settings and nothing else. <code>name</code> and <code>direction</code>
+may not appear in it: <code>type:</code> and <code>direction:</code> sit beside <code>config:</code>. Every
+model setting (<code>language_model</code>, <code>smart_language_model</code>, <code>sub_language_model</code>,
+<code>panel_language_models</code>, <code>embedding_model</code>) is a key of
+<a href="../models/">models.yaml</a>, and of the right type: an <code>llm</code> model for a judge, an
+<code>embedding</code> model for <code>embedding_model</code>.</p>
+<p>The same entry can score many datasets. Give a reward a name that says what it
+measures (<code>math-exact</code>, <code>support-judge</code>), not which dataset uses it.</p>
+<h2 id="deterministic-or-judged">Deterministic or judged<a class="headerlink" href="#deterministic-or-judged" title="Permanent link">&para;</a></h2>
+<p>There are two families, and the choice between them matters more than any
+setting.</p>
+<p><strong>Deterministic</strong> rewards compare the answer with the expected answer by a
+rule: equality, token overlap, embedding distance, set recall. <strong>Judged</strong>
+rewards ask a language model to read the answer and grade it.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>deterministic</th>
+<th>judged</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>expected answer</td>
+<td>required</td>
+<td>optional; used as a reference when present</td>
+</tr>
+<tr>
+<td>cost per row</td>
+<td>nothing (embeddings: two embedding calls)</td>
+<td>one model call or more, counted as <code>reward_cost</code></td>
+</tr>
+<tr>
+<td>same answer, same score</td>
+<td>always</td>
+<td>only as stable as the judge model</td>
+</tr>
+<tr>
+<td>what it can grade</td>
+<td>short, checkable answers</td>
+<td>free text, style, reasoning, faithfulness</td>
+</tr>
+<tr>
+<td>bias</td>
+<td>none beyond the rule</td>
+<td>the judge's own preferences: length, wording, its own family's style</td>
+</tr>
+<tr>
+<td>failure mode</td>
+<td>marks a right answer wrong for its form</td>
+<td>marks a wrong answer right because it sounds sure</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Use a deterministic reward whenever the answer can be checked by rule.</strong> A
+number, the letter of a multiple choice, a label, a list of retrieved
+passages, a function call: compare them. It is free, instant, reproducible,
+and nobody can argue with it. The work is in the dataset: make the
+<code>output_template</code> render a short, normalized expected answer, and ask the
+model for the same shape (<a href="../datasets/#templates-from-a-row-to-json">Templates</a>).</p>
+<p><strong>Use a judge when no rule can tell right from wrong</strong>: a summary, an
+explanation, an email, an answer that is right in many wordings. Then spend
+time on the judge: its model, its instructions, and a check that its scores
+agree with yours (<a href="#choosing-and-calibrating-a-judge">Choosing and calibrating a judge</a>).</p>
+<div class="admonition tip">
+<p class="admonition-title">Read the answers before you pick</p>
+<p>Run the dataset with <code>limit: 5</code> and any reward, then read the answers in
+the result. If a correct answer would fail <code>exact_match</code> only because of
+its form, fix the templates first. Reach for a judge when the form cannot
+be fixed.</p>
+</div>
+<h2 id="what-a-reward-compares">What a reward compares<a class="headerlink" href="#what-a-reward-compares" title="Permanent link">&para;</a></h2>
+<p>The model's answer is a JSON object, and so is the expected answer the
+dataset's <code>output_template</code> renders. Before scoring, the engine picks the
+fields each reward sees:</p>
+<ul>
+<li><strong>A deterministic reward</strong> sees only the top-level fields the
+  <code>output_template</code> renders, and compares each one's value whole: a field
+  that holds an object or a list of objects (a nested answer, a list of tool
+  calls) is compared with everything inside it. Whatever else the program
+  returns (the question, when the program returns its inputs; a chain of
+  thought's <code>thinking</code>; an agent's <code>messages</code>) is left out, so it never costs
+  a point.</li>
+<li><strong>A judge</strong> sees every field the program returns, since judging them is its
+  job. Two exceptions: on an <a href="../mcp-tools/">MCP agent</a> dataset the agent's
+  <code>messages</code> transcript is left out, and on a <a href="../harbor-tasks/">Harbor</a>
+  dataset only the agent's <code>answer</code> is read.</li>
+</ul>
+<p>Setting any mask yourself (below) turns this automatic choice off: the reward
+then sees what your mask keeps, applied as written.</p>
+<p>A judge reads the expected answer beside the answer, with the expected
+answer's fields prefixed <code>gold_</code>. It does <strong>not</strong> read the question unless the
+program returns it: set <code>return_inputs: true</code> in the dataset's <code>generator:</code>
+block when the judge needs the question to grade (relevancy, instruction
+following).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">support-replies</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="c1"># ...</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">generator</span><span class="p">:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">return_inputs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">            </span><span class="c1"># the answer carries the question, so the judge reads it</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-judge</span>
+</code></pre></div>
+<h3 id="masks">Masks<a class="headerlink" href="#masks" title="Permanent link">&para;</a></h3>
+<p>Every type takes four optional settings that choose the fields by hand. The
+automatic choice above fits most datasets; reach for a mask when a field the
+<code>output_template</code> renders should not count, or when a judge should not see a
+field.</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>in_mask</code></td>
+<td>a list of field names</td>
+<td>none</td>
+<td>keep only these fields</td>
+</tr>
+<tr>
+<td><code>out_mask</code></td>
+<td>a list of field names</td>
+<td>none</td>
+<td>drop these fields</td>
+</tr>
+<tr>
+<td><code>in_mask_pattern</code></td>
+<td>a regex</td>
+<td>none</td>
+<td>keep the fields whose name matches; combined with <code>in_mask</code>, either keeps a field</td>
+</tr>
+<tr>
+<td><code>out_mask_pattern</code></td>
+<td>a regex</td>
+<td>none</td>
+<td>drop the fields whose name matches</td>
+</tr>
+</tbody>
+</table>
+<p>Masks apply to both sides, the answer and the expected answer, and at every
+level of nesting: <code>in_mask: [answer]</code> on <code>{"answer": {"value": 1}}</code> keeps
+<code>{"answer": {}}</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Masks and nested values</p>
+<p>Because masks reach into nested objects, keeping a field whose value is an
+object or a list of objects empties it, and every answer then scores the
+same. The automatic choice does not have this problem: it keeps whole
+values. To leave a field out, prefer <code>out_mask</code> over an <code>in_mask</code> naming
+the others.</p>
+</div>
+<h2 id="deterministic-rewards">Deterministic rewards<a class="headerlink" href="#deterministic-rewards" title="Permanent link">&para;</a></h2>
+<p>All of them need the expected answer, so the dataset needs an
+<code>output_template</code>. None calls a language model.</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>settings</th>
+<th>scores</th>
+<th>fits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exact_match</code></td>
+<td>masks</td>
+<td>1 when the answer equals the expected answer, else 0</td>
+<td>numbers, letters, labels</td>
+</tr>
+<tr>
+<td><code>answer_accuracy</code></td>
+<td>masks</td>
+<td>each field compared by its type, averaged, with partial credit</td>
+<td>structured answers, several fields</td>
+</tr>
+<tr>
+<td><code>cosine_similarity</code></td>
+<td><code>embedding_model</code>, masks</td>
+<td>embedding similarity, 0 to 1</td>
+<td>short free text with a reference</td>
+</tr>
+<tr>
+<td><code>retrieval_recall</code></td>
+<td>masks</td>
+<td>the share of gold passages retrieved</td>
+<td><a href="../datasets/#retrieval">retrieval datasets</a></td>
+</tr>
+<tr>
+<td><code>tool_calls_accuracy</code></td>
+<td>masks</td>
+<td>the right functions with the right arguments</td>
+<td><a href="../datasets/#tool-calls">tool-call datasets</a></td>
+</tr>
+<tr>
+<td><code>harbor_verifier</code></td>
+<td><code>key</code>, masks</td>
+<td>what a Harbor task's own tests wrote</td>
+<td><a href="../harbor-tasks/">Harbor tasks</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="exact_match">exact_match<a class="headerlink" href="#exact_match" title="Permanent link">&para;</a></h3>
+<p>One when the answer's fields equal the expected answer's, zero otherwise. It
+is plain equality of the JSON values: <code>"42"</code> and <code>42</code> differ, <code>"Paris"</code> and
+<code>"paris"</code> differ, a trailing space differs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">exact-match</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact_match</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">One when the answer is exactly the reference.</span>
+</code></pre></div>
+<p><strong>When</strong>: the answer is one value with one correct spelling: a multiple-choice
+letter, a final number, a class label, <code>true</code> or <code>false</code>. Make the template
+and the instructions agree on the form (<code>"B"</code>, not <code>"B) Paris"</code>).</p>
+<p><strong>Not when</strong>: the answer has several fields and you want partial credit (use
+<code>answer_accuracy</code>), or it is a sentence (use a judge, or <code>cosine_similarity</code>).</p>
+<h3 id="answer_accuracy">answer_accuracy<a class="headerlink" href="#answer_accuracy" title="Permanent link">&para;</a></h3>
+<p>Scores each field of the expected answer on its own, with the comparison its
+value calls for, then averages the fields:</p>
+<table>
+<thead>
+<tr>
+<th>expected value</th>
+<th>comparison</th>
+<th>partial credit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>true</code> / <code>false</code></td>
+<td>binary accuracy</td>
+<td>no</td>
+</tr>
+<tr>
+<td>a number</td>
+<td>equality</td>
+<td>no</td>
+</tr>
+<tr>
+<td>text, a list, an object</td>
+<td>token overlap: shared tokens over all tokens</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p>A one-word text scores like an exact match; a longer text or a list of labels
+scores the share of tokens in common. A correct negative (<code>false</code> expected,
+<code>false</code> given) scores 1. A field missing from the answer scores 0.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">graded</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer_accuracy</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Each field compared by its type, averaged.</span>
+</code></pre></div>
+<p>The comparison is chosen from the <strong>expected value</strong>, not from the dataset's
+schema. A number rendered as text (<code>{{ answer | string | tojson }}</code>) is
+compared as text, by tokens. Render it as a number (<code>{{ answer | tojson }}</code>)
+when it should be compared as one.</p>
+<p><strong>When</strong>: an answer with several fields (a verdict and a label, an extraction
+with five slots), where four right out of five should beat none. It also makes
+a good extra column beside <code>exact_match</code>: the gap between the two shows how
+many answers were nearly right.</p>
+<h3 id="cosine_similarity">cosine_similarity<a class="headerlink" href="#cosine_similarity" title="Permanent link">&para;</a></h3>
+<p>Embeds each field of the answer and of the expected answer, and scores how
+close they are. Several fields are averaged.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">similar</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cosine_similarity</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Embedding similarity to the reference answer.</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">embedding_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">minilm</span><span class="w">        </span><span class="c1"># a models.yaml key of `type: embedding`</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>embedding_model</code></td>
+<td>a <code>type: embedding</code> model name</td>
+<td>the evaluation's <code>default_embedding_model</code></td>
+<td>the model that embeds both sides</td>
+</tr>
+</tbody>
+</table>
+<p>The score is the cosine rescaled to 0 to 1, <code>(cos + 1) / 2</code>. Two unrelated
+texts land near 0.5, not near 0, and answers on the same topic crowd together
+near the top. Read it as a ranking between models, not as a share correct.</p>
+<p><strong>When</strong>: short free-text answers with a reference, where the wording varies
+and a judge's cost or variance is not worth it (definitions, short factual
+sentences). <strong>Not when</strong>: correctness hinges on a detail. "The meeting is on
+Monday" and "The meeting is not on Monday" embed close together.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Every row embeds both sides; the cost is counted as <code>embedding_cost</code>.
+Another embedding model gives other scores, so keep it fixed across the
+runs you compare.</p>
+</div>
+<h3 id="retrieval_recall">retrieval_recall<a class="headerlink" href="#retrieval_recall" title="Permanent link">&para;</a></h3>
+<p>The reward of a <a href="../datasets/#retrieval">retrieval dataset</a>: of the gold
+passages, the share the embedding model ranked in its top <code>k</code>. Passages are
+compared as text, trimmed. Every list field of the expected answer is scored
+this way and the fields averaged; with one <code>chunks</code> list, that is recall at
+<code>k</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">recall</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retrieval_recall</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Share of the gold passages among the top k retrieved.</span>
+</code></pre></div>
+<p>The score depends on the dataset's <code>k</code> as much as on the model: with <code>k</code> as
+large as the number of chunks, every model scores 1. Compare embedding models
+at the same <code>k</code>, and pick a <code>k</code> close to what your application hands a model.</p>
+<h3 id="tool_calls_accuracy">tool_calls_accuracy<a class="headerlink" href="#tool_calls_accuracy" title="Permanent link">&para;</a></h3>
+<p>The reward of a <a href="../datasets/#tool-calls">tool-call dataset</a>. Each gold call is
+matched with one call of the answer that has the same function name and the
+same arguments (as JSON, key order aside). The score is the matched calls over
+the longer of the two lists, so a missed call, an extra call and a wrong
+argument all cost. Both lists empty scores 1: the model rightly called
+nothing.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">tool-calls</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tool_calls_accuracy</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The right functions called with the right arguments.</span>
+</code></pre></div>
+<p>Arguments must match exactly: <code>{"city": "Paris"}</code> and <code>{"city": "paris"}</code>
+differ, and so do <code>{"limit": 10}</code> and <code>{"limit": "10"}</code>. Write the gold calls
+in the form the function declaration asks for.</p>
+<p>It needs no mask: the automatic field choice keeps the <code>tool_calls</code> field
+whole, and a call's <code>id</code>, which differs from run to run, is never compared.</p>
+<h3 id="harbor_verifier">harbor_verifier<a class="headerlink" href="#harbor_verifier" title="Permanent link">&para;</a></h3>
+<p>The reward of a <a href="../harbor-tasks/">Harbor task folder</a> dataset. After the agent
+works, Harbor runs the task's own <code>tests/</code>, which write
+<code>/logs/verifier/reward.txt</code> (one number) or <code>reward.json</code> (named numbers).
+This reward reads that score; it needs no expected answer.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">harbor-tests</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor_verifier</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The score the task's own tests gave.</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td>a name in <code>reward.json</code></td>
+<td><code>reward</code></td>
+<td>which number to read; <code>reward.txt</code> is read as <code>reward</code></td>
+</tr>
+</tbody>
+</table>
+<p>A trial whose tests wrote nothing scores 0. A value that is not a number
+scores 0, and one outside 0 to 1 is clamped into it; both log a warning
+asking you to fix the task's <code>tests/test.sh</code>. Set <code>key</code> when the tests write
+several numbers (<code>{"reward": 0.5, "tests_passed": 0.8}</code>) and you want one
+other than <code>reward</code>.</p>
+<h2 id="judged-rewards">Judged rewards<a class="headerlink" href="#judged-rewards" title="Permanent link">&para;</a></h2>
+<p>A judge is a language model that reads the answer, and the expected answer
+when the dataset has one, then writes a critique and a grade. The grade is
+normalized to 0 to 1.</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>judge</th>
+<th>grade</th>
+<th>calls per row</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lm_as_judge</code></td>
+<td>one model</td>
+<td>one score, 0 to 1 in steps of 0.05</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>rubrics_as_judge</code></td>
+<td>one model</td>
+<td>one score per criterion, 1 to 20, weighted mean</td>
+<td>1</td>
+</tr>
+<tr>
+<td>ready-made rubrics</td>
+<td>as <code>rubrics_as_judge</code>, criteria built in</td>
+<td>as <code>rubrics_as_judge</code></td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>multi_judge_panel</code></td>
+<td>several models, a stronger one on disagreement</td>
+<td>the panel's or the arbiter's</td>
+<td>one per panelist, plus 1 on disagreement</td>
+</tr>
+<tr>
+<td><code>rlm_as_judge</code></td>
+<td>a model writing and running Python</td>
+<td>any value from 1 to 20</td>
+<td>up to <code>max_iterations</code> turns, plus sub-model calls</td>
+</tr>
+<tr>
+<td><code>deep_agent_as_judge</code></td>
+<td>a coding agent with files and a shell</td>
+<td>1 to 20</td>
+<td>up to <code>max_iterations</code> turns</td>
+</tr>
+</tbody>
+</table>
+<p>Every judge's model needs its provider key, like any model
+(<a href="../models/#keys-and-base-urls">Providers and keys</a>). Its calls are counted
+apart from the model under test's, as <code>reward_cost</code>.</p>
+<p>Every judge takes, besides the masks:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>language_model</code></td>
+<td>an <code>llm</code> model name</td>
+<td>the evaluation's <code>default_language_model</code></td>
+<td>the judge (<code>multi_judge_panel</code> names its models otherwise)</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>text</td>
+<td>the type's own</td>
+<td>what the judge is asked to do; replaces the default</td>
+</tr>
+<tr>
+<td><code>reduction</code></td>
+<td><code>mean</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>none</code></td>
+<td><code>mean</code></td>
+<td>how several values from one call combine; a judge returns one, so leave it</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Always name the judge</p>
+<p>Without <code>language_model</code>, a judge uses the evaluation's
+<code>default_language_model</code>, so the same reward means something else in
+another evaluation. Name the judge in the reward.</p>
+</div>
+<p>The scale and the prompt layout belong to the engine: a config cannot change
+them. You control the judge model and the instructions.</p>
+<h3 id="lm_as_judge">lm_as_judge<a class="headerlink" href="#lm_as_judge" title="Permanent link">&para;</a></h3>
+<p>One call per row. The judge critiques the answer, then picks a score from 0.0
+to 1.0 in steps of 0.05.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">support-judge</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_as_judge</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Correct, complete and polite, against the reference reply.</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">judge</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge-4o</span><span class="w">       </span><span class="c1"># the judge's own models.yaml entry</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">        </span><span class="no">You grade a support reply against a reference reply (the gold_ fields).</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">        </span><span class="no">Score 1.0 when it solves the customer's problem as the reference does</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">        </span><span class="no">and is polite. Score 0.5 when it is correct but misses a step.</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">        </span><span class="no">Score 0.0 when it is wrong, invents a policy, or refuses.</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">        </span><span class="no">Length and tone beyond politeness do not count.</span>
+</code></pre></div>
+<p><strong>Writing instructions.</strong> Without them the judge grades on its own idea of
+quality. Say what full marks, half marks and zero look like, with the concrete
+faults that cost points. Say what does not count (length, format): judges
+otherwise favour long, confident answers. Mention the <code>gold_</code> fields when
+there is a reference, so the judge grades against it rather than against its
+own knowledge.</p>
+<p><strong>When</strong>: free text with one notion of good: correctness against a reference,
+helpfulness, a style rule. To know <em>which</em> aspect failed, use rubrics.</p>
+<h3 id="rubrics_as_judge">rubrics_as_judge<a class="headerlink" href="#rubrics_as_judge" title="Permanent link">&para;</a></h3>
+<p>The judge scores each criterion on its own, from 1 to 20, and the reward is
+the weighted mean of the criteria, normalized to 0 to 1. One call per row,
+however many criteria.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">math-rubrics</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rubrics_as_judge</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Correct result, shown work, stated unit.</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge-4o</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">      </span><span class="nt">rubrics</span><span class="p">:</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The final answer is correct</span><span class="w">              </span><span class="c1"># a bare string: the name is derived from it</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shows_steps</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Each step of the computation is written out.</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">units</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The answer states its unit.</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w">                              </span><span class="c1"># counts half as much as the others</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rubrics</code></td>
+<td>a list of criteria, or a preset name</td>
+<td>required</td>
+<td>what is graded</td>
+</tr>
+<tr>
+<td><code>rubrics[].name</code></td>
+<td>text, turned into snake_case</td>
+<td>derived from the description</td>
+<td>the criterion's name; unique</td>
+</tr>
+<tr>
+<td><code>rubrics[].description</code></td>
+<td>text</td>
+<td>required</td>
+<td>what the judge checks</td>
+</tr>
+<tr>
+<td><code>rubrics[].weight</code></td>
+<td>a number above 0</td>
+<td><code>1.0</code></td>
+<td>the criterion's share of the mean</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>text</td>
+<td>grade each criterion independently, then critique</td>
+<td>the judge's task</td>
+</tr>
+</tbody>
+</table>
+<p>A criterion is a bare string (its name derived from it) or a mapping with
+<code>name</code>, <code>description</code> and <code>weight</code>. <code>rubrics</code> can also name a preset from the
+next section (<code>rubrics: faithfulness</code>).</p>
+<p><strong>When</strong>: the answer has several qualities you care about, and one number
+would hide which one a model lacks. Write each criterion as one checkable
+statement; "is good" grades nothing. Two to five criteria work better than
+fifteen: each one dilutes the others in the mean.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reward is still one number. To see a criterion apart in the results,
+give it its own reward as an <a href="#combining-rewards">extra metric</a>.</p>
+</div>
+<h3 id="ready-made-rubric-judges">Ready-made rubric judges<a class="headerlink" href="#ready-made-rubric-judges" title="Permanent link">&para;</a></h3>
+<p>Rubric judges with their criteria built in, for common checks. Each takes
+<code>language_model</code>, <code>instructions</code>, <code>reduction</code> and the masks; none takes
+<code>rubrics</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">faithful</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">faithfulness</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The answer does not contradict the retrieved context.</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge-4o</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>task</th>
+<th>types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>answers and RAG</td>
+<td><code>answer_relevancy</code>, <code>faithfulness</code>, <code>hallucination</code>, <code>citation_faithfulness</code>, <code>contextual_precision</code>, <code>contextual_recall</code>, <code>contextual_relevancy</code>, <code>summarization</code></td>
+</tr>
+<tr>
+<td>agents and tools</td>
+<td><code>task_completion</code>, <code>goal_accuracy</code>, <code>plan_quality</code>, <code>plan_adherence</code>, <code>step_efficiency</code>, <code>tool_correctness</code>, <code>tool_use</code>, <code>tool_permission</code>, <code>argument_correctness</code>, <code>agent_loop_detection</code></td>
+</tr>
+<tr>
+<td>conversations</td>
+<td><code>topic_adherence</code>, <code>role_adherence</code>, <code>role_violation</code>, <code>prompt_alignment</code>, <code>knowledge_retention</code>, <code>conversation_completeness</code>, <code>turn_faithfulness</code>, <code>turn_relevancy</code></td>
+</tr>
+<tr>
+<td>safety</td>
+<td><code>bias</code>, <code>toxicity</code>, <code>pii_leakage</code>, <code>misuse</code>, <code>non_advice</code></td>
+</tr>
+</tbody>
+</table>
+<p>They grade what the judge can see. <code>faithfulness</code> needs the context in the
+answer or in the reference. Agent checks such as <code>step_efficiency</code> need the
+agent's steps, which an MCP agent dataset hides from rewards by default: set a
+mask that keeps them (<code>out_mask: [thinking]</code> turns the default off and leaves
+<code>messages</code> in).</p>
+<div class="admonition warning">
+<p class="admonition-title">Check which way a preset scores</p>
+<p>Each preset is one criterion written as a task ("indicate whether each
+opinion is toxic"). Whether a high score means <em>clean</em> or <em>toxic</em> is left
+to the judge's reading. Run five rows whose answer you know, read the
+scores, then set <code>direction</code>. When in doubt, use <code>rubrics_as_judge</code> with a
+criterion that says which way is good ("The answer contains no insult").</p>
+</div>
+<h3 id="multi_judge_panel">multi_judge_panel<a class="headerlink" href="#multi_judge_panel" title="Permanent link">&para;</a></h3>
+<p>Several judges grade each row in parallel, with the same instructions. When
+their scores lie within <code>agreement_threshold</code> of each other, the panelist
+closest to the panel's mean gives the score. When they disagree, a stronger
+model judges the row alone, and its score is the reward.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">panel</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">multi_judge_panel</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Two small judges, a large one on disagreement.</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="nt">panel_language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># from different families</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="nt">smart_language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span><span class="w">                   </span><span class="c1"># required</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="nt">agreement_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">        </span><span class="no">Score 1.0 when the answer matches the reference (the gold_ fields), 0.0 when not.</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>panel_language_models</code></td>
+<td>a non-empty list of <code>llm</code> model names</td>
+<td>required</td>
+<td>the panelists</td>
+</tr>
+<tr>
+<td><code>smart_language_model</code></td>
+<td>an <code>llm</code> model name</td>
+<td>required</td>
+<td>the arbiter on disagreement, and the fallback when every panelist fails</td>
+</tr>
+<tr>
+<td><code>agreement_threshold</code></td>
+<td>a number, 0 to 1</td>
+<td><code>0.2</code></td>
+<td>the widest spread (highest score minus lowest) still read as agreement</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>text</td>
+<td>the judge's own</td>
+<td>given to every panelist and to the arbiter</td>
+</tr>
+</tbody>
+</table>
+<p>Panelists grade 0 to 1 in steps of 0.05. A panelist that returns no score is
+dropped.</p>
+<p><strong>When</strong>: you want a strong judge's quality at a fraction of its cost, and
+most rows are easy. Easy rows cost the small panel; hard ones add one call of
+the arbiter. A lower <code>agreement_threshold</code> sends more rows to the arbiter
+(dearer, closer to the strong judge alone); a higher one trusts the panel more
+(cheaper, noisier). Panelists from different families also dilute any one
+family's bias.</p>
+<p>Both are required. <code>openarena check</code> reports a panel left empty
+(<code>multi_judge_panel needs `panel_language_models`: at least one judge</code>) and a
+missing arbiter (<code>multi_judge_panel needs `smart_language_model`: the judge
+that settles a split panel</code>).</p>
+<h3 id="rlm_as_judge-and-deep_agent_as_judge">rlm_as_judge and deep_agent_as_judge<a class="headerlink" href="#rlm_as_judge-and-deep_agent_as_judge" title="Permanent link">&para;</a></h3>
+<p>Judges that work before they grade, for answers whose correctness cannot be
+read off the text: code to run, a long output to diff, a figure to recompute.</p>
+<ul>
+<li><code>rlm_as_judge</code> writes and runs Python in a sandbox, with the answer and the
+  reference bound as data. It can compute its grade (a pass rate, a
+  field-by-field ratio), so any value on its scale is allowed, and it can hand
+  pieces of a long answer to a sub-model.</li>
+<li><code>deep_agent_as_judge</code> is a coding agent in a sandbox, with file tools and a
+  shell. The answer and the reference are written to a file there, so it can
+  run a generated script before grading. Each row starts from a clean
+  sandbox.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">code-judge</span><span class="p">:</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rlm_as_judge</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Runs the generated code and compares its output with the reference.</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge-4o</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">      </span><span class="nt">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">        </span><span class="no">Run the code in the answer. Score 1.0 when its output equals the</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">        </span><span class="no">reference output (the gold_ fields), 0.0 when it fails or differs.</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th><code>rlm_as_judge</code> default</th>
+<th><code>deep_agent_as_judge</code> default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>language_model</code></td>
+<td>the evaluation's default</td>
+<td>the evaluation's default</td>
+<td>the judge</td>
+</tr>
+<tr>
+<td><code>sub_language_model</code></td>
+<td><code>language_model</code></td>
+<td><code>language_model</code></td>
+<td>the model for sub-queries (rlm) or sub-agents (deep)</td>
+</tr>
+<tr>
+<td><code>max_iterations</code></td>
+<td><code>20</code></td>
+<td><code>10</code></td>
+<td>turns before the judge must grade</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td><code>60</code></td>
+<td><code>30.0</code></td>
+<td>seconds per code turn (rlm) or per shell command (deep)</td>
+</tr>
+<tr>
+<td><code>use_chain_of_thought</code></td>
+<td><code>false</code></td>
+<td><code>false</code></td>
+<td>think step by step before each turn</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>the type's own</td>
+<td>the type's own</td>
+<td>the judging task</td>
+</tr>
+</tbody>
+</table>
+<p>Both grade on 1 to 20, normalized. They are the slowest and dearest rewards:
+each row is a small agent run. Lower <code>max_iterations</code> to bound the cost, and
+keep them for rows a single read cannot decide.</p>
+<p><code>agent_as_judge</code> is in the catalog too, but it needs tools to call, and a
+config entry cannot give it any. <code>openarena check</code> refuses it
+(<code>agent_as_judge cannot be built from an entry: it needs `tools`, which an
+entry cannot give</code>) and points to the alternatives: <code>rlm_as_judge</code> or
+<code>deep_agent_as_judge</code>, which need no tools, or a judge such as <code>lm_as_judge</code>
+over the agent's <code>messages</code>.</p>
+<h2 id="choosing-and-calibrating-a-judge">Choosing and calibrating a judge<a class="headerlink" href="#choosing-and-calibrating-a-judge" title="Permanent link">&para;</a></h2>
+<h3 id="the-judge-model">The judge model<a class="headerlink" href="#the-judge-model" title="Permanent link">&para;</a></h3>
+<p>A judge should be at least as capable as the models it grades, on the task it
+grades. A small judge grading a large model's math marks right answers wrong.
+Give the judge its own entry in <a href="../models/">models.yaml</a>, so it is never
+confused with a model under test:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">judge-4o</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w">                 </span><span class="c1"># the same answer gets the same grade, as far as the provider allows</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The judge. Never under test.</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">judge</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Give the judge entry <code>temperature: 0</code>. A judge's <code>params</code> (<code>temperature</code>,
+<code>max_tokens</code>, <code>reasoning_effort</code>) are sent with each of its calls, as a model
+under test's are (<a href="../models/#where-the-params-apply">Where the params apply</a>).
+At 0 it grades steadily from row to row and from run to run; a sampling judge
+adds its own noise to every score. Even at 0, hosted providers do not promise
+identical answers, so expect a small spread between reruns.</p>
+<p>Keep the judge fixed across every run you compare: scores from two judges are
+not on the same scale. The evaluation's <code>seed</code> does not make a judge
+reproducible; it seeds local randomness, not the provider's sampling.
+<code>temperature: 0</code> is what steadies the judge.</p>
+<h3 id="self-preference">Self-preference<a class="headerlink" href="#self-preference" title="Permanent link">&para;</a></h3>
+<p>A model judging its own answers, or answers from its own family, tends to
+score them higher. Nothing stops you from naming the same model as judge and
+as candidate, so guard against it yourself:</p>
+<ul>
+<li>Never put the judge in the evaluation's <code>language_models</code>.</li>
+<li>Prefer a judge from another provider than the candidates. When the
+  candidates span several providers, a <code>multi_judge_panel</code> mixing families
+  spreads the bias instead of favouring one side.</li>
+<li>When your own model family is under test, do not let that family judge.</li>
+</ul>
+<h3 id="calibrating">Calibrating<a class="headerlink" href="#calibrating" title="Permanent link">&para;</a></h3>
+<p>A judge is an instrument: check it before trusting its readings.</p>
+<ol>
+<li>Take 20 to 30 rows and grade the answers yourself.</li>
+<li>Run the judge on the same answers.</li>
+<li>Compare. Where you disagree, read the judge's critique and tighten the
+   instructions: name the fault it missed, or say what should not count.</li>
+<li>Repeat until it agrees with you on nearly every row, then freeze the model
+   and the instructions.</li>
+</ol>
+<p>Then run the judge twice on the same answers: the spread between the two runs
+is the smallest gap between models you can believe.</p>
+<h2 id="combining-rewards">Combining rewards<a class="headerlink" href="#combining-rewards" title="Permanent link">&para;</a></h2>
+<p>A dataset has one <code>reward</code>: it fills the <code>reward</code> column, and leaderboards
+rank on it first. Any other reward can score the same rows as an extra column,
+under a dataset's or an evaluation's <code>metrics:</code>
+(<a href="../datasets/#extra-metrics">Extra metrics</a>). There, a catalog reward is named
+with <code>class:</code>, its settings written inline, an <code>alias</code> naming the column, and
+its own <code>direction</code>. A metric written without <code>direction:</code> is read as <code>max</code>,
+except a cost, tokens or latency measurement, read as <code>min</code>; write
+<code>direction:</code> to say otherwise, as <code>toxicity</code> does below.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">gsm8k-20</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="c1"># ...</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span><span class="w">                              </span><span class="c1"># the primary score</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer_accuracy</span><span class="w">                              </span><span class="c1"># partial credit beside it</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">lm_as_judge</span><span class="p p-Indicator">,</span><span class="nt"> alias</span><span class="p">:</span><span class="w"> </span><span class="nv">reasoning</span><span class="p p-Indicator">,</span><span class="nt"> language_model</span><span class="p">:</span><span class="w"> </span><span class="nv">judge-4o</span><span class="p p-Indicator">,</span><span class="nt"> instructions</span><span class="p">:</span><span class="w"> </span><span class="s">"Score</span><span class="nv"> </span><span class="s">1.0</span><span class="nv"> </span><span class="s">when</span><span class="nv"> </span><span class="s">every</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">correct."</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">toxicity</span><span class="p p-Indicator">,</span><span class="nt"> alias</span><span class="p">:</span><span class="w"> </span><span class="nv">toxicity</span><span class="p p-Indicator">,</span><span class="nt"> language_model</span><span class="p">:</span><span class="w"> </span><span class="nv">judge-4o</span><span class="p p-Indicator">,</span><span class="nt"> direction</span><span class="p">:</span><span class="w"> </span><span class="nv">min</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>A <a href="../leaderboards/">leaderboard</a> then weighs the columns with <code>shares:</code>
+(<code>{reward: 60, reasoning: 30, cost: 10}</code>) and can leave a model out with
+<code>budgets:</code>.</p>
+<table>
+<thead>
+<tr>
+<th>goal</th>
+<th>primary <code>reward</code></th>
+<th>extra metrics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a strict score, and how close the misses were</td>
+<td><code>exact_match</code></td>
+<td><code>answer_accuracy</code></td>
+</tr>
+<tr>
+<td>correctness with a safety gate</td>
+<td>a judge or <code>exact_match</code></td>
+<td><code>toxicity</code>, <code>pii_leakage</code>, used as budgets</td>
+</tr>
+<tr>
+<td>several criteria reported apart</td>
+<td><code>rubrics_as_judge</code> for the whole</td>
+<td>one judge per criterion</td>
+</tr>
+<tr>
+<td>a cheap rule, checked by a judge</td>
+<td><code>exact_match</code></td>
+<td><code>lm_as_judge</code>, to spot where the rule is too strict</td>
+</tr>
+</tbody>
+</table>
+<p>Make the primary reward the one you would defend alone. The extra metrics
+explain it; they should not be needed to read it.</p>
+<h2 id="direction">Direction<a class="headerlink" href="#direction" title="Permanent link">&para;</a></h2>
+<p><code>direction: min</code> is for a reward where lower is better: a score read as "how
+much" of something bad. The run records the direction, and leaderboards and
+the Pareto frontier read it: you never invert a score yourself. Every reward
+above scores "how good" by design; only the safety and hallucination presets
+may read the other way (see their warning).</p>
+<h2 id="which-reward-for-which-dataset">Which reward for which dataset<a class="headerlink" href="#which-reward-for-which-dataset" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>dataset or task</th>
+<th>reward</th>
+<th>why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>multiple choice (MMLU style)</td>
+<td><code>exact_match</code> on the letter</td>
+<td>one correct token</td>
+</tr>
+<tr>
+<td>math with a final number (GSM8K style)</td>
+<td><code>exact_match</code> on the number, <code>answer_accuracy</code> beside it</td>
+<td>the number decides</td>
+</tr>
+<tr>
+<td>classification, extraction into fields</td>
+<td><code>answer_accuracy</code></td>
+<td>partial credit per field</td>
+</tr>
+<tr>
+<td>short factual answer, varied wording</td>
+<td><code>lm_as_judge</code> with the reference; <code>cosine_similarity</code> if cost matters</td>
+<td>a rule cannot see synonyms</td>
+</tr>
+<tr>
+<td>summaries, emails, open answers</td>
+<td><code>rubrics_as_judge</code></td>
+<td>several qualities in one score</td>
+</tr>
+<tr>
+<td>RAG answers</td>
+<td><code>faithfulness</code>, <code>answer_relevancy</code>, or your own rubrics</td>
+<td>grounding is not in the reference</td>
+</tr>
+<tr>
+<td>retrieval with embedding models</td>
+<td><code>retrieval_recall</code></td>
+<td>the gold passages are known</td>
+</tr>
+<tr>
+<td>function calling, nothing executed</td>
+<td><code>tool_calls_accuracy</code></td>
+<td>calls can be checked</td>
+</tr>
+<tr>
+<td>MCP agents</td>
+<td><code>exact_match</code> or a judge on the final answer; agent presets as extra metrics</td>
+<td>the answer and the path are scored apart</td>
+</tr>
+<tr>
+<td>A2A agents</td>
+<td>as for the task the agent answers</td>
+<td>the reward reads the answer, whoever gave it</td>
+</tr>
+<tr>
+<td>Harbor task folders</td>
+<td><code>harbor_verifier</code></td>
+<td>the task's tests decide</td>
+</tr>
+<tr>
+<td>code that must run</td>
+<td><code>rlm_as_judge</code>, <code>deep_agent_as_judge</code>, or a Harbor task</td>
+<td>the text alone cannot tell</td>
+</tr>
+</tbody>
+</table>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p><a href="../check/"><code>openarena check</code></a> reads the files, without calling anything, and
+reports:</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th>what it says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a misspelt type</td>
+<td><code>unknown reward 'exact_matsh'</code>, with the closest name as the fix</td>
+</tr>
+<tr>
+<td>a setting the type does not take</td>
+<td><code>lm_as_judge does not take `language_modl`</code>, with the rename</td>
+</tr>
+<tr>
+<td><code>name</code> or <code>direction</code> inside <code>config</code></td>
+<td><code>config cannot set direction: use `type` and `direction`</code></td>
+</tr>
+<tr>
+<td>a litellm id instead of a model name</td>
+<td><code>'openai/gpt-4o-mini' is not in `models`</code>; the fix names the entry that calls it</td>
+</tr>
+<tr>
+<td>an embedding model as a judge, or the reverse</td>
+<td><code>'minilm' is an embedding model; this setting needs a language model</code></td>
+</tr>
+<tr>
+<td>a dataset naming a reward that does not exist</td>
+<td>the dataset's <code>reward</code> is not in <code>rewards</code>, with the closest name</td>
+</tr>
+<tr>
+<td><code>rubrics_as_judge</code> without <code>rubrics</code></td>
+<td><code>rubrics_as_judge needs `rubrics`: the criteria it grades</code>, with an example list as the fix</td>
+</tr>
+<tr>
+<td><code>multi_judge_panel</code> without its panel or its arbiter</td>
+<td><code>multi_judge_panel needs `panel_language_models`: at least one judge</code>, <code>multi_judge_panel needs `smart_language_model`: the judge that settles a split panel</code></td>
+</tr>
+<tr>
+<td><code>reduction</code> on a deterministic reward</td>
+<td><code>exact_match does not take `reduction`</code>; only judges take it</td>
+</tr>
+<tr>
+<td>a judge's setting beside <code>type:</code> instead of under <code>config:</code> (<code>reduction: mean</code>)</td>
+<td><code>not a field of a `rewards` entry</code>, with the fix <code>move it under `config:`</code></td>
+</tr>
+<tr>
+<td><code>agent_as_judge</code></td>
+<td><code>agent_as_judge cannot be built from an entry: it needs `tools`, which an entry cannot give</code>, with the alternatives</td>
+</tr>
+</tbody>
+</table>
+<p>What only the run finds:</p>
+<ul>
+<li>a dataset with no <code>reward</code>: the run refuses it.</li>
+<li>a judge whose provider key is missing: the cell fails
+  (<a href="../results/#when-a-cell-failed-or-scored-0">Reading results</a>).</li>
+<li>every row scoring 0 with <code>exact_match</code>: compare an answer with its expected
+  answer in the result. The form differs: a string against a number, extra
+  words, another case.</li>
+</ul>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>openarena<span class="w"> </span>rewards<span class="w"> </span>list<span class="w"> </span>--configs<span class="w"> </span>configs<span class="w">       </span><span class="c1"># each reward, its type and direction</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs/rewards.yaml<span class="w">           </span><span class="c1"># validate, references checked against the folder</span>
+</code></pre></div>
+<p>Next: point a dataset at the reward (<a href="../datasets/">Datasets</a>), run it
+(<a href="../evaluations/">Running evaluations</a>), then rank
+(<a href="../leaderboards/">Leaderboards</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../models/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Models">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Models
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../datasets/" class="md-footer__link md-footer__link--next" aria-label="Next: Datasets">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Datasets
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

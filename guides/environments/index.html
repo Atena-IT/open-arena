@@ -1,0 +1,2435 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/environments/">
+      
+      
+      
+        <link rel="prev" href="../a2a-agents/">
+      
+      
+        <link rel="next" href="../harbor-tasks/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Environments - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Environments
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#do-you-need-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Do you need one?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-row-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a row runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first environment
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-image-docker_image-or-dockerfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The image: <code>docker_image</code> or <code>dockerfile</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-agent-starts-workdir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the agent starts: <code>workdir</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resources
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Network
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Environment variables: <code>env</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Healthcheck
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MCP servers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dataset-over-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The dataset over it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs-the-sandbox-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs: the sandbox provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Timeouts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Recipes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#do-you-need-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Do you need one?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-row-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a row runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first environment
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-image-docker_image-or-dockerfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The image: <code>docker_image</code> or <code>dockerfile</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-agent-starts-workdir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the agent starts: <code>workdir</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resources
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Network
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Environment variables: <code>env</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Healthcheck
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MCP servers
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dataset-over-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The dataset over it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs-the-sandbox-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs: the sandbox provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Timeouts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Recipes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="environments">Environments<a class="headerlink" href="#environments" title="Permanent link">&para;</a></h1>
+<p>An environment is a sandbox definition: the image an agent works in, the
+resources it gets, what network it may reach, and the tools it is handed. On
+its own it does nothing. A dataset whose <code>harbor:</code> block names it turns each of
+its rows into a <a href="https://harborframework.com">Harbor</a> task in that sandbox:
+the row's question becomes the task's instruction, the model under test drives
+an agent that works there with a terminal and files, and the agent's answer is
+scored by the dataset's own reward.</p>
+<p>Environments live in <code>configs/environments.yaml</code>, one entry per name.</p>
+<h2 id="do-you-need-one">Do you need one?<a class="headerlink" href="#do-you-need-one" title="Permanent link">&para;</a></h2>
+<p>An environment is the most expensive way to ask a question: every row starts
+a sandbox, and the agent makes many model calls to answer it. Use one only
+when the answer should be <strong>worked out</strong>, not just stated.</p>
+<table>
+<thead>
+<tr>
+<th>you want to measure</th>
+<th>use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the answer a model gives in one call</td>
+<td>a plain dataset (<a href="../datasets/">Datasets</a>)</td>
+</tr>
+<tr>
+<td>a model calling tools you serve</td>
+<td>a dataset with MCP tools (<a href="../mcp-tools/">MCP tools</a>)</td>
+</tr>
+<tr>
+<td>ordinary questions (GSM8K, your CSV) solved with a shell, Python, files</td>
+<td><strong>an environment</strong> and a dataset over it (this page)</td>
+</tr>
+<tr>
+<td>tasks that each bring their own files, setup and tests</td>
+<td><a href="../harbor-tasks/">Harbor tasks</a>: each task folder carries its own environment, and no entry here is needed</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Harbor tasks bring their own</p>
+<p>A <code>type: harbor_tasks</code> dataset reads each task's <code>[environment]</code> from its
+own <code>task.toml</code>. An <code>environments:</code> entry is that same section, written
+once in YAML and shared by every row of a dataset, under the same field
+names.</p>
+</div>
+<h2 id="how-a-row-runs">How a row runs<a class="headerlink" href="#how-a-row-runs" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+    R[dataset row] --&gt;|input_template| Q[question]
+    Q --&gt; T["task folder&lt;br/&gt;task.toml + instruction.md&lt;br/&gt;+ environment/"]
+    E["environments.&amp;lt;name&amp;gt;"] --&gt; T
+    T --&gt; S["sandbox started&lt;br/&gt;image built or pulled"]
+    S --&gt; A["agent works,&lt;br/&gt;driven by the model"]
+    A --&gt; F[answer_file read back]
+    F --&gt; W[dataset's reward scores it]</code></pre>
+<p>For every row, and every model of the evaluation:</p>
+<ol>
+<li>The row's question, after the block's <code>instructions</code>, is written as the
+   task's <code>instruction.md</code>.</li>
+<li>The environment entry is written as the task's <code>task.toml</code>
+   <code>[environment]</code> section. A copy of the environment's build context goes
+   into the task's <code>environment/</code> folder, and a <code>dockerfile</code> is written there
+   as <code>Dockerfile</code>.</li>
+<li>Harbor starts a sandbox from it with the configured provider, waits for
+   the healthcheck, and lets the agent work.</li>
+<li>When the agent is done, or its <code>timeout_sec</code> runs out, the <code>answer_file</code>
+   is copied out of the sandbox. Without one, the agent's last message is the
+   answer.</li>
+<li>The dataset's reward scores the answer on your machine, not in the
+   sandbox.</li>
+</ol>
+<p><strong>What is isolated.</strong> Each row is its own trial, with its own sandbox: one
+row's files, installed packages and processes never reach another row, nor
+another model's run of the same row. The sandbox does not see your machine's
+files, only the image and its build context. What crosses the boundary is
+what you put there: the <code>env:</code> variables, the MCP servers, and whatever the
+network mode lets through.</p>
+<h2 id="a-first-environment">A first environment<a class="headerlink" href="#a-first-environment" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">python</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python 3.12 with tmux.</span><span class="w">   </span><span class="c1"># shown when browsing</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">python</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w">                          </span><span class="c1"># the image is built from this...</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="no">FROM python:3.12-slim</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="no">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends tmux &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="no">WORKDIR /app</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="no">COPY requirements.txt /tmp/requirements.txt</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="no">RUN pip install --no-cache-dir -r /tmp/requirements.txt</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="c1"># docker_image: python:3.12-slim      # ...or pulled from this; one of the two</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">workdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app</span><span class="w">                          </span><span class="c1"># where the agent starts; the image must have it</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">                                </span><span class="c1"># blank: the provider's default</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">memory_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span><span class="w">                   </span><span class="c1"># public | no-network | allowlist</span>
+</code></pre></div>
+<p>The <code>COPY requirements.txt</code> above reads from the environment's <strong>build
+context</strong>, a folder beside <code>configs/</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>my-arena/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  configs/
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    environments.yaml
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  environments/
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    python/
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>      environment/          the build context: whatever the Dockerfile COPYs
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        requirements.txt
+</code></pre></div>
+<p>When a run starts, <code>environments/&lt;name&gt;/</code> is copied beside the run's own
+config, fresh each time: a file you removed since the last run does not
+linger. A <code>docker_image</code> environment needs no folder.</p>
+<h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>type</th>
+<th>default</th>
+<th>what it sets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker_image</code></td>
+<td>string</td>
+<td>none</td>
+<td>a prebuilt image to pull, e.g. <code>python:3.12-slim</code></td>
+</tr>
+<tr>
+<td><code>dockerfile</code></td>
+<td>string</td>
+<td>none</td>
+<td>a Dockerfile to build from the build context</td>
+</tr>
+<tr>
+<td><code>os</code></td>
+<td><code>linux</code> or <code>windows</code></td>
+<td><code>linux</code></td>
+<td>the sandbox's operating system</td>
+</tr>
+<tr>
+<td><code>workdir</code></td>
+<td>string</td>
+<td>the image's</td>
+<td>the directory the agent starts in</td>
+</tr>
+<tr>
+<td><code>cpus</code></td>
+<td>integer, 1 or more</td>
+<td>the provider's</td>
+<td>CPUs the sandbox gets</td>
+</tr>
+<tr>
+<td><code>memory_mb</code></td>
+<td>integer, 1 or more</td>
+<td>the provider's</td>
+<td>memory, in MB</td>
+</tr>
+<tr>
+<td><code>storage_mb</code></td>
+<td>integer, 1 or more</td>
+<td>the provider's</td>
+<td>disk, in MB</td>
+</tr>
+<tr>
+<td><code>gpus</code></td>
+<td>integer, 0 or more</td>
+<td>the provider's</td>
+<td>GPUs the sandbox gets</td>
+</tr>
+<tr>
+<td><code>gpu_types</code></td>
+<td>list of strings</td>
+<td><code>[]</code> (any)</td>
+<td>accepted GPU types, e.g. <code>H100</code></td>
+</tr>
+<tr>
+<td><code>network_mode</code></td>
+<td><code>public</code>, <code>no-network</code>, <code>allowlist</code></td>
+<td><code>public</code></td>
+<td>what the sandbox may reach</td>
+</tr>
+<tr>
+<td><code>allowed_hosts</code></td>
+<td>list of strings</td>
+<td><code>[]</code></td>
+<td>the hosts an <code>allowlist</code> sandbox may reach</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td>map of string to string</td>
+<td><code>{}</code></td>
+<td>environment variables set in the container</td>
+</tr>
+<tr>
+<td><code>build_timeout_sec</code></td>
+<td>number above 0</td>
+<td><code>600</code></td>
+<td>how long building the image may take, in seconds</td>
+</tr>
+<tr>
+<td><code>healthcheck</code></td>
+<td>mapping</td>
+<td>none</td>
+<td>a command that says when the sandbox is ready</td>
+</tr>
+<tr>
+<td><code>mcp_servers</code></td>
+<td>list of names</td>
+<td><code>[]</code></td>
+<td>MCP servers the agent is given, by their <code>mcp_servers</code> key</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>none</td>
+<td>a line shown when browsing</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>list of strings</td>
+<td><code>[]</code></td>
+<td>labels for browsing, e.g. <code>python</code>, <code>gpu</code>, <code>offline</code></td>
+</tr>
+</tbody>
+</table>
+<p>Exactly one of <code>docker_image</code> and <code>dockerfile</code> is required. Any other key is
+an error: a typo like <code>memory:</code> is caught, not ignored.</p>
+<h2 id="the-image-docker_image-or-dockerfile">The image: <code>docker_image</code> or <code>dockerfile</code><a class="headerlink" href="#the-image-docker_image-or-dockerfile" title="Permanent link">&para;</a></h2>
+<p>The image is everything the agent can use without the network: the language
+runtime, the libraries, the command-line tools, the data files.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">docker_image</label><label for="__tabbed_1_2">dockerfile</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">slim</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+</code></pre></div>
+<p>The image is pulled as it is. Nothing to build, no folder to keep.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">data</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="no">FROM python:3.12-slim</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="no">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends tmux git &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="no">WORKDIR /app</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="no">COPY data/ /app/data/</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="no">RUN pip install --no-cache-dir pandas</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">workdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app</span>
+</code></pre></div>
+<p>The image is built from <code>environments/data/environment/</code>, which holds
+<code>data/</code>. The Dockerfile in the YAML is written into that folder as
+<code>Dockerfile</code>.</p>
+</div>
+</div>
+</div>
+<p><strong>When to use which.</strong></p>
+<ul>
+<li><code>docker_image</code> when a public or registry image already has what the agent
+  needs. It skips the build and leaves nothing to drift.</li>
+<li><code>dockerfile</code> when the agent needs tools, packages or files the base image
+  lacks. Keep it short: every line is something to trust and maintain.</li>
+<li>A <code>dockerfile</code> that is slow to build, used across many rows and models:
+  build it once yourself, push it to a registry the sandbox provider can pull
+  from, and name it with <code>docker_image</code>. Whether a built image is reused
+  between rows is up to the sandbox provider, not the arena.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">tmux and python3</p>
+<p><code>terminus-2</code>, the default agent, works its terminal through <code>tmux</code>. When
+the image lacks it, terminus-2 tries to install it at the start of every
+task, which needs a package manager and the network, and fails without
+them. Install <code>tmux</code> in the Dockerfile. Most agents also run Python:
+start from an image that has <code>python3</code>.</p>
+</div>
+<p><strong><code>build_timeout_sec</code></strong> bounds the build (600 seconds by default). Raise it
+for a heavy build (CUDA bases, large <code>pip install</code>s) rather than letting the
+rows fail on it; lower it to fail fast on a build that should be quick.</p>
+<p><strong><code>os</code></strong> is <code>linux</code> unless you set <code>windows</code>. Leave it unless your image is a
+Windows one and your sandbox provider runs those.</p>
+<h2 id="where-the-agent-starts-workdir">Where the agent starts: <code>workdir</code><a class="headerlink" href="#where-the-agent-starts-workdir" title="Permanent link">&para;</a></h2>
+<p><code>workdir</code> is the directory every command in the sandbox starts in, the
+agent's included. Set it to where the work happens, and put <code>answer_file</code>
+under it (<code>/app/answer.txt</code> with <code>workdir: /app</code>), so the agent finds both
+without searching.</p>
+<div class="admonition warning">
+<p class="admonition-title">The image must have it</p>
+<p>With a <code>docker_image</code>, a <code>workdir</code> the image lacks makes every command
+fail, and so every row. Either create it in a Dockerfile (<code>WORKDIR /app</code>)
+or leave <code>workdir</code> out to keep the image's own.</p>
+</div>
+<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">heavy</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">memory_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">storage_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20480</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>blank means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cpus</code>, <code>memory_mb</code></td>
+<td>on the local Docker: 2 CPUs (no more than the machine has) and 2048 MB. Elsewhere: the provider's default</td>
+</tr>
+<tr>
+<td><code>storage_mb</code>, <code>gpus</code></td>
+<td>the provider's default</td>
+</tr>
+<tr>
+<td><code>gpu_types</code></td>
+<td>any GPU type</td>
+</tr>
+</tbody>
+</table>
+<p><strong>How to size them.</strong> Give the sandbox what the work needs, not what the
+machine has.</p>
+<ul>
+<li>Question answering with a shell and Python: 1 to 2 CPUs and 2048 MB.</li>
+<li>Data work (pandas over a real file, compiling, running test suites): 2 to
+  4 CPUs and 4096 to 8192 MB. An agent killed for lack of memory scores 0,
+  which looks like a wrong model.</li>
+<li><code>storage_mb</code> only when the agent writes large files or installs a lot.</li>
+<li><code>gpus</code> only when the task runs a model or GPU code. Not every provider has
+  GPUs: E2B, the default provider, has none, and the arena app refuses such a
+  run before it starts.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Keep resources equal across models</p>
+<p>Every model of an evaluation runs in the same environment, so the
+comparison is fair by construction. Change the resources between two
+evaluations, though, and their scores no longer compare.</p>
+</div>
+<p><strong>On the local Docker</strong>, a container without limits would get the whole
+machine, and a few at once can freeze it, more so with a local model loading
+beside them. So the arena fills in 2 CPUs and 2048 MB there when the entry
+leaves them blank, and runs <strong>one trial at a time</strong>. What the entry asks for
+is always kept. The <a href="#where-it-runs-the-sandbox-provider">settings</a> below
+change both defaults.</p>
+<h2 id="network">Network<a class="headerlink" href="#network" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">offline</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no-network</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">pip-only</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allowlist</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">allowed_hosts</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pypi.org</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">files.pythonhosted.org</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>network_mode</code></th>
+<th>the sandbox can reach</th>
+<th>use it when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public</code> (default)</td>
+<td>anything</td>
+<td>the agent needs to install packages or fetch data, or you are still building the environment</td>
+</tr>
+<tr>
+<td><code>no-network</code></td>
+<td>nothing</td>
+<td>the answer must come from the model and the image alone: fair, reproducible, nothing leaks out</td>
+</tr>
+<tr>
+<td><code>allowlist</code></td>
+<td>only <code>allowed_hosts</code></td>
+<td>the agent needs one or two hosts (a package index, your API), and nothing else</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why turn it off.</strong> With <code>public</code>, an agent can search the web for the
+answer to a well-known benchmark question, download a solution, or send data
+anywhere. For a leaderboard that claims to measure the model, <code>no-network</code> is
+the honest setting. It is also the safe one when the agent runs code you did
+not review.</p>
+<p><strong>What it costs.</strong> The network mode applies to everything in the sandbox,
+the agent included:</p>
+<ul>
+<li><code>terminus-2</code> runs on your machine and types into the sandbox, so it works
+  with any network mode, as long as the image already has <code>tmux</code>.</li>
+<li>An agent installed in the sandbox (<code>claude-code</code>, <code>codex</code>, <code>openhands</code>,
+  ...) calls its model from there. With <code>no-network</code> it cannot work at all,
+  and the run refuses the pairing:
+  <code>Harbor agent 'openhands' runs inside the sandbox and calls its model from there, which a no-network environment forbids</code>.
+  With <code>allowlist</code>, its model provider's host has to be on the list. See
+  <a href="../harbor-tasks/#agents-and-models">Agents and models</a>.</li>
+<li>An HTTP MCP server has to be reachable under the network mode too.</li>
+</ul>
+<p>Not every provider can cut or filter the network. E2B can do both; on the
+local Docker it depends on the host. In the arena app, a run whose provider
+cannot give the network mode asked for is refused before it starts.</p>
+<h2 id="environment-variables-env">Environment variables: <code>env</code><a class="headerlink" href="#environment-variables-env" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">python</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">PYTHONUNBUFFERED</span><span class="p">:</span><span class="w"> </span><span class="s">"1"</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">      </span><span class="nt">DATA_DIR</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app/data</span>
+</code></pre></div>
+<p>Set in the container, so the agent's commands and any stdio MCP server
+started there see them. Keys must have no whitespace; values are strings, so
+quote numbers.</p>
+<p>Use <code>env</code> for settings the work needs: paths, flags, and a stdio MCP server's
+variables, which Harbor cannot hand to the server itself.</p>
+<p>A value can name a variable of your machine as <code>${NAME}</code>. When a run reads its
+config, after it has loaded the workspace's <code>.env</code>, the reference is replaced
+by the variable's value:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">      </span><span class="nt">SEARCH_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SEARCH_API_KEY}</span><span class="w">   </span><span class="c1"># from your shell or the workspace's .env</span>
+</code></pre></div>
+<p>The YAML, and the copy of it beside each run's config, keep <code>${SEARCH_API_KEY}</code>,
+not the value. A variable set nowhere stops the run before it starts, naming it;
+<code>openarena check</code> warns about it first. <code>$${NAME}</code> writes a literal <code>${NAME}</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Anything in <code>env</code> is the agent's</p>
+<p>The value is set in the sandbox, so the agent can read every variable,
+print it, and, with a network, send it anywhere. <code>${NAME}</code> keeps a key out
+of your files, not out of the agent's reach. Put in no key you would not
+hand to the model; prefer one scoped to the evaluation and easy to
+revoke.</p>
+</div>
+<h2 id="healthcheck">Healthcheck<a class="headerlink" href="#healthcheck" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">      </span><span class="no">FROM python:3.12-slim</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">      </span><span class="no">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends tmux curl &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">      </span><span class="no"># ... and starts the service the agent will query</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curl -fs http://localhost:8000/health</span><span class="w">   </span><span class="c1"># exit 0 means ready</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">      </span><span class="nt">interval_sec</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">      </span><span class="nt">timeout_sec</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</code></pre></div>
+<p>Harbor runs <code>command</code> inside the container until it succeeds, and the agent
+starts only once the sandbox is ready. Leave it out when the image is ready
+as soon as it starts, which is the usual case. Add it when the image starts a
+server, loads a database or warms a cache the agent depends on: without it,
+the agent's first commands race the service and fail.</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>default</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command</code></td>
+<td>required</td>
+<td>run in the container; exit 0 means ready</td>
+</tr>
+<tr>
+<td><code>interval_sec</code></td>
+<td><code>5</code></td>
+<td>seconds between tries</td>
+</tr>
+<tr>
+<td><code>timeout_sec</code></td>
+<td><code>30</code></td>
+<td>how long one try may take</td>
+</tr>
+<tr>
+<td><code>retries</code></td>
+<td><code>3</code></td>
+<td>how many failed tries are allowed</td>
+</tr>
+<tr>
+<td><code>start_period_sec</code></td>
+<td><code>0</code></td>
+<td>a grace period after the container starts</td>
+</tr>
+<tr>
+<td><code>start_interval_sec</code></td>
+<td><code>5</code></td>
+<td>seconds between tries during that grace period</td>
+</tr>
+</tbody>
+</table>
+<p>They are written to the task's <code>[environment.healthcheck]</code> as they are. The
+command's tools must be in the image: <code>curl</code> is not in <code>python:3.12-slim</code>,
+hence the install above.</p>
+<h2 id="mcp-servers">MCP servers<a class="headerlink" href="#mcp-servers" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">web</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:3.12-slim</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="nt">mcp_servers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fetch</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># keys of mcp_servers.yaml</span>
+</code></pre></div>
+<p>The agent gets these servers' tools beside its terminal. Harbor carries less
+of a server than a plain dataset does: no <code>websocket</code>, no <code>headers</code>, no stdio
+<code>env</code> or <code>cwd</code>, and a stdio command runs inside the sandbox, so the image must
+have it. <a href="../mcp-tools/#tools-in-a-harbor-sandbox">MCP tools</a> has the details.</p>
+<h2 id="the-dataset-over-it">The dataset over it<a class="headerlink" href="#the-dataset-over-it" title="Permanent link">&para;</a></h2>
+<p>An environment runs only through a dataset that names it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">gsm8k-terminal</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The answer only</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="w">    </span><span class="nt">harbor</span><span class="p">:</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">      </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span><span class="w">              </span><span class="c1"># an environments.yaml key</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="w">      </span><span class="nt">agent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">terminus-2</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Solve the problem; you may use Python. Write the bare number only.</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="w">      </span><span class="nt">answer_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app/answer.txt</span><span class="w">     </span><span class="c1"># the agent is told to write its answer here</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="w">      </span><span class="nt">timeout_sec</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span><span class="w">                 </span><span class="c1"># per row</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>harbor:</code> field</th>
+<th>default</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>environment</code></td>
+<td>none</td>
+<td>the sandbox every row runs in; required unless the dataset is <code>harbor_tasks</code></td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td><code>terminus-2</code></td>
+<td>the Harbor agent the model drives (<a href="../harbor-tasks/#agents-and-models">Agents and models</a>)</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>none</td>
+<td>said to the agent before every row's question; not on a <code>harbor_tasks</code> dataset</td>
+</tr>
+<tr>
+<td><code>answer_file</code></td>
+<td>none</td>
+<td>an absolute path in the sandbox; the agent is told to write its final answer there, and nothing else; not on a <code>harbor_tasks</code> dataset</td>
+</tr>
+<tr>
+<td><code>timeout_sec</code></td>
+<td>Harbor's</td>
+<td>how long the agent may work on one row, in seconds</td>
+</tr>
+</tbody>
+</table>
+<p>The question must render to <code>{"question": ...}</code>. The prediction is the
+agent's whole trajectory plus <code>answer</code>: the content of <code>answer_file</code>, else
+the agent's last message. The reward reads <code>answer</code>, so any reward works. Set
+<code>answer_file</code> whenever the reward compares strings (<code>exact_match</code>): an
+agent's last message is often a summary of what it did, not the bare answer.</p>
+<p>A Harbor dataset cannot share an evaluation with other kinds of dataset; give
+it an evaluation of its own (<a href="../evaluations/">Running evaluations</a>).</p>
+<h2 id="where-it-runs-the-sandbox-provider">Where it runs: the sandbox provider<a class="headerlink" href="#where-it-runs-the-sandbox-provider" title="Permanent link">&para;</a></h2>
+<p>The environment says <strong>what</strong> the sandbox is. <strong>Where</strong> it runs is a setting
+of your machine, not of the YAML: the same entry runs on any provider that
+can give what it asks for.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">E2B (default)</label><label for="__tabbed_2_2">Local Docker</label><label for="__tabbed_2_3">Other providers</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Remote sandboxes. Set <code>E2B_API_KEY</code>, in your shell or in the workspace's
+<code>.env</code>. The sandboxes do not run on your machine, and the arena does not
+hold them to one at a time. <code>no-network</code> and <code>allowlist</code> are supported;
+GPUs are not.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ARENA_HARBOR_SANDBOX</span><span class="o">=</span>docker
+</code></pre></div>
+<p>Runs on your machine's Docker, with no key. Good for building and
+debugging an environment, and for private images. One trial at a time by
+default, 2 CPUs and 2048 MB unless the entry asks otherwise. GPUs and
+network modes depend on your Docker host.</p>
+</div>
+<div class="tabbed-block">
+<p><code>ARENA_HARBOR_SANDBOX</code> takes any provider Harbor knows, such as
+<code>daytona</code>, <code>modal</code>, <code>runloop</code> or <code>podman</code>. Each needs its own
+credentials, which Harbor checks before a trial. A name Harbor does not
+know is refused, with the list of those it does.</p>
+</div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">The silent fallback</p>
+<p>When the configured provider cannot start (E2B with no <code>E2B_API_KEY</code>),
+trials run on the local Docker instead. That keeps a first run working,
+but it also changes the defaults: local resource limits, one trial at a
+time. When neither can start, the run is refused.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>setting</th>
+<th>default</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ARENA_HARBOR_SANDBOX</code></td>
+<td><code>e2b</code></td>
+<td>the sandbox provider</td>
+</tr>
+<tr>
+<td><code>E2B_API_KEY</code></td>
+<td>none</td>
+<td>E2B's key; without it, trials fall back to the local Docker</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_CPUS</code></td>
+<td><code>2</code></td>
+<td>CPUs a local Docker sandbox gets when the entry leaves <code>cpus</code> blank (no more than the machine has)</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_MEMORY_MB</code></td>
+<td><code>2048</code></td>
+<td>memory a local Docker sandbox gets when the entry leaves <code>memory_mb</code> blank</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_TRIALS</code></td>
+<td><code>1</code></td>
+<td>local Docker trials at once</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_WORKDIR</code></td>
+<td>the run's state</td>
+<td>where task folders and trials are written; set it when Docker cannot read the default folder</td>
+</tr>
+</tbody>
+</table>
+<p>Raise <code>ARENA_HARBOR_LOCAL_TRIALS</code> only when the machine has room for that
+many sandboxes at once, plus the model if you serve it locally.</p>
+<div class="admonition note">
+<p class="admonition-title">Docker installed as a snap</p>
+<p>A snap Docker reads neither <code>/tmp</code> nor a hidden folder of your home, so
+it cannot read the run's state under a hidden folder. The arena then
+writes task folders and trials under <code>~/arena-harbor/</code> instead, unless
+<code>ARENA_HARBOR_WORKDIR</code> says where.</p>
+</div>
+<h2 id="timeouts">Timeouts<a class="headerlink" href="#timeouts" title="Permanent link">&para;</a></h2>
+<p>Three limits, set in three places:</p>
+<table>
+<thead>
+<tr>
+<th>limit</th>
+<th>where</th>
+<th>default</th>
+<th>bounds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build_timeout_sec</code></td>
+<td>the environment</td>
+<td>600 s</td>
+<td>building the image</td>
+</tr>
+<tr>
+<td><code>healthcheck.timeout_sec</code></td>
+<td>the environment</td>
+<td>30 s</td>
+<td>one healthcheck try</td>
+</tr>
+<tr>
+<td><code>timeout_sec</code></td>
+<td>the dataset's <code>harbor:</code> block</td>
+<td>Harbor's</td>
+<td>the agent's work on one row</td>
+</tr>
+</tbody>
+</table>
+<p>The agent's limit sits on the dataset, not the environment, because the same
+sandbox can serve quick and slow questions.</p>
+<h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
+<details class="details">
+<summary>Offline Python, for a fair leaderboard</summary>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">offline-python</span><span class="p">:</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Python 3.12, numpy and pandas, no network.</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">python</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">offline</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="no">FROM python:3.12-slim</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">      </span><span class="no">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends tmux &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="no">RUN pip install --no-cache-dir numpy pandas</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="no">WORKDIR /app</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">    </span><span class="nt">workdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">    </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="nt">memory_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no-network</span>
+</code></pre></div>
+<p>Everything is in the image, so nothing is needed from the network. Pair
+it with <code>terminus-2</code>, which runs on your machine.</p>
+</details>
+<details class="details">
+<summary>Package installs only</summary>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">pip-only</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">      </span><span class="no">FROM python:3.12-slim</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="no">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends tmux &amp;&amp; rm -rf /var/lib/apt/lists/*</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="no">WORKDIR /app</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="nt">workdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allowlist</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">    </span><span class="nt">allowed_hosts</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pypi.org</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">files.pythonhosted.org</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>The agent may <code>pip install</code> what it needs, and reach nothing else.</p>
+</details>
+<details class="details">
+<summary>A GPU sandbox</summary>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">environments</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">cuda</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">docker_image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.example.com/team/cuda-agent:1.0</span><span class="w">   </span><span class="c1"># your own image, with tmux</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">gpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="nt">gpu_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">H100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">A100</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="nt">memory_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span>
+</code></pre></div>
+<p>Needs a provider with GPUs, so not E2B. An empty <code>gpu_types</code> accepts any
+GPU.</p>
+</details>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p><code>openarena check</code> catches these from the YAML alone:</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th>what <code>check</code> reports</th>
+<th>fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>neither image field</td>
+<td><code>an environment needs an image</code></td>
+<td>add <code>docker_image:</code> or <code>dockerfile: \|</code></td>
+</tr>
+<tr>
+<td>both image fields</td>
+<td><code>an environment is a `docker_image` or a `dockerfile`, not both</code></td>
+<td>remove one</td>
+</tr>
+<tr>
+<td><code>allowlist</code> with no hosts</td>
+<td><code>an `allowlist` network lets nothing through without `allowed_hosts`</code></td>
+<td>add <code>allowed_hosts:</code>, or use <code>public</code></td>
+</tr>
+<tr>
+<td><code>allowed_hosts</code> with another mode</td>
+<td><code>`allowed_hosts` is only read with `network_mode: allowlist`, not 'public'</code></td>
+<td>set <code>network_mode: allowlist</code>, or remove the hosts</td>
+</tr>
+<tr>
+<td>a misspelled field (<code>memory:</code>)</td>
+<td><code>not a field of a `environments` entry</code></td>
+<td>rename it as the fix says (<code>memory_mb:</code>)</td>
+</tr>
+<tr>
+<td>a mode that does not exist (<code>off</code>)</td>
+<td><code>Input should be 'public', 'no-network' or 'allowlist'</code></td>
+<td>use one of the three</td>
+</tr>
+<tr>
+<td><code>cpus: 0</code></td>
+<td><code>Input should be greater than or equal to 1</code></td>
+<td>1 or more, or leave it blank</td>
+</tr>
+<tr>
+<td>an unknown MCP server</td>
+<td><code>'nope' is not in `mcp_servers`</code></td>
+<td>add it to <code>mcp_servers.yaml</code></td>
+</tr>
+<tr>
+<td>a dataset naming an unknown environment</td>
+<td>the dataset's <code>harbor.environment</code> is flagged</td>
+<td>add the entry, or fix the name</td>
+</tr>
+<tr>
+<td>a <code>${NAME}</code> in <code>env</code> whose variable is set nowhere</td>
+<td>a warning: <code>`${NAME}` is not set in your shell or in &lt;workspace&gt;/.env; a run that reads it refuses to start</code></td>
+<td>add <code>NAME=...</code> to <code>.env</code>, or export it</td>
+</tr>
+</tbody>
+</table>
+<p>Checking an evaluation as a whole, <code>check</code> and <code>evaluations run</code> also refuse
+an agent that cannot work with a model or with the environment's network, and
+an MCP server Harbor cannot carry.</p>
+<p>What <code>check</code> cannot see, because it starts nothing: an image that does not
+exist, a Dockerfile that does not build, a <code>workdir</code> missing from the image,
+a missing <code>tmux</code>, a provider without the GPUs or network mode asked for.
+These show up as rows that score 0, or as a cell that fails because no row
+got an answer. Read the trial's logs (<a href="../results/#harbor-runs">Reading results</a>).</p>
+<div class="admonition tip">
+<p class="admonition-title">Build an environment on one row</p>
+<p>While building an environment, set <code>limit: 1</code> on the dataset, run on the
+local Docker, and read the first trial before running the full grid.</p>
+</div>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../harbor-tasks/">Harbor tasks</a>: the task format, and the agents</li>
+<li><a href="../mcp-tools/#tools-in-a-harbor-sandbox">MCP tools</a>: tools in a sandbox</li>
+<li><a href="../datasets/">Datasets</a>: templates and schemas</li>
+<li><a href="../check/">Checking configs</a></li>
+<li><a href="../results/#harbor-runs">Reading results</a>: trials and their logs</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../a2a-agents/" class="md-footer__link md-footer__link--prev" aria-label="Previous: A2A agents">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                A2A agents
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../harbor-tasks/" class="md-footer__link md-footer__link--next" aria-label="Next: Harbor tasks">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Harbor tasks
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

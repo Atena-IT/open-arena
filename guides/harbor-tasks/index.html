@@ -1,0 +1,2437 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/harbor-tasks/">
+      
+      
+      
+        <link rel="prev" href="../environments/">
+      
+      
+        <link rel="next" href="../evaluations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Harbor tasks - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Harbor tasks
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-harbor-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use Harbor tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-trial-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a trial runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-task-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The task folder
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The task folder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tasktoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        task.toml
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instructionmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        instruction.md
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        environment/
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests-the-verifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tests/: the verifier
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="tests&#x2f;: the verifier">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#writing-a-verifier-you-can-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing a verifier you can trust
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solution/
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-dataset-of-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A dataset of tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-and-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Agents and models
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-trial-produces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a trial produces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scoring-with-the-arenas-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Scoring with the arena's rewards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts-and-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Timeouts and attempts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#importing-existing-task-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Importing existing task sets
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-and-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cost and time
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checklist-for-a-new-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checklist for a new task
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-harbor-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use Harbor tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-trial-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a trial runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-task-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The task folder
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The task folder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tasktoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        task.toml
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instructionmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        instruction.md
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        environment/
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests-the-verifier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tests/: the verifier
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="tests&#x2f;: the verifier">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#writing-a-verifier-you-can-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Writing a verifier you can trust
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        solution/
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-dataset-of-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A dataset of tasks
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-and-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Agents and models
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-trial-produces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a trial produces
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scoring-with-the-arenas-rewards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Scoring with the arena's rewards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts-and-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Timeouts and attempts
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#importing-existing-task-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Importing existing task sets
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-and-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cost and time
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checklist-for-a-new-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checklist for a new task
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="harbor-tasks">Harbor tasks<a class="headerlink" href="#harbor-tasks" title="Permanent link">&para;</a></h1>
+<p>A <a href="https://harborframework.com/docs/tasks">Harbor</a> task is a folder. It holds
+what the agent is told, the sandbox it works in, the tests that score it, and
+a reference solution. openarena runs task folders as Harbor defines them: one
+trial per task, the model under test driving a Harbor agent, and the task's
+own tests giving the score.</p>
+<h2 id="when-to-use-harbor-tasks">When to use Harbor tasks<a class="headerlink" href="#when-to-use-harbor-tasks" title="Permanent link">&para;</a></h2>
+<p>A question-and-answer dataset scores what a model <strong>says</strong>. A Harbor task
+scores what an agent <strong>does</strong>: the files it leaves, the code it fixes, the
+service it gets running. Pick the tool by what you need to check.</p>
+<table>
+<thead>
+<tr>
+<th>you want to measure</th>
+<th>use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a short answer, a label, a number</td>
+<td>an ordinary dataset (<a href="../datasets/">Datasets</a>)</td>
+</tr>
+<tr>
+<td>tool calls against live servers</td>
+<td>an <code>agent:</code> dataset (<a href="../mcp-tools/">MCP tools</a>)</td>
+</tr>
+<tr>
+<td>ordinary questions, worked with a terminal, scored on the answer</td>
+<td>a dataset over an <a href="../environments/">environment</a></td>
+</tr>
+<tr>
+<td>work in a sandbox, checked by a script: coding, fixing, configuring</td>
+<td><strong>Harbor tasks</strong> (this page)</td>
+</tr>
+</tbody>
+</table>
+<p>Harbor tasks are the right tool when:</p>
+<ul>
+<li><strong>The result is a state, not a sentence.</strong> A test suite passes, a file has
+  the right content, a server answers on a port.</li>
+<li><strong>Each task needs its own setup.</strong> Its own repository, data files, packages
+  or image.</li>
+<li><strong>The check is code.</strong> A script can decide, without a model judging free
+  text.</li>
+</ul>
+<p>They cost more. Every row builds or pulls an image, starts a sandbox, and runs
+a whole agent session of many model calls. A Q&amp;A row is one call. Use Harbor
+tasks for what a Q&amp;A dataset cannot measure, not as a slower way to ask
+questions.</p>
+<div class="admonition tip">
+<p class="admonition-title">Environment or task folders?</p>
+<p>When many questions share one sandbox and a reward can score the final
+answer, use a dataset over an <a href="../environments/">environment</a>. When each
+task brings its own files and its own tests, write task folders.</p>
+</div>
+<h2 id="how-a-trial-runs">How a trial runs<a class="headerlink" href="#how-a-trial-runs" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant O as openarena
+    participant S as Sandbox
+    participant G as Agent
+    participant M as Model under test
+    O-&gt;&gt;O: copy the task folder for this trial
+    O-&gt;&gt;S: build environment/ or pull docker_image, start it
+    O-&gt;&gt;G: instruction.md
+    loop until the agent stops or its time runs out
+        G-&gt;&gt;M: what next?
+        M--&gt;&gt;G: a step
+        G-&gt;&gt;S: run a command
+    end
+    O-&gt;&gt;S: bring in tests/, run tests/test.sh
+    S--&gt;&gt;O: /logs/verifier/reward.txt or reward.json
+    O-&gt;&gt;O: read trajectory.json and the rewards, score the row</code></pre>
+<p>For each row (one task), openarena:</p>
+<ol>
+<li>Copies the task folder, so a trial never writes into your source folder.
+   The copy is deleted when the trial is done.</li>
+<li>Starts one Harbor trial with the dataset's agent and the model on the
+   evaluation's axis.</li>
+<li>Lets Harbor build the sandbox, run the agent, then run the verifier
+   (<code>tests/test.sh</code>) in the same sandbox.</li>
+<li>Reads back the agent's trajectory and what the verifier wrote. The
+   <code>harbor_verifier</code> reward turns that into the row's score.</li>
+</ol>
+<h2 id="the-task-folder">The task folder<a class="headerlink" href="#the-task-folder" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>tasks/&lt;name&gt;/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  task.toml                    the task's settings: timeouts, resources, network
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  instruction.md               what the agent is told
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  environment/Dockerfile       the sandbox, built from environment/
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  tests/test.sh                runs after the agent, writes the score
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  solution/solve.sh            what a correct agent does
+</code></pre></div>
+<p><code>tasks/</code> sits beside <code>configs/</code> in the <a href="../../workspace/">workspace</a>.
+<code>openarena init</code> writes a working one, <code>tasks/hello-world/</code>. Copy it to start
+a new task.</p>
+<p>A folder is a task when it holds a <code>task.toml</code>. Other folders under <code>tasks/</code>
+are ignored.</p>
+<h3 id="tasktoml">task.toml<a class="headerlink" href="#tasktoml" title="Permanent link">&para;</a></h3>
+<p>The task's settings, in Harbor's format.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[metadata]</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">difficulty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"easy"</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"general"</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">[agent]</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">timeout_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">300.0</span><span class="w">            </span><span class="c1"># how long the agent may work</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">[verifier]</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">timeout_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">60.0</span><span class="w">             </span><span class="c1"># how long tests/test.sh may take</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">[environment]</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">build_timeout_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">600.0</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">cpus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">memory_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># network_mode = "no-network"</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># docker_image = "python:3.12-slim"  # a prebuilt image instead of environment/Dockerfile</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>section</th>
+<th>key</th>
+<th>what it does</th>
+<th>why you set it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[metadata]</code></td>
+<td>free labels</td>
+<td>describes the task</td>
+<td>to sort and read tasks; not used for scoring</td>
+</tr>
+<tr>
+<td><code>[agent]</code></td>
+<td><code>timeout_sec</code></td>
+<td>how long the agent may work</td>
+<td>a hard task needs more; a cap stops a looping agent burning tokens</td>
+</tr>
+<tr>
+<td><code>[verifier]</code></td>
+<td><code>timeout_sec</code></td>
+<td>how long <code>tests/test.sh</code> may take</td>
+<td>a test suite that compiles or starts a server needs more</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>build_timeout_sec</code></td>
+<td>how long building the image may take</td>
+<td>a heavy image (compilers, ML packages) needs more</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>cpus</code>, <code>memory_mb</code>, <code>storage_mb</code></td>
+<td>the sandbox's resources</td>
+<td>a build or test suite that would be slow or killed otherwise</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>gpus</code>, <code>gpu_types</code></td>
+<td>GPUs</td>
+<td>only for tasks that need them; not every sandbox provider has any</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>network_mode</code>, <code>allowed_hosts</code></td>
+<td><code>public</code>, <code>no-network</code>, or <code>allowlist</code></td>
+<td>to stop the agent fetching the answer, or limit it to a package index</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>docker_image</code></td>
+<td>a prebuilt image instead of <code>environment/Dockerfile</code></td>
+<td>a faster start when nothing task-specific is installed</td>
+</tr>
+<tr>
+<td><code>[environment]</code></td>
+<td><code>workdir</code>, <code>env</code></td>
+<td>where commands start; variables in the container</td>
+<td>to match what the instruction says</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>[environment]</code> keys are the ones openarena writes for an
+<a href="../environments/">environment</a> entry. That page explains each in more depth.</p>
+<div class="admonition warning">
+<p class="admonition-title">A task folder is run as written</p>
+<p>openarena adds nothing to a task's <code>task.toml</code>. On the local Docker, a
+dataset over an environment gets default limits (2 CPUs, 2048 MB) when it
+sets none. A task folder does not, and Docker would give the container
+the whole machine. Set <code>cpus</code> and <code>memory_mb</code> in every task.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">In-sandbox agents need the network</p>
+<p>Most agents run inside the sandbox and call the model from there (see
+<a href="#agents-and-models">Agents and models</a>). A task with
+<code>network_mode = "no-network"</code> cuts them off. <code>check</code> catches this for an
+environment entry, but does not read a task folder's <code>task.toml</code>. Use
+<code>terminus-2</code> for a no-network task.</p>
+</div>
+<h3 id="instructionmd">instruction.md<a class="headerlink" href="#instructionmd" title="Permanent link">&para;</a></h3>
+<p>Plain text for the agent: what to do, where the inputs are, where the result
+must go. It is the only thing the agent is told.</p>
+<ul>
+<li><strong>Name exact paths and formats.</strong> "Write the total to <code>/app/total.txt</code>, as a
+  single integer." The tests check those, so the agent must know them.</li>
+<li><strong>State what the tests check.</strong> If they run the project's test suite, say
+  it must pass. Do not hide a requirement the agent cannot guess.</li>
+<li><strong>Say what must be true at the end, not how to get there.</strong> The tests
+  check the outcome, not the commands.</li>
+</ul>
+<p>The instruction is also the row's <code>question</code> in the trials log and the
+answers view.</p>
+<h3 id="environment">environment/<a class="headerlink" href="#environment" title="Permanent link">&para;</a></h3>
+<p>The sandbox's build context. Harbor builds <code>environment/Dockerfile</code> from it,
+unless <code>task.toml</code> names a <code>docker_image</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c"># terminus-2 works its terminal through tmux.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span>tmux<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">COPY</span><span class="w"> </span>data/<span class="w"> </span>/app/data/
+</code></pre></div>
+<ul>
+<li><code>COPY</code> paths are relative to <code>environment/</code>. Put the task's input files
+  there (<code>environment/data/</code>).</li>
+<li>Install what the agent and the tests need. A test that runs <code>python3</code> or
+  <code>pytest</code> needs them in the image: the tests run in the same sandbox.</li>
+<li>Do not put the tests or the solution in the image. Harbor brings the tests
+  in after the agent is done, so the agent cannot read them.</li>
+<li>Pin versions (<code>FROM python:3.12-slim</code>, <code>pip install pandas==2.2.2</code>). An
+  image that changes between runs moves scores for reasons that are not the
+  model.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">tmux</p>
+<p><code>terminus-2</code>, the default agent, works through <code>tmux</code>. Without it in the
+image, it installs tmux at the start of every trial, which needs a
+package manager and the network, and fails without them. Install it in
+the Dockerfile.</p>
+</div>
+<h3 id="tests-the-verifier">tests/: the verifier<a class="headerlink" href="#tests-the-verifier" title="Permanent link">&para;</a></h3>
+<p>Harbor runs <code>tests/test.sh</code> in the sandbox after the agent stops. It writes
+the score to one of two files:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">reward.txt</label><label for="__tabbed_1_2">reward.json</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>One number from 0 to 1. <code>1</code> is solved, <code>0</code> is not, fractions are allowed.
+It is read as the key <code>reward</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/logs/verifier
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>/app/hello.txt<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hello, world!"</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="m">1</span><span class="w"> </span>&gt;<span class="w"> </span>/logs/verifier/reward.txt
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">else</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>&gt;<span class="w"> </span>/logs/verifier/reward.txt
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">fi</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Several named numbers. The <code>harbor_verifier</code> reward reads <code>reward</code> unless
+you point it at another key.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span><span class="nt">"reward"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.75</span><span class="p">,</span><span class="w"> </span><span class="nt">"builds"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"tests_pass"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">}</span>
+</code></pre></div>
+<p>Every value must be a number: a text value fails the row. Always write a
+<code>reward</code> key, or point the reward at a key you do write.</p>
+</div>
+</div>
+</div>
+<p>How the score is held to range:</p>
+<table>
+<thead>
+<tr>
+<th>the verifier wrote</th>
+<th>the row scores</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a number in 0–1</td>
+<td>that number</td>
+</tr>
+<tr>
+<td>a number outside 0–1</td>
+<td>clamped to 0 or 1, with a warning in the run's log</td>
+</tr>
+<tr>
+<td><code>nan</code> or <code>inf</code></td>
+<td>0, with a warning</td>
+</tr>
+<tr>
+<td>no <code>reward</code> key, or no file</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h4 id="writing-a-verifier-you-can-trust">Writing a verifier you can trust<a class="headerlink" href="#writing-a-verifier-you-can-trust" title="Permanent link">&para;</a></h4>
+<p>The verifier is the whole measurement. A wrong one ranks models on noise.</p>
+<ul>
+<li><strong>Test the outcome, not the method.</strong> Check the file, the output, the exit
+  code. Do not look for the command you expected the agent to run.</li>
+<li><strong>Never fail on what the instruction did not ask for.</strong> If it says "a
+  CSV", do not require a header it never mentioned.</li>
+<li><strong>Write a score on every path.</strong> Write <code>0</code> first, then overwrite it. A
+  crash halfway still leaves a score.</li>
+<li><strong>Make it deterministic.</strong> No network calls, no clock, no random data; fix
+  seeds. Give slow checks a generous <code>[verifier] timeout_sec</code>, so a busy
+  machine does not fail a solved task.</li>
+<li><strong>Give partial credit when the task has parts.</strong> 0.6 for "builds and passes
+  3 of 5 tests" separates models that a 0 for both would not.</li>
+<li><strong>Keep the sub-scores.</strong> Write them to <code>reward.json</code> beside <code>reward</code>, and
+  report them as extra metrics (see <a href="#a-dataset-of-tasks">A dataset of tasks</a>).</li>
+</ul>
+<p>A verifier with partial credit:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">tests/test.sh</label><label for="__tabbed_2_2">tests/check.py</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/logs/verifier
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Written first: if the check crashes, the task still scores 0.</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">'{"reward": 0}'</span><span class="w"> </span>&gt;<span class="w"> </span>/logs/verifier/reward.json
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>python3<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">"</span><span class="nv">$0</span><span class="s2">"</span><span class="k">)</span><span class="s2">/check.py"</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">report</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"/app/report.json"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">report</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">ok</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">checks</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="s2">"exists"</span><span class="p">:</span> <span class="n">ok</span><span class="p">,</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="s2">"total"</span><span class="p">:</span> <span class="n">ok</span> <span class="ow">and</span> <span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"total"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">42</span><span class="p">,</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="s2">"regions"</span><span class="p">:</span> <span class="n">ok</span> <span class="ow">and</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"regions"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"eu"</span><span class="p">,</span> <span class="s2">"us"</span><span class="p">],</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">}</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">passed</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">passed</span> <span class="ow">in</span> <span class="n">checks</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">scores</span><span class="p">[</span><span class="s2">"reward"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">checks</span><span class="p">)</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">Path</span><span class="p">(</span><span class="s2">"/logs/verifier/reward.json"</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">scores</span><span class="p">))</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>A <code>pytest</code> file works the same way: <code>test.sh</code> runs it, then writes the score
+from its result.</p>
+<h3 id="solution">solution/<a class="headerlink" href="#solution" title="Permanent link">&para;</a></h3>
+<p><code>solution/solve.sh</code> is what a correct agent would do. Harbor's <code>oracle</code> agent
+runs it, and the tests must then give 1. That proves the task can be solved
+and the tests are right. An evaluation does not run the oracle: it is for
+checking the task while you write it.</p>
+<p>Both scripts must be executable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>tests/test.sh<span class="w"> </span>solution/solve.sh
+</code></pre></div>
+<details class="details">
+<summary>Multi-step tasks</summary>
+<p>A Harbor task may hold a <code>steps/</code> folder, one sub-folder per step, instead
+of a top-level <code>instruction.md</code>. openarena runs the folder as Harbor
+defines it. The row's <code>question</code>, shown in the trials log, is the first
+step's <code>instruction.md</code>.</p>
+</details>
+<h2 id="a-dataset-of-tasks">A dataset of tasks<a class="headerlink" href="#a-dataset-of-tasks" title="Permanent link">&para;</a></h2>
+<p>A <code>harbor_tasks</code> dataset reads a folder of tasks, one row per task.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">my-tasks</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor_tasks</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tasks</span><span class="w">                  </span><span class="c1"># relative to the workspace; the run copies it</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">      </span><span class="nt">tasks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">hello-world</span><span class="p p-Indicator">]</span><span class="w">         </span><span class="c1"># only these folders; none runs every task under path</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">harbor</span><span class="p">:</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">      </span><span class="nt">agent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">terminus-2</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">      </span><span class="nt">timeout_sec</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span><span class="w">             </span><span class="c1"># per task, over task.toml's [agent] timeout_sec</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor-tests</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">harbor_verifier</span><span class="p p-Indicator">,</span><span class="nt"> alias</span><span class="p">:</span><span class="w"> </span><span class="nv">tests_pass</span><span class="p p-Indicator">,</span><span class="nt"> key</span><span class="p">:</span><span class="w"> </span><span class="nv">tests_pass</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">  </span><span class="nt">harbor-tests</span><span class="p">:</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor_verifier</span><span class="w">          </span><span class="c1"># reads what tests/test.sh wrote</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>what it does</th>
+<th>when to set it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config.path</code></td>
+<td>the folder holding the tasks</td>
+<td>always. Relative to the workspace (the parent of <code>configs/</code>), and copied beside the run's config at every run. An absolute path is read in place</td>
+</tr>
+<tr>
+<td><code>config.tasks</code></td>
+<td>only these task folders, by name</td>
+<td>to run a subset. A name without a <code>task.toml</code> stops the run. Left out, every task under <code>path</code> runs, sorted by name</td>
+</tr>
+<tr>
+<td><code>config.limit</code></td>
+<td>at most this many tasks</td>
+<td>a first run on a few tasks</td>
+</tr>
+<tr>
+<td><code>config.repeat</code></td>
+<td>each task this many times</td>
+<td>to measure how often a model succeeds, not whether it did once</td>
+</tr>
+<tr>
+<td><code>config.batch_size</code></td>
+<td>tasks run at once (default 1)</td>
+<td>on a cloud sandbox, to run trials in parallel</td>
+</tr>
+<tr>
+<td><code>harbor.agent</code></td>
+<td>the Harbor agent the model drives (default <code>terminus-2</code>)</td>
+<td>see <a href="#agents-and-models">Agents and models</a></td>
+</tr>
+<tr>
+<td><code>harbor.timeout_sec</code></td>
+<td>how long the agent may work on each task</td>
+<td>one budget for every task, whatever its <code>task.toml</code> says</td>
+</tr>
+<tr>
+<td><code>reward</code></td>
+<td>a <code>harbor_verifier</code> reward</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td>more <code>harbor_verifier</code> columns, each with its <code>key</code></td>
+<td>to report <code>reward.json</code>'s sub-scores beside <code>reward</code></td>
+</tr>
+</tbody>
+</table>
+<p>No <code>input_template</code> is needed: each row is the task's name, its folder and its
+instruction.</p>
+<p>The <code>harbor_verifier</code> reward takes one setting, <code>key</code>: the key of
+<code>reward.json</code> it reads, <code>reward</code> by default.</p>
+<div class="admonition warning">
+<p class="admonition-title">Not for task folders</p>
+<p><code>harbor.environment</code> is refused: each task brings its own sandbox.
+<code>harbor.instructions</code> and <code>harbor.answer_file</code> belong to a dataset over an
+<a href="../environments/">environment</a>, and <code>openarena check</code> refuses them here.
+A task folder runs as written, so neither would reach its instruction:
+<code>check</code> says <code>a `harbor_tasks` dataset runs each task as written:
+`instructions` is never said to the agent</code> (write it in the task's
+<code>instruction.md</code>) and <code>a `harbor_tasks` dataset is scored by each task's
+own tests: `answer_file` is never written, and leaves the answer empty</code>
+(the task's <code>tests/</code> read what the agent left in the sandbox).</p>
+</div>
+<p>A Harbor dataset cannot share an evaluation with other kinds of dataset. Give
+it its own evaluation (<a href="../evaluations/">Running evaluations</a>).</p>
+<p>After editing a task, run with <code>--no-cache</code>. The tasks are copied again at
+every run, but a cell that already finished is reused as it is.</p>
+<h2 id="agents-and-models">Agents and models<a class="headerlink" href="#agents-and-models" title="Permanent link">&para;</a></h2>
+<p>The agent is the program that works in the sandbox. The model on the
+evaluation's axis is what the agent calls to decide each step.</p>
+<table>
+<thead>
+<tr>
+<th>agent</th>
+<th>runs</th>
+<th>calls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>terminus-2</code> (the default)</td>
+<td>on your machine</td>
+<td>any provider</td>
+</tr>
+<tr>
+<td><code>claude-code</code></td>
+<td>in the sandbox</td>
+<td>Anthropic models only</td>
+</tr>
+<tr>
+<td><code>codex</code></td>
+<td>in the sandbox</td>
+<td>OpenAI models only</td>
+</tr>
+<tr>
+<td><code>gemini-cli</code></td>
+<td>in the sandbox</td>
+<td>Google models only</td>
+</tr>
+<tr>
+<td><code>goose</code>, <code>opencode</code>, <code>openhands</code>, <code>mini-swe-agent</code>, <code>swe-agent</code>, <code>cline-cli</code>, <code>cursor-cli</code></td>
+<td>in the sandbox</td>
+<td>any provider</td>
+</tr>
+</tbody>
+</table>
+<p>How to choose:</p>
+<ul>
+<li><strong>Comparing models:</strong> keep one agent for all of them. <code>terminus-2</code> takes
+  any provider, so it is the usual choice.</li>
+<li><strong>Comparing agents:</strong> one dataset per agent over the same tasks, with the
+  same models where the agents allow it.</li>
+<li><strong>A local model</strong> (<code>ollama/...</code>, <code>vllm/...</code>): only <code>terminus-2</code>. An agent
+  in the sandbox cannot reach your machine's <code>localhost</code>.</li>
+<li><strong>A task with no network:</strong> only <code>terminus-2</code>. The others call their model
+  from inside the sandbox.</li>
+</ul>
+<p><code>check</code> and the run refuse a pairing that cannot work, and say why.</p>
+<p>The model entry's <code>params</code> reach the agent where it takes them:
+<code>temperature</code>, <code>reasoning_effort</code> and, for agents that pass call settings
+through, <code>max_tokens</code>. A param the agent does not take is dropped, with a
+warning in the run's log. See <a href="../models/">Models</a>.</p>
+<h2 id="where-it-runs">Where it runs<a class="headerlink" href="#where-it-runs" title="Permanent link">&para;</a></h2>
+<p><code>ARENA_HARBOR_SANDBOX</code> names the sandbox provider (<code>e2b</code>, <code>docker</code>,
+<code>daytona</code>, <code>modal</code>, ...), <code>e2b</code> by default. Without <code>E2B_API_KEY</code>, trials
+fall back to the local Docker. With neither, the run refuses to start. A
+provider name Harbor does not know fails the run with the list of known ones.</p>
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>default</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ARENA_HARBOR_SANDBOX</code></td>
+<td><code>e2b</code></td>
+<td>the sandbox provider</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_TRIALS</code></td>
+<td><code>1</code></td>
+<td>trials at once on the local Docker</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_CPUS</code>, <code>ARENA_HARBOR_LOCAL_MEMORY_MB</code></td>
+<td><code>2</code>, <code>2048</code></td>
+<td>default limits for a dataset over an environment, on the local Docker</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_WORKDIR</code></td>
+<td>the run's state folder</td>
+<td>where task copies and trials are written</td>
+</tr>
+</tbody>
+</table>
+<p>On the local Docker, trials run one at a time unless
+<code>ARENA_HARBOR_LOCAL_TRIALS</code> says otherwise, whatever the <code>batch_size</code>. A few
+containers at once, with a local model loading, can freeze the machine.</p>
+<details class="details">
+<summary>Docker installed as a snap</summary>
+<p>A snap Docker reads neither hidden folders (the run's state is under
+<code>.open-arena/</code> by default) nor <code>/tmp</code>. When openarena detects one, task
+copies, trials and temporary files go under <code>~/arena-harbor/</code> instead.
+Set <code>ARENA_HARBOR_WORKDIR</code> to choose the folder yourself.</p>
+</details>
+<h2 id="what-a-trial-produces">What a trial produces<a class="headerlink" href="#what-a-trial-produces" title="Permanent link">&para;</a></h2>
+<p>The row's prediction is the agent's <strong>trajectory</strong>, in Harbor's ATIF format,
+plus two fields openarena adds:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>what it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>steps</code></td>
+<td>each step: its <code>source</code> (<code>system</code>, <code>user</code> or <code>agent</code>), its <code>message</code>, its <code>tool_calls</code> and the <code>observation</code> that came back</td>
+</tr>
+<tr>
+<td><code>agent</code>, <code>final_metrics</code>, ...</td>
+<td>the rest of Harbor's trajectory, as the agent wrote it</td>
+</tr>
+<tr>
+<td><code>answer</code></td>
+<td>the agent's last message with text</td>
+</tr>
+<tr>
+<td><code>rewards</code></td>
+<td>what the verifier wrote: <code>reward.txt</code> as <code>reward</code>, or the keys of <code>reward.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>The trajectory is read from the trial's <code>agent/trajectory.json</code>. Only agents
+that write one are offered.</p>
+<p>Each trial's logs land under the run's <code>harbor/trials/&lt;trial&gt;/</code>, named after
+the task, the model and a short id. One line per trial goes to
+<code>harbor/trials.jsonl</code>:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trial</code>, <code>dir</code></td>
+<td>the trial's name and its logs folder</td>
+</tr>
+<tr>
+<td><code>dataset</code>, <code>task</code>, <code>model</code>, <code>agent</code></td>
+<td>what ran</td>
+</tr>
+<tr>
+<td><code>question</code></td>
+<td>the instruction</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>answered</code> or <code>failed</code></td>
+</tr>
+<tr>
+<td><code>answer</code>, <code>steps</code>, <code>rewards</code></td>
+<td>for an answered trial</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>why it failed, or why an answered trial stopped early</td>
+</tr>
+<tr>
+<td><code>seconds</code>, <code>input_tokens</code>, <code>output_tokens</code>, <code>cost_usd</code></td>
+<td>time and usage, as the agent reported them</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../results/">Reading results</a> for how to read a run.</p>
+<p>How failures score:</p>
+<ul>
+<li><strong>The agent ran out of time:</strong> the trial still answered. The verifier
+  scores what the agent left, and <code>error</code> says why it stopped.</li>
+<li><strong>No trajectory</strong> (the sandbox would not start, the agent crashed before
+  its first step): the row scores 0, with Harbor's error in <code>error</code>. One flaky
+  sandbox does not sink the cell.</li>
+<li><strong>No row of a cell answered:</strong> the cell fails. That is the sandbox, the
+  image or a key, not the model, and a 0 would rank it as if it were.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">A task that scores 0 for every model</p>
+<p>Check the task before blaming the models. Its <code>solution/solve.sh</code> should
+make its tests give 1, and the trial's logs show what the verifier saw.</p>
+</div>
+<h2 id="scoring-with-the-arenas-rewards">Scoring with the arena's rewards<a class="headerlink" href="#scoring-with-the-arenas-rewards" title="Permanent link">&para;</a></h2>
+<p>Some tasks have no answer a script can check: a written summary, an
+explanation. A task folder can then have the arena's rewards score it, a
+judge model for example.</p>
+<ul>
+<li><code>tests/rewards.yaml</code> lists the rewards, written like the workspace's
+  <code>rewards.yaml</code>. Models are named by their <code>models.yaml</code> key.</li>
+<li><code>tests/expected.txt</code>, when present, is the expected answer the rewards
+  compare with.</li>
+<li><code>tests/test.sh</code> copies the agent's answer to <code>/logs/verifier/answer.txt</code>.
+  Without that file, the answer is the agent's last message.</li>
+</ul>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">tests/rewards.yaml</label><label for="__tabbed_3_2">tests/test.sh</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">judge</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_as_judge</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o-mini</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Score 1 when the summary names the root cause and the fix, else 0.</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/logs/verifier
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>cp<span class="w"> </span>/app/summary.md<span class="w"> </span>/logs/verifier/answer.txt<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">'{"answer_collected": 1}'</span><span class="w"> </span>&gt;<span class="w"> </span>/logs/verifier/reward.json
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Each reward is one named score, merged into <code>rewards</code>. The first is also
+<code>reward</code>, unless one of them is named <code>reward</code>, and it replaces any <code>reward</code>
+the verifier wrote. The dataset's own reward stays <code>harbor_verifier</code>.</p>
+<p>A <code>rewards.yaml</code> that is not valid, names an unknown reward type or a model
+missing from <code>models.yaml</code> stops the run, saying what to fix. One that fails
+while scoring sets <code>reward</code> to 0 and says why in the trial's <code>error</code>.</p>
+<p>A judge costs a model call per trial, on top of the agent's.</p>
+<h2 id="timeouts-and-attempts">Timeouts and attempts<a class="headerlink" href="#timeouts-and-attempts" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>knob</th>
+<th>where</th>
+<th>what it limits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[environment] build_timeout_sec</code></td>
+<td><code>task.toml</code></td>
+<td>building the image</td>
+</tr>
+<tr>
+<td><code>[agent] timeout_sec</code></td>
+<td><code>task.toml</code></td>
+<td>the agent's work on this task</td>
+</tr>
+<tr>
+<td><code>harbor.timeout_sec</code></td>
+<td>the dataset</td>
+<td>the agent's work on every task; overrides <code>task.toml</code></td>
+</tr>
+<tr>
+<td><code>[verifier] timeout_sec</code></td>
+<td><code>task.toml</code></td>
+<td><code>tests/test.sh</code></td>
+</tr>
+<tr>
+<td><code>repeat</code></td>
+<td>the dataset's <code>config</code></td>
+<td>trials per task (default 1)</td>
+</tr>
+</tbody>
+</table>
+<p>How to set them:</p>
+<ul>
+<li><strong>Agent timeout.</strong> Time the solution yourself, then give the agent several
+  times that. Too short and good models fail on the clock; too long and a
+  looping agent spends tokens for nothing. Use <code>harbor.timeout_sec</code> for one
+  budget across tasks, <code>task.toml</code> when tasks differ.</li>
+<li><strong>Verifier timeout.</strong> Be generous. A verifier that times out scores a
+  solved task 0.</li>
+<li><strong>Build timeout.</strong> Raise it for heavy images, or build the image once and
+  use <code>docker_image</code>.</li>
+<li><strong>Attempts.</strong> A failed trial is not retried. <code>repeat: 3</code> runs each task
+  three times and the cell's score is the mean: the success rate. Agents are
+  not deterministic, so one trial per task says little on a small set.</li>
+</ul>
+<h2 id="importing-existing-task-sets">Importing existing task sets<a class="headerlink" href="#importing-existing-task-sets" title="Permanent link">&para;</a></h2>
+<p>openarena has no importer. A task set already in Harbor's folder format runs
+as it is: copy its task folders under <code>tasks/</code>, or point <code>config.path</code> at
+them, and list them in a <code>harbor_tasks</code> dataset. A set in another format must
+be converted to this layout first.</p>
+<p>Before you run an imported set:</p>
+<ul>
+<li><strong>Check the agent fits.</strong> For <code>terminus-2</code>, the images need <code>tmux</code>, or a
+  package manager and the network to install it.</li>
+<li><strong>Check the network.</strong> A task with <code>network_mode = "no-network"</code> works only
+  with <code>terminus-2</code>.</li>
+<li><strong>Check the resources.</strong> A task that leaves <code>cpus</code> and <code>memory_mb</code> blank
+  gets the whole machine on the local Docker.</li>
+<li><strong>Run a few first.</strong> <code>limit: 3</code> with one model. Read the trials before you
+  run the whole set.</li>
+</ul>
+<h2 id="cost-and-time">Cost and time<a class="headerlink" href="#cost-and-time" title="Permanent link">&para;</a></h2>
+<p>A Harbor evaluation runs <code>tasks × repeat × models</code> trials. Each trial is an
+image build or pull, a sandbox start, an agent session of many model calls,
+and the verifier.</p>
+<ul>
+<li><strong>Time.</strong> On the local Docker, trials run one at a time by default: 50 tasks
+  of 5 minutes each is about 4 hours per model. A cloud provider with a
+  larger <code>batch_size</code> runs them in parallel.</li>
+<li><strong>Tokens.</strong> An agent session makes many model calls, each over a growing
+  history. One task can cost as much as many Q&amp;A rows. The agent's timeout is
+  your cost cap.</li>
+<li><strong>What is reported.</strong> Tokens and cost are the agent's own count: an agent
+  that reports no cost shows 0. Latency is the agent's seconds per model
+  call, the commands it ran in between included.</li>
+<li><strong>Plan in steps.</strong> One task with one model, then a few tasks, then the set.
+  Finished cells are kept, so a stopped run resumes where it stopped.</li>
+</ul>
+<p>See <a href="../evaluations/">Running evaluations</a> for running and resuming.</p>
+<h2 id="checklist-for-a-new-task">Checklist for a new task<a class="headerlink" href="#checklist-for-a-new-task" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Copy <code>tasks/hello-world/</code> to <code>tasks/&lt;name&gt;/</code> and write the five files.</li>
+<li><code>chmod +x tests/test.sh solution/solve.sh</code>.</li>
+<li>Set <code>cpus</code>, <code>memory_mb</code> and the timeouts in <code>task.toml</code>.</li>
+<li>Make sure the solution makes the tests give 1, and that doing nothing
+   gives 0.</li>
+<li>Add the task to a <code>harbor_tasks</code> dataset, then run <code>openarena check configs</code>
+   (<a href="../check/">Checking configs</a>).</li>
+<li>Run it with one model and read the trial before you scale up.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../environments/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Environments">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Environments
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../evaluations/" class="md-footer__link md-footer__link--next" aria-label="Next: Running evaluations">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Running evaluations
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

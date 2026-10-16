@@ -1,0 +1,3342 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/datasets/">
+      
+      
+      
+        <link rel="prev" href="../rewards/">
+      
+      
+        <link rel="next" href="../mcp-tools/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Datasets - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Datasets
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#an-entry-field-by-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        An entry, field by field
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#settings-every-provider-takes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Settings every provider takes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates-from-a-row-to-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Templates: from a row to JSON
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Templates: from a row to JSON">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Worked examples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Schemas
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Providers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-each-provider-calls-a-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What each provider calls a row
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-a-providers-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Installing a provider's SDK
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-pin-the-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reproducibility: pin the version
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#smoke-subsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Smoke subsets
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-answers-each-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What answers each row
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What answers each row">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Retrieval
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tool calls
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extra-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extra metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#an-entry-field-by-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        An entry, field by field
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#settings-every-provider-takes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Settings every provider takes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates-from-a-row-to-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Templates: from a row to JSON
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Templates: from a row to JSON">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Worked examples
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Schemas
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Providers
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Providers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-each-provider-calls-a-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What each provider calls a row
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-a-providers-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Installing a provider's SDK
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-pin-the-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Reproducibility: pin the version
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#smoke-subsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Smoke subsets
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-answers-each-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What answers each row
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What answers each row">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Retrieval
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tool calls
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extra-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Extra metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="datasets">Datasets<a class="headerlink" href="#datasets" title="Permanent link">&para;</a></h1>
+<p><code>configs/datasets.yaml</code> says, for each dataset, where its rows come from, how
+each row becomes a question and an expected answer, what answers it, and
+which reward scores it. An evaluation then names datasets by their key
+(<a href="../evaluations/">Running evaluations</a>).</p>
+<p>Every row goes through the same steps, whatever the provider:</p>
+<pre class="mermaid"><code>flowchart LR
+  S[(source: file, hub,&lt;br/&gt;platform, table)] --&gt;|provider reads a row| R["row: {column: value}"]
+  R --&gt;|input_template| I[input JSON]
+  R --&gt;|output_template| O[expected JSON]
+  I --&gt;|input_schema| M[model, agent or sandbox]
+  M --&gt; P[prediction]
+  P --&gt; W{reward}
+  O --&gt;|output_schema| W</code></pre>
+<p>The provider only decides where rows come from and what their columns are
+called. Everything after that (the templates, the schemas, the block that
+answers, the reward) works the same for all of them. So choosing a provider
+is about where your data lives and how you pin a version of it, not about
+what you can evaluate.</p>
+<h2 id="an-entry-field-by-field">An entry, field by field<a class="headerlink" href="#an-entry-field-by-field" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">gsm8k-20</span><span class="p">:</span><span class="w">                            </span><span class="c1"># the key evaluations and leaderboards use</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span><span class="w">                  </span><span class="c1"># the provider</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GSM8K test split, 20 rows.</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">math</span><span class="p p-Indicator">]</span><span class="w">                       </span><span class="c1"># for browsing; the run ignores them</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w">                            </span><span class="c1"># the provider's settings, the templates, the schemas</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w">                        </span><span class="c1"># the first 20 rows; leave out for all</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">                    </span><span class="c1"># rows sent to the model at once</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">          </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">          </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="s">"The</span><span class="nv"> </span><span class="s">final</span><span class="nv"> </span><span class="s">number</span><span class="nv"> </span><span class="s">only,</span><span class="nv"> </span><span class="s">no</span><span class="nv"> </span><span class="s">units</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">commas"</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">    </span><span class="nt">generator</span><span class="p">:</span><span class="w">                         </span><span class="c1"># what answers: a model, in one call</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">      </span><span class="nt">chain_of_thought</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Solve the problem. Reply with the final number only.</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span><span class="w">                </span><span class="c1"># a rewards.yaml key; required to run</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the key</td>
+<td>letters, digits, <code>_</code>, <code>.</code>, <code>-</code>; starts with a letter or digit</td>
+<td></td>
+<td>the name evaluations and leaderboards refer to</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>a provider (<a href="#providers">below</a>)</td>
+<td>required</td>
+<td>where rows are read from</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>the provider's settings, the templates, the schemas</td>
+<td><code>{}</code></td>
+<td>how rows are read and rendered</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>none</td>
+<td>shown when browsing; not read by the run</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>list of labels</td>
+<td><code>[]</code></td>
+<td>lower-cased and de-duplicated; for browsing only</td>
+</tr>
+<tr>
+<td><code>generator</code>, <code>agent</code>, <code>a2a</code>, <code>embedding</code>, <code>tools</code>, <code>harbor</code></td>
+<td>at most one block</td>
+<td>a generator</td>
+<td>what answers each row (<a href="#what-answers-each-row">below</a>)</td>
+</tr>
+<tr>
+<td><code>reward</code></td>
+<td>a key of <code>rewards.yaml</code></td>
+<td>none</td>
+<td>the dataset's score; an evaluation refuses a dataset without one</td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td>list</td>
+<td><code>[]</code></td>
+<td>extra columns beside the reward (<a href="#extra-metrics">below</a>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>reward</code>, <code>metrics</code> and the answering block always sit at the entry's top
+level, never inside <code>config</code>. <code>openarena check</code> says so and tells you to
+move them up.</p>
+<h2 id="settings-every-provider-takes">Settings every provider takes<a class="headerlink" href="#settings-every-provider-takes" title="Permanent link">&para;</a></h2>
+<p>These live in <code>config</code>, next to the provider's own settings.</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input_template</code></td>
+<td>Jinja2 rendering a JSON object</td>
+<td>required (not for <code>harbor_tasks</code>)</td>
+<td>what the model receives for a row</td>
+</tr>
+<tr>
+<td><code>output_template</code></td>
+<td>Jinja2 rendering a JSON object</td>
+<td>none</td>
+<td>the expected answer the reward compares with; leave out for an inputs-only dataset</td>
+</tr>
+<tr>
+<td><code>input_schema</code></td>
+<td>JSON Schema, as YAML or a JSON string</td>
+<td>chat messages</td>
+<td>the shape <code>input_template</code> renders</td>
+</tr>
+<tr>
+<td><code>output_schema</code></td>
+<td>JSON Schema, as YAML or a JSON string</td>
+<td>one chat message</td>
+<td>the shape <code>output_template</code> renders, and the structure the model answers in</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>integer</td>
+<td>all rows</td>
+<td>read at most this many rows, the first ones in the source's order</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>integer</td>
+<td><code>1</code></td>
+<td>rows in flight at once</td>
+</tr>
+<tr>
+<td><code>repeat</code></td>
+<td>integer, at least 1</td>
+<td><code>1</code></td>
+<td>each row is sent this many times in a row, each copy scored as a row</td>
+</tr>
+</tbody>
+</table>
+<p><code>batch_size</code> is the concurrency knob. <code>openarena evaluations run --batch-size</code>
+and an evaluation's own <code>batch_size</code> override every dataset's: the flag wins,
+then the evaluation's, then the dataset's. Keep it low for a local model or a
+rate-limited key; raise it for a hosted model with headroom.</p>
+<p><code>repeat</code> sends the same row several times. Use it to see how much a sampled
+model's answers vary on a small set. Leave it at <code>1</code> for a benchmark score:
+repeated rows weigh each question more without adding questions.</p>
+<h2 id="templates-from-a-row-to-json">Templates: from a row to JSON<a class="headerlink" href="#templates-from-a-row-to-json" title="Permanent link">&para;</a></h2>
+<p>Both templates are Jinja2 over <strong>one row</strong>: each column of the row is a
+variable. Each must render to a <strong>JSON object</strong>, which is then read against
+its schema.</p>
+<ul>
+<li><code>input_template</code> is what the model receives: <code>{"question": ...}</code> for
+  question answering.</li>
+<li><code>output_template</code> is the expected answer. A judge can score without one;
+  <code>exact_match</code> and the other deterministic rewards cannot. Leave it out and
+  the dataset is inputs-only: its rows carry no expected answer.</li>
+</ul>
+<p>Pipe every value through <code>| tojson</code>. It quotes and escapes strings, and keeps
+numbers, lists and objects as JSON. Never write <code>"{{ question }}"</code>: it breaks
+on the first quote or newline in a question.</p>
+<table>
+<thead>
+<tr>
+<th>you write</th>
+<th>for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{{ question \| tojson }}</code></td>
+<td>a column</td>
+</tr>
+<tr>
+<td><code>{{ input.question \| tojson }}</code></td>
+<td>a field of a column holding an object</td>
+</tr>
+<tr>
+<td><code>{{ answers.text[0] \| tojson }}</code></td>
+<td>an item of a list</td>
+</tr>
+<tr>
+<td><code>{{ answer.split('####')[-1] \| trim \| tojson }}</code></td>
+<td>Python string methods and Jinja filters</td>
+</tr>
+<tr>
+<td><code>{{ "ABCD"[answer] \| tojson }}</code></td>
+<td>an index turned into a letter</td>
+</tr>
+<tr>
+<td><code>{{ answer \| string \| tojson }}</code></td>
+<td>a number compared as text</td>
+</tr>
+<tr>
+<td><code>{{ hint \| default("") \| tojson }}</code></td>
+<td>a column some rows lack</td>
+</tr>
+<tr>
+<td><code>{{ metadata.difficulty \| tojson }}</code></td>
+<td>a platform item's metadata, carried into the input</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Quoting in YAML</p>
+<p>Write a template as a single-quoted YAML string, and double every single
+quote inside it: <code>split(''####'')</code> in YAML is <code>split('####')</code> in Jinja.
+Double quotes need no escaping.</p>
+</div>
+<p>Templates are strict: a variable the row does not have is an error, not an
+empty string. That catches a misspelled column on the first row instead of
+scoring a whole run against blanks. When a column really is optional, say so
+with <code>| default(...)</code>.</p>
+<p>Look at real rows before writing a template. For a Hugging Face dataset:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import datasets; print(next(iter(datasets.load_dataset('openai/gsm8k', 'main', split='test', streaming=True))))"</span>
+</code></pre></div>
+<p>For a local file, <code>head -n 1 data/qa.jsonl</code>. For a platform, open one item
+in its UI: the template variables are the provider's fields
+(<a href="#what-each-provider-calls-a-row">table below</a>), and your data sits inside
+them.</p>
+<h3 id="worked-examples">Worked examples<a class="headerlink" href="#worked-examples" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Messy answer column</label><label for="__tabbed_1_2">Multiple choice</label><label for="__tabbed_1_3">Several columns</label><label for="__tabbed_1_4">Platform items</label><label for="__tabbed_1_5">Chat messages</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>GSM8K's <code>answer</code> holds the worked solution, then <code>####</code>, then the
+number, sometimes with a thousands separator. The expected answer keeps
+only the number:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">gsm8k-clean</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="c1"># "... #### 1,234" becomes "1234"</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The final number only</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>MMLU has the question, a list of <code>choices</code> and the index of the right
+one. The input lists the choices under the question; the expected
+answer is the letter:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">mmlu-math</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cais/mmlu</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high_school_mathematics</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">(question</span><span class="nv"> </span><span class="s">~</span><span class="nv"> </span><span class="s">"\n"</span><span class="nv"> </span><span class="s">~</span><span class="nv"> </span><span class="s">(choices</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">map("string")</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">list</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">join("\n")))</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">"ABCD"[answer]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">          </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">C</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">D</span><span class="p p-Indicator">],</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The letter of the correct choice</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">    </span><span class="nt">generator</span><span class="p">:</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Answer with the letter of the correct choice only.</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+<p>The <code>enum</code> keeps "Option B" out where "B" is expected.</p>
+</div>
+<div class="tabbed-block">
+<p>A support-ticket CSV with <code>subject</code>, <code>body</code>, <code>product</code> and
+<code>expected_team</code>. Every CSV value is text. The input carries what the
+model needs as separate keys, and the label is normalised:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">ticket-routing</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/tickets.csv</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"ticket":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">(subject</span><span class="nv"> </span><span class="s">~</span><span class="nv"> </span><span class="s">"\n\n"</span><span class="nv"> </span><span class="s">~</span><span class="nv"> </span><span class="s">body)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}},</span><span class="nv"> </span><span class="s">"product":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">product</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"team":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected_team</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">lower</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">          </span><span class="nt">ticket</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The ticket's subject and body</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">          </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The product the ticket is about</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ticket</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">product</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">          </span><span class="nt">team</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> enum</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">billing</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">technical</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">sales</span><span class="p p-Indicator">],</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The team to route the ticket to</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">team</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Platforms store an item's input and expected output as objects. With
+Langfuse a row is <code>input</code>, <code>expected_output</code>, <code>metadata</code> and <code>id</code>, so
+your fields are one level down:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">support-golden</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-golden</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">input.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}},</span><span class="nv"> </span><span class="s">"tier":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">metadata.tier</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">default("free")</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected_output.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">},</span><span class="nt"> tier</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tier</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<p>If the items were stored as plain strings, drop the field:
+<code>{{ input | tojson }}</code>.</p>
+</div>
+<div class="tabbed-block">
+<p>Without schemas, a row is read as chat messages. The input renders
+<code>{"messages": [...]}</code>, the expected answer one message:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">chat-replies</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/chats.jsonl</span><span class="w">         </span><span class="c1"># {"prompt": "...", "reply": "..."} per line</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"messages":</span><span class="nv"> </span><span class="s">[{"role":</span><span class="nv"> </span><span class="s">"user",</span><span class="nv"> </span><span class="s">"content":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">prompt</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}]}'</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"role":</span><span class="nv"> </span><span class="s">"assistant",</span><span class="nv"> </span><span class="s">"content":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">reply</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<p>Use this for free-form conversation scored by a judge. For anything
+with a structured answer, write schemas.</p>
+</div>
+</div>
+</div>
+<p>There is no metadata template: a row is an input and, optionally, an expected
+answer. When the source carries metadata the model should see, put it in the
+input. When you only want it to select rows, select at the source (Opik's
+<code>filter_string</code>, Phoenix's <code>splits</code>) or keep a separate file.</p>
+<div class="admonition note">
+<p class="admonition-title">Column names</p>
+<p>A column is a template variable, so its name must be a valid identifier.
+A column called <code>expected answer</code> or <code>gold-label</code> cannot be named in a
+template: rename it in the file or at the source.</p>
+</div>
+<h3 id="schemas">Schemas<a class="headerlink" href="#schemas" title="Permanent link">&para;</a></h3>
+<p><code>input_schema</code> and <code>output_schema</code> are the JSON Schemas of what the templates
+render. With an <code>output_schema</code> the model answers in that structure, and each
+field's <code>description</code> is the instruction for that field. An <code>enum</code> holds the
+model to the exact labels the expected answer uses.</p>
+<p><strong>Give both whenever a template renders anything but chat messages</strong>, which
+is nearly always. Without <code>input_schema</code> a row is read as chat messages
+(<code>{"messages": [...]}</code>), and without <code>output_schema</code> the expected answer is
+read as one chat message (<code>{"role": ..., "content": ...}</code>), so <code>{"question": ...}</code>
+and <code>{"answer": ...}</code> fail when the run reads the rows. A free-text answer
+still gets a schema: one <code>string</code> field, no <code>enum</code>.</p>
+<p>Every object in a schema is closed for you (<code>additionalProperties: false</code>,
+unless you set it otherwise), because some model providers refuse structured
+output on an open object. List <code>required</code> yourself.</p>
+<p>Two kinds of dataset get their shapes for you: an <a href="#retrieval"><code>embedding</code></a>
+dataset gets the retrieval shapes, and a <code>harbor_tasks</code> dataset has fixed
+templates and schemas.</p>
+<p>An <code>output_schema</code> without an <code>output_template</code> is refused when the run loads
+the dataset: there is nothing for the schema to describe.</p>
+<h2 id="choosing-a-provider">Choosing a provider<a class="headerlink" href="#choosing-a-provider" title="Permanent link">&para;</a></h2>
+<p>Pick the provider for where the rows already live, then pin a version.</p>
+<pre class="mermaid"><code>flowchart TD
+  A{Where are the rows?} --&gt;|a benchmark on the Hugging Face Hub| HF[huggingface]
+  A --&gt;|files in the workspace| B{one file or one per row?}
+  B --&gt;|one table: jsonl, json, csv, parquet| L[local]
+  B --&gt;|one record per file| F[folder]
+  A --&gt;|curated in an LLM-ops platform| P[langfuse, langsmith, opik,&lt;br/&gt;phoenix, braintrust, mlflow]
+  A --&gt;|a governed lakehouse table| U[unity_catalog]
+  A --&gt;|Harbor task folders| H[harbor_tasks]</code></pre>
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>choose it when</th>
+<th>pin with</th>
+<th>extra to install</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>huggingface</code></td>
+<td>a public benchmark (GSM8K, MMLU), or a team dataset on the Hub</td>
+<td><code>revision</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>you own the rows and keep them in git beside the configs</td>
+<td>git</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>folder</code></td>
+<td>each case is a file people edit (a YAML per case, a Markdown prompt)</td>
+<td>git</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>langfuse</code></td>
+<td>items curated in Langfuse, often from traces</td>
+<td><code>version</code> (a time)</td>
+<td><code>langfuse</code></td>
+</tr>
+<tr>
+<td><code>langsmith</code></td>
+<td>examples curated in LangSmith</td>
+<td><code>as_of</code> (a version tag)</td>
+<td><code>langsmith</code></td>
+</tr>
+<tr>
+<td><code>opik</code></td>
+<td>items in Opik, selected with server-side filters</td>
+<td><code>version</code> (a version name)</td>
+<td><code>opik</code></td>
+</tr>
+<tr>
+<td><code>phoenix</code></td>
+<td>examples in Phoenix, divided into splits</td>
+<td><code>version_id</code></td>
+<td><code>phoenix</code></td>
+</tr>
+<tr>
+<td><code>braintrust</code></td>
+<td>records in a Braintrust project</td>
+<td><code>version</code> (a transaction id)</td>
+<td><code>braintrust</code></td>
+</tr>
+<tr>
+<td><code>mlflow</code></td>
+<td>an MLflow evaluation dataset</td>
+<td>nothing</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>unity_catalog</code></td>
+<td>a Delta or Parquet table governed by Unity Catalog</td>
+<td><code>version</code> or <code>as_of</code></td>
+<td><code>unity-catalog</code></td>
+</tr>
+<tr>
+<td><code>harbor_tasks</code></td>
+<td>tasks an agent works in a sandbox, scored by their own tests</td>
+<td>git</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>The trade-offs:</p>
+<ul>
+<li><strong>A file in git</strong> (<code>local</code>, <code>folder</code>) is the most reproducible. The
+  dataset changes only in a commit, and anyone with the workspace can run it
+  without an account anywhere. Prefer it for a small, hand-made set.</li>
+<li><strong>The Hub</strong> is right for public benchmarks, so others compare on the same
+  rows. Pin <code>revision</code>: a dataset's <code>main</code> can change under you.</li>
+<li><strong>A platform</strong> is right when the rows are curated there, for instance
+  production traces promoted to a golden set. Reading it directly avoids a
+  stale export, but the dataset moves as people curate it. Pin a version,
+  or results two weeks apart compare different questions.</li>
+<li><strong>Unity Catalog</strong> is right when the evaluation data is a governed table
+  others maintain. Pin a Delta version.</li>
+</ul>
+<h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
+<p>Each tab gives the provider's settings, the variables a row exposes to the
+templates, what it reads from the environment, how to pin it, and its
+pitfalls. <code>openarena check</code> refuses a setting a provider does not take,
+except on <code>huggingface</code>, which forwards unknown settings to the Hugging Face
+loader. Keys and endpoints go in the workspace's <code>.env</code>
+(<a href="../../workspace/">Workspace</a>), never in <code>datasets.yaml</code>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:11"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><input id="__tabbed_2_6" name="__tabbed_2" type="radio" /><input id="__tabbed_2_7" name="__tabbed_2" type="radio" /><input id="__tabbed_2_8" name="__tabbed_2" type="radio" /><input id="__tabbed_2_9" name="__tabbed_2" type="radio" /><input id="__tabbed_2_10" name="__tabbed_2" type="radio" /><input id="__tabbed_2_11" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">huggingface</label><label for="__tabbed_2_2">local</label><label for="__tabbed_2_3">folder</label><label for="__tabbed_2_4">langfuse</label><label for="__tabbed_2_5">langsmith</label><label for="__tabbed_2_6">opik</label><label for="__tabbed_2_7">phoenix</label><label for="__tabbed_2_8">braintrust</label><label for="__tabbed_2_9">mlflow</label><label for="__tabbed_2_10">unity_catalog</label><label for="__tabbed_2_11">harbor_tasks</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Reads a dataset from the Hugging Face Hub, row by row.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">gsm8k-pinned</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span><span class="w">               </span><span class="c1"># the repo</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w">                       </span><span class="c1"># the subset</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">      </span><span class="nt">revision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w">                   </span><span class="c1"># a commit hash for a frozen benchmark</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">      </span><span class="nt">streaming</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                  </span><span class="c1"># download rows as they are read</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td>a repo id (<code>openai/gsm8k</code>) or a loader name</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>a subset</td>
+<td>none</td>
+<td>which configuration of a multi-subset dataset (<code>main</code>, <code>high_school_mathematics</code>)</td>
+</tr>
+<tr>
+<td><code>split</code></td>
+<td><code>train</code>, <code>test</code>, <code>validation</code>, ...</td>
+<td>none</td>
+<td>the split; without one, every split is read in turn</td>
+</tr>
+<tr>
+<td><code>revision</code></td>
+<td>a commit hash, branch or tag</td>
+<td>latest</td>
+<td>the version of the repo</td>
+</tr>
+<tr>
+<td><code>streaming</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td><code>true</code> reads rows as they download; <code>false</code> downloads the split first</td>
+</tr>
+<tr>
+<td>anything else</td>
+<td>e.g. <code>data_files</code>, <code>token</code>, <code>trust_remote_code</code></td>
+<td></td>
+<td>passed to <code>datasets.load_dataset</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: the dataset's columns, as its card shows them.</p>
+<p><strong>When to use it</strong>: public benchmarks, and team datasets on the Hub.
+Keep <code>streaming: true</code> when you take a few rows of a large dataset: rows
+are read only until <code>limit</code> is reached.</p>
+<p><strong>Pitfalls</strong></p>
+<ul>
+<li>Without <code>split</code>, every split is read in turn, so <code>limit: 20</code> takes the
+  first 20 rows of the first split, often <code>train</code>.</li>
+<li>Without <code>name</code>, a multi-subset dataset fails to load: the Hub asks
+  which configuration you mean.</li>
+<li>Without <code>revision</code>, an upstream update changes your score with no
+  change to your config. Pin the commit hash for anything you publish.</li>
+<li>Unknown settings are passed on, so <code>check</code> cannot catch a misspelled
+  one here: it fails when the run loads the dataset.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Reads one file: one row per record.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">qa-local</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/qa.jsonl</span><span class="w">              </span><span class="c1"># {"question": "...", "answer": "..."} per line</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">      </span><span class="c1"># format: jsonl                  # only when the extension does not say</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">string</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td>a file</td>
+<td>required</td>
+<td>the file</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td><code>json</code>, <code>jsonl</code>, <code>csv</code>, <code>parquet</code></td>
+<td>from the extension</td>
+<td>how to read it</td>
+</tr>
+</tbody>
+</table>
+<p>The extension decides the format: <code>.jsonl</code> and <code>.ndjson</code> are JSON lines,
+<code>.json</code> is JSON, <code>.csv</code> comma-separated, <code>.tsv</code> tab-separated, <code>.parquet</code>
+Parquet. Set <code>format</code> only for another extension.</p>
+<table>
+<thead>
+<tr>
+<th>format</th>
+<th>a row is</th>
+<th>note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON lines</td>
+<td>one object per line</td>
+<td>blank lines are skipped</td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>an item of the top-level list, or of the one list an object holds (<code>{"data": [...]}</code>)</td>
+<td>an object holding two lists is refused</td>
+</tr>
+<tr>
+<td>CSV, TSV</td>
+<td>one line, keyed by the header</td>
+<td>every value is a string</td>
+</tr>
+<tr>
+<td>Parquet</td>
+<td>one record</td>
+<td>read in row groups, so a large file need not fit in memory</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: the record's keys, or the header's columns.</p>
+<p><strong>When to use it</strong>: your own set, small enough to keep in git. It is the
+simplest dataset to pin: its version is the commit.</p>
+<p><strong>Pitfalls</strong></p>
+<ul>
+<li>A relative <code>path</code> is read from the directory you run <code>openarena</code> in.
+  Run from the workspace root, or give an absolute path.</li>
+<li>CSV values are text: <code>{{ score | int }}</code> to use one as a number,
+  <code>{{ answer | trim }}</code> against stray spaces.</li>
+<li>A <code>.txt</code>, or any other extension, is refused until <code>format</code> says how
+  to read it.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Reads a folder where each file is one row. Files are read in
+alphabetical order.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">cases</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">folder</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/cases</span><span class="w">                 </span><span class="c1"># one YAML per case: {question: ..., answer: ...}</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"*.yaml"</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">      </span><span class="nt">recursive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}},</span><span class="nv"> </span><span class="s">"case":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">_stem</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">},</span><span class="nt"> case</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">case</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td>a folder</td>
+<td>required</td>
+<td>where the files are</td>
+</tr>
+<tr>
+<td><code>pattern</code></td>
+<td>a glob</td>
+<td><code>*</code></td>
+<td>which files are rows</td>
+</tr>
+<tr>
+<td><code>recursive</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>false</code></td>
+<td>also look in sub-folders</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td><code>json</code>, <code>yaml</code>, <code>text</code></td>
+<td>from each file's extension</td>
+<td>how to read every file</td>
+</tr>
+<tr>
+<td><code>encoding</code></td>
+<td>a text encoding</td>
+<td><code>utf-8</code></td>
+<td>how files are decoded</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong></p>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>variables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.json</code>, <code>.yaml</code>, <code>.yml</code> holding an object</td>
+<td>its keys</td>
+</tr>
+<tr>
+<td><code>.json</code>, <code>.yaml</code>, <code>.yml</code> holding anything else</td>
+<td><code>record</code></td>
+</tr>
+<tr>
+<td><code>.txt</code>, <code>.md</code>, or any file under <code>format: text</code></td>
+<td><code>text</code></td>
+</tr>
+<tr>
+<td>every file</td>
+<td><code>_filename</code> (<code>case-01.yaml</code>), <code>_stem</code> (<code>case-01</code>), <code>_path</code> (relative to <code>path</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to use it</strong>: cases written and reviewed by people, one per file,
+so a pull request shows exactly which case changed. Also prompts kept as
+Markdown, read as <code>text</code>.</p>
+<p><strong>Pitfalls</strong></p>
+<ul>
+<li>The default pattern <code>*</code> takes every file, a stray <code>README.md</code>
+  included. Narrow it to <code>*.yaml</code> or <code>*.json</code>.</li>
+<li>A file with any other extension stops the run until <code>format</code> says how
+  to read it.</li>
+<li><code>limit</code> takes the first files in alphabetical order: number them
+  (<code>001-...</code>) when the order matters.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Reads a Langfuse dataset, a page of items at a time.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">lf-golden</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-golden</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">"2026-04-15T00:00:00Z"</span><span class="w">  </span><span class="c1"># the items as they were then</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="nt">streaming</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">      </span><span class="nt">page_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">input.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected_output.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dataset_name</code></td>
+<td>the dataset's name</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>an ISO 8601 time; UTC when it has no zone</td>
+<td>latest</td>
+<td>the items as they were at that time</td>
+</tr>
+<tr>
+<td><code>streaming</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td><code>true</code> fetches a page at a time; <code>false</code> fetches every item first</td>
+</tr>
+<tr>
+<td><code>page_size</code></td>
+<td>integer</td>
+<td><code>50</code></td>
+<td>items per page when streaming</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: <code>input</code>, <code>expected_output</code>, <code>metadata</code>, <code>id</code>.</p>
+<p><strong>Environment</strong>: <code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>,
+<code>LANGFUSE_HOST</code>.</p>
+<p><strong>Extra</strong>: <code>langfuse</code>.</p>
+<p><strong>Pinning</strong>: Langfuse versions a dataset by time, not by name. Set
+<code>version</code> to the moment you froze the set; items added later are left
+out.</p>
+</div>
+<div class="tabbed-block">
+<p>Reads the examples of a LangSmith dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">ls-golden</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langsmith</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-golden</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="nt">as_of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">golden-2026-04</span><span class="w">            </span><span class="c1"># a version tag</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">inputs.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">outputs.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dataset_name</code></td>
+<td>the dataset's name</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>as_of</code></td>
+<td>a version tag</td>
+<td>latest</td>
+<td>the examples as tagged</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: <code>inputs</code>, <code>outputs</code>, <code>metadata</code>, <code>id</code>. Note the
+plurals: these are LangSmith's names, not Langfuse's.</p>
+<p><strong>Environment</strong>: <code>LANGSMITH_API_KEY</code>, <code>LANGSMITH_ENDPOINT</code>.</p>
+<p><strong>Extra</strong>: <code>langsmith</code>.</p>
+<p><strong>Pinning</strong>: tag a version in LangSmith and set <code>as_of</code> to the tag.
+Moving a tag (<code>prod</code>) moves every evaluation that names it, which suits
+"the current golden set" but not a published result: use a tag you
+never move for those.</p>
+</div>
+<div class="tabbed-block">
+<p>Reads the items of an Opik dataset, optionally filtered by Opik.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">opik-regressions</span><span class="p">:</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">opik</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-golden</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w">                      </span><span class="c1"># a named version</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">      </span><span class="nt">filter_string</span><span class="p">:</span><span class="w"> </span><span class="s">'tags</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">"regression"'</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">input.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected_output.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dataset_name</code></td>
+<td>the dataset's name</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>a version name (<code>v1</code>)</td>
+<td>latest</td>
+<td>the items of that version</td>
+</tr>
+<tr>
+<td><code>filter_string</code></td>
+<td>an Opik filter expression</td>
+<td>none</td>
+<td>only the items it matches, filtered by Opik</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: the item's fields: <code>input</code>, <code>expected_output</code>,
+<code>metadata</code>, <code>id</code>, and any custom field the item was created with.</p>
+<p><strong>Environment</strong>: <code>OPIK_API_KEY</code>, <code>OPIK_WORKSPACE</code>, <code>OPIK_URL_OVERRIDE</code>.</p>
+<p><strong>Extra</strong>: <code>opik</code>.</p>
+<p><strong>When to use it</strong>: <code>filter_string</code> makes several datasets out of one
+(the regressions, one product's items) without copying items. <code>limit</code> is
+sent to Opik, so only that many items are fetched.</p>
+</div>
+<div class="tabbed-block">
+<p>Reads the examples of an Arize Phoenix dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">phoenix-golden</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">phoenix</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-golden</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="nt">version_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;version id&gt;</span><span class="w">         </span><span class="c1"># from the Phoenix UI</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">      </span><span class="nt">splits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">test</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">input.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">output.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dataset_name</code></td>
+<td>the dataset's name or id</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>version_id</code></td>
+<td>a version id</td>
+<td>latest</td>
+<td>the examples of that version</td>
+</tr>
+<tr>
+<td><code>splits</code></td>
+<td>list of split names</td>
+<td>all</td>
+<td>only the examples in these splits</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: <code>id</code>, <code>input</code>, <code>output</code>, <code>metadata</code>. The expected
+answer is <code>output</code> here.</p>
+<p><strong>Environment</strong>: <code>PHOENIX_API_KEY</code>, and <code>PHOENIX_COLLECTOR_ENDPOINT</code> or
+<code>PHOENIX_HOST</code> with <code>PHOENIX_PORT</code>.</p>
+<p><strong>Extra</strong>: <code>phoenix</code>.</p>
+<p><strong>Pitfall</strong>: Phoenix returns the whole version in one call, and <code>limit</code>
+is applied after. To evaluate a slice of a large dataset, give the slice
+its own split.</p>
+</div>
+<div class="tabbed-block">
+<p>Reads the records of a Braintrust dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">bt-golden</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">braintrust</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">      </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">      </span><span class="nt">dataset_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">golden</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">"1000192656880881099"</span><span class="w">   </span><span class="c1"># a transaction id</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">input.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td>the project's name</td>
+<td><code>project</code> or <code>project_id</code> is required</td>
+<td>where the dataset is</td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>the project's id</td>
+<td></td>
+<td>instead of <code>project</code></td>
+</tr>
+<tr>
+<td><code>dataset_name</code></td>
+<td>the dataset's name</td>
+<td>required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>a transaction id</td>
+<td>latest</td>
+<td>the records as of that transaction</td>
+</tr>
+<tr>
+<td><code>org_name</code></td>
+<td>an organization</td>
+<td><code>BRAINTRUST_ORG_NAME</code></td>
+<td>for an account in several organizations</td>
+</tr>
+<tr>
+<td><code>fetch_batch_size</code></td>
+<td>integer</td>
+<td>the SDK's</td>
+<td>records per request to Braintrust; not the run's <code>batch_size</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: <code>id</code>, <code>input</code>, <code>expected</code>, <code>metadata</code>. The expected
+answer is <code>expected</code> here.</p>
+<p><strong>Environment</strong>: <code>BRAINTRUST_API_KEY</code>, and optionally
+<code>BRAINTRUST_APP_URL</code>, <code>BRAINTRUST_ORG_NAME</code>.</p>
+<p><strong>Extra</strong>: <code>braintrust</code>.</p>
+<p><strong>Pitfall</strong>: the provider loads nothing without a project and a
+dataset name. <code>openarena check</code> reports either one missing
+(<code>the braintrust provider needs `project` or `project_id`</code>).</p>
+</div>
+<div class="tabbed-block">
+<p>Reads an MLflow evaluation dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">mlflow-golden</span><span class="p">:</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mlflow</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qa_golden_set</span><span class="w">              </span><span class="c1"># or dataset_id</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">inputs.question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expectations.answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>the dataset's name</td>
+<td><code>name</code> or <code>dataset_id</code> is required</td>
+<td>which dataset</td>
+</tr>
+<tr>
+<td><code>dataset_id</code></td>
+<td>the dataset's id</td>
+<td></td>
+<td>when the name is ambiguous</td>
+</tr>
+<tr>
+<td><code>tracking_uri</code></td>
+<td>an MLflow URI</td>
+<td>see below</td>
+<td>the server to read from</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: <code>inputs</code>, <code>expectations</code>, <code>outputs</code>, <code>tags</code>,
+<code>record_id</code>.</p>
+<p><strong>Environment</strong>: the server is <code>tracking_uri</code> when set, else
+<code>MLFLOW_SOURCE_TRACKING_URI</code>, else the tracing server,
+<code>MLFLOW_TRACKING_URI</code>. Set the first variable when the datasets live on
+one MLflow server and runs are traced to another.</p>
+<p><strong>Extra</strong>: none.</p>
+<p><strong>Pitfalls</strong></p>
+<ul>
+<li>With an <code>output_template</code>, every record needs expectations; one
+  without stops the run. Leave <code>output_template</code> out to read an
+  unlabelled set, for a judge that scores without a reference.</li>
+<li>Evaluation datasets need an MLflow server backed by a database, not a
+  plain <code>./mlruns</code> folder.</li>
+<li>There is no version to pin: the dataset is read as it is now.</li>
+<li>Without <code>name</code> or <code>dataset_id</code> there is nothing to read: <code>openarena
+  check</code> reports <code>the mlflow provider needs `name` or `dataset_id`</code>.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Reads a Delta (or Parquet) table registered in Unity Catalog, straight
+from its object storage, in batches.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">uc-questions</span><span class="p">:</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unity_catalog</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">      </span><span class="nt">table</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main.evals.questions</span><span class="w">      </span><span class="c1"># catalog.schema.table</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                       </span><span class="c1"># a Delta version</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">      </span><span class="c1"># as_of: "2026-04-15T00:00:00Z"  # or a time; not both</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">reference_answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>table</code></td>
+<td><code>catalog.schema.table</code></td>
+<td>required</td>
+<td>the table</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>an integer Delta version</td>
+<td>latest</td>
+<td>the table at that version</td>
+</tr>
+<tr>
+<td><code>as_of</code></td>
+<td>an ISO 8601 time</td>
+<td>latest</td>
+<td>the table at that time; not with <code>version</code></td>
+</tr>
+<tr>
+<td><code>storage_path</code></td>
+<td>an <code>s3://...</code> path</td>
+<td>looked up in the catalog</td>
+<td>read this path and skip the catalog</td>
+</tr>
+<tr>
+<td><code>read_batch_size</code></td>
+<td>integer</td>
+<td><code>10000</code></td>
+<td>rows per read from storage; not the run's <code>batch_size</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Row variables</strong>: the table's columns.</p>
+<p><strong>Environment</strong></p>
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UNITY_CATALOG_API_URL</code></td>
+<td>the catalog's REST API, <code>/api/2.1/unity-catalog</code> included; not read with <code>storage_path</code></td>
+</tr>
+<tr>
+<td><code>UC_TOKEN</code></td>
+<td>its bearer token; not read with <code>storage_path</code></td>
+</tr>
+<tr>
+<td><code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code></td>
+<td>the object storage</td>
+</tr>
+<tr>
+<td><code>AWS_DEFAULT_REGION</code></td>
+<td>its region; <code>fr-par</code> when unset</td>
+</tr>
+<tr>
+<td><code>S3_ENDPOINT</code></td>
+<td>an S3-compatible store (MinIO, Scaleway)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Extra</strong>: <code>unity-catalog</code>.</p>
+<p><strong>Pinning</strong>: set <code>version</code> to the Delta version you evaluated. <code>version</code>
+and <code>as_of</code> apply to Delta tables only: a table the catalog reports as
+Parquet is read as it is now.</p>
+<p><strong>Pitfalls</strong></p>
+<ul>
+<li><code>table</code> must have exactly three parts, and <code>version</code> must be an
+  integer, <code>3</code> and not <code>"3"</code>.</li>
+<li>With <code>storage_path</code>, nothing tells the provider the table's format,
+  and it reads the path as a Delta table.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Reads <a href="../harbor-tasks/">Harbor task folders</a>: every sub-folder of <code>path</code>
+holding a <code>task.toml</code> is a row, run in its own sandbox and scored by its
+own tests.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">my-tasks</span><span class="p">:</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor_tasks</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tasks</span><span class="w">                      </span><span class="c1"># relative to the workspace; the run copies it</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">      </span><span class="nt">tasks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">hello-world</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># only these folders; leave out for every task</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">    </span><span class="nt">harbor</span><span class="p">:</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">      </span><span class="nt">agent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">terminus-2</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">harbor-tests</span><span class="w">               </span><span class="c1"># type: harbor_verifier</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td>a folder of task folders</td>
+<td>required</td>
+<td>where the tasks are</td>
+</tr>
+<tr>
+<td><code>tasks</code></td>
+<td>list of folder names</td>
+<td>every task, sorted by name</td>
+<td>only these tasks</td>
+</tr>
+</tbody>
+</table>
+<p>No templates and no schemas: they are fixed, and each task's tests
+score it. The entry needs a <code>harbor:</code> block without <code>environment</code>,
+since each task brings its own, and without <code>instructions</code> or
+<code>answer_file</code>: a task says what the agent is told in its
+<code>instruction.md</code> and is scored by its own <code>tests/</code>, so <code>check</code> refuses
+both. <code>limit</code>, <code>batch_size</code> and <code>repeat</code> work
+as for the other providers. <a href="../harbor-tasks/">Harbor tasks</a> covers the
+folders, the agents and the trials.</p>
+</div>
+</div>
+</div>
+<h3 id="what-each-provider-calls-a-row">What each provider calls a row<a class="headerlink" href="#what-each-provider-calls-a-row" title="Permanent link">&para;</a></h3>
+<p>The quickest way to write a template over a platform's items is to know which
+variable holds what:</p>
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>the input</th>
+<th>the expected answer</th>
+<th>also</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>huggingface</code>, <code>local</code>, <code>unity_catalog</code></td>
+<td>your columns</td>
+<td>your columns</td>
+<td></td>
+</tr>
+<tr>
+<td><code>folder</code></td>
+<td>the file's keys, or <code>text</code>, or <code>record</code></td>
+<td>the file's keys</td>
+<td><code>_filename</code>, <code>_stem</code>, <code>_path</code></td>
+</tr>
+<tr>
+<td><code>langfuse</code></td>
+<td><code>input</code></td>
+<td><code>expected_output</code></td>
+<td><code>metadata</code>, <code>id</code></td>
+</tr>
+<tr>
+<td><code>langsmith</code></td>
+<td><code>inputs</code></td>
+<td><code>outputs</code></td>
+<td><code>metadata</code>, <code>id</code></td>
+</tr>
+<tr>
+<td><code>opik</code></td>
+<td><code>input</code></td>
+<td><code>expected_output</code></td>
+<td><code>metadata</code>, <code>id</code>, custom fields</td>
+</tr>
+<tr>
+<td><code>phoenix</code></td>
+<td><code>input</code></td>
+<td><code>output</code></td>
+<td><code>metadata</code>, <code>id</code></td>
+</tr>
+<tr>
+<td><code>braintrust</code></td>
+<td><code>input</code></td>
+<td><code>expected</code></td>
+<td><code>metadata</code>, <code>id</code></td>
+</tr>
+<tr>
+<td><code>mlflow</code></td>
+<td><code>inputs</code></td>
+<td><code>expectations</code></td>
+<td><code>outputs</code>, <code>tags</code>, <code>record_id</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="installing-a-providers-sdk">Installing a provider's SDK<a class="headerlink" href="#installing-a-providers-sdk" title="Permanent link">&para;</a></h3>
+<p>The platform providers need their SDK, which openarena installs only when
+asked, as an extra named after the provider:</p>
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>extra</th>
+<th>installs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>langfuse</code></td>
+<td><code>langfuse</code></td>
+<td><code>langfuse</code></td>
+</tr>
+<tr>
+<td><code>langsmith</code></td>
+<td><code>langsmith</code></td>
+<td><code>langsmith</code></td>
+</tr>
+<tr>
+<td><code>opik</code></td>
+<td><code>opik</code></td>
+<td><code>opik</code></td>
+</tr>
+<tr>
+<td><code>phoenix</code></td>
+<td><code>phoenix</code></td>
+<td><code>arize-phoenix-client</code></td>
+</tr>
+<tr>
+<td><code>braintrust</code></td>
+<td><code>braintrust</code></td>
+<td><code>braintrust</code></td>
+</tr>
+<tr>
+<td><code>unity_catalog</code></td>
+<td><code>unity-catalog</code></td>
+<td><code>deltalake</code></td>
+</tr>
+<tr>
+<td>all of the above</td>
+<td><code>all</code></td>
+<td>every one</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">"openarena[langfuse] @ git+https://github.com/Atena-IT/open-arena"</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"openarena[langfuse]"</span><span class="w">          </span><span class="c1"># in a project</span>
+</code></pre></div>
+<p>Without it, the run stops when it loads the dataset and names the extra to
+install. <code>openarena check</code> does not need the SDK, so a config can check clean
+on a machine that cannot run it.</p>
+<h2 id="reproducibility-pin-the-version">Reproducibility: pin the version<a class="headerlink" href="#reproducibility-pin-the-version" title="Permanent link">&para;</a></h2>
+<p>A score means something only if the rows behind it can be read again. Pin
+every dataset you publish or compare over time:</p>
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>pin with</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>huggingface</code></td>
+<td><code>revision</code></td>
+<td>the dataset repo's commit hash</td>
+</tr>
+<tr>
+<td><code>local</code>, <code>folder</code>, <code>harbor_tasks</code></td>
+<td>git</td>
+<td>commit the files with the configs</td>
+</tr>
+<tr>
+<td><code>langfuse</code></td>
+<td><code>version</code></td>
+<td><code>"2026-04-15T00:00:00Z"</code></td>
+</tr>
+<tr>
+<td><code>langsmith</code></td>
+<td><code>as_of</code></td>
+<td>a tag you never move, <code>golden-2026-04</code></td>
+</tr>
+<tr>
+<td><code>opik</code></td>
+<td><code>version</code></td>
+<td><code>v3</code></td>
+</tr>
+<tr>
+<td><code>phoenix</code></td>
+<td><code>version_id</code></td>
+<td>the version's id</td>
+</tr>
+<tr>
+<td><code>braintrust</code></td>
+<td><code>version</code></td>
+<td>a transaction id</td>
+</tr>
+<tr>
+<td><code>unity_catalog</code></td>
+<td><code>version</code></td>
+<td><code>3</code></td>
+</tr>
+<tr>
+<td><code>mlflow</code></td>
+<td>nothing</td>
+<td>export it to a <code>local</code> file to freeze it</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Change the key with the version</p>
+<p>A run keeps finished cells by dataset key and reuses them when run
+again. After changing a pinned version (or a template, or <code>limit</code>), give
+the dataset a new key (<code>golden-v3</code> to <code>golden-v4</code>), or run with
+<code>--no-cache</code> (<a href="../evaluations/#resuming-and-starting-over">Resuming</a>). A new key also keeps
+the old scores readable beside the new ones.</p>
+</div>
+<h2 id="smoke-subsets">Smoke subsets<a class="headerlink" href="#smoke-subsets" title="Permanent link">&para;</a></h2>
+<p>Start small, read the answers, then scale. <code>limit</code> caps the rows a dataset
+reads, and is the quickest way to get there.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">gsm8k-smoke</span><span class="p">:</span><span class="w">                         </span><span class="c1"># 5 rows: do the template, the schema and the reward work?</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">  </span><span class="nt">gsm8k-full</span><span class="p">:</span><span class="w">                          </span><span class="c1"># the same source, every row</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+</code></pre></div>
+<p>Keep the smoke entry and the full one side by side under different keys, and
+point a <code>smoke</code> evaluation at the first. Editing <code>limit</code> on one entry back and
+forth makes a resumed run reuse cells computed at the other size.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>limit</code> is not a sample</p>
+<p><code>limit</code> takes the <strong>first</strong> rows in the source's order; nothing shuffles
+them. When a dataset is sorted (by topic, by difficulty), its first 20
+rows are not representative. For a representative subset, make one: a
+<code>local</code> file of rows you picked, a Phoenix split, an Opik
+<code>filter_string</code>, or a subset on your platform.</p>
+</div>
+<p>How each provider applies <code>limit</code>:</p>
+<table>
+<thead>
+<tr>
+<th>provider</th>
+<th>what is fetched</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>huggingface</code> (streaming), <code>langfuse</code> (streaming), <code>local</code>, <code>folder</code>, <code>unity_catalog</code></td>
+<td>rows are read in order until <code>limit</code></td>
+</tr>
+<tr>
+<td><code>opik</code></td>
+<td><code>limit</code> items, asked of Opik</td>
+</tr>
+<tr>
+<td><code>phoenix</code>, <code>mlflow</code>, <code>langfuse</code> with <code>streaming: false</code></td>
+<td>the whole dataset, then cut</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-answers-each-row">What answers each row<a class="headerlink" href="#what-answers-each-row" title="Permanent link">&para;</a></h2>
+<p>At most one block. Without one, a model answers in one call.</p>
+<table>
+<thead>
+<tr>
+<th>block</th>
+<th>answered by</th>
+<th>the evaluation's <code>language_models</code> are</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>none, or <code>generator:</code></td>
+<td>a model in one call; <code>instructions</code>, <code>chain_of_thought</code></td>
+<td>models</td>
+</tr>
+<tr>
+<td><code>agent:</code></td>
+<td>a model calling MCP tools (<a href="../mcp-tools/">MCP tools</a>)</td>
+<td>models</td>
+</tr>
+<tr>
+<td><code>a2a: {}</code></td>
+<td>remote agents (<a href="../a2a-agents/">A2A agents</a>)</td>
+<td>A2A agents</td>
+</tr>
+<tr>
+<td><code>embedding:</code></td>
+<td>retrieval with an embedding model (<a href="#retrieval">below</a>)</td>
+<td>embedding models</td>
+</tr>
+<tr>
+<td><code>tools:</code></td>
+<td>one call with tool declarations, nothing executed (<a href="#tool-calls">below</a>)</td>
+<td>models</td>
+</tr>
+<tr>
+<td><code>harbor:</code></td>
+<td>an agent the model drives in a sandbox (<a href="../environments/">Environments</a>, <a href="../harbor-tasks/">Harbor tasks</a>)</td>
+<td>models</td>
+</tr>
+</tbody>
+</table>
+<p>Two blocks on one entry are refused: a dataset is answered one way. To compare
+a model alone with the same model using tools on the same rows, write two
+entries over the same source.</p>
+<h3 id="retrieval">Retrieval<a class="headerlink" href="#retrieval" title="Permanent link">&para;</a></h3>
+<p>The input renders a <code>query</code> and the <code>chunks</code> to search, the expected answer
+the gold <code>chunks</code>. The embedding model under test ranks the chunks, the top
+<code>k</code> are returned, and <code>retrieval_recall</code> scores them. No schemas to write: an
+embedding dataset gets these shapes by default.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">passages</span><span class="p">:</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retrieval.jsonl</span><span class="w">            </span><span class="c1"># {"query": "...", "passages": [...], "gold": [...]}</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"query":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}},</span><span class="nv"> </span><span class="s">"chunks":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">passages</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"chunks":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">gold</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="nt">embedding</span><span class="p">:</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">      </span><span class="nt">k</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">recall</span><span class="w">                     </span><span class="c1"># type: retrieval_recall</span>
+</code></pre></div>
+<h3 id="tool-calls">Tool calls<a class="headerlink" href="#tool-calls" title="Permanent link">&para;</a></h3>
+<p>The model gets the declared functions and answers with the calls it would
+make; nothing is executed. The expected answer renders the gold <code>tool_calls</code>,
+each <code>{name, arguments}</code>, with an <code>output_schema</code> saying so. That schema only
+shapes the expected answer: the model's answer is its chat message, tool calls
+included.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="nt">weather-calls</span><span class="p">:</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calls.jsonl</span><span class="w">                </span><span class="c1"># {"question": "...", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]}</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"tool_calls":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">calls</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">tool_calls</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">array</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The gold calls</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">tool_calls</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="w">    </span><span class="nt">tools</span><span class="p">:</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Call the function that answers the question.</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">      </span><span class="nt">tool_schemas</span><span class="p">:</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">function</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="w">          </span><span class="nt">function</span><span class="p">:</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get_weather</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="w">            </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The weather in a city.</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a><span class="w">            </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">city</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">city</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tool-calls</span><span class="w">                 </span><span class="c1"># type: tool_calls_accuracy</span>
+</code></pre></div>
+<h2 id="extra-metrics">Extra metrics<a class="headerlink" href="#extra-metrics" title="Permanent link">&para;</a></h2>
+<p><code>metrics:</code> adds columns beside <code>reward</code>. Each is a catalog reward, averaged
+over the rows, or a plain metric (<code>accuracy</code>, <code>f1_score</code>, ...): a bare name,
+or a mapping with <code>class</code>, an <code>alias</code> (the column's name, never <code>reward</code>), a
+<code>direction</code> and the type's settings (<a href="../rewards/">Rewards</a>).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span><span class="nt">gsm8k-20</span><span class="p">:</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">    </span><span class="c1"># ...</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer_accuracy</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">lm_as_judge</span><span class="p p-Indicator">,</span><span class="nt"> alias</span><span class="p">:</span><span class="w"> </span><span class="nv">judged</span><span class="p p-Indicator">,</span><span class="nt"> language_model</span><span class="p">:</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>Cost, tokens and latency reach <code>result.json</code> only when listed here or on the
+evaluation, by their measurement names. Their direction is set for you: a
+metric written without <code>direction:</code> is <code>min</code> when it measures cost, tokens or
+latency (<code>cost</code>, <code>total_tokens</code>, <code>avg_latency</code>, ...) and <code>max</code> otherwise. Write
+<code>direction:</code> to override it; the leaderboard ranks by the direction the run
+recorded (<a href="../evaluations/#metrics-the-columns-beside-reward">Running evaluations</a>).</p>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p><code>openarena check configs</code> catches what the file gets wrong
+(<a href="../check/">Checking configs</a>). It reads no rows, so what depends on the data
+shows up when the run loads the dataset.</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th>caught by</th>
+<th>what you see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a misspelled provider, <code>hugginface</code></td>
+<td><code>check</code></td>
+<td>unknown provider, with the fix "change 'hugginface' to 'huggingface'"</td>
+</tr>
+<tr>
+<td>a misspelled setting, <code>pth:</code></td>
+<td><code>check</code></td>
+<td>not a setting of the provider, with the fix "rename <code>pth:</code> to <code>path:</code>"</td>
+</tr>
+<tr>
+<td>a setting the provider does not take, <code>as_of:</code> on <code>langfuse</code></td>
+<td><code>check</code></td>
+<td>the list of settings the provider takes</td>
+</tr>
+<tr>
+<td>a required setting missing, <code>table:</code> on <code>unity_catalog</code></td>
+<td><code>check</code></td>
+<td>the provider needs it, with a placeholder to fill in</td>
+</tr>
+<tr>
+<td>no project or dataset name on <code>braintrust</code>, no <code>name</code> or <code>dataset_id</code> on <code>mlflow</code></td>
+<td><code>check</code></td>
+<td><code>the braintrust provider needs `project` or `project_id`</code>, with a placeholder to fill in</td>
+</tr>
+<tr>
+<td>no <code>input_template</code></td>
+<td><code>check</code></td>
+<td>"nothing says what each row asks", with templates to paste</td>
+</tr>
+<tr>
+<td><code>reward:</code> inside <code>config:</code></td>
+<td><code>check</code></td>
+<td>arena-level keys in <code>config</code>, with the fix to move them up</td>
+</tr>
+<tr>
+<td>two answering blocks</td>
+<td><code>check</code></td>
+<td>the blocks are mutually exclusive</td>
+</tr>
+<tr>
+<td><code>harbor_tasks</code> without <code>harbor:</code></td>
+<td><code>check</code></td>
+<td>it needs a <code>harbor:</code> block, with <code>harbor: {agent: terminus-2}</code> to add</td>
+</tr>
+<tr>
+<td><code>instructions</code> or <code>answer_file</code> in a <code>harbor_tasks</code> dataset's <code>harbor:</code></td>
+<td><code>check</code></td>
+<td>they have no effect on task folders, with where each belongs instead</td>
+</tr>
+<tr>
+<td>a column the row does not have</td>
+<td>the run</td>
+<td>the template fails on the first row</td>
+</tr>
+<tr>
+<td>a value not piped through <code>tojson</code></td>
+<td>the run</td>
+<td>the template renders invalid JSON</td>
+</tr>
+<tr>
+<td>a template that does not match its schema, or no schema</td>
+<td>the run</td>
+<td>the row is refused when read</td>
+</tr>
+<tr>
+<td>a missing SDK</td>
+<td>the run</td>
+<td>the extra to install</td>
+</tr>
+<tr>
+<td>a wrong Hugging Face path, a bad key, an unreachable server</td>
+<td>the run</td>
+<td><a href="../results/#when-a-cell-failed-or-scored-0">Reading results</a></td>
+</tr>
+</tbody>
+</table>
+<p>Every mistake caught by the run is also caught by a smoke run with <code>limit: 5</code>,
+in seconds rather than after a full sweep.</p>
+<div class="admonition note">
+<p class="admonition-title">Imported scores are not datasets</p>
+<p>Scores computed by another tool can be imported and ranked on a
+leaderboard. They appear as <code>&lt;import&gt;/&lt;dataset&gt;</code>, so they never collide
+with the datasets of this file, but they are results, not rows: nothing
+in <code>datasets.yaml</code> describes them (<a href="../leaderboards/">Leaderboards</a>).</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../rewards/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Rewards">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Rewards
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../mcp-tools/" class="md-footer__link md-footer__link--next" aria-label="Next: MCP tools">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                MCP tools
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2562 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/evaluations/">
+      
+      
+      
+        <link rel="prev" href="../harbor-tasks/">
+      
+      
+        <link rel="next" href="../leaderboards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Running evaluations - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Running evaluations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#language_models-the-grids-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>language_models</code>: the grid's rows
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datasets-the-grids-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>datasets</code>: the grid's columns
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch_size-how-much-runs-at-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>batch_size</code>: how much runs at once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics-the-columns-beside-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>metrics</code>: the columns beside <code>reward</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>seed</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_language_model-default_embedding_model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>default_language_model</code>, <code>default_embedding_model</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>description</code>, <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#things-that-are-not-evaluation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Things that are not evaluation fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-happens-during-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What happens during a run
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What happens during a run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#watching-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watching it
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Failures
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resuming-and-starting-over" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resuming and starting over
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run writes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cost
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cost">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-a-run-is-priced" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a run is priced
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estimating-it-before-you-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Estimating it before you run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-what" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use what
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#language_models-the-grids-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>language_models</code>: the grid's rows
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datasets-the-grids-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>datasets</code>: the grid's columns
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch_size-how-much-runs-at-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>batch_size</code>: how much runs at once
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics-the-columns-beside-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>metrics</code>: the columns beside <code>reward</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>seed</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_language_model-default_embedding_model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>default_language_model</code>, <code>default_embedding_model</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>description</code>, <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#things-that-are-not-evaluation-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Things that are not evaluation fields
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-happens-during-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What happens during a run
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What happens during a run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#watching-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Watching it
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Failures
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resuming-and-starting-over" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resuming and starting over
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run writes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cost
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cost">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-a-run-is-priced" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a run is priced
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#estimating-it-before-you-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Estimating it before you run
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-what" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When to use what
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="running-evaluations">Running evaluations<a class="headerlink" href="#running-evaluations" title="Permanent link">&para;</a></h1>
+<p>An evaluation is a saved sweep, kept in <code>configs/evaluations.yaml</code>. It names
+models and datasets. Running it evaluates every model on every dataset: one
+<strong>cell</strong> per pair. A cell sends each row of the dataset to the model, scores
+each answer with the dataset's reward, and keeps the mean.</p>
+<pre class="mermaid"><code>flowchart LR
+    M["language_models&lt;br/&gt;qwen38, gpt-4o-mini"] --&gt; G{{"grid&lt;br/&gt;model × dataset"}}
+    D["datasets&lt;br/&gt;gsm8k-20, mmlu-50"] --&gt; G
+    G --&gt; C1["qwen38 × gsm8k-20"]
+    G --&gt; C2["qwen38 × mmlu-50"]
+    G --&gt; C3["gpt-4o-mini × gsm8k-20"]
+    G --&gt; C4["gpt-4o-mini × mmlu-50"]
+    C1 &amp; C2 &amp; C3 &amp; C4 --&gt; R[".open-arena/NAME/result.json"]</code></pre>
+<p>Two models on two datasets make four cells. The evaluation holds no rows, no
+prompts and no scoring rules: those belong to the <a href="../datasets/">datasets</a>, the
+<a href="../rewards/">rewards</a> and the <a href="../models/">models</a> it names. It says what to
+put on the grid, plus a few settings that apply to every cell.</p>
+<p>Why save a sweep instead of passing flags? A saved evaluation is the same
+experiment every time you run it: the same models, datasets and batch size.
+Next week you rerun it on a new model by adding one name, and the run's folder
+records exactly what ran.</p>
+<h2 id="the-entry">The entry<a class="headerlink" href="#the-entry" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">math-compare</span><span class="p">:</span><span class="w">                              </span><span class="c1"># the name you run it by, and its folder under .open-arena/</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Local Qwen against the hosted baseline on GSM8K.</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">math</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">weekly</span><span class="p p-Indicator">]</span><span class="w">                     </span><span class="c1"># for listings only</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># the grid's rows: models keys (a2a_agents keys for an A2A sweep)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span><span class="w">                     </span><span class="c1"># the grid's columns: datasets keys, each with a reward</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">                            </span><span class="c1"># rows in flight at once, for every dataset of this sweep</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># extra columns, on every dataset</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cost</span><span class="w">                                 </span><span class="c1"># what the model under test cost, in USD; lower is better</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_latency</span><span class="w">                          </span><span class="c1"># seconds per model call; lower is better</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer_accuracy</span><span class="w">                      </span><span class="c1"># a catalog reward, averaged over the rows</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w">                                  </span><span class="c1"># seeds the engine's own randomness, not the model's sampling</span>
+</code></pre></div>
+<p>The name follows the rule of every registry key: a letter or a digit, then
+letters, digits, <code>_</code>, <code>.</code> or <code>-</code>. It is also the folder the run writes to, so
+keep it short.</p>
+<h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>required</th>
+<th>default</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>language_models</code></td>
+<td>yes</td>
+<td></td>
+<td>The models to compare, by their key in <code>models.yaml</code>. At least one. For an A2A dataset, keys of <code>a2a_agents.yaml</code> instead.</td>
+</tr>
+<tr>
+<td><code>datasets</code></td>
+<td>yes</td>
+<td></td>
+<td>The datasets to run them on, by key. At least one. Each must have a <code>reward:</code>.</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>no</td>
+<td>each dataset's own, else 1</td>
+<td>Rows sent at once, for every dataset of this sweep. 1 to 1024.</td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td>no</td>
+<td>none</td>
+<td>Columns added beside <code>reward</code> on every dataset.</td>
+</tr>
+<tr>
+<td><code>seed</code></td>
+<td>no</td>
+<td>none</td>
+<td>Seeds the engine's own random number generators before anything is built.</td>
+</tr>
+<tr>
+<td><code>default_language_model</code></td>
+<td>no</td>
+<td>none</td>
+<td>The model a reward or metric uses when its config names none. A <code>models</code> key of type <code>llm</code>, called with its <code>params</code>.</td>
+</tr>
+<tr>
+<td><code>default_embedding_model</code></td>
+<td>no</td>
+<td>none</td>
+<td>The same, for rewards and metrics that need an embedding model. A <code>models</code> key of type <code>embedding</code>.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>no</td>
+<td></td>
+<td>One line for listings.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>no</td>
+<td></td>
+<td>Labels for listings, e.g. <code>math</code>, <code>weekly</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing else is accepted: a field the schema does not know is an error, not
+silently ignored. The sections below take each field in turn.</p>
+<h3 id="language_models-the-grids-rows"><code>language_models</code>: the grid's rows<a class="headerlink" href="#language_models-the-grids-rows" title="Permanent link">&para;</a></h3>
+<p>The models you want to compare, by the name you gave them in <code>models.yaml</code>,
+not by their provider id. That name is what the result tables, <code>result.json</code>
+and leaderboards show.</p>
+<p>A model entry is an id <strong>plus</strong> its params, so two entries can call the same
+id with different settings, and they are two rows of the grid. That is how you
+compare <code>temperature: 0</code> with <code>temperature: 0.7</code>, or two <code>reasoning_effort</code>
+levels, on one model:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">gpt-4o-mini</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">gpt-4o-mini-warm</span><span class="p">:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">0.7</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">temperature-check</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini-warm</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>What a row of the grid must be depends on the datasets:</p>
+<table>
+<thead>
+<tr>
+<th>the datasets are</th>
+<th><code>language_models</code> lists</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>plain, <code>generator</code>, <code>agent</code>, <code>tools</code>, <code>harbor</code></td>
+<td><code>models</code> keys of type <code>llm</code></td>
+</tr>
+<tr>
+<td><code>embedding</code></td>
+<td><code>models</code> keys of type <code>embedding</code></td>
+</tr>
+<tr>
+<td><code>a2a</code></td>
+<td><code>a2a_agents</code> keys: the agents themselves are compared (<a href="../a2a-agents/">A2A agents</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="datasets-the-grids-columns"><code>datasets</code>: the grid's columns<a class="headerlink" href="#datasets-the-grids-columns" title="Permanent link">&para;</a></h3>
+<p>The datasets, by key, in the order the result tables show them. Every one
+needs a <code>reward:</code> (<a href="../datasets/">Datasets</a>). A dataset without one cannot be
+scored, and the evaluation is refused before anything runs.</p>
+<p>Some kinds of dataset cannot share a sweep with other kinds, because the grid's
+rows are different things for them, or because they run in a sandbox:</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>can share a sweep with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>plain, <code>generator</code>, <code>agent</code>, <code>tools</code></td>
+<td>each other</td>
+</tr>
+<tr>
+<td><code>embedding</code></td>
+<td>only other <code>embedding</code> datasets</td>
+</tr>
+<tr>
+<td><code>a2a</code></td>
+<td>only other <code>a2a</code> datasets</td>
+</tr>
+<tr>
+<td><code>harbor</code> (including <code>harbor_tasks</code> datasets)</td>
+<td>only other Harbor datasets</td>
+</tr>
+</tbody>
+</table>
+<p>To run GSM8K and a Harbor suite on the same models, write two evaluations.
+Their scores still meet on a <a href="../leaderboards/">leaderboard</a>, which reads every
+finished run.</p>
+<h3 id="batch_size-how-much-runs-at-once"><code>batch_size</code>: how much runs at once<a class="headerlink" href="#batch_size-how-much-runs-at-once" title="Permanent link">&para;</a></h3>
+<p>A batch is the group of rows the engine sends at once and evaluates as one
+step. <code>batch_size</code> is therefore the concurrency knob: with <code>batch_size: 8</code>, up
+to eight rows are answered at the same time, so eight requests are in flight
+against the provider (more when a judge reward scores them).</p>
+<p>The size a cell uses is the first one set of:</p>
+<ol>
+<li><code>--batch-size N</code> on the command line, for this run only;</li>
+<li>the evaluation's <code>batch_size</code>;</li>
+<li>the dataset's own <code>batch_size</code> in its <code>config</code>;</li>
+<li>1.</li>
+</ol>
+<p>Cells run one after the other, never two at once. A larger batch speeds up
+each cell; nothing makes two cells overlap.</p>
+<table>
+<thead>
+<tr>
+<th>setup</th>
+<th>a good starting <code>batch_size</code></th>
+<th>why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a local model (Ollama, vLLM) on one machine</td>
+<td>1 to 4</td>
+<td>the server answers a few requests at a time; more just queue, and can time out</td>
+</tr>
+<tr>
+<td>a hosted model on a new or low-tier key</td>
+<td>2 to 4</td>
+<td>rate limits are per minute; a burst gets throttled</td>
+</tr>
+<tr>
+<td>a hosted model on a high-tier key</td>
+<td>8 to 32</td>
+<td>the provider can take it; the run finishes many times faster</td>
+</tr>
+<tr>
+<td>a judge reward on top</td>
+<td>about half of the above</td>
+<td>each row also makes a judge call</td>
+</tr>
+<tr>
+<td>an <code>agent</code> dataset</td>
+<td>1 to 4</td>
+<td>each row is a loop of model and tool calls, and the MCP servers take the load too</td>
+</tr>
+<tr>
+<td>Harbor, on a laptop</td>
+<td>1</td>
+<td>each row in flight is a sandbox with an agent session in it</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">A rate limit does not stop the run: it lowers the score</p>
+<p>A model call that fails is retried, up to five attempts, waiting longer
+between them and honouring a provider's <code>Retry-After</code>. A call that still
+fails leaves its row without an answer and logs a warning,
+<code>All retries failed for ...</code>. The row scores 0 and the cell carries on.
+A batch size too high for your key therefore shows up as a reward that is
+too low, not as an error. If you see those warnings, lower <code>batch_size</code>
+and run the evaluation again with <code>--no-cache</code>. (When every call of a
+cell fails, the cell fails instead, and a plain rerun runs it again; see
+<a href="#failures">What can fail</a>.)</p>
+</div>
+<p>Where to set it: the dataset's <code>batch_size</code> is a property of the data (a
+Harbor dataset that should never run more than one sandbox at a time). The
+evaluation's is a property of the setup you run it on (a sweep of local models
+that a laptop must survive). <code>--batch-size</code> is for one run: a quick try at a
+higher speed, or a slower retry after throttling.</p>
+<h3 id="metrics-the-columns-beside-reward"><code>metrics</code>: the columns beside <code>reward</code><a class="headerlink" href="#metrics-the-columns-beside-reward" title="Permanent link">&para;</a></h3>
+<p><code>reward</code> is always the first column: the mean of the dataset's reward over its
+rows. <code>metrics</code> adds more columns, on every dataset of the sweep. A dataset can
+add its own too (<a href="../datasets/#extra-metrics">Datasets</a>); when both name the
+same column, the dataset's wins.</p>
+<p>Each entry is a bare name, or a mapping:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>default</th>
+<th>what</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>class</code></td>
+<td>required</td>
+<td>a catalog reward (averaged over the rows), or a measurement such as <code>cost</code></td>
+</tr>
+<tr>
+<td><code>alias</code></td>
+<td>the class's name</td>
+<td>the column's name; never <code>reward</code>, which is taken</td>
+</tr>
+<tr>
+<td><code>direction</code></td>
+<td><code>min</code> for a cost, tokens or latency measurement, else <code>max</code></td>
+<td><code>max</code> if higher is better, <code>min</code> if lower is better</td>
+</tr>
+<tr>
+<td><code>objective</code></td>
+<td><code>false</code></td>
+<td><code>true</code> puts the column on the dataset's Pareto frontier, beside <code>reward</code></td>
+</tr>
+<tr>
+<td>anything else</td>
+<td></td>
+<td>the class's own settings, e.g. a judge's <code>language_model</code> (a <code>models</code> key, called with its <code>params</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>The measurements of a run are columns like any other. Only the columns you
+list are kept in <code>result.json</code>, so only those can be ranked on a leaderboard:</p>
+<table>
+<thead>
+<tr>
+<th><code>class</code></th>
+<th>what it measures over the cell</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cost</code></td>
+<td>USD spent on calls to the model under test</td>
+</tr>
+<tr>
+<td><code>reward_cost</code></td>
+<td>USD spent on judge calls while scoring</td>
+</tr>
+<tr>
+<td><code>embedding_cost</code></td>
+<td>USD spent on embedding calls</td>
+</tr>
+<tr>
+<td><code>input_tokens</code>, <code>output_tokens</code>, <code>total_tokens</code></td>
+<td>tokens consumed</td>
+</tr>
+<tr>
+<td><code>avg_latency</code></td>
+<td>seconds per model call, on average</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Which way is better is read off the name</p>
+<p>Without <code>direction:</code>, a metric is <code>min</code> when it measures what the calls
+spend or how often they fail: a name ending in <code>tokens</code> (but not
+<code>cached_tokens</code>), <code>token_share</code>, <code>cost</code>, <code>latency</code>, <code>time_to_...</code>,
+<code>elapsed_time</code>, <code>error_rate</code>, <code>failed_calls</code> or <code>fallback_activations</code>,
+optionally followed by <code>_per_call</code>. So <code>cost</code>, <code>reward_cost</code>,
+<code>total_tokens</code> and <code>avg_latency</code> rank the cheaper, faster model first.
+Anything else is <code>max</code>, rates such as <code>cache_hit_rate</code> included. Write
+<code>direction:</code> only to override it.</p>
+</div>
+<p><code>objective: true</code> asks the run for trade-offs. On a dataset with more than one
+objective, <code>result.json</code> lists the models no other model beats on every
+objective at once (<code>frontier_by_ds</code>, see <a href="../results/">Reading results</a>). Use
+it when the best model is not the cheapest and you want to see which models
+are worth considering at all.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">quality-vs-cost</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">metrics</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">cost</span><span class="p p-Indicator">,</span><span class="nt"> objective</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="nv">lm_as_judge</span><span class="p p-Indicator">,</span><span class="nt"> alias</span><span class="p">:</span><span class="w"> </span><span class="nv">judged</span><span class="p p-Indicator">,</span><span class="nt"> language_model</span><span class="p">:</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>Put a metric on the evaluation when you want it on every dataset of the sweep
+(cost, latency). Put it on the dataset when it only makes sense for that data
+(an <code>answer_accuracy</code> for numeric answers).</p>
+<h3 id="seed"><code>seed</code><a class="headerlink" href="#seed" title="Permanent link">&para;</a></h3>
+<p>Before anything is built, the run seeds the engine's random number generators
+with this value. That makes the engine's own choices repeatable. It does
+<strong>not</strong> make the models' answers repeatable: sampling happens at the provider,
+out of reach of this seed. For steadier answers, set <code>temperature: 0</code> on the
+models (<a href="../models/">Models</a>), and still expect small differences between two
+runs of a hosted model.</p>
+<p>Set it on any evaluation you will compare over time: it costs nothing and
+removes one source of drift.</p>
+<h3 id="default_language_model-default_embedding_model"><code>default_language_model</code>, <code>default_embedding_model</code><a class="headerlink" href="#default_language_model-default_embedding_model" title="Permanent link">&para;</a></h3>
+<p>Some rewards and metrics call a model: a judge, a semantic similarity. Their
+config usually names it (<code>language_model: gpt-4o-mini</code>). When it does not,
+they use these defaults.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">judged-sweep</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">support-golden</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">default_language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge-4o</span><span class="w">      </span><span class="c1"># the judge of every reward that names none</span>
+</code></pre></div>
+<p>Prefer naming the judge on the reward itself (<a href="../rewards/">Rewards</a>): the
+choice then travels with the reward to every evaluation that uses it. Use the
+default when one sweep should swap the judge of all its rewards at once.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When a run sets a default model, the engine also writes it to its settings
+file in your home folder. Name the judge explicitly on rewards you care
+about rather than relying on what an earlier run left behind.</p>
+</div>
+<h3 id="description-tags"><code>description</code>, <code>tags</code><a class="headerlink" href="#description-tags" title="Permanent link">&para;</a></h3>
+<p>Shown by <code>openarena evaluations list</code> and in the app's listings. They change
+nothing in a run. A tag such as <code>smoke</code> or <code>weekly</code> tells a quick check from
+the real thing at a glance.</p>
+<h2 id="things-that-are-not-evaluation-fields">Things that are not evaluation fields<a class="headerlink" href="#things-that-are-not-evaluation-fields" title="Permanent link">&para;</a></h2>
+<p>If you are looking for one of these on the evaluation, it lives elsewhere:</p>
+<table>
+<thead>
+<tr>
+<th>you want</th>
+<th>set</th>
+<th>where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fewer rows, for a quick try</td>
+<td><code>limit: N</code> in the dataset's <code>config</code> (the first N rows)</td>
+<td><a href="../datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td>each row answered several times, to average out sampling</td>
+<td><code>repeat: N</code> in the dataset's <code>config</code>: each row is sent N times, and the reward is the mean over all the answers</td>
+<td><a href="../datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td>temperature, max tokens, reasoning effort</td>
+<td>the model's <code>params</code></td>
+<td><a href="../models/">Models</a></td>
+</tr>
+<tr>
+<td>a spending limit</td>
+<td>a leaderboard's <code>budgets:</code>: a model over budget is left out of the ranking. Nothing stops a run while it spends</td>
+<td><a href="../leaderboards/">Leaderboards</a></td>
+</tr>
+<tr>
+<td>more cells at once</td>
+<td>not possible within one run: raise <code>batch_size</code>, or run two evaluations side by side</td>
+<td><a href="#when-to-use-what">A large sweep</a></td>
+</tr>
+<tr>
+<td>more or fewer retries</td>
+<td>not configurable: each model call gets up to five attempts</td>
+<td><a href="#batch_size-how-much-runs-at-once"><code>batch_size</code></a></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title"><code>repeat</code> gives a steadier mean, not a spread</p>
+<p>With <code>repeat: 5</code>, a cell's reward is the mean over five answers per row,
+which smooths out a lucky or unlucky sample. It does not tell you how much
+the answers varied. To see the spread between runs, run the same
+evaluation under different <code>--state-dir</code>s and compare the <code>result.json</code>s.</p>
+</div>
+<h2 id="running-it">Running it<a class="headerlink" href="#running-it" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs<span class="w">                    </span><span class="c1"># every registry, as the run will read it</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>list<span class="w">                 </span><span class="c1"># the saved evaluations</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>math-compare<span class="w">     </span><span class="c1"># run one</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>what</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--configs DIR</code></td>
+<td><code>./configs</code></td>
+<td>the configs folder to read</td>
+</tr>
+<tr>
+<td><code>--state-dir DIR</code></td>
+<td><code>./.open-arena</code></td>
+<td>where runs live, one folder per evaluation</td>
+</tr>
+<tr>
+<td><code>--no-cache</code></td>
+<td>off</td>
+<td>start over instead of resuming</td>
+</tr>
+<tr>
+<td><code>--batch-size N</code></td>
+<td></td>
+<td>the batch size for this run, over the evaluation's</td>
+</tr>
+<tr>
+<td><code>--json FILE</code></td>
+<td></td>
+<td>also write the result there</td>
+</tr>
+<tr>
+<td><code>-v</code>, <code>-vv</code></td>
+<td></td>
+<td>a progress bar per cell, or a line per batch</td>
+</tr>
+</tbody>
+</table>
+<p>The run first reads the workspace's <code>.env</code> (beside <code>configs/</code>), without
+overriding a variable your shell already sets. It then gathers the evaluation
+and every entry it names into one config, replaces each <code>${NAME}</code> with its
+variable (<a href="../../workspace/#secrets-in-configs">Secrets in configs</a>), and
+validates it whole. It refuses to start on a problem: a <code>${NAME}</code> not set, an
+unknown dataset, a dataset without a reward, a model of the wrong type, kinds
+that cannot share a run. The snapshot it writes keeps the <code>${NAME}</code>
+references, not their values.</p>
+<p><a href="../../cli/#openarena-evaluations-run">CLI</a> has every option in detail.</p>
+<h2 id="what-happens-during-a-run">What happens during a run<a class="headerlink" href="#what-happens-during-a-run" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A["read .env, gather the entries, validate"] --&gt; B["write .open-arena/NAME/config.yaml"]
+    B --&gt; C["look up a price for every model"]
+    C --&gt; D["per dataset: load the rows, build the reward,&lt;br/&gt;read back the cells a previous attempt finished"]
+    D --&gt; E["build a program for each cell still to run&lt;br/&gt;(opens MCP servers and A2A clients)"]
+    E --&gt; F["run the cells, model by model"]
+    F --&gt; G["print a table per dataset, write result.json"]</code></pre>
+<p>Every dataset is loaded and every program built before the first cell runs. A
+broken dataset fails the run in its first minute, not after an hour of model
+calls. An agent whose MCP servers give no tools (a server down, a command not
+found, a server with no tools) fails only its own cells, with
+<code>could not load the MCP tools of [...]</code>, and the other cells run.</p>
+<p>The cells then run <strong>model by model</strong>: every dataset for the first model, then
+every dataset for the second. A local server that holds one model at a time
+loads each model once, not once per cell.</p>
+<h3 id="watching-it">Watching it<a class="headerlink" href="#watching-it" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Running math-compare (.open-arena/math-compare/config.yaml)
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gsm8k-20
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  qwen38 running…
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  qwen38 done reward 0.6500, cost 0.0000, avg_latency 2.1043, answer_accuracy 0.7000
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  gpt-4o-mini running…
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  gpt-4o-mini done reward 0.8500, cost 0.0021, avg_latency 0.8120, answer_accuracy 0.9000
+</code></pre></div>
+<p>A line when a cell starts, a line with its numbers when it ends. <code>-v</code> adds a
+progress bar per cell and <code>-vv</code> a line per batch: use them on long cells, to
+see that something is moving. After each dataset, every failed cell gets a
+line with the reason: <code>&lt;model&gt; failed: &lt;why&gt;</code>.</p>
+<p>At the end, a table per dataset: a row per model, a column per metric, <code>—</code>
+where a cell has no value.</p>
+<h3 id="failures">Failures<a class="headerlink" href="#failures" title="Permanent link">&para;</a></h3>
+<p>Things go wrong at three levels:</p>
+<table>
+<thead>
+<tr>
+<th>level</th>
+<th>what happens</th>
+<th>what you see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a row</td>
+<td>a model call fails five times: the row gets no answer and scores 0</td>
+<td><code>All retries failed for ...</code> in the log; a lower reward</td>
+</tr>
+<tr>
+<td>a cell</td>
+<td>an error the cell cannot get past (a template naming a missing column, an agent whose MCP servers give no tools), or no row got an answer at all (a missing key, a model server that is down, a model id the provider does not know): the cell is recorded as failed, and the run moves on</td>
+<td><code>&lt;model&gt; failed: &lt;why&gt;</code>, for example <code>no row got an answer: all 20 row(s) failed; the first error: &lt;error&gt;</code>; <code>—</code> in the table; a status other than <code>COMPLETED</code> in <code>result.json</code></td>
+</tr>
+<tr>
+<td>the run</td>
+<td>every cell runs, however many fail; then, if any cell failed, the command exits 1</td>
+<td>after the table and <code>result.json</code>, <code>N cell(s) failed: &lt;model&gt; × &lt;dataset&gt;, ...</code></td>
+</tr>
+</tbody>
+</table>
+<p>A row an A2A agent does not answer (an error, a task that did not complete,
+the timeout) is a row-level failure too: a warning, a 0 for that row, and the
+cell goes on.</p>
+<p><a href="../results/#when-a-cell-failed-or-scored-0">Reading results</a> lists the usual
+causes and their fixes.</p>
+<h2 id="resuming-and-starting-over">Resuming and starting over<a class="headerlink" href="#resuming-and-starting-over" title="Permanent link">&para;</a></h2>
+<p>A run keeps each cell's state in its folder as the cell finishes. Running the
+same evaluation again picks up where it stopped:</p>
+<ul>
+<li>cells that finished are not run again: their scores are read back;</li>
+<li>cells that failed, or were running when the process stopped, run again;</li>
+<li>cells never reached run for the first time.</li>
+</ul>
+<p>So after a crash or a <code>Ctrl-C</code>, run the same command and only what is
+missing runs. The same goes for a missing key or a model server that was
+down: no row of those cells got an answer, so they failed rather than scoring
+0, and a plain rerun runs them once the cause is fixed. Only a cell where some
+rows answered is kept with 0 for the others; rerun it with <code>--no-cache</code>.</p>
+<p>The saved state does not record what a finished cell was computed from, so it
+keeps the cell even when its inputs changed. Use <code>--no-cache</code> to start over:</p>
+<table>
+<thead>
+<tr>
+<th>you changed</th>
+<th>finished cells are</th>
+<th>do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nothing; the run stopped or a cell failed</td>
+<td>still right</td>
+<td>run again</td>
+</tr>
+<tr>
+<td><code>--batch-size</code> or <code>batch_size</code></td>
+<td>still right</td>
+<td>run again</td>
+</tr>
+<tr>
+<td><code>description</code>, <code>tags</code></td>
+<td>still right</td>
+<td>run again</td>
+</tr>
+<tr>
+<td>the <code>language_models</code> list</td>
+<td>possibly stale</td>
+<td><code>--no-cache</code></td>
+</tr>
+<tr>
+<td>a dataset's rows, templates, <code>limit</code> or <code>repeat</code></td>
+<td>stale</td>
+<td><code>--no-cache</code></td>
+</tr>
+<tr>
+<td>a reward, or any <code>metrics</code></td>
+<td>stale</td>
+<td><code>--no-cache</code></td>
+</tr>
+<tr>
+<td>a model's <code>params</code> or <code>model</code> id</td>
+<td>stale</td>
+<td><code>--no-cache</code></td>
+</tr>
+<tr>
+<td>rate limits made rows score 0</td>
+<td>finished, but scored too low</td>
+<td><code>--no-cache</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title"><code>--no-cache</code> drops every cell of the evaluation</p>
+<p>It wipes the saved cells of every dataset in the evaluation, so everything
+runs, and is paid for, again. To redo only part of a sweep, write a
+smaller evaluation for that part.</p>
+</div>
+<p>Two evaluations never share saved state: each has its own folder.</p>
+<h2 id="what-a-run-writes">What a run writes<a class="headerlink" href="#what-a-run-writes" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>.open-arena/math-compare/
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  config.yaml              the evaluation and every entry it names, gathered: what ran
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  result.json              the scores, written when the run ends
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  gsm8k-20/                each dataset's saved cells: what a resumed run reads back
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  harbor/                  Harbor trials, for Harbor datasets
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  tasks/  environments/    copies of the Harbor folders the run used
+</code></pre></div>
+<p><code>config.yaml</code> is written again at every launch, from the configs as they are
+then, and the Harbor folders are copied again. <code>result.json</code> is written only
+when the run ends: after an interrupted run, the one there (if any) is from
+the previous finished run. What is in it, and how to read it:
+<a href="../results/">Reading results</a>.</p>
+<h2 id="cost">Cost<a class="headerlink" href="#cost" title="Permanent link">&para;</a></h2>
+<h3 id="how-a-run-is-priced">How a run is priced<a class="headerlink" href="#how-a-run-is-priced" title="Permanent link">&para;</a></h3>
+<p>Each call is priced by litellm from its token counts. Before the first cell,
+the run looks up a price for every model in <code>models.yaml</code>, the ones under test
+and the judges, from the first source that knows it:</p>
+<ol>
+<li>a local server (<code>ollama/</code>, <code>vllm/</code>, <code>hosted_vllm/</code>, <code>lm_studio/</code>,
+   <code>llamafile/</code>): free, there is no bill;</li>
+<li>litellm's pricing table;</li>
+<li>OpenRouter's catalogue, which also prices many vendors' direct ids when
+   OpenRouter serves the same model.</li>
+</ol>
+<p>An <code>openrouter/</code> model's answers carry their own cost.</p>
+<div class="admonition warning">
+<p class="admonition-title">A cost of 0 is not always free</p>
+<p>A model that no source prices still runs, but its spend reads 0. If a
+hosted model shows <code>cost 0.0000</code>, its price is unknown, not zero. Check
+what you were billed before trusting that column.</p>
+</div>
+<p>To keep the cost in the results and on leaderboards, list it under <code>metrics</code>
+(<a href="#metrics-the-columns-beside-reward">above</a>).</p>
+<h3 id="estimating-it-before-you-run">Estimating it before you run<a class="headerlink" href="#estimating-it-before-you-run" title="Permanent link">&para;</a></h3>
+<p>Count the calls:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cells          = models × datasets
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>rows per cell  = limit (or the dataset's size) × repeat
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>model calls    = cells × rows per cell × calls per row
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>judge calls    = cells × rows per cell × judges (rewards and metrics that call a model)
+</code></pre></div>
+<p>A plain or <code>generator</code> row is one call. An <code>agent</code> row is a loop: one call per
+step, plus the tool calls. A Harbor row is a whole agent session in a sandbox,
+often dozens of calls. Each judge adds a call per row.</p>
+<p>Then measure rather than guess: run the sweep with <code>limit: 5</code> and <code>cost</code> as a
+metric, read the cost per cell, and multiply by <code>rows / 5</code>.</p>
+<h2 id="when-to-use-what">When to use what<a class="headerlink" href="#when-to-use-what" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">First run of a new setup</label><label for="__tabbed_1_2">Comparing models</label><label for="__tabbed_1_3">A large sweep</label><label for="__tabbed_1_4">A noisy task</label><label for="__tabbed_1_5">Keeping runs apart</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Smoke it. Set <code>limit: 5</code> on the datasets, run one cheap model, and read
+the answers (<a href="../results/">Reading results</a>), not only the scores. A reward
+of 0 everywhere usually means a template or an answer format is off, and
+that is cheap to find on five rows.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">math-smoke</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">smoke</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># one cheap model is enough to test the setup</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># with limit: 5 in its config</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<p>Then raise <code>limit</code>, add the other models, and run the real evaluation.</p>
+</div>
+<div class="tabbed-block">
+<p>Every model on the same datasets, <code>temperature: 0</code> on each, <code>cost</code> and
+<code>avg_latency</code> as columns (both rank lower first on their own), a <code>seed</code>. When a new model
+comes out, add it to the list and run with <code>--no-cache</code>, or give it an
+evaluation of its own: a leaderboard puts them side by side either way.</p>
+</div>
+<div class="tabbed-block">
+<p>Split it into several evaluations: by provider, by kind of dataset, or by
+size. Each has its own folder, its own saved state, and its failures do
+not hold the others back. Run them one after the other, or side by side in
+two terminals when they call different providers, so that their rate
+limits do not add up. A <a href="../leaderboards/">leaderboard</a> then reads every
+<code>result.json</code> under <code>.open-arena/</code> and ranks them together.</p>
+</div>
+<div class="tabbed-block">
+<p>When two runs of one model disagree, set <code>repeat: 3</code> to <code>5</code> on the
+dataset: the reward becomes a mean over several answers per row. It
+multiplies the cost by the same factor, so try it on a <code>limit</code>ed dataset
+first.</p>
+</div>
+<div class="tabbed-block">
+<p><code>--state-dir</code> gives a run a different home. Use it to keep last month's
+results while running the same evaluation again, or to run it twice and
+compare.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>math-compare<span class="w"> </span>--state-dir<span class="w"> </span>runs/2026-10
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w"> </span>--state-dir<span class="w"> </span>runs/2026-10
+</code></pre></div>
+<p><code>openarena leaderboards run</code> reads the <code>--state-dir</code> you give it, so point
+it at the same one.</p>
+</div>
+</div>
+</div>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p><code>openarena check configs</code> reads each evaluation as a run would, and reports:</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th><code>openarena check</code> says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>language_models: []</code></td>
+<td><code>List should have at least 1 item ...</code>: give it a value</td>
+</tr>
+<tr>
+<td><code>batch_size: 0</code></td>
+<td><code>Input should be greater than or equal to 1</code>: set 1 or more</td>
+</tr>
+<tr>
+<td>a field the schema does not have (<code>concurrency:</code>, <code>repeats:</code>, <code>limit:</code>)</td>
+<td><code>not a field of a evaluations entry</code>, with the fields an entry reads</td>
+</tr>
+<tr>
+<td>a model or dataset that is not in its registry</td>
+<td><code>'gpt4' is not in models</code>, with the closest name or the ones there</td>
+</tr>
+<tr>
+<td>a dataset without <code>reward:</code></td>
+<td><code>dataset 'd' has no reward:</code>: set one, or leave the dataset out</td>
+</tr>
+<tr>
+<td>an embedding model in a text sweep, or the other way round</td>
+<td><code>... this sweep needs embedding models</code>: list only models of the type the datasets need</td>
+</tr>
+<tr>
+<td>an A2A, embedding or Harbor dataset beside other kinds</td>
+<td><code>... cannot share a run ...</code>: split it in two evaluations</td>
+</tr>
+<tr>
+<td>an embedding model as <code>default_language_model</code></td>
+<td><code>'e' is an embedding model; this setting needs a language model</code></td>
+</tr>
+</tbody>
+</table>
+<p>What <code>check</code> cannot see:</p>
+<ul>
+<li><strong>A missing key.</strong> A hosted model without its key fails every call at run
+  time, and its cell fails with <code>no row got an answer: ...</code>. Set the key in
+  <code>.env</code> and run the same command again: the failed cell runs, the others are
+  read back.</li>
+<li><strong>A batch too large for your rate limit.</strong> It shows as <code>All retries failed</code>
+  warnings and a low reward, not as an error.</li>
+<li><strong>Saved cells from before a change.</strong> The run reuses them silently. Add
+  <code>--no-cache</code> after changing what they depend on.</li>
+<li><strong>A <code>${NAME}</code> set nowhere.</strong> <code>check</code> only warns; the run refuses to start
+  and names it.</li>
+</ul>
+<p><a href="../check/">Checking configs</a> has every check.</p>
+<details class="note">
+<summary>Tracing to MLflow</summary>
+<p><code>openarena evaluations run</code> does not trace to MLflow. The arena app runs
+the same sweep with tracing on when <code>MLFLOW_TRACKING_URI</code> is set and the
+server answers its <code>/health</code> check (<code>ARENA_MLFLOW_TRACING=0</code> opts out).
+Each run then gets its own experiment, under <code>MLFLOW_EXPERIMENT_NAME</code>, and
+each cell one MLflow run named <code>&lt;dataset&gt; · &lt;model&gt;</code>, tagged with the
+dataset and the model, with a span per model call and its cost. A server
+that is down never fails an evaluation: the run goes on untraced, with a
+warning.</p>
+</details>
+<h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../results/">Reading results</a>: <code>result.json</code>, the answers, failed cells.</li>
+<li><a href="../leaderboards/">Leaderboards</a>: rank models across runs, with budgets.</li>
+<li><a href="../check/">Checking configs</a>: every check, before you pay for a run.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../harbor-tasks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Harbor tasks">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Harbor tasks
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../leaderboards/" class="md-footer__link md-footer__link--next" aria-label="Next: Leaderboards">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Leaderboards
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

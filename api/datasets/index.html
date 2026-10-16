@@ -1,0 +1,4524 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/api/datasets/">
+      
+      
+      
+        <link rel="prev" href="../leaderboard/">
+      
+      
+        <link rel="next" href="../rewards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Dataset providers - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dataset providers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3m0 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-6.5 5.25L7 14H4zm13 0L20 14h-3z"/></svg>
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__iter__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __iter__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__call__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __call__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__len__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __len__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.huggingface_dataset.HuggingFaceDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HuggingFaceDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.local_dataset.LocalDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LocalDataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LocalDataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.local_dataset.LocalDataset.check" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        check
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.folder_dataset.FolderDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FolderDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.mlflow_dataset.MLflowDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MLflowDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.langfuse_dataset.LangfuseDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LangfuseDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.langsmith_dataset.LangSmithDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LangSmithDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.opik_dataset.OpikDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OpikDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.phoenix_dataset.PhoenixDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PhoenixDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.braintrust_dataset.BraintrustDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BraintrustDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        UnityCatalogDataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UnityCatalogDataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--auth-connectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Auth &amp; connectivity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--resolution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resolution flow
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.harbor_tasks_dataset.HarborTasksDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HarborTasksDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__iter__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __iter__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__call__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __call__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.dataset.Dataset.__len__" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        __len__
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.huggingface_dataset.HuggingFaceDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HuggingFaceDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.local_dataset.LocalDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LocalDataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LocalDataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.local_dataset.LocalDataset.check" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        check
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.folder_dataset.FolderDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FolderDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.mlflow_dataset.MLflowDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MLflowDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.langfuse_dataset.LangfuseDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LangfuseDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.langsmith_dataset.LangSmithDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        LangSmithDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.opik_dataset.OpikDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        OpikDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.phoenix_dataset.PhoenixDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PhoenixDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.braintrust_dataset.BraintrustDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        BraintrustDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        UnityCatalogDataset
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UnityCatalogDataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--auth-connectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Auth &amp; connectivity
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--resolution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Resolution flow
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openarena.datasets.harbor_tasks_dataset.HarborTasksDataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        HarborTasksDataset
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="dataset-providers">Dataset providers<a class="headerlink" href="#dataset-providers" title="Permanent link">&para;</a></h1>
+<p>A dataset's <code>type</code> picks one of these; its <code>config</code> is the provider's
+arguments, plus the templates and schemas every provider takes.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.dataset.Dataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Dataset</span>
+
+
+<a href="#openarena.datasets.dataset.Dataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Dataset</span><span class="p">(</span><span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Base class for streaming datasets compatible with the framework's trainers.</p>
+<p>The framework's <code>Trainer.fit/evaluate/predict(x=...)</code> accepts a Python
+generator that yields <code>(inputs,)</code> or <code>(inputs, targets)</code> tuples — one
+tuple per batch. See
+the framework's generator data adapter and
+its data-adapter dispatch.</p>
+<p>Subclasses implement <code>_iter_rows()</code> as a generator yielding raw row
+dicts (one per source example). The base class' <code>__iter__</code> then
+renders each row through the Jinja2 templates, validates the shape,
+and yields batched <code>(x, y)</code> numpy object arrays — including the
+<code>repeat</code> expansion. Calling the dataset returns a fresh
+<code>types.GeneratorType</code> suitable for the framework:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">my_dataset</span><span class="p">())</span>
+</code></pre></div>
+<p>The shape of the per-row input/target objects is controlled by either
+a Python <code>DataModel</code> class (<code>input_data_model</code> / <code>output_data_model</code>)
+OR a raw JSON Schema (<code>input_schema</code> / <code>output_schema</code>). The two are
+mutually exclusive on each side. With a class, rows are validated via
+<code>cls.model_validate_json(rendered)</code>. With a schema, rows are wrapped
+as <code>JsonDataModel(schema=..., json=json.loads(rendered))</code> — the schema
+flows directly into the LM as a structured-output constraint, so any
+JSON Schema feature (enum, const, oneOf, ...) is supported.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Python class describing batch inputs.
+Defaults to <code>ChatMessages</code> in subclasses when neither
+this nor <code>input_schema</code> is provided.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_schema</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span> | <span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Raw JSON Schema for batch inputs. May be
+given as a dict or as a JSON-encoded string. Mutually exclusive
+with <code>input_data_model</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Jinja2 template string used to render raw
+rows into the input shape. Required.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Python class describing batch targets.
+Defaults to <code>ChatMessage</code> when <code>output_template</code> is
+given but neither this nor <code>output_schema</code> is. Must be omitted
+when <code>output_template</code> is omitted.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_schema</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span> | <span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Raw JSON Schema for batch targets.
+Mutually exclusive with <code>output_data_model</code>. Must be omitted
+when <code>output_template</code> is omitted.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Jinja2 template string used to render raw
+rows into the target shape. Optional — when omitted, the dataset
+is inputs-only and yields single-element <code>(x,)</code> batches (no
+targets). Rewards that need <code>y_true</code> will see it missing.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of examples per yielded batch. <code>None</code> lets
+the subclass decide (or yield the whole dataset as one batch).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Maximum number of <em>raw</em> (pre-repeat) examples
+to iterate over. <code>None</code> (default) means no cap. Useful for
+capping huge or streaming sources for quick experiments / smoke
+tests.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>repeat</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of consecutive copies to emit per raw example.
+Defaults to 1 (no expansion). Setting <code>repeat == batch_size</code>
+makes every batch a group of N rollouts of the same prompt —
+the expected layout for GRPO-style RL where reward statistics
+are computed across rollouts of one input.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**kwargs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Provider-specific fields forwarded by subclasses (e.g. HF
+dataset name, split, revision, API key, file path, ...).</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="openarena.datasets.dataset.Dataset.__iter__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__iter__</span>
+
+
+<a href="#openarena.datasets.dataset.Dataset.__iter__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__iter__</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Render rows through the templates and yield batches.</p>
+<p>Yields <code>(x, y)</code> when an <code>output_template</code> is configured, or
+single-element <code>(x,)</code> batches when it isn't. Honors <code>limit</code> (caps
+raw rows), <code>repeat</code> (each raw example is emitted <code>repeat</code> times in
+a row), and <code>batch_size</code> (size of the yielded numpy object arrays;
+<code>None</code> accumulates everything into a single trailing batch). The
+trailing partial batch is always flushed at the end.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="openarena.datasets.dataset.Dataset.__call__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__call__</span>
+
+
+<a href="#openarena.datasets.dataset.Dataset.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return a fresh generator over the dataset's batches.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="openarena.datasets.dataset.Dataset.__len__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__len__</span>
+
+
+<a href="#openarena.datasets.dataset.Dataset.__len__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__len__</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Number of batches, if known. Override when the size is finite.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.huggingface_dataset.HuggingFaceDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">HuggingFaceDataset</span>
+
+
+<a href="#openarena.datasets.huggingface_dataset.HuggingFaceDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">HuggingFaceDataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">streaming</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a HuggingFace <code>datasets</code> source.</p>
+<p>Each row produced by <code>datasets.load_dataset</code> is rendered through the
+Jinja2 <code>input_template</code> / <code>output_template</code> to JSON, validated against
+the corresponding <code>DataModel</code> (or <code>ChatMessages</code> when <code>None</code>),
+and accumulated into batches of size <code>batch_size</code>. Each batch is yielded
+as <code>(x, y)</code> — numpy object arrays of <code>DataModel</code> instances — matching
+the format the framework's <code>GeneratorDataAdapter</code> expects.</p>
+<p>Templates should render to JSON. Use Jinja's <code>tojson</code> filter for safe
+string escaping.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">HuggingFaceDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">"gsm8k"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"main"</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">split</span><span class="o">=</span><span class="s2">"train"</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">input_data_model</span><span class="o">=</span><span class="n">MathQuestion</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"question": {{ question | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">output_data_model</span><span class="o">=</span><span class="n">NumericalAnswer</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"answer": {{ answer.split("####")[-1].strip() | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">program</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">())</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The HuggingFace dataset repo / builder name (first
+positional argument of <code>datasets.load_dataset</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The dataset configuration name.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>split</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The split to load (e.g. <code>"train"</code>,
+<code>"test"</code>). When <code>None</code>, the entire <code>DatasetDict</code> is iterated in
+split order.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>revision</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The dataset revision (commit hash,
+branch, tag).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>streaming</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code> (default), use HF's <code>IterableDataset</code>
+so rows are downloaded on demand — required for datasets that
+don't fit on disk. The generator naturally terminates when the
+source is exhausted, so the trainer ends the epoch on its own;
+pass <code>steps_per_epoch</code> only if you also want shorter epochs.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many rows are
+consumed (across all splits). Also makes <code>__len__</code> available
+for streaming datasets.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**kwargs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Forwarded to <code>datasets.load_dataset</code> (e.g. <code>data_files</code>,
+<code>token</code>, <code>trust_remote_code</code>, ...).</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.local_dataset.LocalDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">LocalDataset</span>
+
+
+<a href="#openarena.datasets.local_dataset.LocalDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">LocalDataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a local file (JSON list, JSONL, CSV, or Parquet).</p>
+<p>Format is auto-detected from <code>path</code>'s extension unless <code>format</code> is set
+explicitly. Each row is a <code>dict</code> keyed by column name and is exposed as
+Jinja2 variables — same convention as <code>HuggingFaceDataset</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">LocalDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">"data/eval.jsonl"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content": {{ question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content": {{ answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The filesystem path to the data file.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>format</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Override the auto-detected format. One of
+<code>"json"</code> (a file holding a list of records, or an object with one
+list in it), <code>"jsonl"</code>, <code>"csv"</code>, <code>"parquet"</code>. Defaults to <code>None</code>
+(detect from extension).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many rows are
+consumed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="openarena.datasets.local_dataset.LocalDataset.check" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">check</span>
+
+
+<a href="#openarena.datasets.local_dataset.LocalDataset.check" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Read the whole file and say what is wrong with it, before a run does; returns its row count.</p>
+<p>Raises <code>ValueError</code> naming the file and the first bad line (jsonl) or
+row (csv): a line that is not JSON, a line that is not an object, a
+row with more values than the header, no rows at all.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.folder_dataset.FolderDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">FolderDataset</span>
+
+
+<a href="#openarena.datasets.folder_dataset.FolderDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">FolderDataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">'*'</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">'utf-8'</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset where each file in a folder is one record.</p>
+<p>Files are read in deterministic alphabetical order and exposed to the
+Jinja2 templates as a flat dict. The schema depends on the file's
+format:</p>
+<ul>
+<li><code>.json</code> / <code>.yaml</code> / <code>.yml</code> files are parsed: if the parsed value
+    is a <code>dict</code>, its keys are spread at the top level; otherwise it is
+    exposed as <code>record</code>.</li>
+<li><code>.txt</code> / <code>.md</code> (and any other extension when <code>format="text"</code>) are
+    read as UTF-8 strings and exposed as <code>text</code>.</li>
+</ul>
+<p>Every record additionally exposes filesystem metadata as <code>_filename</code>
+(full filename), <code>_stem</code> (filename without extension), and <code>_path</code>
+(path relative to the dataset root, posix-style).</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">FolderDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">"data/cases"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">pattern</span><span class="o">=</span><span class="s2">"*.json"</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The folder containing one file per record.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pattern</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Glob pattern selecting which files inside <code>path</code>
+count as records. Defaults to <code>"*"</code> (everything at the top
+level). Combine with <code>recursive=True</code> for nested folders.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;*&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>recursive</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, walk subfolders too (uses <code>rglob</code>
+with <code>pattern</code>). Defaults to <code>False</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>format</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Override the auto-detected per-file
+format. One of <code>"json"</code>, <code>"yaml"</code>, <code>"text"</code>. Defaults to
+<code>None</code> (detect from each file's extension).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>encoding</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Text encoding for file reads. Defaults to
+<code>"utf-8"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;utf-8&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many files are
+consumed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.mlflow_dataset.MLflowDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MLflowDataset</span>
+
+
+<a href="#openarena.datasets.mlflow_dataset.MLflowDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">MLflowDataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tracking_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>An MLflow evaluation dataset.</p>
+<p>Read from the arena's MLflow <em>source</em> server.</p>
+<p>The arena keeps two MLflow servers apart: <code>MLFLOW_TRACKING_URI</code>, where
+evaluation runs are traced, and <code>MLFLOW_SOURCE_TRACKING_URI</code>, where
+datasets (and traces to judge) are read from. The engine's loader only
+knows the former, so this subclass defaults <code>tracking_uri</code> to the latter;
+an explicit <code>tracking_uri</code> on the dataset still wins. Everything else —
+fields, templates, records — is the library's.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.langfuse_dataset.LangfuseDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">LangfuseDataset</span>
+
+
+<a href="#openarena.datasets.langfuse_dataset.LangfuseDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">LangfuseDataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">streaming</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a Langfuse dataset.</p>
+<p>See https://langfuse.com/docs/evaluation/experiments/datasets. Each
+Langfuse <code>DatasetItem</code> exposes <code>input</code>, <code>expected_output</code>, <code>metadata</code>,
+and <code>id</code>; those names become the variables available to the Jinja2
+<code>input_template</code> / <code>output_template</code>. Auth comes from env vars
+(<code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, <code>LANGFUSE_HOST</code>); set
+them in <code>.env</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">LangfuseDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">"mmlu_subset"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ input | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ expected_output | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dataset_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Langfuse dataset name
+(<code>langfuse.get_dataset(name)</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The UTC point-in-time snapshot
+to pin items to (Langfuse datasets are versioned by timestamp,
+not by string tag — see <code>Langfuse.get_dataset(version=...)</code>).
+Accepts an ISO 8601 string (<code>"2026-04-15T00:00:00Z"</code>), a YAML
+timestamp (already parsed to <code>datetime</code>), or <code>None</code> for the
+latest state.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>streaming</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code> (default), fetch items one page at a
+time as the dataset is iterated — items don't need to fit in
+memory and <code>__len__</code> is unknown unless <code>limit</code> is set. If
+<code>False</code>, prefetch the entire dataset upfront via
+<code>Langfuse.get_dataset(...)</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>page_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Items per page request when streaming. Defaults
+to <code>50</code>, matching the SDK's <code>fetch_items_page_size</code> default.</p>
+              </div>
+            </td>
+            <td>
+                  <code>50</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many items are
+consumed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.langsmith_dataset.LangSmithDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">LangSmithDataset</span>
+
+
+<a href="#openarena.datasets.langsmith_dataset.LangSmithDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">LangSmithDataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">as_of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a LangSmith dataset.</p>
+<p>See https://docs.smith.langchain.com/evaluation/concepts#datasets. Each
+LangSmith <code>Example</code> exposes <code>inputs</code> (dict), <code>outputs</code> (dict | None),
+<code>metadata</code> (dict), and <code>id</code>; those names become the variables available
+to the Jinja2 <code>input_template</code> / <code>output_template</code>. Auth comes from env
+vars (<code>LANGSMITH_API_KEY</code>, <code>LANGSMITH_ENDPOINT</code>); set them in <code>.env</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">LangSmithDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">"mmlu_subset"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ inputs.question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ outputs.answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dataset_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The LangSmith dataset name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>as_of</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Point-in-time snapshot — either a
+version tag string (e.g. <code>"prod"</code>) or a UTC tz-aware datetime
+for time-travel. Defaults to <code>None</code> (latest state).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many items are
+consumed; required for <code>__len__</code> since LangSmith doesn't
+expose a count under <code>as_of</code> without a full scan.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.opik_dataset.OpikDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">OpikDataset</span>
+
+
+<a href="#openarena.datasets.opik_dataset.OpikDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OpikDataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filter_string</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by an Opik (Comet) dataset.</p>
+<p>See https://www.comet.com/docs/opik/evaluation/manage_datasets. Each
+Opik dataset item is exposed as a dict — the standard fields are
+<code>input</code>, <code>expected_output</code>, <code>metadata</code>, plus <code>id</code> — and any custom
+fields the user added at insertion time are forwarded verbatim. Those
+keys become the Jinja2 variables available to <code>input_template</code> /
+<code>output_template</code>. Auth comes from env vars (<code>OPIK_API_KEY</code>,
+<code>OPIK_WORKSPACE</code>, <code>OPIK_URL_OVERRIDE</code>); set them in <code>.env</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">OpikDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">"mmlu_subset"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ expected_output.answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dataset_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Opik dataset name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The version name (e.g. <code>"v1"</code>) to pin
+items to a named snapshot via <code>Dataset.get_version_view</code>.
+Defaults to <code>None</code> (latest live state).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>filter_string</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Opik OQL filter applied server-side
+(e.g. <code>'tags contains "regression"'</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many items are
+consumed. When set, it is forwarded to Opik as <code>nb_samples</code> so
+only that many rows are fetched.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.phoenix_dataset.PhoenixDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">PhoenixDataset</span>
+
+
+<a href="#openarena.datasets.phoenix_dataset.PhoenixDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">PhoenixDataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by an Arize Phoenix dataset.</p>
+<p>See https://docs.arize.com/phoenix/datasets-and-experiments. Each
+Phoenix <code>DatasetExample</code> exposes <code>id</code>, <code>input</code> (dict), <code>output</code> (dict),
+and <code>metadata</code> (dict); those names become the variables available to
+the Jinja2 <code>input_template</code> / <code>output_template</code>. Auth comes from env
+vars (<code>PHOENIX_API_KEY</code>, <code>PHOENIX_COLLECTOR_ENDPOINT</code> or
+<code>PHOENIX_HOST</code> + <code>PHOENIX_PORT</code>); set them in <code>.env</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">PhoenixDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">"mmlu_subset"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ output.answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dataset_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Phoenix dataset name (or ID).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version_id</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The version ID to pin items to a
+snapshot. Defaults to <code>None</code> (latest version).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splits</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. List of split names to restrict to.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many items are
+consumed. Phoenix returns the full version in one call, so
+this is enforced client-side.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.braintrust_dataset.BraintrustDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">BraintrustDataset</span>
+
+
+<a href="#openarena.datasets.braintrust_dataset.BraintrustDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BraintrustDataset</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dataset_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">project_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">org_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fetch_batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a Braintrust dataset.</p>
+<p>See https://www.braintrust.dev/docs/guides/datasets. Each Braintrust
+dataset record exposes <code>id</code>, <code>input</code> (any JSON), <code>expected</code> (any JSON),
+and <code>metadata</code> (dict); those names become the variables available to
+the Jinja2 <code>input_template</code> / <code>output_template</code>. Auth comes from env
+vars (<code>BRAINTRUST_API_KEY</code>, optional <code>BRAINTRUST_APP_URL</code>,
+<code>BRAINTRUST_ORG_NAME</code>); set them in <code>.env</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">BraintrustDataset</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">project</span><span class="o">=</span><span class="s2">"my-project"</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">dataset_name</span><span class="o">=</span><span class="s2">"mmlu_subset"</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">input_template</span><span class="o">=</span><span class="s1">'{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}'</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">output_template</span><span class="o">=</span><span class="s1">'{"role":"assistant","content":{{ expected.answer | tojson }}}'</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">program</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>project</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Braintrust project name (or use <code>project_id</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dataset_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Braintrust dataset name within that
+project.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> | <span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Transaction id to pin items to a
+snapshot. Defaults to <code>None</code> (latest).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>project_id</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Alternative to <code>project</code> — the
+project's UUID. Takes precedence over <code>project</code> when both are
+set.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>org_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Organization to scope to (for users in
+multiple orgs). Falls back to <code>BRAINTRUST_ORG_NAME</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>fetch_batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Records per Braintrust API batch. Defaults
+to <code>1000</code> (the SDK default).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessages</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+                  <code><span title="DataModel">DataModel</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>. Defaults to
+<code>ChatMessage</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See <code>Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. See <code>Dataset</code>. Caps how many records are
+consumed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.unity_catalog_dataset.UnityCatalogDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">UnityCatalogDataset</span>
+
+
+<a href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">UnityCatalogDataset</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">storage_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read_batch_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">input_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">input_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_data_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_template</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Streaming dataset backed by a Unity Catalog (Databricks or OSS) table.</p>
+<p>Each row in the target table becomes a raw <code>dict</code> whose keys are the
+column names.  The <code>_iter_rows()</code> implementation resolves the table to
+its backing storage path (<code>s3://…</code>) via the Unity Catalog REST API,
+reads the Delta or Parquet data with <code>deltalake</code> + <code>pyarrow</code>, and
+streams rows without pulling the full table into memory first.</p>
+<h4 id="openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--auth-connectivity">Auth &amp; connectivity<a class="headerlink" href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--auth-connectivity" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>UC REST API</strong> — read from <code>UNITY_CATALOG_API_URL</code> (must already
+  include the <code>/api/2.1/unity-catalog</code> prefix) and bearer token
+  <code>UC_TOKEN</code>.</li>
+<li><strong>S3 / object storage</strong> — reads from <code>AWS_ACCESS_KEY_ID</code>,
+  <code>AWS_SECRET_ACCESS_KEY</code>, and optionally <code>S3_ENDPOINT</code> (for
+  MinIO/Scaleway-compatible stores; region defaults to <code>fr-par</code>).</li>
+</ul>
+<h4 id="openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--resolution-flow">Resolution flow<a class="headerlink" href="#openarena.datasets.unity_catalog_dataset.UnityCatalogDataset--resolution-flow" title="Permanent link">&para;</a></h4>
+<ol>
+<li><code>GET /tables/{catalog}.{schema}.{table}</code> → <code>storage_location</code>
+   (e.g. <code>s3://bucket/path/to/table</code>) and <code>content_hash</code> (the UC
+   table version token).</li>
+<li>If <em>version</em> or <em>as_of</em> is given, it is forwarded to the Delta reader
+   as a version integer or timestamp string.</li>
+<li>The Delta table is opened via <code>deltalake.DeltaTable</code>; if the path
+   does not contain a <code>_delta_log/</code> directory the reader falls back to
+   plain Parquet via <code>pyarrow.dataset</code>.</li>
+<li>Rows are streamed in record-batch chunks (controlled by <em>batch_size</em>
+   at the storage layer — distinct from the run's <code>batch_size</code>).</li>
+</ol>
+<p>The resolved <code>content_hash</code> / <code>storage_location</code> are stored as
+<code>self.metadata</code> for downstream pinning / reproducibility logging.</p>
+<p>Example YAML config::</p>
+<div class="highlight"><pre><span></span><code>datasets:
+  uc_eval_set:
+    type: unity_catalog
+    table: my_catalog.eval_schema.questions_v2
+    version: 3
+    input_template: |
+      {"messages": [{"role": "user", "content": {{ question | tojson }}}]}
+    output_template: |
+      {"role": "assistant", "content": {{ reference_answer | tojson }}}
+    batch_size: 8
+    limit: 500
+</code></pre></div>
+<p>Python usage::</p>
+<div class="highlight"><pre><span></span><code>ds = UnityCatalogDataset(
+    table="my_catalog.eval_schema.questions_v2",
+    version=3,
+    input_template='{"messages":[{"role":"user","content":{{ question | tojson }}}]}',
+    batch_size=8,
+)
+program.evaluate(x=ds())
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>table</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fully-qualified table name in <code>catalog.schema.table</code>
+form.  Required.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Pin the Delta table to this numeric version.
+Mutually exclusive with <em>as_of</em>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>as_of</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Pin the Delta table to a UTC timestamp string
+(ISO 8601, e.g. <code>"2026-04-15T00:00:00Z"</code>).  Mutually exclusive
+with <em>version</em>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>storage_path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional explicit <code>s3://…</code> path override.
+When given, the UC REST lookup is skipped entirely.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>read_batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of rows per Arrow record batch when
+streaming the Delta/Parquet source.  Defaults to <code>10_000</code>.
+Distinct from the run's <code>batch_size</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>10000</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_data_model</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_schema</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>input_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_data_model</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_schema</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>output_template</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>See :class:<code>~src.datasets.dataset.Dataset</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Examples per yielded batch. Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional cap on raw rows consumed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>repeat</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Repeat expansion per raw row.  Defaults to <code>1</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="openarena.datasets.harbor_tasks_dataset.HarborTasksDataset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">HarborTasksDataset</span>
+
+
+<a href="#openarena.datasets.harbor_tasks_dataset.HarborTasksDataset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">HarborTasksDataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tasks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">repeat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">ignored</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Harbor task folders, one row each.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>path</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The folder holding the tasks, one sub-folder each.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>tasks</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. The tasks to run, by folder name; none runs every task under <code>path</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Tasks run at once.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>limit</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. At most this many tasks.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>repeat</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional. Each task this many times.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../leaderboard/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Leaderboards">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Leaderboards
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../rewards/" class="md-footer__link md-footer__link--next" aria-label="Next: Rewards">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Rewards
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>
