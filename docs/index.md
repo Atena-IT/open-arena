@@ -1,5 +1,10 @@
 # Quickstart
 
+<p align="center">
+  <img src="assets/openarena-logo-light.svg#only-light" alt="Open Arena by Atena" height="160">
+  <img src="assets/openarena-logo-dark.svg#only-dark" alt="Open Arena by Atena" height="160">
+</p>
+
 **openarena** compares language models, and agents, on datasets. It runs every
 model you name on every dataset you name, scores each answer with a reward,
 and ranks the models on leaderboards. Everything is declared in YAML files and
