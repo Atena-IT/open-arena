@@ -3553,7 +3553,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "synalinks", specifier = ">=0.10.6" },
+    { name = "synalinks", specifier = ">=0.10.8" },
 ]
 provides-extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog", "all"]
 
@@ -5542,7 +5542,7 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.10.6"
+version = "0.10.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -5581,9 +5581,9 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/b4/476a8078a40ee69b723e46848c58852597ff44b220d3d80a8fbf3b4691e3/synalinks-0.10.6.tar.gz", hash = "sha256:c26fb6dbbb584171473dd20e9c929fcde1525ae7f3ad25a34c86f7c4e66adf32", size = 1215308 }
+sdist = { url = "https://files.pythonhosted.org/packages/22/77/42947f097213b33c020e9bb53dd4c89e3136f5a4e8c35320d5d0c3a87633/synalinks-0.10.8.tar.gz", hash = "sha256:249c6f832a5fa85053be747f42ee946389c6eea7318167b4e5dc7dd63e428036", size = 1219412 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/d1/50bfe99172f310e0fc71a7e09e18df8ff145e6fbedd8de335a716250a2e7/synalinks-0.10.6-py3-none-any.whl", hash = "sha256:ae05126e066baa9a49daa99cc84bf19a16f239ad47762ac837308684f0f6fe4e", size = 1543980 },
+    { url = "https://files.pythonhosted.org/packages/de/0e/c2123c9203e2d47186f6df6026ac03018385c05c2a7df0a392e5f980b267/synalinks-0.10.8-py3-none-any.whl", hash = "sha256:46461e4418c298605f3cfb0ba902d21654af4354f94074a5ccff99464f9a0d16", size = 1548657 },
 ]
 
 [[package]]
