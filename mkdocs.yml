@@ -12,8 +12,9 @@ docs_dir: docs
 
 theme:
   name: material
+  logo: assets/openarena-mark-dark.svg
+  favicon: assets/openarena-mark-dark.svg
   icon:
-    logo: material/scale-balance
     repo: fontawesome/brands/github
   features:
     - content.code.copy
