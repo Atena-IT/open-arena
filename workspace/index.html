@@ -1,0 +1,2478 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/workspace/">
+      
+      
+      
+        <link rel="prev" href="../introduction/">
+      
+      
+        <link rel="next" href="../guides/models/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>The workspace - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The workspace
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Start one
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Layout
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configs-the-registries" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        configs/: the registries
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="configs&#x2f;: the registries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-rules-every-file-follows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The rules every file follows
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-run-reads-from-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run reads from them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tasks-and-environments-the-harbor-folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tasks/ and environments/: the Harbor folders
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Data files
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#env-keys-and-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        .env: keys and endpoints
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".env: keys and endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The variables
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-in-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Secrets in configs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-arena-the-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        .open-arena/: the runs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".open-arena&#x2f;: the runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-lands-outside-the-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What lands outside the workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-command-finds-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How the command finds everything
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organising-a-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Organising a workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Versioning
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-coding-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        For coding agents
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-example-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the example runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-the-arena-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In the arena app
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Start one
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Layout
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configs-the-registries" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        configs/: the registries
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="configs&#x2f;: the registries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-rules-every-file-follows" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The rules every file follows
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-run-reads-from-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run reads from them
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tasks-and-environments-the-harbor-folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        tasks/ and environments/: the Harbor folders
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Data files
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#env-keys-and-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        .env: keys and endpoints
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".env: keys and endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The variables
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-in-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Secrets in configs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-arena-the-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        .open-arena/: the runs
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=".open-arena&#x2f;: the runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-lands-outside-the-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What lands outside the workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-command-finds-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How the command finds everything
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organising-a-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Organising a workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Versioning
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#for-coding-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        For coding agents
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-example-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the example runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-the-arena-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        In the arena app
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="the-workspace">The workspace<a class="headerlink" href="#the-workspace" title="Permanent link">&para;</a></h1>
+<p>A workspace is a plain folder. Everything a comparison needs is a file in it:
+the registries under <code>configs/</code> say what to compare, the Harbor folders beside
+them say what sandboxes and tasks look like, <code>.env</code> holds the keys, and every
+run writes its results under <code>.open-arena/</code>. There is no database and no
+server: files in, files out. You can read it, diff it, commit it and hand it to
+a colleague or a coding agent.</p>
+<p>This page explains each part of that folder: what it is for, how the
+<code>openarena</code> command finds it, what it writes, and what belongs in git. The
+fields of each registry have their own guides (links below).</p>
+<pre class="mermaid"><code>flowchart LR
+  subgraph ws[workspace folder]
+    env[.env]
+    cfg[configs/*.yaml]
+    tasks[tasks/]
+    envs[environments/]
+  end
+  env --&gt;|keys, endpoints| run((openarena evaluations run NAME))
+  cfg --&gt;|the evaluation NAME and every entry it names| run
+  tasks --&gt;|copied| run
+  envs --&gt;|copied| run
+  run --&gt; out[.open-arena/NAME/&lt;br/&gt;config.yaml, result.json, trial state]
+  out --&gt; lb((openarena leaderboards run))
+  cfg --&gt;|the leaderboard| lb</code></pre>
+<h2 id="start-one">Start one<a class="headerlink" href="#start-one" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>openarena<span class="w"> </span>init<span class="w"> </span>my-arena<span class="w">        </span><span class="c1"># DIR defaults to the current folder</span>
+</code></pre></div>
+<p><code>init</code> copies a template into the folder, then copies the engine's Agent
+Skills (every <code>openarena-*</code> skill) into <code>.agents/skills/</code>. The result runs as
+it is, given the keys or local servers its examples need (see
+<a href="#what-the-example-runs">What the example runs</a>).</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>what it does</th>
+<th>when to use it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DIR</code></td>
+<td>where to write; created if missing</td>
+<td>a new project folder, or <code>.</code> to turn the current folder into a workspace</td>
+</tr>
+<tr>
+<td><code>--template NAME</code></td>
+<td>the template to copy; <code>default</code> is the only one shipped</td>
+<td>leave it</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>overwrite files that are already there</td>
+<td>to refresh the skills or reset an example file; it replaces your edits to those files</td>
+</tr>
+</tbody>
+</table>
+<p>Without <code>--force</code>, <code>init</code> checks every target file first. If any one exists, it
+writes nothing at all and names every file in the way. So <code>init</code> on an existing
+workspace is safe: it cannot half-overwrite it.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>--force</code> overwrites, it does not merge</p>
+<p><code>--force</code> copies the template's <code>configs/*.yaml</code> over yours as well as the
+skills. To pick up newer skills after upgrading the package, run <code>init</code>
+into an empty scratch folder and copy <code>.agents/skills/</code> across, or commit
+first and restore the files you edited with git.</p>
+</div>
+<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>my-arena/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  configs/                          the registries, one YAML file each
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    models.yaml                     name -&gt; litellm id, type, params
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    rewards.yaml                    name -&gt; catalog reward, its kwargs, direction
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    datasets.yaml                   name -&gt; rows, templates, what answers, reward
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    mcp_servers.yaml                name -&gt; MCP tool server
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    a2a_agents.yaml                 name -&gt; remote A2A agent
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    environments.yaml               name -&gt; Harbor sandbox
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    evaluations.yaml                name -&gt; models x datasets, the sweep to run
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    leaderboards.yaml               name -&gt; how to rank finished runs
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  tasks/hello-world/                a Harbor task folder
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  environments/python/environment/  the `python` environment's build context
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  .agents/skills/                   Agent Skills for a coding agent, one per action
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>  AGENTS.md                         the guide a coding agent reads first
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  CLAUDE.md                         a link to AGENTS.md
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>  README.md                         the quickstart
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>  .env.template                     every key and endpoint a run may read
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>  .gitignore                        keeps .env and .open-arena/ out of git
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>  .env                              your keys (you create it from the template)
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>  .open-arena/                      runs, created by the first one
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>part</th>
+<th>written by</th>
+<th>read by</th>
+<th>commit it?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>configs/</code></td>
+<td>you, or a coding agent</td>
+<td>every command</td>
+<td>yes: it is the experiment</td>
+</tr>
+<tr>
+<td><code>tasks/</code>, <code>environments/</code></td>
+<td>you</td>
+<td><code>evaluations run</code>, for Harbor datasets</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>local data files (JSONL, CSV, ...)</td>
+<td>you</td>
+<td><code>local</code> and <code>folder</code> datasets</td>
+<td>yes if small and shareable, else keep them elsewhere</td>
+</tr>
+<tr>
+<td><code>.agents/skills/</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code></td>
+<td><code>init</code></td>
+<td>coding agents</td>
+<td>yes, so everyone's agent works the same way</td>
+</tr>
+<tr>
+<td><code>README.md</code>, <code>.env.template</code>, <code>.gitignore</code></td>
+<td><code>init</code></td>
+<td>people</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>.env</code></td>
+<td>you</td>
+<td><code>evaluations run</code>; <code>check</code> looks up <code>${NAME}</code>s in it</td>
+<td>never: it holds secrets</td>
+</tr>
+<tr>
+<td><code>.open-arena/</code></td>
+<td><code>evaluations run</code></td>
+<td><code>leaderboards run</code>, you</td>
+<td>no, by default (see <a href="#versioning">Versioning</a>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configs-the-registries">configs/: the registries<a class="headerlink" href="#configs-the-registries" title="Permanent link">&para;</a></h2>
+<p>Each registry is one file, named after it, holding one top-level key with the
+same name. Entries are keyed by a name you choose, and other entries refer to
+them by that name.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># configs/&lt;registry&gt;.yaml</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">&lt;registry&gt;</span><span class="p">:</span><span class="w">              </span><span class="c1"># the one top-level key, the file's own name</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&lt;name&gt;</span><span class="p">:</span><span class="w">                </span><span class="c1"># an entry; others refer to it by this name</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&lt;field&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>holds</th>
+<th>refers to</th>
+<th>guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>models.yaml</code></td>
+<td>the litellm id each name calls, its type (<code>llm</code> or <code>embedding</code>), its params</td>
+<td>nothing</td>
+<td><a href="../guides/models/">Models</a></td>
+</tr>
+<tr>
+<td><code>rewards.yaml</code></td>
+<td>a catalog reward, its kwargs, which way is better</td>
+<td><code>models</code> (a judge's model)</td>
+<td><a href="../guides/rewards/">Rewards</a></td>
+</tr>
+<tr>
+<td><code>datasets.yaml</code></td>
+<td>where rows come from, the Jinja templates over them, what answers them, the reward</td>
+<td><code>rewards</code>, <code>models</code>, <code>mcp_servers</code>, <code>environments</code></td>
+<td><a href="../guides/datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td><code>mcp_servers.yaml</code></td>
+<td>MCP tool servers an agent dataset or an environment is given</td>
+<td>nothing</td>
+<td><a href="../guides/mcp-tools/">MCP tools</a></td>
+</tr>
+<tr>
+<td><code>a2a_agents.yaml</code></td>
+<td>remote A2A agents an <code>a2a</code> sweep compares</td>
+<td>nothing</td>
+<td><a href="../guides/a2a-agents/">A2A agents</a></td>
+</tr>
+<tr>
+<td><code>environments.yaml</code></td>
+<td>the Harbor sandboxes a <code>harbor:</code> dataset's agent works in</td>
+<td><code>mcp_servers</code></td>
+<td><a href="../guides/environments/">Environments</a></td>
+</tr>
+<tr>
+<td><code>evaluations.yaml</code></td>
+<td>saved sweeps: which models on which datasets</td>
+<td><code>models</code>, <code>datasets</code>, <code>a2a_agents</code></td>
+<td><a href="../guides/evaluations/">Evaluations</a></td>
+</tr>
+<tr>
+<td><code>leaderboards.yaml</code></td>
+<td>saved ways of ranking finished runs</td>
+<td><code>models</code>, <code>datasets</code></td>
+<td><a href="../guides/leaderboards/">Leaderboards</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-rules-every-file-follows">The rules every file follows<a class="headerlink" href="#the-rules-every-file-follows" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The file name decides the registry.</strong> Only <code>&lt;registry&gt;.yaml</code> is read, with
+  that exact name and the <code>.yaml</code> extension. <code>model.yaml</code>, <code>models.yml</code> or
+  <code>my-datasets.yaml</code> are ignored by a run; <code>openarena check</code> reports them as
+  errors and gives the name to use.</li>
+<li><strong>One top-level key, the file's own.</strong> <code>models.yaml</code> holds <code>models:</code> only.
+  Another registry's key in the same file is not read; <code>check</code> says which file
+  to move it to.</li>
+<li><strong>A missing file is an empty registry.</strong> A workspace with no A2A agents can
+  delete <code>a2a_agents.yaml</code>, or keep it as <code>a2a_agents: {}</code>. The template keeps
+  every file so the commented field lists are at hand.</li>
+<li><strong>Names</strong> match <code>^[A-Za-z0-9][A-Za-z0-9_.-]*$</code>, at most 128 characters:
+  <code>gpt-4o-mini</code>, <code>gsm8k-20</code>.</li>
+<li><strong>References are by name, never by id.</strong> A dataset's <code>reward</code> is a <code>rewards</code>
+  key; an evaluation's <code>language_models</code> are <code>models</code> keys; a judge's
+  <code>language_model</code> is a <code>models</code> key. A litellm id such as
+  <code>openai/gpt-4o-mini</code> appears once, in <code>models.yaml</code>. To switch a judge or a
+  model version everywhere, you change one line.</li>
+<li><strong>Unknown fields are errors.</strong> A misspelled field is reported with the rename
+  that fixes it (<a href="../guides/check/">Checking configs</a>). Nothing inside an entry
+  is silently ignored.</li>
+<li><strong>A key written twice is an error.</strong> Plain YAML would keep the second one
+  without a word; the engine refuses the file and gives the line.</li>
+<li><strong><code>tags</code></strong> are lowercase labels matching <code>^[a-z0-9][a-z0-9:+./-]*$</code>:
+  <code>[math, reasoning]</code>. <strong><code>description</code></strong> is free text. Neither changes what
+  runs; they are for listing and browsing.</li>
+</ul>
+<p>Each file of a new workspace starts with a comment listing every field its
+entries take, with the optional ones as commented examples. Read it before
+editing: it is the quickest reference for that registry.</p>
+<div class="admonition tip">
+<p class="admonition-title">Why one file per registry</p>
+<p>Each file changes for its own reason: adding a model touches
+<code>models.yaml</code>, a new benchmark touches <code>datasets.yaml</code>. Diffs stay small,
+two people rarely edit the same file, and <code>openarena check configs/models.yaml</code>
+checks one file against its neighbours.</p>
+</div>
+<h3 id="what-a-run-reads-from-them">What a run reads from them<a class="headerlink" href="#what-a-run-reads-from-them" title="Permanent link">&para;</a></h3>
+<p><code>openarena evaluations run NAME</code> does not run the whole folder. It takes the
+evaluation <code>NAME</code> and gathers only what it needs into one config:</p>
+<ul>
+<li>the evaluation itself;</li>
+<li>the datasets it lists;</li>
+<li>the rewards, MCP servers and environments those datasets name, and the MCP
+  servers those environments name;</li>
+<li>for an <code>a2a</code> sweep, the A2A agents on its axis;</li>
+<li>every model, since rewards and metrics name theirs by key too.</li>
+</ul>
+<p>So a broken entry that the evaluation does not use does not stop the run. It
+still shows in <code>openarena check</code>, which reads every file. The gathered config
+is validated before the first model call: an unknown reference, a dataset with
+no <code>reward</code>, or a model of the wrong type stops the run with a message, before
+it costs anything.</p>
+<h2 id="tasks-and-environments-the-harbor-folders">tasks/ and environments/: the Harbor folders<a class="headerlink" href="#tasks-and-environments-the-harbor-folders" title="Permanent link">&para;</a></h2>
+<p>These two folders only matter for <a href="../guides/harbor-tasks/">Harbor datasets</a>,
+where an agent works in a sandbox. Delete them if you never run one.</p>
+<table>
+<thead>
+<tr>
+<th>folder</th>
+<th>what it is</th>
+<th>who uses it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tasks/&lt;task&gt;/</code></td>
+<td>a whole Harbor task: <code>task.toml</code>, <code>instruction.md</code>, <code>environment/</code>, <code>tests/test.sh</code>, <code>solution/solve.sh</code></td>
+<td>a <code>harbor_tasks</code> dataset, through its <code>config.path</code></td>
+</tr>
+<tr>
+<td><code>environments/&lt;name&gt;/environment/</code></td>
+<td>the build context of the environment <code>&lt;name&gt;</code> in <code>environments.yaml</code>: whatever its Dockerfile copies</td>
+<td>a <code>harbor:</code> dataset over rows, through <code>harbor.environment</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both are found <strong>beside <code>configs/</code></strong>, not relative to where you run the
+command:</p>
+<ul>
+<li><code>environments/&lt;name&gt;/</code> is looked up for each environment the evaluation
+  uses.</li>
+<li>A <code>harbor_tasks</code> dataset's relative <code>path</code> (the template's <code>path: tasks</code>) is
+  read against the folder that holds <code>configs/</code>. An absolute <code>path</code> is read
+  where it is, and is not copied.</li>
+</ul>
+<p>At each run both are copied into the run folder, after deleting the previous
+copy. A run therefore uses the folders as they are now: a file you removed
+since the last run is gone from this one too.</p>
+<div class="admonition note">
+<p class="admonition-title"><code>init</code> makes the <code>.sh</code> scripts executable</p>
+<p>Harbor runs a task's scripts as they are. <code>init</code> sets the executable bit on
+every <code>.sh</code> it writes. A script you add yourself needs <code>chmod +x</code>.</p>
+</div>
+<h2 id="data-files">Data files<a class="headerlink" href="#data-files" title="Permanent link">&para;</a></h2>
+<p><code>local</code> and <code>folder</code> datasets read files from disk through their
+<code>config.path</code>. Unlike the Harbor folders, that path is used as written: a
+relative path is read from <strong>the folder you run the command in</strong>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># ...</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">my-questions</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/questions.jsonl</span><span class="w">     </span><span class="c1"># relative to where you run openarena</span>
+</code></pre></div>
+<p>Keep such files in a <code>data/</code> folder at the workspace root and run commands from
+there. Then the paths in <code>datasets.yaml</code> work for everyone who clones the
+workspace. Use an absolute path only for data that lives outside the workspace
+on purpose (a shared drive, a large private file).</p>
+<p>Datasets from a hub or a tracing platform (<code>huggingface</code>, <code>langfuse</code>,
+<code>mlflow</code>, ...) need no local files: they are fetched at run time, with the
+credentials in <a href="#env-keys-and-endpoints"><code>.env</code></a>.</p>
+<h2 id="env-keys-and-endpoints">.env: keys and endpoints<a class="headerlink" href="#env-keys-and-endpoints" title="Permanent link">&para;</a></h2>
+<p>The registries never hold an API key: a model entry's <code>params</code> only take
+generation settings (<code>temperature</code>, <code>max_tokens</code>, <code>reasoning_effort</code>, and
+<code>dimensions</code> for embeddings). Keys and server addresses come from the
+environment, which keeps them out of git and lets each person use their own.
+A field that must carry a secret (a header, a server's <code>env</code>) names the
+variable with <code>${NAME}</code> (<a href="#secrets-in-configs">Secrets in configs</a>).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>.env.template<span class="w"> </span>.env<span class="w">      </span><span class="c1"># then uncomment and fill in what your models need</span>
+</code></pre></div>
+<p>How it is loaded:</p>
+<ul>
+<li><code>openarena evaluations run</code> reads <code>.env</code> from <strong>the folder that holds
+  <code>configs/</code></strong> (the parent of <code>--configs</code>), before anything else.</li>
+<li>A variable already set in your shell wins: <code>.env</code> never overrides it.</li>
+<li>No other command loads <code>.env</code>. <code>check</code>, <code>list</code> and <code>leaderboards run</code> make
+  no model calls and need no keys; <code>check</code> only reads the file to look up the
+  <a href="#secrets-in-configs"><code>${NAME}</code> references</a> a config holds.</li>
+<li>The file is optional. Without one, the run uses your shell's environment.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>setting comes from</th>
+<th>wins over</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>your shell (<code>export OPENAI_API_KEY=...</code>, CI secrets)</td>
+<td><code>.env</code></td>
+</tr>
+<tr>
+<td><code>.env</code> beside <code>configs/</code></td>
+<td>nothing; it only fills what the shell left unset</td>
+</tr>
+</tbody>
+</table>
+<p>So a CI job or a one-off override
+(<code>OPENAI_API_KEY=sk-other openarena evaluations run smoke</code>) works without
+editing the file.</p>
+<h3 id="the-variables">The variables<a class="headerlink" href="#the-variables" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Models</label><label for="__tabbed_1_2">Harbor</label><label for="__tabbed_1_3">Dataset sources</label><label for="__tabbed_1_4">Tracing</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>when you need it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GEMINI_API_KEY</code>, <code>MISTRAL_API_KEY</code>, <code>GROQ_API_KEY</code>, <code>OPENROUTER_API_KEY</code>, ...</td>
+<td>a hosted model: the key of each provider prefix in <code>models.yaml</code>, judges included</td>
+</tr>
+<tr>
+<td><code>OLLAMA_API_BASE</code></td>
+<td><code>ollama/...</code> ids, when Ollama is not on <code>http://localhost:11434</code></td>
+</tr>
+<tr>
+<td><code>HOSTED_VLLM_API_BASE</code></td>
+<td><code>vllm/...</code> ids: your server's OpenAI endpoint, ending in <code>/v1</code></td>
+</tr>
+</tbody>
+</table>
+<p>These are read by litellm, so any provider variable litellm knows works.
+Since a model entry takes no address of its own, there is one address per
+kind of local server, shared by every model of that kind.</p>
+</div>
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>what it does</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ARENA_HARBOR_SANDBOX</code></td>
+<td>where trials run: a Harbor environment type (<code>e2b</code>, <code>docker</code>, <code>daytona</code>, <code>modal</code>, ...)</td>
+<td><code>e2b</code></td>
+</tr>
+<tr>
+<td><code>E2B_API_KEY</code></td>
+<td>E2B's key. Without it, the <code>e2b</code> setting falls back to the local Docker</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_CPUS</code>, <code>ARENA_HARBOR_LOCAL_MEMORY_MB</code></td>
+<td>CPUs and memory a local Docker task gets when its environment sets none</td>
+<td>2, 2048</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_LOCAL_TRIALS</code></td>
+<td>trials at once on the local Docker</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>ARENA_HARBOR_WORKDIR</code></td>
+<td>where Harbor's task folders and trials go instead of the run folder</td>
+<td>the run's <code>harbor/</code></td>
+</tr>
+</tbody>
+</table>
+<p>An unknown <code>ARENA_HARBOR_SANDBOX</code> value stops the run with the list of
+known ones, rather than scoring every task 0.</p>
+</div>
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LANGFUSE_PUBLIC_KEY</code>, <code>LANGFUSE_SECRET_KEY</code>, <code>LANGFUSE_HOST</code></td>
+<td><code>langfuse</code> datasets</td>
+</tr>
+<tr>
+<td><code>LANGSMITH_API_KEY</code>, <code>LANGSMITH_ENDPOINT</code></td>
+<td><code>langsmith</code> datasets</td>
+</tr>
+<tr>
+<td><code>PHOENIX_API_KEY</code>, <code>PHOENIX_COLLECTOR_ENDPOINT</code> (or <code>PHOENIX_HOST</code> and <code>PHOENIX_PORT</code>)</td>
+<td><code>phoenix</code> datasets</td>
+</tr>
+<tr>
+<td><code>OPIK_API_KEY</code>, <code>OPIK_WORKSPACE</code>, <code>OPIK_URL_OVERRIDE</code></td>
+<td><code>opik</code> datasets</td>
+</tr>
+<tr>
+<td><code>BRAINTRUST_API_KEY</code>, <code>BRAINTRUST_APP_URL</code>, <code>BRAINTRUST_ORG_NAME</code></td>
+<td><code>braintrust</code> datasets</td>
+</tr>
+<tr>
+<td><code>MLFLOW_SOURCE_TRACKING_URI</code></td>
+<td><code>mlflow</code> datasets that set no <code>tracking_uri</code> of their own</td>
+</tr>
+<tr>
+<td><code>UNITY_CATALOG_API_URL</code>, <code>UC_TOKEN</code>, and the S3 settings <code>S3_ENDPOINT</code>, <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_DEFAULT_REGION</code></td>
+<td><code>unity_catalog</code> datasets</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../guides/datasets/">Datasets</a> for each provider's own fields.</p>
+</div>
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th>variable</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MLFLOW_TRACKING_URI</code></td>
+<td>the MLflow server runs are traced into; unset means no tracing</td>
+</tr>
+<tr>
+<td><code>ARENA_MLFLOW_TRACING</code></td>
+<td><code>0</code>, <code>false</code>, <code>no</code> or <code>off</code> turns tracing off while keeping the URI</td>
+</tr>
+<tr>
+<td><code>MLFLOW_EXPERIMENT_NAME</code></td>
+<td>the experiment traces go to when no run names one</td>
+</tr>
+</tbody>
+</table>
+<p>Tracing is optional; nothing in the workspace depends on it. The arena
+app traces its runs when the server answers, and an unreachable server
+leaves tracing off with a warning instead of slowing every call.
+<code>openarena evaluations run</code> itself does not switch tracing on in this
+version: its record is <code>result.json</code>.</p>
+</div>
+</div>
+</div>
+<h3 id="secrets-in-configs">Secrets in configs<a class="headerlink" href="#secrets-in-configs" title="Permanent link">&para;</a></h3>
+<p>Some fields have to carry a secret: an A2A agent's or an MCP server's
+<code>headers</code>, a stdio server's or an environment's <code>env</code>. Write a reference to an
+environment variable there instead of the value, and put the value in <code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">a2a_agents</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">support-bot</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://support-agent.example.com</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="s">"Bearer</span><span class="nv"> </span><span class="s">${SUPPORT_BOT_TOKEN}"</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># .env</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">SUPPORT_BOT_TOKEN</span><span class="o">=</span>...
+</code></pre></div>
+<ul>
+<li>Any string value in any registry may hold <code>${NAME}</code>. When a run reads its
+  config (<code>openarena evaluations run</code>, and the arena app when it launches
+  one), each reference is replaced by the variable, after <code>.env</code> is loaded,
+  so the shell still wins over the file.</li>
+<li>A variable that is not set makes the run refuse to start, before any call,
+  naming each variable and where it is used.</li>
+<li>The run's snapshot, <code>.open-arena/&lt;evaluation&gt;/config.yaml</code>, keeps the
+  <code>${NAME}</code> references, not the values, so it can be shared.</li>
+<li><code>$${NAME}</code> writes a literal <code>${NAME}</code>. Jinja's <code>{{ ... }}</code> in templates is
+  not touched.</li>
+<li><code>openarena check</code> looks each <code>${NAME}</code> up in your shell and in the
+  workspace's <code>.env</code>, and warns about one set in neither. It is a warning, not
+  an error: CI can check configs without the secrets.</li>
+</ul>
+<h2 id="open-arena-the-runs">.open-arena/: the runs<a class="headerlink" href="#open-arena-the-runs" title="Permanent link">&para;</a></h2>
+<p><code>openarena evaluations run NAME</code> writes everything into one folder per
+evaluation, <code>&lt;state-dir&gt;/NAME/</code>, with <code>--state-dir</code> defaulting to
+<code>.open-arena</code> in the folder you run from.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>.open-arena/
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  smoke/                        one folder per evaluation name
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    config.yaml                 the evaluation and every entry it names, gathered: what ran
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    result.json                 the scores, written when the sweep ends
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    gsm8k-20/                   trial state of each dataset: what makes a run resume
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    harbor/                     Harbor tasks, trials and trials.jsonl, for Harbor datasets
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    environments/ tasks/        copies of the Harbor folders the run used
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>why it is there</th>
+<th>what reads it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config.yaml</code></td>
+<td>a snapshot of exactly what ran, rewritten at every run</td>
+<td><code>leaderboards run</code> (to map names to model ids), you</td>
+</tr>
+<tr>
+<td><code>result.json</code></td>
+<td>the scores per model, dataset and metric</td>
+<td><code>leaderboards run</code>, <a href="../guides/results/">Reading results</a></td>
+</tr>
+<tr>
+<td><code>&lt;dataset&gt;/</code></td>
+<td>each cell's trial, saved as it finishes</td>
+<td>the next run of the same evaluation, to resume</td>
+</tr>
+<tr>
+<td><code>harbor/</code></td>
+<td>Harbor task folders, trials and their logs</td>
+<td>you, when a Harbor row fails</td>
+</tr>
+</tbody>
+</table>
+<p>Two consequences of "one folder per evaluation name":</p>
+<ul>
+<li><strong>Running the same evaluation again resumes it.</strong> Finished cells are kept
+  and only the missing or failed ones run. After changing what a finished cell
+  depends on (a dataset, a model's params, a reward), add <code>--no-cache</code>, or the
+  old cells are reused (<a href="../guides/evaluations/#resuming-and-starting-over">Evaluations</a>).</li>
+<li><strong>The latest run of an evaluation replaces the previous one's
+  <code>result.json</code>.</strong> To keep both, copy the first away, save the second under
+  another evaluation name, or run it into another <code>--state-dir</code>.</li>
+</ul>
+<p><code>openarena leaderboards run</code> reads every <code>&lt;state-dir&gt;/*/result.json</code>, newest
+first per cell, so every evaluation run into the same state dir feeds the same
+leaderboards. Point <code>--state-dir</code> elsewhere to rank a separate set of runs.</p>
+<div class="admonition tip">
+<p class="admonition-title">Avoid dataset names that clash with the run folder</p>
+<p>Each dataset's trial state is a sub-folder named after it, beside
+<code>harbor/</code>, <code>tasks/</code> and <code>environments/</code>. A dataset named <code>harbor</code>, <code>tasks</code>
+or <code>environments</code> would share a folder with them.</p>
+</div>
+<h3 id="what-lands-outside-the-workspace">What lands outside the workspace<a class="headerlink" href="#what-lands-outside-the-workspace" title="Permanent link">&para;</a></h3>
+<p>A run also writes a few things elsewhere. They matter when you clean up or
+move a workspace.</p>
+<ul>
+<li><strong>Harbor on a snap-packaged Docker.</strong> That Docker cannot read hidden
+  folders such as <code>.open-arena</code>, so Harbor's tasks, trials and temporary files
+  go under <code>~/arena-harbor/</code> instead, one sub-folder per run.
+  <code>ARENA_HARBOR_WORKDIR</code> moves them anywhere you choose. <code>trials.jsonl</code> stays
+  in the run's <code>harbor/</code> either way.</li>
+<li><strong>A default model.</strong> An evaluation's <code>default_language_model</code> or
+  <code>default_embedding_model</code> is also saved in a per-user settings file in your
+  home folder, as a side effect of setting it, and a later run that sets no
+  default can inherit it. Give rewards and metrics their <code>language_model</code>
+  explicitly when this matters.</li>
+<li><strong><code>--json FILE</code></strong> writes a copy of the result or ranking wherever you point
+  it.</li>
+</ul>
+<h2 id="how-the-command-finds-everything">How the command finds everything<a class="headerlink" href="#how-the-command-finds-everything" title="Permanent link">&para;</a></h2>
+<p>There is no search up the folder tree and no global config file. Every path
+comes from two options and the folder you run in.</p>
+<table>
+<thead>
+<tr>
+<th>what</th>
+<th>where it is looked for</th>
+<th>change it with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the registries</td>
+<td><code>./configs</code></td>
+<td><code>--configs DIR</code></td>
+</tr>
+<tr>
+<td><code>.env</code></td>
+<td>the parent of the configs folder</td>
+<td>move the file, or export the variables</td>
+</tr>
+<tr>
+<td><code>tasks/</code>, <code>environments/</code></td>
+<td>the parent of the configs folder</td>
+<td>an absolute <code>harbor_tasks</code> <code>path</code>, read in place</td>
+</tr>
+<tr>
+<td><code>local</code> / <code>folder</code> data</td>
+<td>the folder you run in, for a relative <code>path</code></td>
+<td>an absolute <code>path</code></td>
+</tr>
+<tr>
+<td>runs</td>
+<td><code>./.open-arena</code></td>
+<td><code>--state-dir DIR</code></td>
+</tr>
+<tr>
+<td>rows per batch</td>
+<td>the dataset's <code>batch_size</code>, overridden by the evaluation's</td>
+<td><code>--batch-size N</code>, which overrides both</td>
+</tr>
+</tbody>
+</table>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Run from the workspace (recommended)</label><label for="__tabbed_2_2">Run from elsewhere</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd</span><span class="w"> </span>my-arena
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>smoke
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall
+</code></pre></div>
+<p>Every default lines up: <code>configs/</code>, <code>.env</code>, the Harbor folders, data
+paths and <code>.open-arena/</code> all resolve inside <code>my-arena/</code>.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>smoke<span class="w"> </span>--configs<span class="w"> </span>my-arena/configs<span class="w"> </span>--state-dir<span class="w"> </span>my-arena/.open-arena
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w"> </span>--configs<span class="w"> </span>my-arena/configs<span class="w"> </span>--state-dir<span class="w"> </span>my-arena/.open-arena
+</code></pre></div>
+<p><code>.env</code> and the Harbor folders still come from <code>my-arena/</code>, but runs go to
+<code>./.open-arena</code> unless you pass <code>--state-dir</code>, and relative data paths are
+read from the current folder. Pass both options, and prefer absolute data
+paths, when a script or CI job runs from another folder.</p>
+</div>
+</div>
+</div>
+<h2 id="organising-a-workspace">Organising a workspace<a class="headerlink" href="#organising-a-workspace" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Solo</label><label for="__tabbed_3_2">Team</label><label for="__tabbed_3_3">Several setups</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>One workspace, run from its root, one <code>.env</code>. Use evaluation names as the
+unit of work: <code>smoke</code> to check a setup on a few rows (<code>limit: 5</code>), then
+<code>math-compare</code> for the full run. Keep <code>.open-arena/</code> out of git and treat
+it as a cache you can delete; what you keep is <code>configs/</code> and, when you
+need a record, the <code>result.json</code> files.</p>
+</div>
+<div class="tabbed-block">
+<p>One workspace in a shared repository, with <code>configs/</code>, the Harbor folders,
+the skills and <code>.env.template</code> committed. Each person keeps their own
+<code>.env</code>. A few habits keep it workable:</p>
+<ul>
+<li><strong>Add every key a run needs to <code>.env.template</code></strong>, commented, so a new
+  member sees what to set, the variables your configs name as <code>${NAME}</code>
+  included.</li>
+<li><strong>Prefix names by project or owner</strong> when several people add entries
+  (<code>team-a-gsm8k</code>, <code>judge-v2</code>): a name is shared by the whole registry,
+  and the same key written twice is an error.</li>
+<li><strong>Run <code>openarena check configs</code> in CI.</strong> It reads every file, needs no
+  keys, and exits 1 on an error, so a broken reference never reaches the
+  main branch.</li>
+<li><strong>Share results, not run folders.</strong> <code>.open-arena/</code> holds trial state
+  and Harbor logs that are large and tied to one machine. To rank
+  everyone's runs together, collect each run's <code>config.yaml</code> and
+  <code>result.json</code> into a shared folder laid out as
+  <code>&lt;state-dir&gt;/&lt;evaluation&gt;/</code>, and point <code>leaderboards run --state-dir</code> at
+  it. Give evaluations distinct names, or one person's run replaces
+  another's.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>The same registries against different endpoints (staging and production,
+say) are best kept as one workspace with the variables set in the shell,
+which wins over <code>.env</code>, or two env files you swap.</p>
+<p>Genuinely different sets of registries can live side by side with
+<code>--configs</code> (<code>configs/</code> and <code>configs-nightly/</code> in one folder). They then
+share the same <code>.env</code>, <code>tasks/</code> and <code>environments/</code>, since those are found
+beside the configs folder. When they need different ones, use separate
+workspaces.</p>
+</div>
+</div>
+</div>
+<h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h2>
+<p>The <code>.gitignore</code> that <code>init</code> writes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a># Keys and endpoints (copy .env.template)
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>.env
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a># Runs: configs snapshots, results, Harbor trials
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>.open-arena/
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a># Python
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>__pycache__/
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>*.py[cod]
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>.venv/
+</code></pre></div>
+<p>That covers the defaults. Extend it when you move things:</p>
+<table>
+<thead>
+<tr>
+<th>you use</th>
+<th>add to <code>.gitignore</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--state-dir runs/...</code></td>
+<td>that folder</td>
+</tr>
+<tr>
+<td><code>--json results/...</code></td>
+<td>that folder, unless you commit results on purpose</td>
+</tr>
+<tr>
+<td>a second env file (<code>.env.staging</code>)</td>
+<td>that file</td>
+</tr>
+<tr>
+<td>large local data</td>
+<td><code>data/</code>, or the files concerned</td>
+</tr>
+</tbody>
+</table>
+<p>Commit <code>.env.template</code>, never <code>.env</code>. Commit <code>CLAUDE.md</code> as the link it is; on
+a system where links cannot be made, <code>init</code> writes it as a copy of <code>AGENTS.md</code>
+instead.</p>
+<details class="details">
+<summary>Committing results on purpose</summary>
+<p>To keep a record of a published comparison, commit that run's
+<code>config.yaml</code> and <code>result.json</code> only, for example under
+<code>results/&lt;evaluation&gt;/</code>. That pair says what ran and what it scored, and is
+all <code>leaderboards run --state-dir results</code> needs to rank it again. Leave
+out the dataset sub-folders and <code>harbor/</code>: they are trial state and logs.</p>
+</details>
+<h2 id="for-coding-agents">For coding agents<a class="headerlink" href="#for-coding-agents" title="Permanent link">&para;</a></h2>
+<p><code>AGENTS.md</code>, its <code>CLAUDE.md</code> link and <code>.agents/skills/</code> exist so that Claude
+Code, Codex, Cursor or another coding agent started in the folder knows the
+layout, the rules above and the commands to run. Keep them committed, and
+refresh the skills from a fresh <code>init</code> after an upgrade. See
+<a href="../coding-agents/">Coding agents</a>.</p>
+<h2 id="what-the-example-runs">What the example runs<a class="headerlink" href="#what-the-example-runs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>evaluation</th>
+<th>runs</th>
+<th>needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>smoke</code></td>
+<td><code>qwen38</code> on <code>gsm8k-20</code>, 20 grade-school math questions, scored by exact match</td>
+<td>a local Ollama</td>
+</tr>
+<tr>
+<td><code>harbor</code></td>
+<td><code>gpt-4o-mini</code> driving the <code>terminus-2</code> agent on the <code>hello-world</code> task and on 5 GSM8K questions worked in a Python sandbox</td>
+<td><code>OPENAI_API_KEY</code>, and Docker or <code>E2B_API_KEY</code></td>
+</tr>
+</tbody>
+</table>
+<p>And two leaderboards: <code>overall</code> (every model on every dataset, reward first)
+and <code>math</code> (GSM8K, the reward alone).</p>
+<h2 id="in-the-arena-app">In the arena app<a class="headerlink" href="#in-the-arena-app" title="Permanent link">&para;</a></h2>
+<p>The layout is the arena's own: a workspace made by <code>init</code> is one the arena web
+app opens as it is, forms and all.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../introduction/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Introduction
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../guides/models/" class="md-footer__link md-footer__link--next" aria-label="Next: Models">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Models
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2651 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/leaderboards/">
+      
+      
+      
+        <link rel="prev" href="../evaluations/">
+      
+      
+        <link rel="next" href="../results/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Leaderboards - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Leaderboards
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-leaderboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first leaderboard
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#title-description-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>title</code>, <code>description</code>, <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datasets-what-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>datasets</code>: what is compared
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-who-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>models</code>: who is compared
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shares-what-matters-and-how-much" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>shares</code>: what matters, and how much
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgets-hard-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>budgets</code>: hard limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group_shares-and-dataset_shares-weighing-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>group_shares</code> and <code>dataset_shares</code>: weighing datasets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-you-can-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics you can name
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics you can name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eol_days-time-to-end-of-life" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>eol_days</code>: time to end of life
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-scores-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the scores come from
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-score-is-computed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How the score is computed
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the score is computed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-a-geometric-mean" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why a geometric mean
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-much-a-share-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How much a share buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Pareto frontier
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Edge cases
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#designing-a-leaderboard-for-a-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Designing a leaderboard for a decision
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Designing a leaderboard for a decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dont-mix-incomparable-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Don't mix incomparable datasets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#missing-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Missing runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refreshing-a-leaderboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Refreshing a leaderboard
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-leaderboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A first leaderboard
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fields
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#title-description-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>title</code>, <code>description</code>, <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datasets-what-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>datasets</code>: what is compared
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-who-is-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>models</code>: who is compared
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shares-what-matters-and-how-much" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>shares</code>: what matters, and how much
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgets-hard-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>budgets</code>: hard limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group_shares-and-dataset_shares-weighing-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>group_shares</code> and <code>dataset_shares</code>: weighing datasets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-you-can-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metrics you can name
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics you can name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eol_days-time-to-end-of-life" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>eol_days</code>: time to end of life
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-scores-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the scores come from
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-score-is-computed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How the score is computed
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the score is computed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-a-geometric-mean" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why a geometric mean
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-much-a-share-buys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How much a share buys
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Pareto frontier
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Edge cases
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running it
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#designing-a-leaderboard-for-a-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Designing a leaderboard for a decision
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Designing a leaderboard for a decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dont-mix-incomparable-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Don't mix incomparable datasets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#missing-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Missing runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refreshing-a-leaderboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Refreshing a leaderboard
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="leaderboards">Leaderboards<a class="headerlink" href="#leaderboards" title="Permanent link">&para;</a></h1>
+<p>A leaderboard turns the scores of finished runs into one ranking. Use one to
+answer a question like "which model should we use for this job?". It never calls
+a model. It reads the <code>result.json</code> files that
+<a href="../evaluations/">evaluations</a> already wrote, so ranking costs nothing and you
+can rank the same runs in as many ways as you like.</p>
+<p>A leaderboard is a saved entry in <code>configs/leaderboards.yaml</code>. It sets three
+things:</p>
+<ul>
+<li><strong>the scope</strong>: which datasets and which models are compared;</li>
+<li><strong>the weights</strong>: how much each metric (reward, cost, latency, ...) counts;</li>
+<li><strong>the limits</strong>: hard budgets that leave a model out.</li>
+</ul>
+<pre class="mermaid"><code>flowchart LR
+  runs[".open-arena/*/result.json&lt;br/&gt;newest first"] --&gt; board["board&lt;br/&gt;one cell per model and dataset"]
+  board --&gt; scope["scope&lt;br/&gt;datasets, models"]
+  scope --&gt; budgets["budgets&lt;br/&gt;drop what breaks a limit"]
+  budgets --&gt; norm["normalize&lt;br/&gt;each metric, per dataset"]
+  norm --&gt; combine["weighted geometric mean&lt;br/&gt;per dataset, then weighted mean"]
+  combine --&gt; out["ranking + Pareto frontier"]</code></pre>
+<h2 id="a-first-leaderboard">A first leaderboard<a class="headerlink" href="#a-first-leaderboard" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">math-quality</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Math, quality only</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Grade-school math. The reward alone decides.</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">math</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                  </span><span class="c1"># every model scored on gsm8k-20</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">math-value</span><span class="p">:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Math, quality for the money</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reward first, cost second. Nothing above 5 cents a cell.</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">math</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">value</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">cost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">    </span><span class="nt">budgets</span><span class="p">:</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">cost</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">lte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">reward</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">gte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>list
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>math-value
+</code></pre></div>
+<p>The two entries rank the same runs. The first answers "which model is most
+accurate?". The second answers "which model gives the best accuracy for what
+it costs, among those we can afford?". Keep one leaderboard per question and
+don't bend one leaderboard to answer both.</p>
+<h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>type</th>
+<th>default</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>text, 1 to 200 characters</td>
+<td>required</td>
+<td>the name printed above the ranking</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>none</td>
+<td>printed after the title; say what decision the board supports</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>list of tags</td>
+<td><code>[]</code></td>
+<td>labels for browsing (<code>math</code>, <code>reward-first</code>, <code>weekly</code>); the ranking ignores them</td>
+</tr>
+<tr>
+<td><code>datasets</code></td>
+<td>list of dataset names</td>
+<td><code>[]</code> = every dataset scored</td>
+<td>the datasets in scope</td>
+</tr>
+<tr>
+<td><code>models</code></td>
+<td>list of model names</td>
+<td><code>[]</code> = every model scored</td>
+<td>the models in scope</td>
+</tr>
+<tr>
+<td><code>shares</code></td>
+<td><code>{metric: number}</code>, each 0 or more</td>
+<td><code>{}</code> = the default preset</td>
+<td>each metric's weight in the score</td>
+</tr>
+<tr>
+<td><code>budgets</code></td>
+<td>list of <code>{metric, op, value}</code></td>
+<td><code>[]</code></td>
+<td>hard limits; a model that breaks one is left out</td>
+</tr>
+<tr>
+<td><code>group_shares</code></td>
+<td><code>{group: number}</code>, each 0 or more</td>
+<td><code>{}</code></td>
+<td>a weight per group of datasets</td>
+</tr>
+<tr>
+<td><code>dataset_shares</code></td>
+<td><code>{dataset: number}</code>, each 0 or more</td>
+<td><code>{}</code></td>
+<td>a weight per dataset; 0 takes it out</td>
+</tr>
+</tbody>
+</table>
+<p>Any other key is refused by <code>openarena check</code>.</p>
+<h3 id="title-description-tags"><code>title</code>, <code>description</code>, <code>tags</code><a class="headerlink" href="#title-description-tags" title="Permanent link">&para;</a></h3>
+<p>These fields are for people. <code>leaderboards list</code> shows <code>title</code> and
+<code>description</code>, and <code>leaderboards run</code> prints them above the table. Write the
+description as the question the board answers ("cheapest model that still gets
+math right"). Six months from now, it tells a reader why the weights are what
+they are. Tags follow the rules shared by every registry: lower case, letters,
+digits and <code>:+./-</code>, at most 40 characters each.</p>
+<h3 id="datasets-what-is-compared"><code>datasets</code>: what is compared<a class="headerlink" href="#datasets-what-is-compared" title="Permanent link">&para;</a></h3>
+<p>Set it to the dataset names you used in your evaluations (the keys of
+<code>datasets.yaml</code>).</p>
+<ul>
+<li><strong>Empty</strong> means every dataset that has at least one scored cell in the state
+  folder. This is convenient while you explore. It is risky once you have run
+  unrelated evaluations, because a model is ranked only when it has a score on
+  <strong>every</strong> dataset in scope (see <a href="#missing-runs">Missing runs</a>).</li>
+<li><strong>A list</strong> fixes the scope. A name with no score in any run is silently
+  dropped. If every name you list is unknown, nothing is ranked.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">When to list datasets</p>
+<p>List them as soon as the board supports a real decision. An empty scope
+changes meaning every time someone runs a new evaluation. A listed scope
+keeps the same meaning.</p>
+</div>
+<p><code>openarena check</code> warns when a listed name is not in <code>datasets.yaml</code>. This is
+only a warning: runs outlive the entries that made them, so a board can still
+rank scores from a dataset you have since removed.</p>
+<h3 id="models-who-is-compared"><code>models</code>: who is compared<a class="headerlink" href="#models-who-is-compared" title="Permanent link">&para;</a></h3>
+<p>Set it to model names, which are the keys of <code>models.yaml</code>. For an A2A sweep,
+use the agent names. These are the names the runs recorded, not the provider
+ids.</p>
+<ul>
+<li><strong>Empty</strong> means every model with a scored cell.</li>
+<li><strong>A list</strong> keeps only those models. A name that never scored is ignored and
+  does not appear in the output at all.</li>
+</ul>
+<p>Narrowing <code>models</code> changes more than the rows you see. Scores are relative:
+each metric is rescaled against the models in scope (see
+<a href="#how-the-score-is-computed">How the score is computed</a>). Adding or removing a
+model can change the scores of all the others, and sometimes their order. Pick
+the models that are real candidates for the decision.</p>
+<h3 id="shares-what-matters-and-how-much"><code>shares</code>: what matters, and how much<a class="headerlink" href="#shares-what-matters-and-how-much" title="Permanent link">&para;</a></h3>
+<p>A share is a metric's weight. Only the proportions count: <code>{reward: 70, cost:
+30}</code>, <code>{reward: 7, cost: 3}</code> and <code>{reward: 0.7, cost: 0.3}</code> give the same
+ranking. The run prints the shares as percents of their total.</p>
+<table>
+<thead>
+<tr>
+<th>you write</th>
+<th>what happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nothing, or <code>{}</code></td>
+<td>the default preset: <code>reward</code> gets weight 9 and every other metric the scope records gets 1. <code>eol_days</code> gets 0</td>
+</tr>
+<tr>
+<td><code>{reward: 100}</code></td>
+<td>quality only. Cost and latency don't count</td>
+</tr>
+<tr>
+<td><code>{reward: 70, cost: 30}</code></td>
+<td>a trade-off; see <a href="#how-much-a-share-buys">the arithmetic</a></td>
+</tr>
+<tr>
+<td>a share of <code>0</code></td>
+<td>the metric doesn't count, the same as leaving it out</td>
+</tr>
+<tr>
+<td>a negative share, or every share at <code>0</code></td>
+<td>refused by <code>openarena check</code> and by <code>leaderboards run</code></td>
+</tr>
+</tbody>
+</table>
+<p>A metric can carry weight only if <strong>every cell in scope records it</strong>. A share
+on any other metric is dropped without an error. This covers a typo
+(<code>costs</code>), a judge metric that only some datasets have, and <code>eol_days</code> under
+<code>--no-eol</code>. If every share you wrote is dropped, the board falls back to the
+default preset.</p>
+<div class="admonition warning">
+<p class="admonition-title">Read the <code>Shares:</code> line</p>
+<p><code>leaderboards run</code> prints the shares it actually used, for example
+<code>Shares: reward 70%, cost 30%</code>. If it differs from what you wrote, a
+metric was dropped. Check its name in the run's <code>meta.metrics</code>
+(<a href="../results/">Reading results</a>), and check that every dataset in scope
+records it.</p>
+</div>
+<p>With the default preset, the reward leads and the other measurements mostly
+break near-ties. With <code>reward</code>, <code>cost</code>, <code>input_tokens</code> and <code>output_tokens</code>,
+for instance, the reward gets 9/12 = 75%, and each of the other three gets
+1/12, about 8%. The more measurements a run records, the less the reward
+weighs by default. Write <code>shares</code> explicitly for any board you rely on.</p>
+<h3 id="budgets-hard-limits"><code>budgets</code>: hard limits<a class="headerlink" href="#budgets-hard-limits" title="Permanent link">&para;</a></h3>
+<p>A budget is a pass/fail rule on one metric:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">under-a-cent</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Under a cent a cell</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">budgets</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">cost</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">lte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">}</span><span class="w">       </span><span class="c1"># at most</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">avg_latency</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">lte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">}</span><span class="w">   </span><span class="c1"># at most, in the unit the run records</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">reward</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">gte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.7</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># at least</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metric</code></td>
+<td>a metric name as the run records it</td>
+</tr>
+<tr>
+<td><code>op</code></td>
+<td><code>lte</code>: at most <code>value</code>; <code>gte</code>: at least <code>value</code></td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>a number, in the metric's own unit (USD for <code>cost</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>How budgets apply:</p>
+<ul>
+<li>A budget is checked <strong>on each dataset separately</strong>, against that cell's
+  value. It is not checked against an average. If a model breaks it on any
+  dataset in scope, the model is out of the ranking, and the run prints it as
+  <code>Over budget &lt;model&gt;: cost at most 0.01</code>.</li>
+<li>Budgets are applied <strong>before normalizing</strong>. A model that is far too
+  expensive can't stretch the cost scale and flatten the differences between
+  the models you can afford.</li>
+<li>A budget can use any metric the cell records, even one with no share.</li>
+<li>If a cell doesn't record the budget's metric, the budget can't be broken
+  there. A misspelled metric therefore never excludes anyone.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Budget or share?</p>
+<p>Use a <strong>budget</strong> for a requirement you won't trade: "no more than 1 cent a
+request", "at least 70% correct". Use a <strong>share</strong> for a preference you
+will trade: "cheaper is better, but not at any price". A budget answers
+yes or no. A share moves the score.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">A cell's cost covers the whole dataset</p>
+<p><code>cost</code> is what the cell spent: the model under test over all the
+dataset's rows, not one request. A budget of <code>0.05</code> on <code>cost</code> means 5
+cents <strong>for the dataset</strong>. Divide by the number of rows (the dataset's
+<code>limit</code>) to think per request. If two datasets in scope have very
+different sizes, one cost limit means different things on each. Rank
+them on separate boards.</p>
+</div>
+<h3 id="group_shares-and-dataset_shares-weighing-datasets"><code>group_shares</code> and <code>dataset_shares</code>: weighing datasets<a class="headerlink" href="#group_shares-and-dataset_shares-weighing-datasets" title="Permanent link">&para;</a></h3>
+<p>By default every dataset in scope counts the same, and a model's score is the
+plain mean of its per-dataset scores. A share left out is 1.</p>
+<p>Your own datasets, the ones <code>openarena evaluations run</code> scores, belong to no
+group. Each one weighs its <code>group_shares</code> entry times its <code>dataset_shares</code>
+entry, both keyed by the dataset's name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>weight(d) = group_shares[d] × dataset_shares[d]
+</code></pre></div>
+<p>Imported benchmarks name their suites, and those suites are groups. A group
+weighs its share whatever the number of datasets in it, split among its
+datasets in proportion to their <code>dataset_shares</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>weight(d) = group_shares[group(d)] × dataset_shares[d] / sum of dataset_shares in group(d)
+</code></pre></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Weighing your own datasets</label><label for="__tabbed_1_2">Weighing imported suites</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Use <code>dataset_shares</code>, keyed by dataset name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">support-mix</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Support, weighted by traffic</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">faq-answers</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">refund-requests</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">escalations</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">dataset_shares</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">faq-answers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span><span class="w">       </span><span class="c1"># 60% of the traffic</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">refund-requests</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">      </span><span class="nt">escalations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">80</span><span class="p p-Indicator">,</span><span class="nt"> cost</span><span class="p">:</span><span class="w"> </span><span class="nv">20</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><code>group_shares</code> keyed by the same names gives the same weights, since each
+dataset is weighed by the product of the two. Write one of them, not
+both, so a reader sees each weight once.</p>
+</div>
+<div class="tabbed-block">
+<p>Use <code>group_shares</code>, keyed by suite, to say how much each suite counts,
+and <code>dataset_shares</code> to weigh the datasets inside one suite against each
+other. A suite with ten datasets then weighs no more than a suite with
+two, unless its share says so.</p>
+</div>
+</div>
+</div>
+<p>A dataset weighed 0 (through either field) is out of the score <strong>and out of
+the requirement</strong>. Models need no score on it to be ranked. Use this to keep a
+diagnostic dataset in the board's definition while it is not ready yet.</p>
+<p>Weigh datasets when they don't matter equally for the decision: traffic share,
+business risk, or one task being the main job and another a sanity check.
+Don't weigh them to correct for difficulty. Normalization already puts every
+dataset on the same 0.05 to 1 scale.</p>
+<h2 id="metrics-you-can-name">Metrics you can name<a class="headerlink" href="#metrics-you-can-name" title="Permanent link">&para;</a></h2>
+<p><code>shares</code> and <code>budgets</code> use the metric names the runs recorded. A run lists them
+in <code>meta.metrics</code> of its <code>result.json</code> (<a href="../results/">Reading results</a>).</p>
+<table>
+<thead>
+<tr>
+<th>metric</th>
+<th>where it comes from</th>
+<th>better</th>
+<th>scale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reward</code></td>
+<td>the dataset's reward, the mean over its rows</td>
+<td>the reward's <code>direction</code> (<a href="../rewards/#direction">Rewards</a>)</td>
+<td>linear</td>
+</tr>
+<tr>
+<td><code>cost</code></td>
+<td>USD the model under test spent on the cell, from litellm's prices, when listed under <code>metrics:</code></td>
+<td>lower, unless its <code>direction</code> says otherwise</td>
+<td>log</td>
+</tr>
+<tr>
+<td><code>input_tokens</code>, <code>output_tokens</code></td>
+<td>tokens the cell used, when listed under <code>metrics:</code></td>
+<td>lower, unless its <code>direction</code> says otherwise</td>
+<td>log</td>
+</tr>
+<tr>
+<td>latency</td>
+<td>when listed under <code>metrics:</code>; use the name in <code>meta.metrics</code> (for example <code>avg_latency</code>)</td>
+<td>lower, unless its <code>direction</code> says otherwise</td>
+<td>log</td>
+</tr>
+<tr>
+<td>an extra metric's alias</td>
+<td><code>metrics:</code> on the dataset or the evaluation (<a href="../datasets/#extra-metrics">Datasets</a>)</td>
+<td>its <code>direction</code></td>
+<td>log, or linear (see below)</td>
+</tr>
+<tr>
+<td><code>eol_days</code></td>
+<td>days left before the model's announced end of life, looked up when the board is built</td>
+<td>higher</td>
+<td>linear</td>
+</tr>
+</tbody>
+</table>
+<p>You never write a direction in a leaderboard: each metric's direction comes
+from the run that recorded it. A metric listed under <code>metrics:</code> without a
+<code>direction:</code> gets one automatically: <code>min</code> for a cost, tokens or latency
+measurement (<code>cost</code>, <code>input_tokens</code>, <code>total_tokens</code>, <code>avg_latency</code>, ...), <code>max</code>
+for anything else. So a <code>cost</code> ranks the cheapest model best with nothing to
+write.</p>
+<p>To read a metric the other way, write <code>direction:</code> where you list it, on the
+dataset or the evaluation
+(<a href="../evaluations/#metrics-the-columns-beside-reward">Running evaluations</a>): an
+explicit <code>direction:</code> always wins. Then run the evaluation again: the
+leaderboard reads the direction stored in <code>result.json</code>, which is written from
+the config at the end of each run.</p>
+<p><strong>Linear or log.</strong> <code>reward</code> and <code>eol_days</code> are normalized linearly: 0.9
+against 0.8 counts as much as 0.6 against 0.5. Every other metric is
+normalized on a log scale, as long as all its values on that dataset are
+above zero. On a log scale, 10 times cheaper counts the same wherever it
+happens: $0.001 against $0.01 weighs as much as $0.10 against $1. This suits
+cost, tokens and latency, which vary across orders of magnitude. If a value is
+0 or negative, for example a local model with a cost of exactly 0, that
+dataset's column falls back to a linear scale. The free model then gets the
+top score, and every paid model is placed by its absolute cost.</p>
+<h3 id="eol_days-time-to-end-of-life"><code>eol_days</code>: time to end of life<a class="headerlink" href="#eol_days-time-to-end-of-life" title="Permanent link">&para;</a></h3>
+<p><code>eol_days</code> measures how long you can keep using a model. It is a fact about
+the model, not about a run, so every cell of a model gets the same value.
+<code>leaderboards run</code> looks it up each time it builds the board. The lookup uses
+the model id (<code>model:</code> in <code>models.yaml</code>) recorded in the <code>config.yaml</code> of the
+newest run that scored the model. It tries these sources:</p>
+<ol>
+<li>the provider's own deprecation date, from litellm's model table;</li>
+<li>for <code>openai/</code>, <code>azure/</code> and <code>azure_ai/</code> ids, Azure's OpenAI retirement
+   schedule. It is fetched online and cached for a day. When the fetch fails,
+   a copy shipped with the package is used;</li>
+<li>for <code>openrouter/</code> ids, OpenRouter's expiration date, when it comes before
+   the vendor's date. OpenRouter ids are also looked up under the vendor's
+   own id.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>situation</th>
+<th><code>eol_days</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no date known (open-weight models, most current models)</td>
+<td>1825 (five years)</td>
+</tr>
+<tr>
+<td>a date more than five years out</td>
+<td>1825</td>
+</tr>
+<tr>
+<td>a date ahead</td>
+<td>the days until it</td>
+</tr>
+<tr>
+<td>a date already past</td>
+<td>negative: the model may already refuse calls</td>
+</tr>
+</tbody>
+</table>
+<p>The five-year cap means "no announced end" is treated as "far away", not as
+"unknown". <code>eol_days</code> is on the board by default but has no weight unless you
+give it a share. Pass <code>--no-eol</code> to skip the online lookups, for example
+offline or in CI. A share or budget on <code>eol_days</code> then has no effect.</p>
+<h2 id="where-the-scores-come-from">Where the scores come from<a class="headerlink" href="#where-the-scores-come-from" title="Permanent link">&para;</a></h2>
+<p><code>leaderboards run</code> reads every <code>&lt;state-dir&gt;/*/result.json</code>, newest file first.
+For each pair of model and dataset, it keeps <strong>one cell, taken whole from the
+newest run that scored it</strong>. That cell's reward and every metric it recorded
+come from the same run, and nothing from an older run is mixed in.</p>
+<p>What follows from that:</p>
+<ul>
+<li><strong>Running again replaces.</strong> Rerun an evaluation, or run a new one with the
+  same model and dataset names, and the board uses the new cell.</li>
+<li><strong>A failed cell does not replace.</strong> A cell with no reward is not a score.
+  If the newest run failed on a pair, the board keeps the older successful
+  cell for it. Look at the <code>runs</code> field of <code>--json</code> to see which run each
+  cell came from.</li>
+<li><strong>Names, not ids, identify a model.</strong> Cells are matched by the model's
+  registry name. If you point an existing name at a new <code>model:</code> id, cells
+  for the datasets you haven't rerun still hold the old model's scores under
+  that name. See <a href="#refreshing-a-leaderboard">Refreshing</a>.</li>
+<li><strong>Every run in the state folder counts.</strong> Smoke tests, <code>limit: 5</code>
+  experiments and half-finished sweeps all feed the board, unless a newer
+  cell replaced them.</li>
+</ul>
+<h2 id="how-the-score-is-computed">How the score is computed<a class="headerlink" href="#how-the-score-is-computed" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TB
+  A[datasets in scope&lt;br/&gt;weight 0 removed] --&gt; B[models in scope]
+  B --&gt; C[metrics with a share&lt;br/&gt;that every cell records]
+  C --&gt; D{per dataset}
+  D --&gt; E[models with a cell here]
+  E --&gt; F[budgets: drop breakers]
+  F --&gt; G[normalize each metric&lt;br/&gt;to 0.05 to 1 among the rest]
+  G --&gt; H[dataset score =&lt;br/&gt;product of normalized^share]
+  H --&gt; I[model score =&lt;br/&gt;weighted mean over datasets]
+  I --&gt; J[rank: score, then name]</code></pre>
+<ol>
+<li><strong>Scope.</strong> The datasets in scope, minus those weighed 0. The models in
+   scope.</li>
+<li><strong>Weights.</strong> Keep the shares of metrics that every cell in scope records,
+   or use the default preset if none are left. Divide each by their sum, so
+   the weights add up to 1.</li>
+<li><strong>Per dataset</strong>, among the models that have a cell there:<ol>
+<li>drop the models that break a budget on this dataset;</li>
+<li>rescale each weighted metric to <code>[0.05, 1]</code>, with 1 for the best value
+   and 0.05 for the worst. When every model has the same value, all get
+   1;</li>
+<li>the dataset score is the <strong>weighted geometric mean</strong> of the rescaled
+   values: the product of <code>normalized ^ weight</code>.</li>
+</ol>
+</li>
+<li><strong>Overall.</strong> The model's score is the mean of its dataset scores,
+   weighted by the dataset weights. It ranges from 0.05 to 1.</li>
+<li><strong>Rank.</strong> Only models with a score on every dataset in scope and no broken
+   budget are ranked. They are sorted by score, high to low.</li>
+</ol>
+<h3 id="why-a-geometric-mean">Why a geometric mean<a class="headerlink" href="#why-a-geometric-mean" title="Permanent link">&para;</a></h3>
+<p>In a geometric mean, a weak metric pulls the score down: one value at the
+floor costs a lot, and other metrics can't fully make up for it. A model that
+is free but always wrong does not win a 50/50 reward/cost board. The floor of
+0.05 instead of 0 means that being worst on one metric hurts without zeroing
+the score.</p>
+<h3 id="how-much-a-share-buys">How much a share buys<a class="headerlink" href="#how-much-a-share-buys" title="Permanent link">&para;</a></h3>
+<p>Here are three models on one dataset:</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>reward</th>
+<th>cost (USD)</th>
+<th>reward, normalized</th>
+<th>cost, normalized</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cheap</td>
+<td>0.5</td>
+<td>0.01</td>
+<td>0.24</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>good</td>
+<td>0.9</td>
+<td>1.00</td>
+<td>1.0</td>
+<td>0.174</td>
+</tr>
+<tr>
+<td>bad</td>
+<td>0.4</td>
+<td>2.00</td>
+<td>0.05</td>
+<td>0.05</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>shares</th>
+<th>cheap</th>
+<th>good</th>
+<th>bad</th>
+<th>winner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{reward: 50, cost: 50}</code></td>
+<td>0.490</td>
+<td>0.418</td>
+<td>0.050</td>
+<td>cheap</td>
+</tr>
+<tr>
+<td>default (here reward 90%, cost 10%)</td>
+<td>0.277</td>
+<td>0.840</td>
+<td>0.050</td>
+<td>good</td>
+</tr>
+<tr>
+<td><code>{reward: 100}</code></td>
+<td>0.24</td>
+<td>1.0</td>
+<td>0.05</td>
+<td>good</td>
+</tr>
+</tbody>
+</table>
+<p>At 50/50, being 100 times cheaper outweighs 0.4 of reward. At 90/10, it does
+not. Before you commit to a set of shares, compute a few of these by hand, or
+compare the <code>contributions</code> in <code>--json</code> output. Make sure the board picks the
+model you would pick yourself in the clear cases.</p>
+<h3 id="the-pareto-frontier">The Pareto frontier<a class="headerlink" href="#the-pareto-frontier" title="Permanent link">&para;</a></h3>
+<p>The <code>frontier</code> column marks with ★ each ranked model that no other ranked
+model dominates. A model is dominated when another one is at least as good on
+every weighted metric and better on at least one. The comparison uses each
+metric's raw mean over the datasets, and doesn't depend on the shares. The
+frontier shows the models worth considering under some weighting. With
+<code>{reward: 100}</code>, only the models with the best reward are on it.</p>
+<h3 id="edge-cases">Edge cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th>what happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>two models with the same score</td>
+<td>both are ranked, in alphabetical order, with different rank numbers</td>
+</tr>
+<tr>
+<td>one model in scope</td>
+<td>each metric normalizes to 1, so its score is 1</td>
+</tr>
+<tr>
+<td>every model has the same value on a metric</td>
+<td>that metric gives 1 to every model and doesn't change the order</td>
+</tr>
+<tr>
+<td>a model has no cell on a dataset in scope</td>
+<td><code>Not ranked &lt;model&gt;: not scored on &lt;dataset&gt;</code>. It still counts when other models are normalized on the datasets it does have</td>
+</tr>
+<tr>
+<td>a model breaks a budget on one dataset</td>
+<td><code>Over budget &lt;model&gt;: ...</code>. It is left out of normalization on that dataset only, and still counts on the others</td>
+</tr>
+<tr>
+<td>no finished runs in the state folder</td>
+<td>the command stops with <code>no finished runs under &lt;dir&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Unranked models still shape the scale</p>
+<p>A model that misses a dataset, or breaks a budget on one dataset, still
+counts when the other datasets are normalized. A very cheap model with a
+gap can still push everyone else's cost scores down. To remove it from
+the comparison entirely, leave it out of <code>models</code>.</p>
+</div>
+<h2 id="running-it">Running it<a class="headerlink" href="#running-it" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>list
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>math-value
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>math-value<span class="w"> </span>--no-eol<span class="w"> </span>--json<span class="w"> </span>ranking.json
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall<span class="w"> </span>--configs<span class="w"> </span>my-arena/configs<span class="w"> </span>--state-dir<span class="w"> </span>my-arena/.open-arena
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--configs DIR</code></td>
+<td><code>configs</code></td>
+<td>the folder holding <code>leaderboards.yaml</code></td>
+</tr>
+<tr>
+<td><code>--state-dir DIR</code></td>
+<td><code>.open-arena</code></td>
+<td>where the runs are, one folder per evaluation</td>
+</tr>
+<tr>
+<td><code>--no-eol</code></td>
+<td>off</td>
+<td>skip the end-of-life lookup, which goes online</td>
+</tr>
+<tr>
+<td><code>--json FILE</code></td>
+<td>none</td>
+<td>also write the ranking as JSON</td>
+</tr>
+</tbody>
+</table>
+<p><code>leaderboards run</code> validates the saved entry as <code>openarena check</code> does before
+it ranks anything. An entry that does not validate (a negative share, a budget
+<code>op</code> that does not exist) is refused, and the command exits 1:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Error: the leaderboard 'math-value' does not validate:
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  leaderboards.math-value.budgets[0].op: Input should be 'lte' or 'gte'
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    fix: set `op:` to one of 'lte' or 'gte'
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>see each problem with its line: `openarena check configs/leaderboards.yaml`
+</code></pre></div>
+<p>Run <code>openarena check configs</code> after editing (<a href="../check/">Checking configs</a>) to
+see each problem with its line.</p>
+<p>The output, in outline:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Math, quality for the money — Reward first, cost second. Nothing above 5 cents a cell.
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>Datasets: gsm8k-20
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>Shares: reward 70%, cost 30%
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a> #  model        score   reward ↑  cost ↓  frontier
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a> 1  gpt-4o-mini  ...
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>Not ranked qwen38: not scored on gsm8k-20
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>Over budget gpt-4o: cost at most 0.05
+</code></pre></div>
+<p>The <code>Datasets:</code> and <code>Shares:</code> lines show what the board actually used, after
+the scope and the shares were resolved. Read them first. Each metric column
+shows the model's raw mean over the datasets, with ↑ when higher is better
+and ↓ when lower is better.</p>
+<details class="details">
+<summary>The <code>--json</code> file</summary>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">"leaderboard"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"math-value"</span><span class="p">,</span><span class="w"> </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"shares"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"reward"</span><span class="p">:</span><span class="w"> </span><span class="mi">70</span><span class="p">,</span><span class="w"> </span><span class="nt">"cost"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">}},</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">"datasets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"gsm8k-20"</span><span class="p">],</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">"models"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"qwen38"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gpt-4o"</span><span class="p">],</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">"shares"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"reward"</span><span class="p">:</span><span class="w"> </span><span class="mf">70.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"cost"</span><span class="p">:</span><span class="w"> </span><span class="mf">30.0</span><span class="p">},</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">"axes"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reward"</span><span class="p">,</span><span class="w"> </span><span class="nt">"direction"</span><span class="p">:</span><span class="w"> </span><span class="s2">"max"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cost"</span><span class="p">,</span><span class="w"> </span><span class="nt">"direction"</span><span class="p">:</span><span class="w"> </span><span class="s2">"min"</span><span class="p">}],</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="nt">"rows"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">      </span><span class="nt">"rank"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span><span class="w"> </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.81</span><span class="p">,</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">"values"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"reward"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span><span class="p">,</span><span class="w"> </span><span class="nt">"cost"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.004</span><span class="p">},</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="nt">"contributions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">        </span><span class="p">{</span><span class="nt">"metric"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reward"</span><span class="p">,</span><span class="w"> </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span><span class="p">,</span><span class="w"> </span><span class="nt">"normalized"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="nt">"weight"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span><span class="w"> </span><span class="nt">"factor"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">}</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">      </span><span class="nt">"per_dataset"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"gsm8k-20"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.81</span><span class="p">},</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">      </span><span class="nt">"dataset_contributions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"gsm8k-20"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.81</span><span class="p">},</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">      </span><span class="nt">"on_frontier"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">      </span><span class="nt">"runs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"math-compare"</span><span class="p">]</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="w">  </span><span class="nt">"skipped"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"qwen38"</span><span class="p">],</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="w">  </span><span class="nt">"gaps"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"qwen38"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"dataset"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gsm8k-20"</span><span class="p">,</span><span class="w"> </span><span class="nt">"missing"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">}]},</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="w">  </span><span class="nt">"excluded"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gpt-4o"</span><span class="p">,</span><span class="w"> </span><span class="nt">"failed"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"metric"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cost"</span><span class="p">,</span><span class="w"> </span><span class="nt">"op"</span><span class="p">:</span><span class="w"> </span><span class="s2">"lte"</span><span class="p">,</span><span class="w"> </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">}]}]</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>leaderboard</code></td>
+<td>the saved entry, with its name</td>
+</tr>
+<tr>
+<td><code>datasets</code>, <code>models</code></td>
+<td>the scope used: datasets after weight 0 is removed, every model in scope</td>
+</tr>
+<tr>
+<td><code>shares</code>, <code>axes</code></td>
+<td>the weights used, in percent, and each weighted metric's direction</td>
+</tr>
+<tr>
+<td><code>rows[].values</code></td>
+<td>raw mean per metric over the datasets</td>
+</tr>
+<tr>
+<td><code>rows[].contributions</code></td>
+<td>per metric: mean normalized value, weight, and <code>factor</code> (normalized ^ weight)</td>
+</tr>
+<tr>
+<td><code>rows[].per_dataset</code>, <code>dataset_contributions</code></td>
+<td>each dataset's score, and its part of the total (they add up to <code>score</code>)</td>
+</tr>
+<tr>
+<td><code>rows[].runs</code></td>
+<td>the run folder each cell came from</td>
+</tr>
+<tr>
+<td><code>skipped</code>, <code>gaps</code></td>
+<td>the models left unranked, and per dataset why (<code>missing: null</code> = never scored there)</td>
+</tr>
+<tr>
+<td><code>excluded</code></td>
+<td>the models over budget, and the budgets they broke</td>
+</tr>
+</tbody>
+</table>
+<p>The numbers above are placeholders that show the shape.</p>
+</details>
+<h2 id="designing-a-leaderboard-for-a-decision">Designing a leaderboard for a decision<a class="headerlink" href="#designing-a-leaderboard-for-a-decision" title="Permanent link">&para;</a></h2>
+<p>Start from the decision, not from the data. Write down the question, who
+acts on the answer, and what they won't trade away. Then set the fields.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Quality only</label><label for="__tabbed_2_2">Quality for the money</label><label for="__tabbed_2_3">Shortlist under limits</label><label for="__tabbed_2_4">A model to keep for years</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Use this for research comparisons, or when cost doesn't matter at your
+volume.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">reasoning-quality</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reasoning, quality only</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Which model is most accurate on our reasoning sets?</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">logic-puzzles</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>Cost and latency play no part. The frontier holds only the models with
+the best reward.</p>
+</div>
+<div class="tabbed-block">
+<p>Use this to pick a production model when spending matters but isn't a
+hard limit.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">reasoning-value</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reasoning, quality for the money</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Best accuracy per dollar among the candidates.</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">logic-puzzles</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nt">models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">70</span><span class="p p-Indicator">,</span><span class="nt"> cost</span><span class="p">:</span><span class="w"> </span><span class="nv">30</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>Start around 70/30 and work out by hand which trade you are making (see
+<a href="#how-much-a-share-buys">How much a share buys</a>). Look at the ★ models:
+they are the only ones worth arguing over.</p>
+</div>
+<div class="tabbed-block">
+<p>Use this when a team has a hard cost ceiling or a quality floor, and wants
+the best model inside it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">reasoning-shortlist</span><span class="p">:</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reasoning, within budget</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Under 2 cents per 20-row dataset, at least 70% correct.</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">80</span><span class="p p-Indicator">,</span><span class="nt"> avg_latency</span><span class="p">:</span><span class="w"> </span><span class="nv">20</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="nt">budgets</span><span class="p">:</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">cost</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">lte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.02</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="nv">reward</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="nv">gte</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="nv">0.7</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>The budgets express the requirements. The shares rank the models that
+pass. The models over budget are listed, so you can see what each limit
+costs you. Check the latency metric's exact name in <code>meta.metrics</code>.</p>
+</div>
+<div class="tabbed-block">
+<p>Use this when switching models later is expensive: tuned prompts,
+certification, contracts.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">reasoning-long-lived</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reasoning, built to last</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Accuracy first, but penalize models close to retirement.</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">70</span><span class="p p-Indicator">,</span><span class="nt"> cost</span><span class="p">:</span><span class="w"> </span><span class="nv">15</span><span class="p p-Indicator">,</span><span class="nt"> eol_days</span><span class="p">:</span><span class="w"> </span><span class="nv">15</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>With <code>eol_days</code> in the shares, a model retiring next quarter loses
+ground. Don't run this board with <code>--no-eol</code>, or the <code>eol_days</code> share is
+silently dropped.</p>
+</div>
+</div>
+</div>
+<h3 id="dont-mix-incomparable-datasets">Don't mix incomparable datasets<a class="headerlink" href="#dont-mix-incomparable-datasets" title="Permanent link">&para;</a></h3>
+<p>Each dataset is normalized on its own, so each one gives a spread from 0.05
+to 1, however large or small the real differences are. On a dataset where
+every model scores between 0.95 and 0.96, the 0.01 gap still becomes the full
+0.05 to 1 spread. On that board, that dataset counts as much as one where
+scores range from 0.2 to 0.9.</p>
+<ul>
+<li>Put datasets on one board only if they measure the same capability for
+  the same decision. Use separate boards for "math" and "customer support".</li>
+<li>Leave out datasets that every candidate saturates. They add noise, not
+  signal.</li>
+<li>Use the same <code>limit</code> and reward for a dataset across all the runs you rank.
+  A cell scored on 5 rows and one scored on 200 rows look the same on the
+  board.</li>
+<li>Use <code>dataset_shares</code> (or <code>group_shares</code> for imported suites) to say which
+  datasets matter more. Don't use it to fix a dataset you shouldn't have
+  included.</li>
+</ul>
+<h3 id="missing-runs">Missing runs<a class="headerlink" href="#missing-runs" title="Permanent link">&para;</a></h3>
+<p>The board ranks only complete rows: a model needs a score on every dataset in
+scope. When a model shows up as <code>Not ranked</code>, you can:</p>
+<table>
+<thead>
+<tr>
+<th>choice</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>run the missing cells (<code>openarena evaluations run</code> with that model and dataset)</td>
+<td>the model is a real candidate</td>
+</tr>
+<tr>
+<td>take it out of <code>models</code></td>
+<td>it isn't a candidate. This also stops it from shaping the scale</td>
+</tr>
+<tr>
+<td>narrow <code>datasets</code></td>
+<td>the dataset isn't central to this decision</td>
+</tr>
+<tr>
+<td>weigh the dataset 0</td>
+<td>you want to keep it in the definition but not require it yet</td>
+</tr>
+</tbody>
+</table>
+<p>If a metric is missing from some cells, for example a judge metric added to
+one evaluation only, that metric loses its share for the whole board. Add it
+to every evaluation that feeds the board, and rerun them with <code>--no-cache</code>, or
+drop it from <code>shares</code>.</p>
+<h3 id="refreshing-a-leaderboard">Refreshing a leaderboard<a class="headerlink" href="#refreshing-a-leaderboard" title="Permanent link">&para;</a></h3>
+<p>A leaderboard is recomputed from the state folder on every run. It is always
+as current as your runs. Keeping it honest means keeping the runs current:</p>
+<ul>
+<li><strong>A new model.</strong> Add it to <code>models.yaml</code> and to the evaluations that feed
+  the board, and run them. Finished cells are kept, so only the new model's
+  cells run. Add the model to the board's <code>models</code> if you listed them. Expect
+  the other models' scores to move, since the scale now includes the new
+  model.</li>
+<li><strong>A model changed behind its name.</strong> If you point a name at a new <code>model:</code>
+  id, or change its params, rerun <strong>every</strong> dataset on the board for it with
+  <code>--no-cache</code>. Otherwise the board mixes old and new cells under one name.
+  To compare the old and new versions side by side, give the new one a new
+  name instead.</li>
+<li><strong>A changed dataset or reward.</strong> Rerun with <code>--no-cache</code> for every model.
+  Old cells from the previous version aren't comparable with new ones.</li>
+<li><strong>End of life.</strong> <code>eol_days</code> is shown, in the table and in <code>--json</code>, only
+  when it has a share. Give it a small share on a board you depend on and run
+  the board from time to time without <code>--no-eol</code>. A negative value means the
+  date has passed: retire the model from <code>models</code> and pick its replacement
+  from the board. With a share, the ranking reflects upcoming retirements
+  before they happen.</li>
+<li><strong>Old runs.</strong> Cells from runs you no longer trust (smoke tests, a broken
+  config) stay on the board until a newer cell replaces them. Delete or move
+  their folder out of the state folder.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Keep decision boards stable</p>
+<p>For a board that drives a real choice, list <code>datasets</code> and <code>models</code>, write
+<code>shares</code> explicitly, and keep a <code>--json</code> export of each ranking you act
+on. The export records the runs behind every cell, so you can explain the
+decision later.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../evaluations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Running evaluations">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Running evaluations
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../results/" class="md-footer__link md-footer__link--next" aria-label="Next: Reading results">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Reading results
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

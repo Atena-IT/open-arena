@@ -1,0 +1,2480 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/models/">
+      
+      
+      
+        <link rel="prev" href="../../workspace/">
+      
+      
+        <link rel="next" href="../rewards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Models - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Models
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-model-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A model entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The name
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-the-id-and-the-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>model</code>: the id and the provider
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="model: the id and the provider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keys-and-base-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Keys and base URLs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-or-hosted" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Local or hosted
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#params" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>params</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="params">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>temperature</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>max_tokens</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reasoning_effort" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>reasoning_effort</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>dimensions</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-params-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the params apply
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modalities" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>modalities</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description-and-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>description</code> and <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-entries-for-one-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Two entries for one id
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-judge-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a judge model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prices" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prices
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-of-life" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        End of life
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tags-and-leaderboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tags and leaderboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-model-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A model entry
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The name
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-the-id-and-the-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>model</code>: the id and the provider
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="model: the id and the provider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keys-and-base-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Keys and base URLs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-or-hosted" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Local or hosted
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>type</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#params" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>params</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="params">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>temperature</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>max_tokens</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reasoning_effort" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>reasoning_effort</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>dimensions</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-params-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where the params apply
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modalities" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>modalities</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description-and-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>description</code> and <code>tags</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-entries-for-one-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Two entries for one id
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-judge-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a judge model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prices" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prices
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-of-life" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        End of life
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tags-and-leaderboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tags and leaderboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="models">Models<a class="headerlink" href="#models" title="Permanent link">&para;</a></h1>
+<p><code>configs/models.yaml</code> is the list of models the workspace can call. Each entry
+gives a model a <strong>name</strong> and says which litellm id that name calls, with which
+settings. Everything else refers to the model by that name, never by id: an
+evaluation's <code>language_models</code>, a judge reward's <code>language_model</code>, a
+leaderboard's <code>models</code>. Results and rankings are kept under the name too.</p>
+<pre class="mermaid"><code>flowchart LR
+    E["evaluations.yaml&lt;br/&gt;language_models: [gpt-4o-mini]"] --&gt; N
+    R["rewards.yaml&lt;br/&gt;language_model: judge"] --&gt; N
+    L["leaderboards.yaml&lt;br/&gt;models: [gpt-4o-mini]"] --&gt; N
+    N["models.yaml&lt;br/&gt;name → model id + params"] --&gt; P["provider&lt;br/&gt;(read off the id's prefix)"]</code></pre>
+<p>The name is the indirection that keeps a sweep comparable: you change what a
+name calls, or add a second name for the same id with other settings, without
+touching the evaluations, rewards and leaderboards that use it.</p>
+<h2 id="a-model-entry">A model entry<a class="headerlink" href="#a-model-entry" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">gpt-4o-mini</span><span class="p">:</span><span class="w">                       </span><span class="c1"># the name: what every other file refers to</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span><span class="w">        </span><span class="c1"># required: &lt;provider&gt;/&lt;id&gt;, as litellm routes it</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm</span><span class="w">                        </span><span class="c1"># llm (the default) or embedding</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w">                          </span><span class="c1"># the settings the type takes; leave one out for the provider's default</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">modalities</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">text</span><span class="p p-Indicator">]</span><span class="w">               </span><span class="c1"># what it reads: text, image, audio (default: [text])</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OpenAI's small model, the hosted baseline.</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">hosted</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># labels for browsing; never sent to the model</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">gpt-4o</span><span class="p">:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o</span><span class="w">             </span><span class="c1"># the larger sibling, for quality comparisons</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">hosted</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="nt">qwen3-local</span><span class="p">:</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/qwen3:8b</span><span class="w">           </span><span class="c1"># a local Ollama: no key, no bill</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="nt">reasoning_effort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">disable</span><span class="w">      </span><span class="c1"># turn native thinking off</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">local</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">open-weights</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">  </span><span class="nt">minilm</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/all-minilm</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">embedding</span><span class="w">                  </span><span class="c1"># encodes text into vectors; does not answer</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">      </span><span class="nt">dimensions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">384</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">local</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>values</th>
+<th>default</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name (the key)</td>
+<td>a letter or digit, then letters, digits, <code>_</code>, <code>.</code>, <code>-</code>; at most 128 characters</td>
+<td></td>
+<td>what every other file and every result calls the model</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>&lt;provider&gt;/&lt;id&gt;</code>, a litellm id</td>
+<td>required</td>
+<td>which provider is called, and which model there</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>llm</code>, <code>embedding</code></td>
+<td><code>llm</code></td>
+<td>what the model does: which params it takes, where it may be named</td>
+</tr>
+<tr>
+<td><code>params</code></td>
+<td>a mapping, by type (<a href="#params">below</a>)</td>
+<td><code>{}</code></td>
+<td>settings sent with each call; a param left out keeps the provider's default</td>
+</tr>
+<tr>
+<td><code>modalities</code></td>
+<td>a list of <code>text</code>, <code>image</code>, <code>audio</code></td>
+<td><code>[text]</code></td>
+<td>a fact about the model, for listings</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>none</td>
+<td>shown by <code>openarena models list</code></td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>a list of labels</td>
+<td><code>[]</code></td>
+<td>for browsing and filtering lists</td>
+</tr>
+</tbody>
+</table>
+<p>An entry refuses any other field. A run and <code>openarena check</code> read it with the
+same schema: a field <code>check</code> rejects is one the run would refuse.</p>
+<h2 id="the-name">The name<a class="headerlink" href="#the-name" title="Permanent link">&para;</a></h2>
+<p>The name is the model's identity in the workspace. It is what a sweep's
+results, a run's table and a leaderboard's rows show.</p>
+<ul>
+<li>Name what you compare, not the vendor's id: <code>gpt-4o-mini</code>, <code>gpt-4o-mini-t07</code>,
+  <code>o4-mini-high</code>. The id is one field below; the name is what people read.</li>
+<li>Keep it stable. Results of earlier runs keep the name they were made with, so
+  renaming a model splits its history: a leaderboard shows the old runs under
+  the old name and the new runs under the new one. <code>openarena check</code> lists
+  every reference the rename broke in the configs; it cannot rename results.</li>
+</ul>
+<h2 id="model-the-id-and-the-provider"><code>model</code>: the id and the provider<a class="headerlink" href="#model-the-id-and-the-provider" title="Permanent link">&para;</a></h2>
+<p>The id is written the way litellm routes it: a provider prefix, a slash, and
+the provider's own model id. The prefix picks the provider; there is no
+<code>provider:</code> field.</p>
+<table>
+<thead>
+<tr>
+<th>prefix</th>
+<th>example</th>
+<th>needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>openai/</code></td>
+<td><code>openai/gpt-4o-mini</code></td>
+<td><code>OPENAI_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>anthropic/</code></td>
+<td><code>anthropic/claude-sonnet-4-5</code></td>
+<td><code>ANTHROPIC_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>gemini/</code></td>
+<td><code>gemini/gemini-2.5-flash</code></td>
+<td><code>GEMINI_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>mistral/</code></td>
+<td><code>mistral/mistral-small-latest</code></td>
+<td><code>MISTRAL_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>groq/</code></td>
+<td><code>groq/llama-3.3-70b-versatile</code></td>
+<td><code>GROQ_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>openrouter/</code></td>
+<td><code>openrouter/mistralai/ministral-14b-2512</code></td>
+<td><code>OPENROUTER_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>ollama/</code></td>
+<td><code>ollama/qwen3:8b</code></td>
+<td>a running Ollama; <code>OLLAMA_API_BASE</code> when it is not at <code>http://localhost:11434</code></td>
+</tr>
+<tr>
+<td><code>vllm/</code></td>
+<td><code>vllm/Qwen/Qwen3-4B</code></td>
+<td><code>HOSTED_VLLM_API_BASE</code>: your server's OpenAI endpoint, <code>/v1</code> included</td>
+</tr>
+</tbody>
+</table>
+<p>Any provider <a href="https://docs.litellm.ai/docs/providers">litellm supports</a> works
+the same way, with the variables litellm reads for it.</p>
+<p>After the prefix, spell the id exactly as the provider does: <code>ollama/qwen3:8b</code>
+is the tag <code>ollama list</code> shows, <code>vllm/Qwen/Qwen3-4B</code> the name your vLLM server
+serves the model under.</p>
+<h3 id="keys-and-base-urls">Keys and base URLs<a class="headerlink" href="#keys-and-base-urls" title="Permanent link">&para;</a></h3>
+<p>Keys and server addresses live in the environment, never in <code>models.yaml</code>.
+<code>openarena evaluations run</code> loads the workspace's <code>.env</code> (beside <code>configs/</code>)
+before it runs, and never overrides a variable already set in your shell. No
+other command reads it. The workspace's
+<code>.env.template</code> lists the usual ones:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cp<span class="w"> </span>.env.template<span class="w"> </span>.env
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># .env</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>sk-...
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">OPENROUTER_API_KEY</span><span class="o">=</span>sk-or-...
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">OLLAMA_API_BASE</span><span class="o">=</span>http://localhost:11434
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nv">HOSTED_VLLM_API_BASE</span><span class="o">=</span>http://localhost:8000/v1
+</code></pre></div>
+<p>A base URL is per provider, not per model: every <code>vllm/</code> entry reaches the one
+server <code>HOSTED_VLLM_API_BASE</code> names. To compare two models served by vLLM,
+serve them from the same server, or run the sweeps one after the other with the
+variable changed.</p>
+<div class="admonition warning">
+<p class="admonition-title">There is no <code>api_base</code> param</p>
+<p><code>params</code> takes only the settings listed <a href="#params">below</a>. <code>api_base:</code>,
+<code>top_p:</code>, <code>seed:</code> or <code>stop:</code> in an entry are refused. Set a server address
+in the environment.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title"><code>check</code> does not check keys</p>
+<p><code>openarena check</code> reads files only. A missing key or a server that is down
+shows up when the run reaches the model: the cell fails and the run says
+why (<a href="../results/#when-a-cell-failed-or-scored-0">Reading results</a>).</p>
+</div>
+<h3 id="local-or-hosted">Local or hosted<a class="headerlink" href="#local-or-hosted" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Hosted API</label><label for="__tabbed_1_2">Ollama</label><label for="__tabbed_1_3">vLLM</label><label for="__tabbed_1_4">OpenRouter</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">gpt-4o-mini</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span><span class="w">        </span><span class="c1"># needs OPENAI_API_KEY</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">hosted</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Nothing to run on your side. Each call is billed, and the run's <code>cost</code> is
+counted from the provider's price (<a href="#prices">Prices</a>). The provider may
+retire the model (<a href="#end-of-life">End of life</a>).</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">qwen3-local</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/qwen3:8b</span><span class="w">           </span><span class="c1"># `ollama pull qwen3:8b` first</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">local</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Runs on your machine. No key, and the cost is 0. Pull the model before the
+run: a model Ollama does not have fails the cell. Speed depends on your
+hardware, so keep <code>batch_size</code> low on a laptop.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">qwen3-4b</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm/Qwen/Qwen3-4B</span><span class="w">        </span><span class="c1"># the name the server serves it under</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">local</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">vllm</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>A server of your own, local or on a GPU box, reached through its OpenAI
+endpoint: set <code>HOSTED_VLLM_API_BASE=http://&lt;host&gt;:8000/v1</code>. The cost is 0.
+It serves many requests at once, so it suits large batches.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">ministral</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openrouter/mistralai/ministral-14b-2512</span><span class="w">   </span><span class="c1"># needs OPENROUTER_API_KEY</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openrouter</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">mistral</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>One key for many vendors. Every call to an <code>openrouter/</code> id is sent with
+OpenRouter's <code>require_parameters</code> routing: it only goes to a host that
+honours every parameter sent, tools included. A host that would drop the
+structured-output call is skipped, and the call fails at once rather than
+answering in prose.</p>
+</div>
+</div>
+</div>
+<p><strong>When to use which.</strong> A hosted API for the models you measure against, and for
+judges, where answer quality matters more than cost. Ollama to iterate on a
+dataset or a reward on your laptop, at no cost. vLLM to score open-weight
+models at scale. Mixing them in one evaluation is fine: each name calls its
+own provider.</p>
+<div class="admonition warning">
+<p class="admonition-title">Harbor agents and local models</p>
+<p>A Harbor agent installed inside the sandbox calls its model from there. It
+cannot reach an <code>ollama/</code> or <code>vllm/</code> model on the arena's machine, and
+<code>check</code> reports the pair. See <a href="../harbor-tasks/">Harbor tasks</a>.</p>
+</div>
+<h2 id="type"><code>type</code><a class="headerlink" href="#type" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>what it does</th>
+<th>where it can be named</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llm</code></td>
+<td>answers prompts: chat, structured output, tool calls, agents</td>
+<td>an evaluation's <code>language_models</code>; a reward's <code>language_model</code>, <code>smart_language_model</code>, <code>sub_language_model</code>, <code>panel_language_models</code>; <code>default_language_model</code></td>
+</tr>
+<tr>
+<td><code>embedding</code></td>
+<td>turns text into vectors</td>
+<td>the <code>language_models</code> of a sweep over retrieval datasets (<code>embedding:</code> in <a href="../datasets/">Datasets</a>); a reward's or metric's <code>embedding_model</code>; <code>default_embedding_model</code></td>
+</tr>
+</tbody>
+</table>
+<p>The type is checked wherever the model is named: a judge set to an embedding
+model, or an embedding model in the <code>language_models</code> of a sweep over text
+datasets, is an error. A sweep runs one type, so a retrieval dataset cannot
+share an evaluation with other kinds of dataset.</p>
+<h2 id="params"><code>params</code><a class="headerlink" href="#params" title="Permanent link">&para;</a></h2>
+<p>What <code>params</code> takes depends on the type. A param left out, or set to null, is
+not sent, and the provider's default applies.</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>param</th>
+<th>values</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llm</code></td>
+<td><code>temperature</code></td>
+<td>a number, 0 to 2</td>
+<td>how much the model samples; lower is more consistent</td>
+</tr>
+<tr>
+<td><code>llm</code></td>
+<td><code>max_tokens</code></td>
+<td>an integer, at least 1</td>
+<td>the longest answer, in tokens</td>
+</tr>
+<tr>
+<td><code>llm</code></td>
+<td><code>reasoning_effort</code></td>
+<td><code>disable</code>, <code>low</code>, <code>medium</code>, <code>high</code></td>
+<td>how much the model thinks before answering, where it can</td>
+</tr>
+<tr>
+<td><code>embedding</code></td>
+<td><code>dimensions</code></td>
+<td>an integer, at least 1</td>
+<td>the vector size, where the model lets you pick</td>
+</tr>
+</tbody>
+</table>
+<h3 id="temperature"><code>temperature</code><a class="headerlink" href="#temperature" title="Permanent link">&para;</a></h3>
+<p>Temperature trades consistency for variety. At 0 the model takes its most
+likely answer; higher values spread over more answers.</p>
+<table>
+<thead>
+<tr>
+<th>setup</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>temperature: 0</code></td>
+<td>benchmarks and comparisons. Two runs of the same model stay as close as the provider allows, so a difference between two models is the models, not the dice.</td>
+</tr>
+<tr>
+<td>left out</td>
+<td>when you want each model as its vendor ships it. Vendors pick different defaults, so you compare the models plus their defaults.</td>
+</tr>
+<tr>
+<td><code>0.7</code> to <code>1</code></td>
+<td>when the task rewards variety (writing, brainstorming), or to measure how stable a model's score is across runs.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Temperature 0 is the default choice for a benchmark</p>
+<p>The evaluation's <code>seed</code> seeds the arena's own randomness, not the
+provider's sampling. Only a low temperature keeps a model's answers
+steady from run to run. Even at 0, hosted providers do not promise
+identical answers.</p>
+</div>
+<p>If a provider refuses a param for a model, the cell fails with the provider's
+message. Remove the param from that entry.</p>
+<h3 id="max_tokens"><code>max_tokens</code><a class="headerlink" href="#max_tokens" title="Permanent link">&para;</a></h3>
+<p>The cap on the length of each answer. Set it to bound cost and time per row, or
+when a provider's default is too short for the task. Too low cuts answers off
+mid-way: a truncated answer usually fails the reward, so a low score may be the
+cap, not the model. On a reasoning model, leave room: depending on the
+provider, the thinking may count against the cap. Leave it out unless you have
+a reason.</p>
+<h3 id="reasoning_effort"><code>reasoning_effort</code><a class="headerlink" href="#reasoning_effort" title="Permanent link">&para;</a></h3>
+<p>How much a model that can think does so before answering.</p>
+<table>
+<thead>
+<tr>
+<th>value</th>
+<th>effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>disable</code></td>
+<td>turns native thinking off, for local models that think by default (Ollama's <code>qwen3</code>, <code>deepseek-r1</code>)</td>
+</tr>
+<tr>
+<td><code>low</code>, <code>medium</code>, <code>high</code></td>
+<td>the effort, where the model supports levels</td>
+</tr>
+<tr>
+<td>left out</td>
+<td>the provider's default</td>
+</tr>
+</tbody>
+</table>
+<p>More effort usually means better answers on hard rows, at the price of more
+output tokens, more cost and more latency. That trade-off is what a
+leaderboard with shares on <code>cost</code> and latency weighs. A model that does not
+support the param may ignore it or refuse it.</p>
+<h3 id="dimensions"><code>dimensions</code><a class="headerlink" href="#dimensions" title="Permanent link">&para;</a></h3>
+<p>For an embedding model that lets you choose its vector size. Smaller vectors
+are cheaper to store and compare; larger ones keep more of the meaning. Leave
+it out for a model with a fixed size.</p>
+<h3 id="where-the-params-apply">Where the params apply<a class="headerlink" href="#where-the-params-apply" title="Permanent link">&para;</a></h3>
+<p>The params travel with the model wherever it is named: as the model under
+test, as a judge, as a metric's model or as a default.</p>
+<table>
+<thead>
+<tr>
+<th>the model is...</th>
+<th>its params</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>under test on a generator, agent or tools dataset</td>
+<td>sent with every call</td>
+</tr>
+<tr>
+<td>under test on a Harbor dataset</td>
+<td>given to the Harbor agent where its options take them (<code>temperature</code>, <code>reasoning_effort</code>, <code>max_tokens</code>); what it does not take is logged and left out</td>
+</tr>
+<tr>
+<td>under test on a retrieval (<code>embedding:</code>) dataset</td>
+<td><code>dimensions</code> sent with every embedding call</td>
+</tr>
+<tr>
+<td>a reward's or metric's model (<code>language_model</code>, <code>embedding_model</code>, a panel, ...)</td>
+<td>sent with every call the reward or metric makes</td>
+</tr>
+<tr>
+<td><code>default_language_model</code>, <code>default_embedding_model</code></td>
+<td>sent with every call, as for a reward's model</td>
+</tr>
+</tbody>
+</table>
+<p>So a judge entry with <code>temperature: 0</code> grades at temperature 0. See
+<a href="#choosing-a-judge-model">Choosing a judge</a>.</p>
+<h2 id="modalities"><code>modalities</code><a class="headerlink" href="#modalities" title="Permanent link">&para;</a></h2>
+<p>What the model reads: <code>text</code>, <code>image</code>, <code>audio</code>. Default <code>[text]</code>; at least one;
+duplicates dropped. Add <code>image</code> for a vision model.</p>
+<p>It is a fact for listings: the run does not read it, and it does not turn image
+input on or off. What a model is sent comes from the dataset's templates.</p>
+<h2 id="description-and-tags"><code>description</code> and <code>tags</code><a class="headerlink" href="#description-and-tags" title="Permanent link">&para;</a></h2>
+<p><code>description</code> is free text, shown as a column by <code>openarena models list</code>. Say
+what the entry is for and what sets it apart from its neighbours: "high
+effort", "the hosted baseline", "served from the lab's GPU box".</p>
+<p><code>tags</code> are short labels: what the model is (<code>openai</code>, <code>local</code>, <code>open-weights</code>),
+what it can do (<code>tools</code>, <code>vision</code>, <code>128k-context</code>), what it is for (<code>judge</code>,
+<code>baseline</code>). The engine never reads them, and they are never sent to the
+model.</p>
+<table>
+<thead>
+<tr>
+<th>rule</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>form</td>
+<td>a list: <code>tags: [openai, hosted]</code>, never <code>tags: openai</code></td>
+</tr>
+<tr>
+<td>characters</td>
+<td>lower-case letters, digits, <code>-</code>, <code>.</code>, <code>:</code>, <code>+</code>, <code>/</code>; starting with a letter or digit</td>
+</tr>
+<tr>
+<td>folding</td>
+<td>upper case is lowered, spaces and <code>_</code> become <code>-</code>: <code>Open AI</code> is stored as <code>open-ai</code></td>
+</tr>
+<tr>
+<td>limits</td>
+<td>at most 40 characters a tag, 32 tags an entry; duplicates dropped</td>
+</tr>
+</tbody>
+</table>
+<p>Pick one spelling per idea and keep to it across the workspace, so one filter
+finds them all.</p>
+<h2 id="two-entries-for-one-id">Two entries for one id<a class="headerlink" href="#two-entries-for-one-id" title="Permanent link">&para;</a></h2>
+<p>Two entries calling the same id with different params are two models. Each gets
+its own row in every result and its own place on a leaderboard. This is how you
+measure what a setting does.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">o4-mini-low</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/o4-mini</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">reasoning_effort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">o4-mini, light thinking.</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">reasoning</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">o4-mini-high</span><span class="p">:</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/o4-mini</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">      </span><span class="nt">reasoning_effort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">o4-mini, deep thinking.</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">reasoning</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Then sweep both:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">effort-ablation</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">o4-mini-low</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">o4-mini-high</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Do this when the question is "is the extra thinking worth it?" or "does
+temperature 0 hurt this task?", or to keep the setting you deploy next to the
+default. Both entries share the id's price and end-of-life date: only the
+tokens they spend differ.</p>
+<p>Do not duplicate an entry just to label it differently; that is what <code>tags</code> and
+<code>description</code> are for. A duplicate with identical params doubles the cost of
+every sweep that names both.</p>
+<h2 id="choosing-a-judge-model">Choosing a judge model<a class="headerlink" href="#choosing-a-judge-model" title="Permanent link">&para;</a></h2>
+<p>A judge reward (<a href="../rewards/#judged-rewards">Rewards</a>) names an <code>llm</code> entry of
+<code>models.yaml</code>, by name.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">judge</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w">                 </span><span class="c1"># grade the same answer the same way every time</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The judge of the free-text rewards.</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">judge</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">graded</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_as_judge</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="nt">language_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span><span class="w">          </span><span class="c1"># a models.yaml name, never an id</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">        </span><span class="no">Score 1.0 when the answer is correct and complete, 0.0 when it is wrong.</span>
+</code></pre></div>
+<ul>
+<li><strong>Stronger than the models it judges.</strong> A judge weaker than the model under
+  test misses the errors that matter.</li>
+<li><strong>Not one of the models under test</strong>, when you can avoid it. A model tends to
+  favour answers like its own. Prefer a judge from another vendor, or a panel
+  (<code>multi_judge_panel</code>).</li>
+<li><strong>One judge for a whole comparison.</strong> Scores from two judges are not on the
+  same scale. Change the judge and you rerun every model.</li>
+<li><strong>A dedicated entry.</strong> Name it <code>judge</code>, not <code>gpt-4o</code>: you swap what it calls
+  in one place, and it keeps its own params apart from the <code>gpt-4o</code> you may
+  test.</li>
+<li><strong><code>temperature: 0</code>.</strong> A judge's params are sent with its calls
+  (<a href="#where-the-params-apply">above</a>). At 0 it grades an answer the same way
+  from row to row and from run to run, as far as the provider allows, so a
+  difference in score is the answers, not the judge's sampling.</li>
+<li><strong>Cost.</strong> A judge makes a call per row, counted apart as <code>reward_cost</code>. A
+  local judge costs nothing but is usually weaker.</li>
+</ul>
+<p>An evaluation's <code>default_language_model</code> is the model a reward uses when its
+config names none (<a href="../evaluations/">Running evaluations</a>).</p>
+<h2 id="prices">Prices<a class="headerlink" href="#prices" title="Permanent link">&para;</a></h2>
+<p>A run's <code>cost</code> (and <code>reward_cost</code>, <code>embedding_cost</code>) is the sum of each call's
+price, which litellm counts as the run goes. Before a run, the arena makes sure
+litellm has a price for every model the run may call, the models under test and
+the judges, from the first source that knows one:</p>
+<ol>
+<li><strong>A local server.</strong> An <code>ollama/</code>, <code>ollama_chat/</code>, <code>vllm/</code>, <code>hosted_vllm/</code>,
+   <code>lm_studio/</code> or <code>llamafile/</code> id costs 0: there is no bill.</li>
+<li><strong>litellm's pricing table.</strong> The live one, filled with the rows only the
+   copy shipped in the package has.</li>
+<li><strong>OpenRouter's catalogue.</strong> For an <code>openrouter/</code> id, and for a vendor's
+   direct id when OpenRouter routes the same model at the vendor's price.</li>
+</ol>
+<p>A source that prices both input and output wins over one that prices one side.</p>
+<div class="admonition warning">
+<p class="admonition-title">Unpriced is not free</p>
+<p>A hosted model that no source prices still runs, but its spend reads 0. On
+a leaderboard with a share on <code>cost</code> or a cost budget, it looks free. Check
+a new model's cost after its first run.</p>
+</div>
+<p>The price is per id: two entries for one id share it.</p>
+<h2 id="end-of-life">End of life<a class="headerlink" href="#end-of-life" title="Permanent link">&para;</a></h2>
+<p>A leaderboard adds <code>eol_days</code> to every model: the days left before its id stops
+being served. A model about to be retired is a poor choice to build on, however
+well it scores. The date comes from the first source that has one:</p>
+<table>
+<thead>
+<tr>
+<th>source</th>
+<th>for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the provider's announced date, as recorded in litellm's table</td>
+<td>any provider that announces one</td>
+</tr>
+<tr>
+<td>Azure's OpenAI retirement schedule</td>
+<td><code>openai/</code>, <code>azure/</code>, <code>azure_ai/</code> ids the provider has not dated; fetched once a day, a shipped snapshot answers offline</td>
+</tr>
+<tr>
+<td>OpenRouter's expiration date</td>
+<td><code>openrouter/</code> ids; it wins when it is earlier than the vendor's</td>
+</tr>
+</tbody>
+</table>
+<p>An <code>openrouter/&lt;vendor&gt;/&lt;model&gt;</code> id is also looked up under the vendor's own id:
+it is the same model, and it stops on the same day.</p>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th><code>eol_days</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no date known (local and open-weight models, most current models)</td>
+<td>5 years: no end of life</td>
+</tr>
+<tr>
+<td>a date further than 5 years away</td>
+<td>5 years</td>
+</tr>
+<tr>
+<td>a date in the past</td>
+<td>negative: the provider may already refuse calls</td>
+</tr>
+</tbody>
+</table>
+<p><code>openarena leaderboards run &lt;name&gt; --no-eol</code> leaves <code>eol_days</code> out, for a
+ranking that asks nothing of the network (<a href="../leaderboards/">Leaderboards</a>).</p>
+<h2 id="tags-and-leaderboards">Tags and leaderboards<a class="headerlink" href="#tags-and-leaderboards" title="Permanent link">&para;</a></h2>
+<p>A leaderboard's scope is its <code>models:</code> list, by name. Tags do not select models
+for it: a leaderboard does not read them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">local-vs-hosted</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Local against hosted</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen3-local</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># names; empty means every scored model</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">baseline</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Use tags to find the names to list: give every model of a family or a
+deployment the same tag, browse the lists by it, and copy the names into the
+leaderboard's <code>models:</code>. When the set changes, edit the list.</p>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p>Run <code>openarena check configs</code> after every edit (<a href="../check/">Checking configs</a>).
+What it reports for a model, and the fix:</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th><code>check</code> says</th>
+<th>fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a param beside <code>model:</code> (<code>temperature: 0</code>)</td>
+<td><code>not a field of a models entry</code></td>
+<td>move it under <code>params:</code>; <code>check</code> prints the block</td>
+</tr>
+<tr>
+<td>an option the type does not take, beside <code>model:</code> (<code>top_p</code>, <code>seed</code>)</td>
+<td><code>not a field of a models entry</code>, fix: <code>remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, temperature, max_tokens under `params:`</code></td>
+<td>remove it</td>
+</tr>
+<tr>
+<td>an option the type does not take, under <code>params:</code> (<code>top_p</code>, <code>temperature</code> on an embedding model)</td>
+<td><code>Chat models take reasoning_effort, temperature, max_tokens, not top_p</code></td>
+<td>remove it</td>
+</tr>
+<tr>
+<td>a server address or key (<code>api_base</code>, <code>base_url</code>, <code>api_key</code>)</td>
+<td><code>not a field of a models entry</code>, fix: <code>remove `api_base:`; a base URL is not a model setting: set it in the environment instead (`.env`)</code></td>
+<td>set the provider's variable in <code>.env</code> (<code>OLLAMA_API_BASE</code>, <code>HOSTED_VLLM_API_BASE</code>)</td>
+</tr>
+<tr>
+<td><code>provider: openai</code></td>
+<td><code>not a field of a models entry</code></td>
+<td>remove it: the provider is read off the id's prefix</td>
+</tr>
+<tr>
+<td><code>reasoning_effort: max</code></td>
+<td><code>reasoning_effort: one of disable, low, medium, high</code></td>
+<td>use one of those</td>
+</tr>
+<tr>
+<td><code>temperature: 3</code></td>
+<td><code>temperature: between 0 and 2</code></td>
+<td>a value in range</td>
+</tr>
+<tr>
+<td><code>modalities: [video]</code></td>
+<td><code>Input should be 'text', 'image' or 'audio'</code></td>
+<td>one of those</td>
+</tr>
+<tr>
+<td><code>tags: OpenAI</code></td>
+<td><code>`tags:` is a list</code></td>
+<td><code>tags: [openai]</code></td>
+</tr>
+<tr>
+<td>a name with a space</td>
+<td><code>a name starts with a letter or a digit, ...</code></td>
+<td>rename it as <code>check</code> suggests, and update what refers to it</td>
+</tr>
+<tr>
+<td>a reward naming an id (<code>language_model: openai/gpt-4o-mini</code>)</td>
+<td><code>'openai/gpt-4o-mini' is not in models</code></td>
+<td>name the entry that calls it; <code>check</code> names it</td>
+</tr>
+<tr>
+<td>a judge set to an embedding model</td>
+<td><code>'minilm' is an embedding model; this setting needs a language model</code></td>
+<td>name an <code>llm</code> entry</td>
+</tr>
+<tr>
+<td>a renamed model still named elsewhere</td>
+<td><code>'old-name' is not in models</code></td>
+<td>update the reference; on a leaderboard it is a warning</td>
+</tr>
+</tbody>
+</table>
+<p><code>check</code> does not reach the provider. A misspelt id after the prefix, a missing
+key, a model Ollama has not pulled or a vLLM server that is down fail the cell
+at run time, with the provider's message.</p>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>openarena<span class="w"> </span>models<span class="w"> </span>list<span class="w">            </span><span class="c1"># name, id, type and description of ./configs</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs<span class="w">          </span><span class="c1"># after an edit</span>
+</code></pre></div>
+<p>See the <a href="../../cli/">CLI reference</a> for the options.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../rewards/">Rewards</a>: judges, and the models they name.</li>
+<li><a href="../datasets/">Datasets</a>: the dataset kinds, including retrieval over
+  embedding models.</li>
+<li><a href="../evaluations/">Running evaluations</a>: sweeping models, <code>seed</code>,
+  <code>default_language_model</code>, cost and time.</li>
+<li><a href="../leaderboards/">Leaderboards</a>: <code>cost</code>, <code>eol_days</code>, budgets and shares.</li>
+<li><a href="../harbor-tasks/">Harbor tasks</a>: which agents can drive which models.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../workspace/" class="md-footer__link md-footer__link--prev" aria-label="Previous: The workspace">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                The workspace
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../rewards/" class="md-footer__link md-footer__link--next" aria-label="Next: Rewards">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Rewards
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

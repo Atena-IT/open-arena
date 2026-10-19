@@ -1,0 +1,2371 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/a2a-agents/">
+      
+      
+      
+        <link rel="prev" href="../mcp-tools/">
+      
+      
+        <link rel="next" href="../environments/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>A2A agents - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              A2A agents
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a2a-agent-or-model-mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A2A agent or model + MCP tools?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registering-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registering an agent
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registering an agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#url-and-the-agent-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>url</code> and the agent card
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headers-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>headers</code>: authentication
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout_sec-how-long-a-row-may-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>timeout_sec</code>: how long a row may take
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staging-or-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Staging or production
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dataset-a2a" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The dataset: <code>a2a: {}</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The dataset: a2a: {}">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-agent-receives" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the agent receives
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-openarena-reads-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What openarena reads back
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-or-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Message or task
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-evaluation-agents-on-the-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The evaluation: agents on the axis
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-row-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a row does
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a row does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-recorded" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is recorded
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scoring-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Scoring an agent
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-agents-fairly" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Comparing agents fairly
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limits-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rate limits and cost
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-and-debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking and debugging
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checking and debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-a-row-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When a row fails
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a2a-agent-or-model-mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A2A agent or model + MCP tools?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registering-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Registering an agent
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registering an agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#url-and-the-agent-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>url</code> and the agent card
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headers-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>headers</code>: authentication
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout_sec-how-long-a-row-may-take" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>timeout_sec</code>: how long a row may take
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staging-or-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Staging or production
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dataset-a2a" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The dataset: <code>a2a: {}</code>
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The dataset: a2a: {}">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-agent-receives" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the agent receives
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-openarena-reads-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What openarena reads back
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-or-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Message or task
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-evaluation-agents-on-the-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The evaluation: agents on the axis
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-row-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a row does
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a row does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-recorded" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is recorded
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scoring-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Scoring an agent
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparing-agents-fairly" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Comparing agents fairly
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limits-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rate limits and cost
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-and-debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Checking and debugging
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checking and debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-a-row-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        When a row fails
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        See also
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="a2a-agents">A2A agents<a class="headerlink" href="#a2a-agents" title="Permanent link">&para;</a></h1>
+<p>Most evaluations compare models: openarena calls each model itself, with the
+prompt, tools and settings you wrote. An A2A evaluation compares <strong>deployed
+agents</strong> instead. Each agent is a running service that speaks the
+<a href="https://a2a-protocol.org">Agent2Agent protocol</a> at its own URL. openarena
+sends it each row as a message, waits for its answer, and scores that answer
+with the dataset's reward, exactly as it would score a model's.</p>
+<p>What is under test is the whole service: its prompts, its model, its tools,
+its memory, its guardrails. openarena sees none of that. It sees the question
+it sent and the text that came back.</p>
+<p>Three files are involved:</p>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>what it holds for A2A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>configs/a2a_agents.yaml</code></td>
+<td>one entry per agent: where it is, how to authenticate, how long a row may take</td>
+</tr>
+<tr>
+<td><code>configs/datasets.yaml</code></td>
+<td>a dataset with an empty <code>a2a: {}</code> block: its rows go to agents</td>
+</tr>
+<tr>
+<td><code>configs/evaluations.yaml</code></td>
+<td>an evaluation whose <code>language_models</code> lists agent names, not model names</td>
+</tr>
+</tbody>
+</table>
+<pre class="mermaid"><code>flowchart LR
+  R[row] --&gt;|input_template| Q[JSON question]
+  Q --&gt;|one user message| A[A2A agent]
+  A --&gt;|message, or task + artifacts| T[answer text]
+  T --&gt;|read into the output shape| S[reward]
+  S --&gt; C[cell: agent x dataset]</code></pre>
+<h2 id="a2a-agent-or-model-mcp-tools">A2A agent or model + MCP tools?<a class="headerlink" href="#a2a-agent-or-model-mcp-tools" title="Permanent link">&para;</a></h2>
+<p>openarena can evaluate an agent two ways. Over A2A, you point it at the
+service you already run. With an <a href="../mcp-tools/"><code>agent:</code> dataset</a>, openarena
+<em>is</em> the agent: it gives a model of <code>models.yaml</code> the tools of MCP servers and
+runs the loop itself.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>A2A agent</th>
+<th>model + MCP tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>what is tested</td>
+<td>the deployed service, as its users reach it</td>
+<td>a model's ability to use the tools you give it</td>
+</tr>
+<tr>
+<td>what you can vary</td>
+<td>which deployment (version, environment, vendor)</td>
+<td>the model, its params, the tools</td>
+</tr>
+<tr>
+<td>the evaluation's axis</td>
+<td>agents (<code>a2a_agents</code> keys)</td>
+<td>models (<code>models</code> keys)</td>
+</tr>
+<tr>
+<td>cost, tokens, latency</td>
+<td>not measured: the agent spends on its side</td>
+<td>measured per cell</td>
+</tr>
+<tr>
+<td>what openarena sees</td>
+<td>the final answer</td>
+<td>the answer, from a loop it runs itself</td>
+</tr>
+<tr>
+<td>needs</td>
+<td>a running, reachable A2A endpoint</td>
+<td>the MCP servers, a tool-calling model</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Choose A2A when</strong> the thing you ship is the agent, and you want to know how
+that exact build behaves: a release candidate against the current release, two
+vendors' agents on the same questions, a regression check before a deploy.
+Rebuilding such an agent as model + tools would test your copy of it, not the
+agent.</p>
+<p><strong>Choose model + MCP tools when</strong> the question is which model to put inside an
+agent, or how models handle a given set of tools. Only then can you swap the
+model, read its cost and tokens, and hold everything else fixed.</p>
+<h2 id="registering-an-agent">Registering an agent<a class="headerlink" href="#registering-an-agent" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">a2a_agents</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">support-prod</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://support-agent.example.com</span><span class="w">       </span><span class="c1"># required: the agent's base URL</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span><span class="w">                                      </span><span class="c1"># sent on every request, the card's included</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer ${SUPPORT_PROD_TOKEN}</span><span class="w">   </span><span class="c1"># read from the environment or .env</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">timeout_sec</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span><span class="w">                              </span><span class="c1"># one row, from sending to the last word (default 300)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The support agent, current release.</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">support</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">prod</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">support-staging</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://support-agent.staging.example.com</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">card_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/a2a/agent.json</span><span class="w">                    </span><span class="c1"># the card is not at the well-known path</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer ${SUPPORT_STAGING_TOKEN}</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The support agent, release candidate.</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">support</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">staging</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>The key (<code>support-prod</code>) is the agent's name everywhere else: in an
+evaluation's <code>language_models</code>, in <code>result.json</code>, on a leaderboard.</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>required</th>
+<th>default</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>url</code></td>
+<td>yes</td>
+<td></td>
+<td>the agent's base URL; must start with <code>http://</code> or <code>https://</code>; a trailing <code>/</code> is dropped</td>
+</tr>
+<tr>
+<td><code>card_path</code></td>
+<td>no</td>
+<td>the well-known path</td>
+<td>where the agent card is, relative to <code>url</code>, when it is not at <code>&lt;url&gt;/.well-known/agent-card.json</code></td>
+</tr>
+<tr>
+<td><code>headers</code></td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>HTTP headers sent on every request to the agent, the card request included</td>
+</tr>
+<tr>
+<td><code>timeout_sec</code></td>
+<td>no</td>
+<td><code>300</code></td>
+<td>how long one row may take, in seconds, from sending the message to the agent's last word; above 0</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>no</td>
+<td></td>
+<td>for you and <code>openarena a2a-agents list</code>; the run does not read it</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>no</td>
+<td><code>[]</code></td>
+<td>labels for browsing; the run does not read them</td>
+</tr>
+</tbody>
+</table>
+<p>No other field is accepted. In particular there is no streaming switch, no
+retry count and no rate limit: see <a href="#what-a-row-does">what a row does</a>.</p>
+<h3 id="url-and-the-agent-card"><code>url</code> and the agent card<a class="headerlink" href="#url-and-the-agent-card" title="Permanent link">&para;</a></h3>
+<p>On the first row of a cell, openarena reads the agent's card from
+<code>&lt;url&gt;/.well-known/agent-card.json</code>, or from <code>card_path</code> under <code>url</code> when you
+set it. The card says which interfaces the agent serves and at which address.
+openarena opens a client on the interface the card prefers and sends every
+message there.</p>
+<p>Look at the card before you register an agent:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://support-agent.example.com/.well-known/agent-card.json
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>https://support-agent.example.com/.well-known/agent-card.json
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Messages go where the card says, not to <code>url</code></p>
+<p><code>url</code> is only where the card is read. The messages go to the address in
+the card's interfaces. An agent behind a proxy or a tunnel often
+advertises its internal address (<code>http://localhost:9999</code>, a container
+name): the card reads fine, then every message fails to connect. Fix the
+card the agent serves; openarena has no field to override it.</p>
+</div>
+<p>Set <code>card_path</code> only when the agent publishes its card somewhere other than
+the well-known path, for example an older agent serving
+<code>/.well-known/agent.json</code>. It is a path under <code>url</code>, not a full URL.</p>
+<h3 id="headers-authentication"><code>headers</code>: authentication<a class="headerlink" href="#headers-authentication" title="Permanent link">&para;</a></h3>
+<p>Every request to the agent goes through one HTTP client that carries these
+headers: the card request, each message, each poll of a running task. Use
+them for whatever the agent's gateway expects: <code>Authorization</code>, an API key
+header, a tenant header.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">a2a_agents</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">vendor-agent</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://agents.vendor.example.com/support</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${VENDOR_API_KEY}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">X-Tenant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arena-eval</span>
+</code></pre></div>
+<p>Header names cannot contain whitespace, and values are strings: quote a value
+YAML would read as a number.</p>
+<p>Keep tokens out of the file with <code>${NAME}</code>. When a run reads its config, after
+it has loaded the workspace's <code>.env</code>, each <code>${NAME}</code> in a value is replaced by
+the environment variable <code>NAME</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># .env, beside configs/</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">VENDOR_API_KEY</span><span class="o">=</span>...
+</code></pre></div>
+<ul>
+<li><code>a2a_agents.yaml</code> and the run's copy, <code>.open-arena/&lt;evaluation&gt;/config.yaml</code>,
+  keep <code>${VENDOR_API_KEY}</code>, not its value, so either can be committed.</li>
+<li>A variable set neither in your shell nor in <code>.env</code> stops the run before it
+  starts, naming the variable and where it is used; <code>openarena check</code> warns
+  about it first.</li>
+<li><code>$${NAME}</code> writes a literal <code>${NAME}</code>.</li>
+</ul>
+<p>Any string value takes a reference, <code>url</code> included
+(<code>url: ${SUPPORT_AGENT_URL}</code>). Still use a key made for evaluation, scoped to
+the least it needs and easy to revoke.</p>
+<h3 id="timeout_sec-how-long-a-row-may-take"><code>timeout_sec</code>: how long a row may take<a class="headerlink" href="#timeout_sec-how-long-a-row-may-take" title="Permanent link">&para;</a></h3>
+<p><code>timeout_sec</code> bounds one whole row: sending the message, waiting for the
+answer, and polling a task until it ends. It is also the timeout of each HTTP
+request, the card's included. A row that runs past it gets no answer and
+scores 0, with a warning; the cell goes on (see
+<a href="#when-a-row-fails">when a row fails</a>).</p>
+<p>Set it from the agent's real behaviour, measured on a few rows:</p>
+<table>
+<thead>
+<tr>
+<th>agent</th>
+<th>where to start</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>answers in one turn, no tools</td>
+<td>30 to 60</td>
+</tr>
+<tr>
+<td>calls a few tools, searches</td>
+<td>120 to 300 (the default)</td>
+</tr>
+<tr>
+<td>long tasks: research, code, multi-step workflows</td>
+<td>above 300</td>
+</tr>
+</tbody>
+</table>
+<p>Too low scores a slow row 0, as if the agent had answered wrong. Too high only costs time when the
+agent hangs: the run waits that long before it says so. Rows of a batch are
+sent at once, so an agent under load is slower than the same agent answering
+one question alone: measure with the <code>batch_size</code> you will use.</p>
+<h3 id="staging-or-production">Staging or production<a class="headerlink" href="#staging-or-production" title="Permanent link">&para;</a></h3>
+<p>Register each deployment as its own entry, as above. The name is what results
+and leaderboards show, so put the environment in it.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Staging</label><label for="__tabbed_1_2">Production</label><label for="__tabbed_1_3">Local</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>The default for evaluation. You can run as often as you like, at any
+<code>batch_size</code>, without real users feeling the load or real systems seeing
+the questions. Compare <code>support-staging</code> (the candidate) with
+<code>support-prod</code> (the release) before promoting.</p>
+</div>
+<div class="tabbed-block">
+<p>Measures what users actually get, with the production model, data and
+configuration. But every row is real traffic: it counts against the
+agent's rate limits and quotas, costs money on its side, may land in its
+logs and analytics, and may trigger side effects if the agent can act
+(open tickets, send mail). Use a small <code>limit</code>, a low <code>batch_size</code>, and
+questions that do not make the agent act.</p>
+</div>
+<div class="tabbed-block">
+<p>An agent you run on your machine (<code>url: http://localhost:9999</code>), for a
+quick check while developing it. Its card must advertise an address the
+run can reach too.</p>
+</div>
+</div>
+</div>
+<h2 id="the-dataset-a2a">The dataset: <code>a2a: {}</code><a class="headerlink" href="#the-dataset-a2a" title="Permanent link">&para;</a></h2>
+<p>A dataset whose rows go to A2A agents carries an empty <code>a2a:</code> block. It takes
+no settings: which agents answer is the evaluation's choice, not the
+dataset's.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">support-questions</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support.jsonl</span><span class="w">              </span><span class="c1"># {"question": "...", "expected": "..."}</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}},</span><span class="nv"> </span><span class="s">"reply_format":</span><span class="nv"> </span><span class="s">"a</span><span class="nv"> </span><span class="s">JSON</span><span class="nv"> </span><span class="s">object</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">one</span><span class="nv"> </span><span class="s">string</span><span class="nv"> </span><span class="s">field,</span><span class="nv"> </span><span class="s">answer,</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">nothing</span><span class="nv"> </span><span class="s">else"}'</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">expected</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">          </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The customer's question</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">          </span><span class="nt">reply_format</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">How to reply</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">reply_format</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">          </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The answer to give the customer</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="nt">a2a</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                            </span><span class="c1"># always empty: the agents come from the evaluation</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<p>The provider, the templates, <code>limit</code> and <code>batch_size</code> work as for any dataset
+(<a href="../datasets/">Datasets</a>). What changes is how the question reaches the agent
+and how its answer is read back.</p>
+<h3 id="what-the-agent-receives">What the agent receives<a class="headerlink" href="#what-the-agent-receives" title="Permanent link">&para;</a></h3>
+<p>The row's rendered input, a JSON object, is sent as the text of <strong>one user
+message</strong>: the agent literally reads
+<code>{"question": "...", "reply_format": "..."}</code>. Nothing else goes with it: no
+system prompt, no schema, no earlier rows. Each row is a new message, not
+linked to the ones before.</p>
+<p>So write the <code>input_template</code> for the agent as a user would. Most agents read
+a JSON object fine; if yours expects prose, render one field that holds the
+whole prompt.</p>
+<h3 id="what-openarena-reads-back">What openarena reads back<a class="headerlink" href="#what-openarena-reads-back" title="Permanent link">&para;</a></h3>
+<p>The answer the agent must give depends on the dataset's <code>output_template</code>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">With an output template and schema</label><label for="__tabbed_2_2">Without an output template</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>The agent must answer <strong>a JSON object</strong>. Its whole reply is parsed as JSON;
+a reply that is a single fenced block (<code>```json ... ```</code>) is unwrapped
+first. The object is the answer the reward compares with the expected one.</p>
+<p>This is what lets you score against a reference: <code>exact_match</code>,
+<code>answer_accuracy</code>, or a judge that reads the expected answer. The agent
+never sees your <code>output_schema</code>, so tell it the format in the input, as
+<code>reply_format</code> does above.</p>
+<p>A reply that is not a JSON object gets no answer: the row scores 0, with
+a warning, and the cell goes on. Use this only with an agent that
+follows the instruction every time, or the zeros measure its formatting,
+not its answers.</p>
+</div>
+<div class="tabbed-block">
+<p>An inputs-only dataset: leave out <code>output_template</code> and <code>output_schema</code>.
+The agent's text is taken as it is, as one chat message
+(<code>{"role": "assistant", "content": "..."}</code>). Nothing has to parse.</p>
+<p>There is no expected answer, so only a judge can score it: say what a good
+answer is in the judge's <code>instructions</code>. This suits agents whose replies
+are free text you cannot force into JSON.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">support-open</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support.jsonl</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The customer's question</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">a2a</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">An output template without an output schema</p>
+<p>The expected answer is then a chat message, and the agent must answer a
+JSON object of that shape (<code>{"role": ..., "content": ...}</code>) too: free text
+scores the row 0. Give an <code>output_schema</code>, or drop the <code>output_template</code>.</p>
+</div>
+<h3 id="message-or-task">Message or task<a class="headerlink" href="#message-or-task" title="Permanent link">&para;</a></h3>
+<p>An A2A agent replies in one of two ways, and openarena handles both:</p>
+<ul>
+<li><strong>A message</strong>: its text is the answer.</li>
+<li><strong>A task</strong>: openarena asks for the task again every second until it ends.
+  When it ends <code>completed</code>, the answer is the text of the task's artifacts,
+  joined by new lines, or, when they hold no text, the text of the task's
+  final status message. When it ends any other way (<code>failed</code>, <code>canceled</code>,
+  <code>rejected</code>, <code>input required</code>, <code>auth required</code>), the row gets no answer and
+  scores 0, with a warning saying what the agent said, e.g.
+  <code>the agent's task ended input required: Which order?</code>.</li>
+</ul>
+<p>Only text parts are read. An agent that answers with file or data parts only
+gives an empty answer.</p>
+<div class="admonition note">
+<p class="admonition-title">One turn only</p>
+<p>An agent that asks a clarifying question (<code>input required</code>) scores the
+row 0: openarena does not answer back. Put everything the agent needs in the row.</p>
+</div>
+<h2 id="the-evaluation-agents-on-the-axis">The evaluation: agents on the axis<a class="headerlink" href="#the-evaluation-agents-on-the-axis" title="Permanent link">&para;</a></h2>
+<p>An evaluation over A2A datasets lists agents in <code>language_models</code>, by their
+<code>a2a_agents</code> key:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">support-release-check</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">The release candidate against the current release.</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">support-staging</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">support-prod</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># a2a_agents keys</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">support-questions</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">                                      </span><span class="c1"># rows sent to an agent at once</span>
+</code></pre></div>
+<p>Every dataset of such an evaluation must be an <code>a2a</code> dataset. A run cannot mix
+them with model datasets, because its axis is either agents or models; it
+refuses with
+<code>an A2A dataset cannot share a run with other kinds of dataset; run it on its own.</code>
+Run agents and models as two evaluations.</p>
+<p>The cells run one agent after another; within a cell, <code>batch_size</code> rows are
+sent at once. See <a href="../evaluations/">Running evaluations</a> for the run itself and
+for resuming.</p>
+<h2 id="what-a-row-does">What a row does<a class="headerlink" href="#what-a-row-does" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+  participant O as openarena
+  participant A as A2A agent
+  Note over O,A: first row of the cell only
+  O-&gt;&gt;A: GET the card (url + card_path, with headers)
+  A--&gt;&gt;O: agent card: interfaces, skills
+  loop each row, batch_size at once
+    O-&gt;&gt;A: send message: the rendered input as text
+    alt the agent answers a message
+      A--&gt;&gt;O: message
+    else the agent answers a task
+      A--&gt;&gt;O: task (still working)
+      loop every second, until it ends or timeout_sec
+        O-&gt;&gt;A: get task
+        A--&gt;&gt;O: task state, artifacts
+      end
+    end
+    O-&gt;&gt;O: answer text, output shape, reward
+  end</code></pre>
+<ul>
+<li>The card is read once per cell, and the same client serves all of its rows;
+  it is closed when the run ends.</li>
+<li>openarena does not stream, even when the card says the agent can: it sends,
+  then waits for the reply or polls the task.</li>
+<li>There is no retry inside a cell. A row the agent does not answer (an HTTP
+  error, a reply that is not JSON where JSON is expected, a task that does
+  not complete, the timeout) is warned about as <code>A2A agent &lt;url&gt;: &lt;why&gt;</code> and
+  scores 0; the other rows still count. When no row of a cell got an answer,
+  the cell fails instead, with <code>no row got an answer: ...</code> and the first
+  error, and the next run of the same command runs it again.</li>
+</ul>
+<h3 id="what-is-recorded">What is recorded<a class="headerlink" href="#what-is-recorded" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>what</th>
+<th>where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>each cell's reward (the mean over its rows) and status</td>
+<td><code>.open-arena/&lt;evaluation&gt;/result.json</code> (<a href="../results/">Reading results</a>)</td>
+</tr>
+<tr>
+<td>why a cell failed</td>
+<td>the run's output: <code>&lt;agent&gt; failed: &lt;why&gt;</code></td>
+</tr>
+<tr>
+<td>why a row scored 0 without an answer</td>
+<td>the run's output: <code>A2A agent &lt;url&gt;: &lt;why&gt;</code></td>
+</tr>
+<tr>
+<td>the first rows of each cell: input, expected answer, the agent's answer as scored</td>
+<td>handed to the caller of the run, which is how the arena app shows them; the CLI keeps scores only</td>
+</tr>
+</tbody>
+</table>
+<p>What is <strong>not</strong> recorded: the agent's intermediate steps, its tool calls, the
+task's status history, non-text parts. openarena only sees the final answer,
+so it cannot score how the agent got there. To score a trajectory
+(<code>tool_correctness</code>, <code>step_efficiency</code>), the agent must put it in its answer,
+or you evaluate it as <a href="../mcp-tools/">model + MCP tools</a>, where openarena runs
+the loop.</p>
+<h2 id="scoring-an-agent">Scoring an agent<a class="headerlink" href="#scoring-an-agent" title="Permanent link">&para;</a></h2>
+<p>The reward is the dataset's, as for models (<a href="../rewards/">Rewards</a>):</p>
+<table>
+<thead>
+<tr>
+<th>your agent answers</th>
+<th>reward</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a short field you can compare exactly (a category, an id, yes or no)</td>
+<td><code>exact_match</code> or <code>answer_accuracy</code>, with an output schema</td>
+</tr>
+<tr>
+<td>free text, and you have a reference answer</td>
+<td>a judge (<code>lm_as_judge</code>, <code>rubrics_as_judge</code>), with an output schema and a reply instruction in the input</td>
+</tr>
+<tr>
+<td>free text, no reference</td>
+<td>a judge on an inputs-only dataset, its criteria in <code>instructions</code></td>
+</tr>
+<tr>
+<td>several qualities to report apart (correct, polite, on policy)</td>
+<td><code>rubrics_as_judge</code></td>
+</tr>
+</tbody>
+</table>
+<p>A judge's calls are made by openarena, with its own model, and counted as
+<code>reward_cost</code>.</p>
+<h2 id="comparing-agents-fairly">Comparing agents fairly<a class="headerlink" href="#comparing-agents-fairly" title="Permanent link">&para;</a></h2>
+<p><strong>Same rows, same reward, same load.</strong> Agents in one evaluation share the
+dataset, its order and its reward, so their cells compare directly. Keep
+<code>batch_size</code> the same between runs you compare: load changes how fast an agent
+answers, and an agent that times out under load loses the cell.</p>
+<p><strong>Against a plain model.</strong> One evaluation cannot hold both. Write two datasets
+over the same rows, one with <code>a2a: {}</code> and one with <code>generator:</code> (or
+<code>agent:</code>), with the same reward, and run them as two evaluations. Their
+rewards are on the same scale, but they are two datasets: a leaderboard
+normalizes each dataset against its own agents or models. Read the two
+<code>result.json</code> side by side.</p>
+<p>Two things make that comparison uneven; say so when you report it:</p>
+<ul>
+<li><strong>Cost.</strong> A model's cell reports its cost and tokens; an agent's cannot,
+  since it spends on its own side. A <code>cost</code> share or budget on a leaderboard
+  means nothing for agents.</li>
+<li><strong>Instructions.</strong> The model gets the dataset's <code>generator.instructions</code> and
+  <code>output_schema</code> with each call; the agent only gets what the input says.
+  Put the same instructions in the agent's input, or the model starts ahead.</li>
+</ul>
+<details class="details">
+<summary>Ranking agents on a leaderboard</summary>
+<p>A <a href="../leaderboards/">leaderboard</a> ranks agents like models, by the names in
+<code>result.json</code>. Leave <code>models: []</code> to take every agent scored. When you
+list agent names in <code>models:</code>, <code>openarena check</code> warns that each one
+<code>is not in models</code>; the warning does not stop the leaderboard. Weight
+<code>reward</code> and your own metrics, not cost.</p>
+</details>
+<h2 id="rate-limits-and-cost">Rate limits and cost<a class="headerlink" href="#rate-limits-and-cost" title="Permanent link">&para;</a></h2>
+<p>openarena does not rate-limit agents. What it sends:</p>
+<ul>
+<li>one card request per cell;</li>
+<li>per row, one message, plus one task request per second while a task runs;</li>
+<li><code>batch_size</code> rows at once.</li>
+</ul>
+<p>Keep <code>batch_size</code> within the agent's quota, and low for production. Start with
+<code>limit: 5</code> on the dataset, read the answers, then run the full size. The
+agent's own spend (its model calls, its tools) is not in the results: read it
+on the agent's side.</p>
+<h2 id="checking-and-debugging">Checking and debugging<a class="headerlink" href="#checking-and-debugging" title="Permanent link">&para;</a></h2>
+<p><code>openarena check configs</code> validates <code>a2a_agents.yaml</code>, the <code>a2a</code> block and the
+evaluation's references, without contacting any agent
+(<a href="../check/">Checking configs</a>).</p>
+<table>
+<thead>
+<tr>
+<th>you wrote</th>
+<th><code>openarena check</code> reports</th>
+<th>fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>url: localhost:9999</code></td>
+<td><code>`url` must start with http:// or https://</code></td>
+<td>write the scheme: <code>http://localhost:9999</code></td>
+</tr>
+<tr>
+<td>no <code>url</code></td>
+<td><code>`url:` is missing</code>, fix <code>add `url: http://localhost:9999`</code></td>
+<td>add the agent's base URL</td>
+</tr>
+<tr>
+<td><code>streaming: true</code>, <code>retries: 3</code>, any field not in the table</td>
+<td><code>not a field of a a2a_agents entry</code></td>
+<td>remove it; an entry reads <code>card_path, description, headers, tags, timeout_sec, url</code></td>
+</tr>
+<tr>
+<td><code>timeout_sec: 0</code></td>
+<td><code>Input should be greater than 0</code>, fix <code>set `timeout_sec:` to more than 0</code></td>
+<td>a positive number of seconds</td>
+</tr>
+<tr>
+<td>a <code>${NAME}</code> in a value whose variable is set nowhere</td>
+<td>a warning: <code>`${NAME}` is not set in your shell or in &lt;workspace&gt;/.env; a run that reads it refuses to start</code></td>
+<td>add <code>NAME=...</code> to <code>.env</code>, or export it</td>
+</tr>
+<tr>
+<td>a header name with a space</td>
+<td><code>header '...' must not contain whitespace</code></td>
+<td>rename it</td>
+</tr>
+<tr>
+<td>a header value YAML reads as a number</td>
+<td><code>Input should be a valid string</code></td>
+<td>quote it</td>
+</tr>
+<tr>
+<td><code>a2a: {agent: helper}</code></td>
+<td><code>`a2a:` takes no settings</code></td>
+<td>write <code>a2a: {}</code>; list agents in the evaluation</td>
+</tr>
+<tr>
+<td><code>a2a: {}</code> beside <code>generator:</code> or <code>agent:</code></td>
+<td><code>`generator`, `a2a` are mutually exclusive</code></td>
+<td>keep one</td>
+</tr>
+<tr>
+<td>an agent name not in <code>a2a_agents.yaml</code></td>
+<td>an error on <code>evaluations.&lt;name&gt;.language_models[i]</code></td>
+<td>add the agent, or fix the name</td>
+</tr>
+<tr>
+<td>an <code>a2a</code> dataset beside a model dataset in one evaluation</td>
+<td><code>an A2A dataset cannot share a run with other kinds of dataset</code></td>
+<td>two evaluations</td>
+</tr>
+</tbody>
+</table>
+<h3 id="when-a-row-fails">When a row fails<a class="headerlink" href="#when-a-row-fails" title="Permanent link">&para;</a></h3>
+<p><code>check</code> reads files only. Whether the agent is up, accepts your token and
+answers in the expected shape shows only when the run reaches it. A row the
+agent does not answer scores 0 and the run warns <code>A2A agent &lt;url&gt;: &lt;why&gt;</code>;
+the cell goes on. A cell where no row got an answer (the agent is down, every
+request is refused) fails with <code>no row got an answer: all N row(s) failed;
+the first error: &lt;why&gt;</code>, and <code>openarena evaluations run</code> exits 1. Fix the cause and
+run the same command again: failed cells run again, cells already scored are
+kept. A cell that scored with some rows at 0 is kept too: rerun it with
+<code>--no-cache</code> once the cause is fixed.</p>
+<table>
+<thead>
+<tr>
+<th>the run says</th>
+<th>likely cause</th>
+<th>fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a connection error or timeout on the first row</td>
+<td>the agent is down, or its card advertises an address the run cannot reach</td>
+<td><code>curl</code> the card; check its interface URLs</td>
+</tr>
+<tr>
+<td>an HTTP 401 or 403</td>
+<td>missing or wrong <code>headers</code></td>
+<td>test the token with <code>curl -H</code></td>
+</tr>
+<tr>
+<td>an HTTP 404 on the card</td>
+<td>the card is elsewhere</td>
+<td>set <code>card_path</code></td>
+</tr>
+<tr>
+<td>a timeout on later rows</td>
+<td><code>timeout_sec</code> too low for this agent, or too many rows at once</td>
+<td>raise <code>timeout_sec</code>, lower <code>batch_size</code></td>
+</tr>
+<tr>
+<td><code>the agent did not answer JSON for the dataset's output schema</code></td>
+<td>free text where the output template needs a JSON object</td>
+<td>add a reply instruction to the input, or make the dataset inputs-only</td>
+</tr>
+<tr>
+<td><code>the agent's JSON answer is not an object</code></td>
+<td>a JSON list or string</td>
+<td>ask for an object in the instruction</td>
+</tr>
+<tr>
+<td><code>the agent's task ended failed: ...</code> (or <code>canceled</code>, <code>rejected</code>, <code>input required</code>, <code>auth required</code>)</td>
+<td>the agent gave up, or wanted a second turn</td>
+<td>read its message; put what it needs in the row</td>
+</tr>
+<tr>
+<td><code>the agent sent no answer</code></td>
+<td>the agent closed the reply with no message or task</td>
+<td>on the agent's side</td>
+</tr>
+</tbody>
+</table>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../datasets/">Datasets</a>: providers, templates, schemas, <code>limit</code>, <code>batch_size</code></li>
+<li><a href="../rewards/">Rewards</a>: judges and their <code>instructions</code></li>
+<li><a href="../evaluations/">Running evaluations</a>, <a href="../results/">Reading results</a>, <a href="../leaderboards/">Leaderboards</a></li>
+<li><a href="../mcp-tools/">MCP tools</a>: the model + tools alternative</li>
+<li><a href="../../api/entries/"><code>A2aAgentEntry</code></a>: the schema of an entry</li>
+<li><a href="../../coding-agents/">Coding agents</a>: the <code>openarena-compare-a2a-agents</code> skill</li>
+<li><a href="../../cli/">CLI</a>: <code>openarena a2a-agents list</code> prints the registered agents</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../mcp-tools/" class="md-footer__link md-footer__link--prev" aria-label="Previous: MCP tools">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                MCP tools
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../environments/" class="md-footer__link md-footer__link--next" aria-label="Next: Environments">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Environments
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>
