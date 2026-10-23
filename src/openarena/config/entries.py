@@ -306,6 +306,29 @@ class RewardEntry(BaseModel):
 # The provider reading Harbor task folders (`openarena.datasets.harbor_tasks`): its rows are the tasks.
 HARBOR_TASKS = "harbor_tasks"
 
+# A tool declaration as a Chat Completions request carries it: what `tools.tool_schemas` and a row's `tools_template` must render.
+TOOL_SHAPE = "{type: function, function: {name: <function>, description: ..., parameters: {type: object, properties: {}}}}"
+
+
+def tool_declaration_problem(tool: Any) -> str | None:
+    """Why `tool` is not a Chat Completions tool declaration, or None when it is.
+
+    The declarations go to the provider verbatim, as the request's `tools`,
+    so only the wire shape `{"type": "function", "function": {"name", ...}}`
+    works: a bare `{name, description, parameters}` is refused by the API,
+    and better refused here with the shape to write.
+    """
+    if not isinstance(tool, dict):
+        return f"a tool declaration is a mapping, not {type(tool).__name__}"
+    if tool.get("type") != "function" or not isinstance(tool.get("function"), dict):
+        return "a tool declaration is `{type: function, function: {...}}`" + (
+            ": wrap it as `{type: function, function: <the declaration>}`" if isinstance(tool.get("name"), str) else ""
+        )
+    if not isinstance(tool["function"].get("name"), str) or not tool["function"]["name"]:
+        return "a tool declaration's `function` names the function (`name`)"
+    return None
+
+
 # What a dataset with no question template is shown to fix it.
 _TEMPLATES = (
     "config:\n"
@@ -324,7 +347,8 @@ class DatasetEntry(BaseModel):
         default_factory=dict,
         description=(
             "Provider kwargs: `path`, `split`, `limit`, `batch_size`, ..., and the row's Jinja2 templates: "
-            "`input_template` (required) and `output_template`, with their `input_schema` / `output_schema`."
+            "`input_template` (required) and `output_template`, with their `input_schema` / `output_schema`, "
+            "and `tools_template`, the row's tool declarations for a `tools:` dataset."
         ),
     )
     description: str | None = None
@@ -344,7 +368,10 @@ class DatasetEntry(BaseModel):
     )
     tools: dict[str, Any] | None = Field(
         default=None,
-        description="`tools:` block: one call per row with `tool_schemas` in hand, no server behind them — the model's tool calls are the prediction.",
+        description=(
+            "`tools:` block: one call per row with `tool_schemas` in hand (and the row's own, from `config.tools_template`), "
+            "no server behind them — the model's tool calls are the prediction."
+        ),
     )
     harbor: HarborBlock | None = Field(
         default=None,
@@ -384,11 +411,26 @@ class DatasetEntry(BaseModel):
                 f"`a2a:` takes no settings, got {sorted(self.a2a)}",
                 "write `a2a: {}`; the agents are the evaluation's `language_models`, keys of `a2a_agents`",
             )
-        if self.tools is not None and not self.tools.get("tool_schemas"):
+        per_row = self.config.get("tools_template") is not None
+        if self.tools is not None and not self.tools.get("tool_schemas") and not per_row:
             raise Invalid(
-                "`tools.tool_schemas:` lists at least one function declaration",
-                "list the functions under `tools:`:\ntools:\n  tool_schemas:\n"
-                "    - {name: <function>, description: ..., parameters: {type: object, properties: {}}}",
+                "`tools.tool_schemas:` lists at least one function declaration, or `config.tools_template` renders each row's",
+                f"list the functions under `tools:`:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}\n"
+                "or render them from the row in `config:`:\n  tools_template: '{{ tools | tojson }}'",
+            )
+        declared = (self.tools or {}).get("tool_schemas")
+        if declared is not None and not isinstance(declared, list):
+            raise Invalid(
+                f"`tools.tool_schemas:` is a list of function declarations, not {type(declared).__name__}",
+                f"write it as a list:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}",
+            )
+        for tool in declared or []:
+            if (problem := tool_declaration_problem(tool)) is not None:
+                raise Invalid(f"`tools.tool_schemas:` {problem}", f"write each entry as {TOOL_SHAPE}")
+        if per_row and self.tools is None:
+            raise Invalid(
+                "`config.tools_template` only offers tools to a `tools:` dataset",
+                "add `tools: {}` to hand the model each row's tools, or remove `tools_template:`",
             )
         if self.type == HARBOR_TASKS:
             if self.harbor is None:

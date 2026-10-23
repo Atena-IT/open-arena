@@ -72,7 +72,9 @@ as a number (`{{ x | tojson }}`) to compare it as one.
 
 `tool_calls_accuracy` needs no mask: scoped to `tool_calls`, it compares each
 call's name and arguments, and the call ids (which differ per run) do not
-count.
+count. The gold calls are `{name, arguments}` each; the wire shape
+`{id, type, function: {name, arguments}}` (arguments a dict or a JSON string)
+is read the same way, so a benchmark's gold column goes in as published.
 
 A model judges (reference optional; the judge reads it as `gold_` fields):
 

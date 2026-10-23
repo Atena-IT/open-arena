@@ -242,6 +242,7 @@ def test_every_problem_says_how_to_fix_it_and_where(configs):
             "b": {**ds, "config": {k: v for k, v in ds["config"].items() if k != "input_template"}},
             "c": {**ds, "tools": {"tool_schemas": []}},
             "d": {**ds, "a2a": {"agent": "x"}},
+            "e": {**ds, "tools": {"tool_schemas": True}},  # not a list: reported, never a crash of the check
         },
     )
     _write(configs, "rewards", {"j": {"type": "lm_as_judge", "config": {"language_model": "vectors", "colour": 1}}, "k": {"type": "nope"}})

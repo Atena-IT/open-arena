@@ -30,7 +30,7 @@ Four ways to evaluate something that acts. Pick by what you are testing.
 | you want to test | use | what runs | the axis is |
 |---|---|---|---|
 | models choosing and using live tools, in a loop the arena runs | `agent:` + MCP servers (this page) | the arena's tool loop, the real servers | models |
-| which function a model would call, with which arguments, without running anything | [`tools:`](datasets.md#tool-calls) | one call, nothing executed, `tool_calls_accuracy` | models |
+| which function a model would call, with which arguments, without running anything | [`tools:`](datasets.md#tool-calls) | one call with the declared tools (the dataset's, or each row's own), nothing executed, `tool_calls_accuracy` | models |
 | an agent you built and deploy yourself, as a black box | [A2A agents](a2a-agents.md) | your service, its own loop and tools | agents |
 | a model working in a sandbox: a terminal, files, packages | [Environments](environments.md), [Harbor tasks](harbor-tasks.md) | a Harbor agent in a container (MCP servers optional) | models |
 
