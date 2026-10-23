@@ -120,6 +120,8 @@ def test_a_tools_dataset_needs_declarations_from_the_block_or_the_rows_in_the_wi
         DatasetEntry(**{**base, "config": {**base["config"], "tools_template": "{{ tools | tojson }}"}})
     with pytest.raises(ValueError, match="wrap it as"):
         DatasetEntry(**base, tools={"tool_schemas": [{"name": "get_weather", "parameters": {}}]})
+    with pytest.raises(ValueError, match="is a list of function declarations, not int"):
+        DatasetEntry(**base, tools={"tool_schemas": 1})
     assert DatasetEntry(**base, tools={"tool_schemas": [_tool("get_weather")]}).kind == "tools"
 
 

@@ -418,7 +418,13 @@ class DatasetEntry(BaseModel):
                 f"list the functions under `tools:`:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}\n"
                 "or render them from the row in `config:`:\n  tools_template: '{{ tools | tojson }}'",
             )
-        for tool in (self.tools or {}).get("tool_schemas") or []:
+        declared = (self.tools or {}).get("tool_schemas")
+        if declared is not None and not isinstance(declared, list):
+            raise Invalid(
+                f"`tools.tool_schemas:` is a list of function declarations, not {type(declared).__name__}",
+                f"write it as a list:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}",
+            )
+        for tool in declared or []:
             if (problem := tool_declaration_problem(tool)) is not None:
                 raise Invalid(f"`tools.tool_schemas:` {problem}", f"write each entry as {TOOL_SHAPE}")
         if per_row and self.tools is None:
