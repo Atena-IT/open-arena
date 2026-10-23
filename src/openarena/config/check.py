@@ -54,7 +54,7 @@ from openarena.config import (
     Config,
     flatten_dataset,
 )
-from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN
+from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN, TOOL_SHAPE
 from openarena.config.errors import Invalid
 from openarena.config.files import SECTIONS, expand, gather, load_yaml, references
 
@@ -112,6 +112,7 @@ _TEMPLATE_KEYS = {
     "output_data_model",
     "output_schema",
     "output_template",
+    "tools_template",
 }
 
 
@@ -225,8 +226,8 @@ def _validation_fix(err: dict, where: str) -> str | None:
         return "keep one of those blocks: a dataset is answered one way (generator, agent, a2a, embedding or tools)"
     if "tool_schemas" in message:
         return (
-            "list the functions under `tools:`:\ntools:\n  tool_schemas:\n"
-            "    - {name: <function>, description: ..., parameters: {type: object, properties: {}}}"
+            f"list the functions under `tools:`:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}\n"
+            "or render them from the row in `config:`:\n  tools_template: '{{ tools | tojson }}'"
         )
     if "mcp_servers" in message:
         return "name the servers the agent calls, from mcp_servers.yaml:\nagent:\n  mcp_servers: [<a mcp_servers key>]"

@@ -133,3 +133,7 @@ datasets:
   #           description: The weather in a city.
   #           parameters: {type: object, properties: {city: {type: string}}, required: [city]}
   #   reward: tool-calls               # type: tool_calls_accuracy
+  # When each row brings its own tools, the row is a Chat Completions request, messages + tools:
+  #     input_template: '{"messages": {{ messages | tojson }}}'
+  #     tools_template: '{{ tools | tojson }}'   # under config:, a JSON list of {"type": "function", "function": {...}}
+  #   and `tools: {}` when none are shared.

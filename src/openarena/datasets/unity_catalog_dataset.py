@@ -121,6 +121,7 @@ class UnityCatalogDataset(Dataset):
         output_data_model: See :class:`~src.datasets.dataset.Dataset`.
         output_schema: See :class:`~src.datasets.dataset.Dataset`.
         output_template (str): See :class:`~src.datasets.dataset.Dataset`.
+        tools_template (str): See :class:`~src.datasets.dataset.Dataset`.
         batch_size (int): Examples per yielded batch. Defaults to ``1``.
         limit (int): Optional cap on raw rows consumed.
         repeat (int): Repeat expansion per raw row.  Defaults to ``1``.
@@ -140,6 +141,7 @@ class UnityCatalogDataset(Dataset):
         output_data_model=None,
         output_schema=None,
         output_template=None,
+        tools_template=None,
         batch_size=1,
         limit: int = None,
         repeat: int = 1,
@@ -151,6 +153,7 @@ class UnityCatalogDataset(Dataset):
             output_data_model=output_data_model,
             output_schema=output_schema,
             output_template=output_template,
+            tools_template=tools_template,
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,

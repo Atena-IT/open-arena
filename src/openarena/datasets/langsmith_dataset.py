@@ -53,6 +53,7 @@ class LangSmithDataset(Dataset):
         output_data_model (DataModel): See `Dataset`. Defaults to
             `ChatMessage`.
         output_template (str): See `Dataset`.
+        tools_template (str): See `Dataset`.
         batch_size (int): Examples per yielded batch. Defaults to `1`.
         limit (int): Optional. See `Dataset`. Caps how many items are
             consumed; required for `__len__` since LangSmith doesn't
@@ -70,6 +71,7 @@ class LangSmithDataset(Dataset):
         output_data_model=None,
         output_schema=None,
         output_template=None,
+        tools_template=None,
         batch_size=1,
         limit: int = None,
         repeat: int = 1,
@@ -81,6 +83,7 @@ class LangSmithDataset(Dataset):
             output_data_model=output_data_model,
             output_schema=output_schema,
             output_template=output_template,
+            tools_template=tools_template,
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,

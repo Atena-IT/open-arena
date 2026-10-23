@@ -7,6 +7,14 @@ import numpy as np
 import synalinks
 from synalinks import JsonDataModel
 
+from openarena.config.entries import TOOL_SHAPE, tool_declaration_problem
+
+# The input field a row's tool declarations ride in, from `tools_template` to
+# the tools program: `tools`, as a Chat Completions request carries them
+# beside its `messages`. The program sends them as the request's tools, not
+# as prompt text.
+TOOLS_FIELD = "tools"
+
 
 class Dataset:
     """Base class for streaming datasets compatible with the framework's trainers.
@@ -57,6 +65,13 @@ class Dataset:
             rows into the target shape. Optional — when omitted, the dataset
             is inputs-only and yields single-element `(x,)` batches (no
             targets). Rewards that need `y_true` will see it missing.
+        tools_template (str): Jinja2 template string rendering the row's
+            tool declarations: a JSON list of `{"type": "function",
+            "function": {...}}`, the shape a Chat Completions request
+            carries. Optional — when given, each input is the request's
+            shape, the row's fields (`messages` by default) and a `tools`
+            field beside them, which a `tools:` dataset sends the model as
+            the tools it may call on that row.
         batch_size (int): Number of examples per yielded batch. `None` lets
             the subclass decide (or yield the whole dataset as one batch).
         limit (int): Optional. Maximum number of *raw* (pre-repeat) examples
@@ -80,6 +95,7 @@ class Dataset:
         output_data_model=None,
         output_schema=None,
         output_template=None,
+        tools_template=None,
         batch_size=None,
         limit: int = None,
         repeat: int = 1,
@@ -120,6 +136,7 @@ class Dataset:
         self.output_data_model = output_data_model
         self.output_schema = _coerce_schema(output_schema)
         self.output_template = output_template
+        self.tools_template = tools_template
         self.batch_size = batch_size
         self.limit = limit
         self.repeat = repeat
@@ -129,8 +146,45 @@ class Dataset:
         self._output_tmpl = (
             env.from_string(output_template) if output_template is not None else None
         )
+        self._tools_tmpl = (
+            env.from_string(tools_template) if tools_template is not None else None
+        )
+        # With a tools template the input is the request's shape: the row's
+        # own fields (`messages` unless `input_schema` says otherwise) and
+        # the `tools` beside them. The program reads the row back out with
+        # `row_schema`, so the prompt is built from the row alone.
+        self.row_schema = None
+        if self._tools_tmpl is not None:
+            self.row_schema = (
+                self.input_schema
+                if self.input_schema is not None
+                else self.input_data_model.get_schema()
+            )
+            self.input_schema = _with_tools(self.row_schema)
 
-    def _make_input(self, rendered: str):
+    def _make_input(self, rendered: str, row: dict | None = None):
+        if self._tools_tmpl is not None:
+            fields = _json.loads(rendered)
+            if TOOLS_FIELD in fields:
+                raise ValueError(
+                    f"`input_template` renders a `{TOOLS_FIELD}` field, which "
+                    "`tools_template` fills: rename it."
+                )
+            tools = _json.loads(self._tools_tmpl.render(**row))
+            if not isinstance(tools, list):
+                raise ValueError(
+                    "`tools_template` must render a JSON list of tool "
+                    f"declarations; got {type(tools).__name__}."
+                )
+            for tool in tools:
+                if (problem := tool_declaration_problem(tool)) is not None:
+                    raise ValueError(
+                        f"`tools_template` rendered a tool the API would refuse: {problem}. "
+                        f"Each one is {TOOL_SHAPE}, as a Chat Completions request sends it."
+                    )
+            return JsonDataModel(
+                schema=self.input_schema, json={**fields, TOOLS_FIELD: tools}
+            )
         if self.input_schema is not None:
             return JsonDataModel(schema=self.input_schema, json=_json.loads(rendered))
         return self.input_data_model.model_validate_json(rendered)
@@ -167,7 +221,7 @@ class Dataset:
             if self.limit is not None and seen >= self.limit:
                 break
             seen += 1
-            x = self._make_input(self._input_tmpl.render(**row))
+            x = self._make_input(self._input_tmpl.render(**row), row)
             y = (
                 None
                 if inputs_only
@@ -207,6 +261,21 @@ def _batch(x_buf, y_buf, inputs_only):
     if inputs_only:
         return (x,)
     return (x, np.array(y_buf, dtype="object"))
+
+
+def _with_tools(schema):
+    """The row's `schema` with the `tools` of a Chat Completions request beside its fields."""
+    out = dict(schema)
+    out["properties"] = {
+        **(schema.get("properties") or {}),
+        TOOLS_FIELD: {
+            "type": "array",
+            "description": "The tools the model may call on this row, as a Chat Completions request declares them.",
+            "items": synalinks.ChatCompletionTool.get_schema(),
+        },
+    }
+    out["required"] = [*(schema.get("required") or []), TOOLS_FIELD]
+    return out
 
 
 def _coerce_schema(schema):

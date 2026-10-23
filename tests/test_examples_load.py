@@ -25,10 +25,15 @@ SOURCES = [
     ROOT / "src" / "openarena" / "cli" / "templates" / "default" / "configs" / "datasets.yaml",
 ]
 KINDS = ("generator", "agent", "a2a", "embedding", "tools", "harbor")
-SHAPE = ("input_template", "output_template", "input_schema", "output_schema")
+SHAPE = ("input_template", "output_template", "input_schema", "output_schema", "tools_template")
 
 _GSM8K = {"question": "What is 6 x 7?", "answer": "6 x 7 = 42 #### 42"}
 _ASK = {"question": "What is the capital of France?"}
+_TOOL_ROW = {
+    "messages": [{"role": "user", "content": "Weather in Paris?"}],
+    "tools": [{"type": "function", "function": {"name": "get_weather", "description": "The weather in a city.", "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}}}],
+    "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}],
+}
 # A row of each example's source, by the example's name.
 ROWS = {
     "gsm8k-20": _GSM8K,
@@ -37,6 +42,9 @@ ROWS = {
     "mmlu-math": {"question": "2 + 2 = ?", "choices": [3, 4, 5, 6], "answer": 1},
     "passages": {"query": "capital of France", "passages": ["Paris is the capital.", "Rome is in Italy."], "gold": ["Paris is the capital."]},
     "weather-calls": {"question": "Weather in Paris?", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]},
+    # a tool-calling row: a Chat Completions request, messages and tools, and the gold calls
+    "bfcl-simple": _TOOL_ROW,
+    "row-calls": _TOOL_ROW,
     "web-questions": {"question": "What is on example.com?", "answer": "An example page."},
     "support-questions": {"question": "How do I reset my password?", "expected": "From the sign-in page."},
     "ask-agents": _ASK,

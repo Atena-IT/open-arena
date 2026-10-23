@@ -50,6 +50,8 @@ Settings every provider takes, in `config`:
 
 - `input_template` (required, except `harbor_tasks`), `output_template`,
   `input_schema`, `output_schema`: below.
+- `tools_template` (a `tools:` dataset only): the row's own tool
+  declarations, under "What answers each row".
 - `limit`: read at most this many rows, the **first** ones in the source's
   order. Nothing samples or shuffles; for a representative subset, make one
   (a `local` file of picked rows, a Phoenix split, an Opik `filter_string`).
@@ -70,6 +72,9 @@ escapes them; never write `"{{ question }}"`.
 - `output_template`: the reference the reward compares with. Optional when a
   judge scores without one (the dataset is then inputs-only); required for
   `exact_match` and the other deterministic rewards.
+- `tools_template` (a `tools:` dataset): the row's tools, a JSON **list** of
+  `{"type": "function", "function": {...}}`, not an object. Only for rows
+  that bring their own tools.
 - Columns: `{{ question }}`, a field `{{ input.question }}`, an item
   `{{ answers.text[0] }}`. Filters: `| tojson`, `| trim`, `| lower`,
   `| string`, `| replace('a', 'b')`, `| join(', ')`, Python string methods
@@ -182,7 +187,7 @@ does not need it. Tell the user rather than installing packages yourself.
 | `agent: {mcp_servers: [...]}` | a model calling MCP tools | `models` keys | openarena-add-mcp-tools |
 | `a2a: {}` | remote A2A agents | `a2a_agents` keys | openarena-compare-a2a-agents |
 | `embedding: {k: 3}` | retrieval with an embedding model | embedding `models` keys | below |
-| `tools: {tool_schemas: [...]}` | one call with tool declarations, nothing runs | `models` keys | below |
+| `tools: {tool_schemas: [...]}` or `tools: {}` + `config.tools_template` | one call with tool declarations, nothing runs | `models` keys | below |
 | `harbor: {...}` | an agent the model drives in a sandbox | `models` keys | openarena-create-harbor-task, openarena-add-environment |
 
 Retrieval: the input renders `query` and the `chunks` to search, the output
@@ -223,6 +228,30 @@ datasets:
             name: get_weather
             description: The weather in a city.
             parameters: {type: object, properties: {city: {type: string}}, required: [city]}
+    reward: tool-calls                 # type: tool_calls_accuracy
+```
+
+Tools that differ per row (a tool-calling benchmark): the row is a Chat
+Completions request, `messages` + `tools`. `input_template` renders the
+messages (the default input shape, no `input_schema`), `config.tools_template`
+the tools, a JSON list of `{"type": "function", "function": {name,
+description, parameters}}` as the request sends them; any other shape is
+refused when the row is read. The row's tools are sent as the request's,
+never in the prompt, beside the block's `tool_schemas` (which may then be
+left out: `tools: {}`); the row's own system prompt is kept. Not taken by
+the `mlflow` provider; refused without a `tools:` block.
+
+```yaml
+datasets:
+  row-calls:
+    type: local
+    config:
+      path: calls.jsonl                # {"messages": [{"role": "user", "content": "..."}], "tools": [{"type": "function", "function": {...}}], "calls": [...]}
+      input_template: '{"messages": {{ messages | tojson }}}'
+      tools_template: '{{ tools | tojson }}'
+      output_template: '{"tool_calls": {{ calls | tojson }}}'
+      output_schema: {type: object, properties: {tool_calls: {type: array, description: The gold calls}}, required: [tool_calls]}
+    tools: {}
     reward: tool-calls                 # type: tool_calls_accuracy
 ```
 

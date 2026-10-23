@@ -12,7 +12,9 @@ flowchart LR
   S[(source: file, hub,<br/>platform, table)] -->|provider reads a row| R["row: {column: value}"]
   R -->|input_template| I[input JSON]
   R -->|output_template| O[expected JSON]
+  R -.->|tools_template, a tools: dataset| T[the row's tools]
   I -->|input_schema| M[model, agent or sandbox]
+  T -.-> M
   M --> P[prediction]
   P --> W{reward}
   O -->|output_schema| W
@@ -81,6 +83,7 @@ These live in `config`, next to the provider's own settings.
 | `output_template` | Jinja2 rendering a JSON object | none | the expected answer the reward compares with; leave out for an inputs-only dataset |
 | `input_schema` | JSON Schema, as YAML or a JSON string | chat messages | the shape `input_template` renders |
 | `output_schema` | JSON Schema, as YAML or a JSON string | one chat message | the shape `output_template` renders, and the structure the model answers in |
+| `tools_template` | Jinja2 rendering a JSON list of tool declarations, `{type: function, function: {...}}` each | none | the row's tools, sent with a `tools:` dataset's request as a Chat Completions request carries them ([Tool calls](#tool-calls)); not taken by `mlflow` |
 | `limit` | integer | all rows | read at most this many rows, the first ones in the source's order |
 | `batch_size` | integer | `1` | rows in flight at once |
 | `repeat` | integer, at least 1 | `1` | each row is sent this many times in a row, each copy scored as a row |
@@ -996,6 +999,39 @@ datasets:
     reward: tool-calls                 # type: tool_calls_accuracy
 ```
 
+When each row brings its own tools, as a tool-calling benchmark does, the
+row is a Chat Completions request: its `messages` and its `tools`. Render
+the messages with `input_template` (chat messages are the default input, no
+`input_schema` needed) and the tools with `tools_template`, a Jinja2
+template over the row's columns like the other two, rendering a JSON list of
+declarations in the shape the request sends, `{"type": "function",
+"function": {"name", "description", "parameters"}}` each. The request the
+model gets is the row's: its messages, its own system prompt kept, and its
+tools as the request's tools — never as text in the prompt — with the
+block's `tool_schemas` beside them if any; with none to share, `tools: {}`
+is enough.
+
+```yaml
+datasets:
+  bfcl-simple:
+    type: local
+    config:
+      path: bfcl.jsonl                 # {"messages": [{"role": "user", "content": "..."}], "tools": [{"type": "function", "function": {...}}], "calls": [...]}
+      input_template: '{"messages": {{ messages | tojson }}}'
+      tools_template: '{{ tools | tojson }}'
+      output_template: '{"tool_calls": {{ calls | tojson }}}'
+      output_schema: {type: object, properties: {tool_calls: {type: array, description: The gold calls}}, required: [tool_calls]}
+    tools: {}
+    reward: tool-calls                 # type: tool_calls_accuracy
+```
+
+A row whose declarations are bare, `{"name", "description", "parameters"}`
+without the `function` envelope, is wrapped by the template:
+`tools_template: '[{% for f in functions %}{"type": "function", "function": {{ f | tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]'`.
+A declaration in any other shape is refused when the row is read, with the
+shape to write, since the API would refuse the request. A `tools_template`
+on a dataset with no `tools:` block is refused too: nothing would send them.
+
 ## Extra metrics
 
 `metrics:` adds columns beside `reward`. Each is a catalog reward, averaged
@@ -1036,6 +1072,9 @@ shows up when the run loads the dataset.
 | no `input_template` | `check` | "nothing says what each row asks", with templates to paste |
 | `reward:` inside `config:` | `check` | arena-level keys in `config`, with the fix to move them up |
 | two answering blocks | `check` | the blocks are mutually exclusive |
+| `tools:` with neither `tool_schemas` nor a `tools_template` | `check` | at least one function declaration, with both ways to give them |
+| `tools_template` without a `tools:` block | `check` | it only offers tools to a `tools:` dataset, with `tools: {}` to add |
+| a `tools_template` that renders no list, or a bare `{name, parameters}` declaration | the run | the row is refused when read, with the `{type: function, function: {...}}` shape to write |
 | `harbor_tasks` without `harbor:` | `check` | it needs a `harbor:` block, with `harbor: {agent: terminus-2}` to add |
 | `instructions` or `answer_file` in a `harbor_tasks` dataset's `harbor:` | `check` | they have no effect on task folders, with where each belongs instead |
 | a column the row does not have | the run | the template fails on the first row |

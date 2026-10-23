@@ -249,7 +249,10 @@ sense.
 
 === "Tool calling"
 
-    **Block:** `tools:` with `tool_schemas`.
+    **Block:** `tools:` with `tool_schemas`, the functions every row shares;
+    or `tools: {}` with a `tools_template` in `config`, when each row brings
+    its own, the row being a Chat Completions request (`messages` + `tools`),
+    the way a tool-calling benchmark is published.
 
     **Pick it when** you want to know whether a model picks the right function
     with the right arguments, without running a tool server. Nothing executes,
