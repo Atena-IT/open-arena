@@ -238,8 +238,8 @@ the tools, a JSON list of `{"type": "function", "function": {name,
 description, parameters}}` as the request sends them; any other shape is
 refused when the row is read. The row's tools are sent as the request's,
 never in the prompt, beside the block's `tool_schemas` (which may then be
-left out: `tools: {}`); the row's own system prompt is kept. Not taken by
-the `mlflow` provider; refused without a `tools:` block.
+left out: `tools: {}`); the row's own system prompt is kept. Refused without
+a `tools:` block.
 
 ```yaml
 datasets:

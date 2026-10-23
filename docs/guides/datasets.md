@@ -83,7 +83,7 @@ These live in `config`, next to the provider's own settings.
 | `output_template` | Jinja2 rendering a JSON object | none | the expected answer the reward compares with; leave out for an inputs-only dataset |
 | `input_schema` | JSON Schema, as YAML or a JSON string | chat messages | the shape `input_template` renders |
 | `output_schema` | JSON Schema, as YAML or a JSON string | one chat message | the shape `output_template` renders, and the structure the model answers in |
-| `tools_template` | Jinja2 rendering a JSON list of tool declarations, `{type: function, function: {...}}` each | none | the row's tools, sent with a `tools:` dataset's request as a Chat Completions request carries them ([Tool calls](#tool-calls)); not taken by `mlflow` |
+| `tools_template` | Jinja2 rendering a JSON list of tool declarations, `{type: function, function: {...}}` each | none | the row's tools, sent with a `tools:` dataset's request as a Chat Completions request carries them ([Tool calls](#tool-calls)) |
 | `limit` | integer | all rows | read at most this many rows, the first ones in the source's order |
 | `batch_size` | integer | `1` | rows in flight at once |
 | `repeat` | integer, at least 1 | `1` | each row is sent this many times in a row, each copy scored as a row |

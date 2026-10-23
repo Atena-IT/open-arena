@@ -67,7 +67,7 @@ def test_each_input_is_the_request_the_row_makes_its_messages_and_its_tools(tmp_
 
 def test_a_declaration_the_api_would_refuse_is_refused_when_the_row_is_read(tmp_path):
     bare = "{{ [{'name': 'get_weather', 'parameters': {}}] | tojson }}"
-    with pytest.raises(ValueError, match="wrap it as `{type: function, function: <the declaration>}`"):
+    with pytest.raises(ValueError, match='wrap it as {"type": "function", "function": <the declaration>}'):
         list(_dataset(tmp_path, tools_template=bare))
     with pytest.raises(ValueError, match="JSON list"):
         list(_dataset(tmp_path, tools_template="{{ tools[0] | tojson }}"))

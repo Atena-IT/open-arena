@@ -3558,7 +3558,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "synalinks", specifier = ">=0.10.11" },
+    { name = "synalinks", specifier = ">=0.10.12" },
 ]
 provides-extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog", "all"]
 
@@ -5547,7 +5547,7 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.10.11"
+version = "0.10.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -5586,9 +5586,9 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/13/8e82d625afd99764fc60eca6e6890d366df546addd0b5bc2ff6d91e55629/synalinks-0.10.11.tar.gz", hash = "sha256:c980958cb872cf016d178e6c79358dbcc8d4cd8c58d8f256a135207bad0bbb8c", size = 1220008, upload-time = "2026-10-22T09:26:15.824Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/87/c813afdd9862a18a1239ecf9a9b43b5e0bb99cdae1f0ebc3970d01dca830/synalinks-0.10.12.tar.gz", hash = "sha256:4e6384597c53a708973d86781e3e470846454f4c041d20920d209819063f56d8", size = 1222878, upload-time = "2026-10-23T11:48:58.819Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/53/eb0fdfe3ed30806384d4a490781b635deaff773937933f90f67739bc9fb2/synalinks-0.10.11-py3-none-any.whl", hash = "sha256:daa1d2558adf58791ed16c351dc685a6769dd72971e3c141cb7b5f1a65d62716", size = 1549206, upload-time = "2026-10-22T09:26:14.023Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/10/4f2f7385e77f34d0ee880926f0f9b38431cf6f60cf48c5bc449f29a7f0db/synalinks-0.10.12-py3-none-any.whl", hash = "sha256:00786ac331d08f06db3ccd4535898a6434698c6d63042f69d73bc1b6017c20b8", size = 1551791, upload-time = "2026-10-23T11:48:56.965Z" },
 ]
 
 [[package]]
