@@ -22,7 +22,6 @@ Run a sweep with:
 
 import copy
 import functools
-import json
 import sys
 import traceback
 import warnings
@@ -49,6 +48,7 @@ from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent, close_program  # noqa: E402
 from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
 from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
+from openarena.results import SweepResults  # noqa: E402
 from openarena.rewards import _REWARD_TYPES, build_models, get as get_reward  # noqa: E402
 
 
@@ -275,12 +275,10 @@ def _num_batches(ds):
         return None
 
 
-# Default directory for trial state + output TSVs. Override per run with
-# `--state-dir` so multiple runs can be kept side by side without clobbering
-# each other's trial cache.
+# Default directory for trial state. Override per run with `--state-dir` so
+# multiple runs can be kept side by side without clobbering each other's
+# trial cache.
 DEFAULT_STATE_DIR = Path(".open-arena")
-TSV_NAME = "last_run.tsv"
-FRONTIER_TSV_NAME = "frontier.tsv"
 
 
 _MASK_KEYS = ("in_mask", "out_mask", "in_mask_pattern", "out_mask_pattern")
@@ -366,74 +364,13 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     return out
 
 
-def _merge_metrics(*lists):
-    """Concatenate metric lists, deduping by alias (first wins).
-
-    Per-dataset entries override globals on alias collision, since the
-    per-dataset list is passed second.
-    """
-    seen = {}
-    for lst in lists:
-        for entry in lst:
-            alias = entry[0]
-            if alias not in seen:
-                seen[alias] = entry
-    return list(seen.values())
-
-
-def _pareto_frontier(cells, ds_name, model_ids, objectives):
-    """Return the set of `model_ids` on the Pareto frontier for `ds_name`.
-
-    `objectives` is a list of `(alias, direction)` pairs the dataset's
-    tuner used. A model is on the frontier iff no other model dominates
-    it on every objective. Domination: B dominates A iff B is at least as
-    good as A on every objective AND strictly better on at least one
-    (where "better" is max-direction-aware).
-
-    Models with any missing objective value (failed trial / metric not
-    computed) are excluded from the frontier — we can't compare them.
-    """
-    candidates = []
-    for m in model_ids:
-        scores = {}
-        ok = True
-        for alias, _ in objectives:
-            v = cells.get((m, ds_name, alias))
-            if v is None:
-                ok = False
-                break
-            scores[alias] = v
-        if ok:
-            candidates.append((m, scores))
-
-    dominated: set[str] = set()
-    for ma, sa in candidates:
-        if ma in dominated:
-            continue
-        for mb, sb in candidates:
-            if mb == ma or mb in dominated:
-                continue
-            # Does B dominate A?
-            at_least_as_good = True
-            strictly_better = False
-            for alias, direction in objectives:
-                if direction == "max":
-                    if sb[alias] < sa[alias]:
-                        at_least_as_good = False
-                        break
-                    if sb[alias] > sa[alias]:
-                        strictly_better = True
-                else:  # min
-                    if sb[alias] > sa[alias]:
-                        at_least_as_good = False
-                        break
-                    if sb[alias] < sa[alias]:
-                        strictly_better = True
-            if at_least_as_good and strictly_better:
-                dominated.add(ma)
-                break
-
-    return [m for m, _ in candidates if m not in dominated]
+def _first_by_alias(*lists):
+    """The metric tuples of `lists`, one per alias: the first list's wins (a dataset's entry over the evaluation's)."""
+    merged = {}
+    for entries in lists:
+        for entry in entries:
+            merged.setdefault(entry[0], entry)
+    return list(merged.values())
 
 
 def _as_json(item):
@@ -632,194 +569,6 @@ def _resume_grid(oracle):
     return scored, retrying
 
 
-def _trial_errors(oracle) -> dict[str, str]:
-    """`{model: why}` for each trial that did not complete: the last line of its traceback, the exception itself."""
-    errors = {}
-    for trial in oracle.trials.values():
-        model = trial.hyperparameters.get("language_model")
-        message = getattr(trial, "message", None)
-        if model is None or not message or trial.status == "COMPLETED":
-            continue
-        lines = [line.strip() for line in str(message).splitlines() if line.strip()]
-        errors[model] = lines[-1] if lines else str(message)
-    return errors
-
-
-def _collect_dataset_cells(oracle, ds_name, metric_keys, cells, statuses):
-    """Fold one dataset-tuner's trials into the shared `cells` / `statuses` maps.
-
-    Iterates *every* trial on the oracle (not `get_best_trials`, which
-    silently drops FAILED/INVALID cells). Each tuner runs one trial per
-    model_id (grid over a single `Choice("language_model", ...)` axis),
-    so the (model_id, ds_name) coordinate is unique — no canonical-trial
-    tie-breaking needed. The oracle's own objective + direction already
-    rank trials internally; this just transfers metric values into the
-    flat cell map for matrix / TSV rendering.
-    """
-    for trial in oracle.trials.values():
-        m = trial.hyperparameters.get("language_model")
-        if m is None:
-            # Stale cache from a different HP space; skip.
-            continue
-        statuses[(m, ds_name)] = trial.status
-        for k in metric_keys:
-            try:
-                cells[(m, ds_name, k)] = trial.metrics.get_best_value(k)
-            except (KeyError, ValueError):
-                cells[(m, ds_name, k)] = None
-
-
-def _render_pareto_frontier(rows, ds_name, objectives, frontier_models):
-    """Print one dataset's Pareto frontier as a markdown table.
-
-    Pivots `rows` to `{model: {axis: value}}` for `ds_name` on the fly,
-    then prints only the on-frontier models with one column per
-    objective axis (annotated with ↑ / ↓ for direction). The full
-    metrics matrix is in `.open-arena/last_run.tsv` (and the optional
-    `--json` output); this is the human-facing summary for
-    multi-objective datasets where a single "best model" doesn't exist.
-    """
-    axis_keys = [alias for alias, _ in objectives]
-    arrow = {"max": "↑", "min": "↓"}
-    obj_label = ", ".join(
-        f"{alias} {arrow[direction]}" for alias, direction in objectives
-    )
-    print(f"### {ds_name} — Pareto frontier  ({obj_label})")
-    print()
-
-    if not frontier_models:
-        print(
-            "_(no Pareto frontier: all candidate trials had missing objective values)_"
-        )
-        print()
-        return
-
-    axis_set = set(axis_keys)
-    by_model: dict[str, dict[str, float | None]] = {}
-    for r in rows:
-        if r["dataset"] != ds_name or r["metric"] not in axis_set:
-            continue
-        by_model.setdefault(r["model"], {})[r["metric"]] = r["value"]
-
-    headers = ["language_model", *axis_keys]
-    table_rows = []
-    for m in frontier_models:
-        scores = by_model.get(m, {})
-        row = [m]
-        for k in axis_keys:
-            v = scores.get(k)
-            row.append(f"{v:.4f}" if v is not None else "—")
-        table_rows.append(row)
-
-    widths = [
-        max(len(headers[i]), *(len(r[i]) for r in table_rows))
-        for i in range(len(headers))
-    ]
-
-    def _fmt(row):
-        first = row[0].ljust(widths[0])
-        rest = [c.rjust(widths[i + 1]) for i, c in enumerate(row[1:])]
-        return "| " + " | ".join([first, *rest]) + " |"
-
-    sep = ["-" * widths[0]] + [
-        "-" * (widths[i] - 1) + ":" for i in range(1, len(headers))
-    ]
-    print(_fmt(headers))
-    print("| " + " | ".join(sep) + " |")
-    for row in table_rows:
-        print(_fmt(row))
-    print()
-
-
-def _build_rows(
-    cells,
-    statuses,
-    model_ids,
-    dataset_names,
-    metric_keys,
-    *,
-    direction_by_ds,
-    metric_directions,
-    frontier_by_ds,
-):
-    """Flatten the sweep state into one canonical long-form row list.
-
-    Each row is a single `(model, dataset, metric)` cell with everything
-    needed to render it independently: the metric `direction:`, the
-    trial `status` (so consumers can distinguish "didn't run" from
-    "ran and got 0.0"), and the `on_frontier` flag for the row's
-    `(model, dataset)` pair. TSV and JSON output both stream from this
-    list — no second pivoted view.
-    """
-    rows = []
-    for d in dataset_names:
-        frontier = set(frontier_by_ds.get(d, ()))
-        primary_dir = direction_by_ds.get(d, "max")
-        for m in model_ids:
-            status = statuses.get((m, d))
-            on_frontier = m in frontier
-            for k in metric_keys:
-                direction = (
-                    primary_dir if k == "reward" else metric_directions.get(k, "max")
-                )
-                rows.append(
-                    {
-                        "model": m,
-                        "dataset": d,
-                        "metric": k,
-                        "value": cells.get((m, d, k)),
-                        "status": status,
-                        "direction": direction,
-                        "on_frontier": on_frontier,
-                    }
-                )
-    return rows
-
-
-def _write_tsv(rows, path: Path) -> None:
-    """Write the long-form rows as TSV: `model\\tdataset\\tmetric\\tvalue\\tdirection`.
-
-    Cells with `value is None` (failed / missing) are skipped — TSV is
-    the happy-path view; consumers wanting failed cells use the JSON.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as f:
-        f.write("model\tdataset\tmetric\tvalue\tdirection\n")
-        for r in rows:
-            if r["value"] is None:
-                continue
-            f.write(
-                f"{r['model']}\t{r['dataset']}\t{r['metric']}\t"
-                f"{r['value']:.6f}\t{r['direction']}\n"
-            )
-
-
-def _write_frontier_tsv(rows, objectives_by_ds, path: Path) -> None:
-    """Write the Pareto frontier in long format:
-    `dataset\\tmodel\\taxis\\tdirection\\tvalue`.
-
-    Filters `rows` to (multi-objective dataset, on-frontier model,
-    objective-axis metric). Single-objective datasets are omitted —
-    their frontier is trivially the best row already in `last_run.tsv`.
-    Empty file (header only) when no dataset has more than one objective.
-    """
-    axis_by_ds = {
-        d: {a for a, _ in objs} for d, objs in objectives_by_ds.items() if len(objs) > 1
-    }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as f:
-        f.write("dataset\tmodel\taxis\tdirection\tvalue\n")
-        for r in rows:
-            if not r["on_frontier"] or r["value"] is None:
-                continue
-            if r["metric"] not in axis_by_ds.get(r["dataset"], ()):
-                continue
-            f.write(
-                f"{r['dataset']}\t{r['model']}\t{r['metric']}\t"
-                f"{r['direction']}\t{r['value']:.6f}\n"
-            )
-
-
 async def run_sweep(
     config_path: str,
     *,
@@ -942,18 +691,7 @@ async def run_sweep(
     # axis, dataset is a fixed search context. Per-dataset `project_name`
     # partitions the trial cache so changing one dataset's config doesn't
     # invalidate the others.
-    cells: dict[tuple[str, str, str], float | None] = {}
-    statuses: dict[tuple[str, str], str] = {}
-    direction_by_ds: dict[str, str] = {}
-    # Aliases collected in iteration order across datasets. Drives the
-    # column order of the result matrix; per-alias direction is stored
-    # here (not in `direction_by_ds`, which keys on dataset for the
-    # primary reward column whose direction varies per dataset).
-    metric_directions: dict[str, str] = {}
-    metric_aliases: list[str] = []
-    # `{ds: [(alias, direction), ...]}` for that dataset's tuner objectives.
-    # Reused after the sweep to compute the per-dataset Pareto frontier.
-    objectives_by_ds: dict[str, list[tuple[str, str]]] = {}
+    results = SweepResults(model_ids, dataset_names)
 
     # Every dataset is prepared — tuner, programs, callbacks — before any
     # trial runs, so the grid can then be walked model by model: all of one
@@ -976,11 +714,8 @@ async def run_sweep(
         target = template_keys(getattr(ds, "output_template", None))
         reward = get_reward(_scope_to_answer(cfg.reward_spec(ds_name), target))
         reward_direction = cfg.reward_direction(ds_name)
-        direction_by_ds[ds_name] = reward_direction
-        ds_metrics = _merge_metrics(
-            _instantiate_metrics(
-                cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target
-            ),
+        ds_metrics = _first_by_alias(
+            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
             global_metrics,
         )
         # `ds_metrics` (and its instances) is used only for the aliases /
@@ -1021,7 +756,6 @@ async def run_sweep(
                     synalinks.tuners.Objective(alias, direction=direction)
                 )
                 objective_axes.append((alias, direction))
-        objectives_by_ds[ds_name] = objective_axes
 
         tuner = synalinks.tuners.GridSearch(
             hypermodel,
@@ -1032,7 +766,7 @@ async def run_sweep(
             overwrite=no_cache,
             # kt gives up after 3 failures in a row, raising out of the sweep,
             # which would cost the whole matrix and every other dataset. A cell
-            # that failed is a result too (`_collect_dataset_cells` records it,
+            # that failed is a result too (`SweepResults.read` records it,
             # a resume runs it again), so the limit is never reached: the run
             # reports every failure instead.
             max_consecutive_failed_trials=sys.maxsize,
@@ -1057,12 +791,8 @@ async def run_sweep(
             # operational metrics must bind to that program's own LanguageModel.
             model_metrics = [
                 m
-                for _, m, _, _ in _merge_metrics(
-                    _instantiate_metrics(
-                        cfg.dataset_metrics(ds_name),
-                        context=f"datasets.{ds_name}.metrics",
-                        target=target,
-                    ),
+                for _, m, _, _ in _first_by_alias(
+                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
                     _instantiate_metrics(cfg.metrics, context="metrics", target=target),
                 )
             ]
@@ -1157,6 +887,8 @@ async def run_sweep(
                 "pending": pending,
                 "retrying": retrying,
                 "ds_metrics": ds_metrics,
+                "reward_direction": reward_direction,
+                "objectives": objective_axes,
                 "programs": programs,
             }
         )
@@ -1228,65 +960,25 @@ async def run_sweep(
             await close_program(program)
 
     for item in prepared:
-        ds_name, ds_metrics = item["name"], item["ds_metrics"]
-        ds_metric_keys = ["reward", *(alias for alias, _, _, _ in ds_metrics)]
-        _collect_dataset_cells(
-            item["tuner"].oracle, ds_name, ds_metric_keys, cells, statuses
+        ds_name = item["name"]
+        results.read(
+            ds_name,
+            item["tuner"].oracle,
+            [(alias, direction) for alias, _, direction, _ in item["ds_metrics"]],
+            item["reward_direction"],
+            item["objectives"],
         )
         emit(
             {
                 "event": "dataset_end",
                 "dataset": ds_name,
-                "statuses": {m: statuses.get((m, ds_name)) for m in model_ids},
-                "rewards": {m: cells.get((m, ds_name, "reward")) for m in model_ids},
+                "statuses": {m: results.status(m, ds_name) for m in model_ids},
+                "rewards": {m: results.value(m, ds_name) for m in model_ids},
                 # Why a cell failed, so the run can say it rather than only that it did.
-                "errors": _trial_errors(item["tuner"].oracle),
+                "errors": results.errors[ds_name],
             }
         )
-        for alias, _, direction, _ in ds_metrics:
-            if alias not in metric_directions:
-                metric_aliases.append(alias)
-                metric_directions[alias] = direction
 
-    metric_keys = ["reward", *metric_aliases]
-
-    # Per-dataset Pareto frontier over each tuner's objective axes. Empty
-    # list when the dataset has only one objective (frontier collapses to
-    # the best row of the matrix — see ordering already in the TSV).
-    frontier_by_ds = {
-        ds_name: _pareto_frontier(cells, ds_name, model_ids, axes)
-        if len(axes) > 1
-        else []
-        for ds_name, axes in objectives_by_ds.items()
-    }
-
-    rows = _build_rows(
-        cells,
-        statuses,
-        model_ids,
-        dataset_names,
-        metric_keys,
-        direction_by_ds=direction_by_ds,
-        metric_directions=metric_directions,
-        frontier_by_ds=frontier_by_ds,
-    )
-    meta = {
-        "config": str(config_path),
-        "models": list(model_ids),
-        "datasets": list(dataset_names),
-        "metrics": list(metric_keys),
-        "directions": dict(direction_by_ds),
-        "metric_directions": dict(metric_directions),
-        "objectives_by_ds": {
-            ds: [[a, d] for a, d in axes] for ds, axes in objectives_by_ds.items()
-        },
-        "frontier_by_ds": {ds: list(models) for ds, models in frontier_by_ds.items()},
-    }
     emit({"event": "sweep_end"})
-    return {"meta": meta, "rows": rows}
+    return {"meta": results.meta(config_path), "rows": results.rows()}
 
-
-def _emit_json(result: dict, dest) -> None:
-    """Write `result` as pretty-printed JSON with a trailing newline."""
-    json.dump(result, dest, indent=2)
-    dest.write("\n")

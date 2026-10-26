@@ -1,64 +1,37 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 from datetime import datetime
-from datetime import timezone
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset, utc
 
 
-def _coerce_as_of(as_of):
-    """Pass tag strings through; coerce naive datetimes to UTC."""
-    if as_of is None or isinstance(as_of, str):
-        return as_of
-    if isinstance(as_of, datetime):
-        if as_of.tzinfo is None:
-            return as_of.replace(tzinfo=timezone.utc)
-        return as_of
-    raise TypeError(
-        f"`as_of` must be str (version tag), datetime, or None — "
-        f"got {type(as_of).__name__}"
-    )
-
-
-class LangSmithDataset(Dataset):
-    """Streaming dataset backed by a LangSmith dataset.
+class LangSmithDataset(PlatformDataset):
+    """A LangSmith dataset.
 
     See https://docs.smith.langchain.com/evaluation/concepts#datasets. Each
-    LangSmith `Example` exposes `inputs` (dict), `outputs` (dict | None),
-    `metadata` (dict), and `id`; those names become the variables available
-    to the Jinja2 `input_template` / `output_template`. Auth comes from env
-    vars (`LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT`); set them in `.env`.
-
-    Example:
-
-    ```python
-    ds = LangSmithDataset(
-        dataset_name="mmlu_subset",
-        input_template='{"messages":[{"role":"user","content":{{ inputs.question | tojson }}}]}',
-        output_template='{"role":"assistant","content":{{ outputs.answer | tojson }}}',
-        batch_size=1,
-    )
-    program.evaluate(x=ds)
-    ```
+    example is handed to the templates as `inputs`, `outputs`, `metadata`
+    (each a mapping, empty when the example has none) and `id`. Auth comes
+    from the environment (`LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT`).
 
     Args:
         dataset_name (str): The LangSmith dataset name.
-        as_of (str | datetime): Optional. Point-in-time snapshot — either a
-            version tag string (e.g. `"prod"`) or a UTC tz-aware datetime
-            for time-travel. Defaults to `None` (latest state).
-        input_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessages`.
+        as_of (str | datetime): Optional. A version tag (`"prod"`), or a
+            UTC datetime to read the dataset as it was then. None reads
+            the latest state.
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
         input_template (str): See `Dataset`.
-        output_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessage`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
         output_template (str): See `Dataset`.
         tools_template (str): See `Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to `1`.
-        limit (int): Optional. See `Dataset`. Caps how many items are
-            consumed; required for `__len__` since LangSmith doesn't
-            expose a count under `as_of` without a full scan.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`. Needed for a length: LangSmith
+            gives no count under `as_of` without a full scan.
+        repeat (int): See `Dataset`.
     """
+
+    provider = sdk = package = extra = "langsmith"
 
     def __init__(
         self,
@@ -76,6 +49,8 @@ class LangSmithDataset(Dataset):
         limit: int = None,
         repeat: int = 1,
     ):
+        if not isinstance(as_of, (str, datetime, type(None))):
+            raise TypeError(f"`as_of` must be str (version tag), datetime, or None — got {type(as_of).__name__}")
         super().__init__(
             input_data_model=input_data_model,
             input_schema=input_schema,
@@ -87,35 +62,15 @@ class LangSmithDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
+            dataset_name=dataset_name,
+            as_of=as_of if isinstance(as_of, str) else utc(as_of),
         )
-        self.dataset_name = dataset_name
-        self.as_of = _coerce_as_of(as_of)
 
-        # Imported lazily so the project doesn't require the langsmith package
-        # unless this dataset type is actually used.
-        try:
-            from langsmith import Client
-        except ImportError as e:
-            raise missing('langsmith', 'langsmith', 'langsmith') from e
+    def connect(self):
+        return self.load_sdk().Client()
 
-        self._client = Client()
+    def records(self):
+        return self.client.list_examples(dataset_name=self.dataset_name, as_of=self.as_of)
 
-    def _iter_rows(self):
-        for ex in self._client.list_examples(
-            dataset_name=self.dataset_name,
-            as_of=self.as_of,
-        ):
-            yield {
-                "inputs": ex.inputs or {},
-                "outputs": ex.outputs or {},
-                "metadata": ex.metadata or {},
-                "id": str(ex.id),
-            }
-
-    def __len__(self):
-        if self.limit is None:
-            raise NotImplementedError(
-                "LangSmith dataset length is unknown without a full scan; "
-                "set `limit` for a bounded epoch."
-            )
-        return self._total_batches(self.limit)
+    def row(self, example):
+        return {"inputs": example.inputs or {}, "outputs": example.outputs or {}, "metadata": example.metadata or {}, "id": str(example.id)}

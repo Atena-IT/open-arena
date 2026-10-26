@@ -1,131 +1,121 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
+"""A Unity Catalog table as a dataset: the table found through the catalog's REST API, its files read from object storage."""
+
+from __future__ import annotations
+
 import os
-import re
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset
 
-
-def _sanitize_name(name: str) -> str:
-    """Sanitize a Unity Catalog identifier for use as a Python/file name.
-
-    Converts a full three-part table name (``catalog.schema.table``) or
-    any identifier fragment into a filesystem- and Python-safe string by
-    replacing dots, slashes, and hyphens with underscores:
-
-    - ``/`` → ``__``
-    - ``-`` → ``_``
-    - ``.`` → ``_``
-
-    Example::
-
-        >>> _sanitize_name("my-catalog.my_schema.my-table")
-        'my_catalog_my_schema_my_table'
-    """
-    name = name.replace("/", "__")
-    name = name.replace("-", "_")
-    name = name.replace(".", "_")
-    return name
+# Where the catalog is, and how the files behind a table are reached: all from the environment.
+API_URL = "UNITY_CATALOG_API_URL"  # the REST base URL, `/api/2.1/unity-catalog` included
+TOKEN = "UC_TOKEN"  # the bearer token of the REST API
+# What `metadata` keeps of a resolved table.
+METADATA_KEYS = ("storage.uri", "content_hash", "table_type", "data_source_format")
+# The formats the catalog may say a table's files are in; anything else is read as Delta, the usual case.
+PLAIN_FORMATS = {"PARQUET", "CSV", "JSON", "ORC", "AVRO"}
 
 
-def _parse_table(full_name: str):
-    """Split ``catalog.schema.table`` into a ``(catalog, schema, table)`` tuple.
-
-    Raises:
-        ValueError: If *full_name* does not contain exactly two dots.
-    """
-    parts = full_name.split(".")
+def table_parts(full_name: str) -> tuple[str, str, str]:
+    """`(catalog, schema, table)` of a fully-qualified table name."""
+    parts = tuple(full_name.split("."))
     if len(parts) != 3:
-        raise ValueError(
-            f"`table` must be fully-qualified as 'catalog.schema.table'; "
-            f"got {full_name!r}."
+        raise ValueError(f"`table` must be fully-qualified as 'catalog.schema.table'; got {full_name!r}.")
+    return parts
+
+
+def storage_options() -> dict:
+    """How object storage is reached, for Delta Lake and pyarrow: the AWS variables, and `S3_ENDPOINT` for an S3-compatible store."""
+    options = {
+        "region": os.environ.get("AWS_DEFAULT_REGION", "fr-par"),
+        "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID", ""),
+        "aws_secret_access_key": os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
+    }
+    if endpoint := os.environ.get("S3_ENDPOINT", ""):
+        # A MinIO or Scaleway endpoint, over plain HTTP when it says so.
+        options.update(endpoint_url=endpoint, allow_http=endpoint.startswith("http://"))
+    return options
+
+
+def lookup_table(full_name: str) -> dict:
+    """What the catalog says of a table, over REST: `{storage.uri, content_hash, table_type, data_source_format}`."""
+    import httpx
+
+    api_url = os.environ.get(API_URL, "").rstrip("/")
+    token = os.environ.get(TOKEN, "")
+    if not api_url:
+        raise OSError(
+            f"{API_URL} is not set. It must point to the Unity Catalog REST API base URL, e.g. 'https://my-uc-host/api/2.1/unity-catalog'."
         )
-    return tuple(parts)  # (catalog, schema, table)
+    if not token:
+        raise OSError(f"{TOKEN} is not set. Provide a bearer token for the Unity Catalog REST API.")
+    response = httpx.get(f"{api_url}/tables/{full_name}", headers={"Authorization": f"Bearer {token}"}, timeout=30)
+    response.raise_for_status()
+    info = response.json()
+    # The table's version token: the last Delta commit, else when the catalog last saw it change.
+    stamp = (info.get("properties") or {}).get("delta.lastCommitTimestamp", info.get("updated_at", ""))
+    return {
+        "storage.uri": info.get("storage_location", ""),
+        "content_hash": str(stamp),
+        "table_type": info.get("table_type", ""),
+        "data_source_format": info.get("data_source_format", ""),
+    }
 
 
-class UnityCatalogDataset(Dataset):
-    """Streaming dataset backed by a Unity Catalog (Databricks or OSS) table.
+def filesystem_for(path: str, options: dict):
+    """The pyarrow filesystem `path` lives on: S3 from `options` for an `s3://` path, else whatever the path says."""
+    from pyarrow import fs
 
-    Each row in the target table becomes a raw ``dict`` whose keys are the
-    column names.  The ``_iter_rows()`` implementation resolves the table to
-    its backing storage path (``s3://…``) via the Unity Catalog REST API,
-    reads the Delta or Parquet data with ``deltalake`` + ``pyarrow``, and
-    streams rows without pulling the full table into memory first.
+    if not path.startswith("s3://"):
+        return fs.FileSystem.from_uri(path)[0]
+    s3 = {"region": options.get("region", "fr-par")}
+    for option, key in (("aws_access_key_id", "access_key"), ("aws_secret_access_key", "secret_key"), ("endpoint_url", "endpoint_override")):
+        if options.get(option):
+            s3[key] = options[option]
+    return fs.S3FileSystem(**s3)
 
-    Auth & connectivity
-    -------------------
-    * **UC REST API** — read from ``UNITY_CATALOG_API_URL`` (must already
-      include the ``/api/2.1/unity-catalog`` prefix) and bearer token
-      ``UC_TOKEN``.
-    * **S3 / object storage** — reads from ``AWS_ACCESS_KEY_ID``,
-      ``AWS_SECRET_ACCESS_KEY``, and optionally ``S3_ENDPOINT`` (for
-      MinIO/Scaleway-compatible stores; region defaults to ``fr-par``).
 
-    Resolution flow
-    ---------------
-    1. ``GET /tables/{catalog}.{schema}.{table}`` → ``storage_location``
-       (e.g. ``s3://bucket/path/to/table``) and ``content_hash`` (the UC
-       table version token).
-    2. If *version* or *as_of* is given, it is forwarded to the Delta reader
-       as a version integer or timestamp string.
-    3. The Delta table is opened via ``deltalake.DeltaTable``; if the path
-       does not contain a ``_delta_log/`` directory the reader falls back to
-       plain Parquet via ``pyarrow.dataset``.
-    4. Rows are streamed in record-batch chunks (controlled by *batch_size*
-       at the storage layer — distinct from the run's ``batch_size``).
+class UnityCatalogDataset(PlatformDataset):
+    """A Delta or Parquet table governed by Unity Catalog (Databricks or OSS).
 
-    The resolved ``content_hash`` / ``storage_location`` are stored as
-    ``self.metadata`` for downstream pinning / reproducibility logging.
-
-    Example YAML config::
-
-        datasets:
-          uc_eval_set:
-            type: unity_catalog
-            table: my_catalog.eval_schema.questions_v2
-            version: 3
-            input_template: |
-              {"messages": [{"role": "user", "content": {{ question | tojson }}}]}
-            output_template: |
-              {"role": "assistant", "content": {{ reference_answer | tojson }}}
-            batch_size: 8
-            limit: 500
-
-    Python usage::
-
-        ds = UnityCatalogDataset(
-            table="my_catalog.eval_schema.questions_v2",
-            version=3,
-            input_template='{"messages":[{"role":"user","content":{{ question | tojson }}}]}',
-            batch_size=8,
-        )
-        program.evaluate(x=ds())
+    Each row of the table is handed to the templates as a mapping of its
+    columns. The table is found through the catalog's REST API (its
+    storage location, its version token), then read from object storage
+    with `deltalake` and `pyarrow`, record batch by record batch, so the
+    table never has to fit in memory. The catalog is reached with
+    `UNITY_CATALOG_API_URL` and `UC_TOKEN`; the storage with
+    `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`
+    (`fr-par` unless set) and, for an S3-compatible store, `S3_ENDPOINT`.
+    What the catalog said of the table is kept in `metadata`, for the run
+    to record where its rows came from.
 
     Args:
-        table (str): Fully-qualified table name in ``catalog.schema.table``
-            form.  Required.
-        version (int): Optional. Pin the Delta table to this numeric version.
-            Mutually exclusive with *as_of*.
-        as_of (str): Optional. Pin the Delta table to a UTC timestamp string
-            (ISO 8601, e.g. ``"2026-04-15T00:00:00Z"``).  Mutually exclusive
-            with *version*.
-        storage_path (str): Optional explicit ``s3://…`` path override.
-            When given, the UC REST lookup is skipped entirely.
-        read_batch_size (int): Number of rows per Arrow record batch when
-            streaming the Delta/Parquet source.  Defaults to ``10_000``.
-            Distinct from the run's ``batch_size``.
-        input_data_model: See :class:`~src.datasets.dataset.Dataset`.
-        input_schema: See :class:`~src.datasets.dataset.Dataset`.
-        input_template (str): See :class:`~src.datasets.dataset.Dataset`.
-        output_data_model: See :class:`~src.datasets.dataset.Dataset`.
-        output_schema: See :class:`~src.datasets.dataset.Dataset`.
-        output_template (str): See :class:`~src.datasets.dataset.Dataset`.
-        tools_template (str): See :class:`~src.datasets.dataset.Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to ``1``.
-        limit (int): Optional cap on raw rows consumed.
-        repeat (int): Repeat expansion per raw row.  Defaults to ``1``.
+        table (str): The table, fully qualified: `catalog.schema.table`.
+        version (int): Optional. The Delta version to read. Not with
+            `as_of`.
+        as_of (str): Optional. The UTC time (ISO 8601) to read the Delta
+            table as of. Not with `version`.
+        storage_path (str): Optional. Where the table's files are
+            (`s3://...`), given directly: the catalog is not asked.
+        read_batch_size (int): Rows per record batch read from storage.
+            Defaults to 10,000. Not the run's `batch_size`.
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
+        input_template (str): See `Dataset`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
+        output_template (str): See `Dataset`.
+        tools_template (str): See `Dataset`.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`. Needed for a length: a table's
+            row count takes a full scan.
+        repeat (int): See `Dataset`.
     """
+
+    provider = "unity_catalog"
+    sdk = package = "deltalake"
+    extra = "unity-catalog"
 
     def __init__(
         self,
@@ -146,6 +136,10 @@ class UnityCatalogDataset(Dataset):
         limit: int = None,
         repeat: int = 1,
     ):
+        if version is not None and as_of is not None:
+            raise ValueError("Pass either `version` (int) or `as_of` (ISO 8601 str), not both.")
+        if version is not None and not isinstance(version, int):
+            raise TypeError(f"`version` must be an int; got {type(version).__name__}.")
         super().__init__(
             input_data_model=input_data_model,
             input_schema=input_schema,
@@ -157,202 +151,44 @@ class UnityCatalogDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
+            table=table,
+            version=version,
+            as_of=as_of,
+            storage_path=storage_path,
+            read_batch_size=read_batch_size,
         )
-        if version is not None and as_of is not None:
-            raise ValueError(
-                "Pass either `version` (int) or `as_of` (ISO 8601 str), not both."
-            )
-        if version is not None and not isinstance(version, int):
-            raise TypeError(f"`version` must be an int; got {type(version).__name__}.")
 
-        self.table = table
-        self.version = version
-        self.as_of = as_of
-        self.storage_path = storage_path
-        self.read_batch_size = read_batch_size
+    def connect(self) -> str:
+        """Where the table's files are: the path given, else what the catalog says; `metadata` keeps the rest."""
+        table_parts(self.table)  # the name is checked even when the catalog is not asked
+        self.metadata = {"storage.uri": self.storage_path} if self.storage_path else lookup_table(self.table)
+        location = self.metadata["storage.uri"]
+        if not location:
+            raise ValueError(f"Could not determine a storage path for table {self.table!r}. Check {API_URL}, {TOKEN}, and the table name.")
+        return location
 
-        # Parsed components — set eagerly so errors surface at construction time.
-        self._catalog, self._schema, self._table = _parse_table(table)
+    @property
+    def is_delta(self) -> bool:
+        """Whether the files are a Delta table: what the catalog says, and Delta when it says nothing."""
+        return self.metadata.get("data_source_format", "").upper() not in PLAIN_FORMATS
 
-        # Will be populated during the first _iter_rows() call (or
-        # eagerly here when storage_path is given so no network call is needed).
-        self.metadata: dict = {}
+    def records(self):
+        options = storage_options()
+        reader = self._delta_batches if self.is_delta else self._parquet_batches
+        for batch in reader(self.client, options):
+            yield from batch.to_pylist()
 
-        if storage_path is not None:
-            # Caller-supplied path: skip the REST lookup.
-            self.metadata["storage.uri"] = storage_path
-            self._resolved_path = storage_path
-        else:
-            # Imported lazily so the project doesn't require httpx unless
-            # this dataset type is actually used.
-            import httpx
-
-            api_url = os.environ.get("UNITY_CATALOG_API_URL", "").rstrip("/")
-            uc_token = os.environ.get("UC_TOKEN", "")
-            if not api_url:
-                raise EnvironmentError(
-                    "UNITY_CATALOG_API_URL is not set. "
-                    "It must point to the Unity Catalog REST API base URL, "
-                    "e.g. 'https://my-uc-host/api/2.1/unity-catalog'."
-                )
-            if not uc_token:
-                raise EnvironmentError(
-                    "UC_TOKEN is not set. "
-                    "Provide a bearer token for the Unity Catalog REST API."
-                )
-
-            full_name = f"{self._catalog}.{self._schema}.{self._table}"
-            url = f"{api_url}/tables/{full_name}"
-            resp = httpx.get(
-                url,
-                headers={"Authorization": f"Bearer {uc_token}"},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            table_info = resp.json()
-
-            storage_location = table_info.get("storage_location", "")
-            content_hash = table_info.get("properties", {}).get(
-                "delta.lastCommitTimestamp",
-                table_info.get("updated_at", ""),
-            )
-
-            self.metadata = {
-                "storage.uri": storage_location,
-                "content_hash": str(content_hash),
-                "table_type": table_info.get("table_type", ""),
-                "data_source_format": table_info.get("data_source_format", ""),
-            }
-            self._resolved_path = storage_location
-
-        if not self._resolved_path:
-            raise ValueError(
-                f"Could not determine a storage path for table {table!r}. "
-                "Check UNITY_CATALOG_API_URL, UC_TOKEN, and the table name."
-            )
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _s3_storage_options(self) -> dict:
-        """Build the storage-options dict for Delta Lake / PyArrow S3 access."""
-        opts = {
-            "region": os.environ.get("AWS_DEFAULT_REGION", "fr-par"),
-            "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID", ""),
-            "aws_secret_access_key": os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
-        }
-        endpoint = os.environ.get("S3_ENDPOINT", "")
-        if endpoint:
-            opts["endpoint_url"] = endpoint
-            # Some MinIO / Scaleway setups require path-style addressing.
-            opts["allow_http"] = endpoint.startswith("http://")
-        return opts
-
-    def _is_delta(self, path: str) -> bool:
-        """Return True when *path* looks like a Delta table (has _delta_log)."""
-        # We attempt a lightweight HEAD on the _delta_log/_last_checkpoint
-        # or simply trust the data_source_format hint from UC metadata.
-        fmt = self.metadata.get("data_source_format", "").upper()
-        if fmt in ("DELTA",):
-            return True
-        if fmt in ("PARQUET", "CSV", "JSON", "ORC", "AVRO"):
-            return False
-        # If format is unknown, default to Delta (most common in UC).
-        return True
-
-    # ------------------------------------------------------------------
-    # Core generator
-    # ------------------------------------------------------------------
-
-    def _iter_rows(self):
-        """Yield raw row dicts from the resolved UC table storage location."""
-        path = self._resolved_path
-        storage_options = self._s3_storage_options()
-
-        if self._is_delta(path):
-            yield from self._iter_delta(path, storage_options)
-        else:
-            yield from self._iter_parquet(path, storage_options)
-
-    def _iter_delta(self, path: str, storage_options: dict):
-        """Stream rows from a Delta table via ``deltalake``."""
-        # Imported lazily so deltalake is an optional dependency.
-        try:
-            from deltalake import DeltaTable
-        except ImportError as exc:
-            raise missing('unity_catalog', 'deltalake', 'unity-catalog') from exc
-
-        kwargs: dict = {"storage_options": storage_options}
-        if self.version is not None:
-            kwargs["version"] = self.version
-
-        dt = DeltaTable(path, **kwargs)
-
-        # Optionally pin to a timestamp (as_of).
+    def _delta_batches(self, path, options):
+        deltalake = self.load_sdk()
+        pinned = {"version": self.version} if self.version is not None else {}
+        table = deltalake.DeltaTable(path, storage_options=options, **pinned)
         if self.as_of is not None:
-            # deltalake accepts ISO 8601 strings via load_as_version.
-            dt.load_as_version(self.as_of)
+            table.load_as_version(self.as_of)
+        self.metadata["delta_version"] = table.version()
+        return table.to_pyarrow_dataset().to_batches(batch_size=self.read_batch_size)
 
-        # Update metadata with the resolved Delta version.
-        self.metadata["delta_version"] = dt.version()
+    def _parquet_batches(self, path, options):
+        import pyarrow.dataset as pyarrow_dataset
 
-        # Convert to an Arrow dataset and stream in batches.
-        arrow_ds = dt.to_pyarrow_dataset()
-        for batch in arrow_ds.to_batches(batch_size=self.read_batch_size):
-            for row in batch.to_pylist():
-                yield row
-
-    def _iter_parquet(self, path: str, storage_options: dict):
-        """Stream rows from a plain Parquet dataset via ``pyarrow.dataset``."""
-        try:
-            import pyarrow.dataset as pad
-        except ImportError as exc:
-            raise missing('unity_catalog', 'pyarrow', 'unity-catalog') from exc
-
-        # Build the filesystem for S3-compatible stores.
-        fs = self._build_pyarrow_fs(path, storage_options)
-        # Strip the s3:// scheme — PyArrow wants a bare path when fs is given.
-        bare_path = re.sub(r"^s3://", "", path)
-
-        ds = pad.dataset(bare_path, filesystem=fs, format="parquet")
-        for batch in ds.to_batches(batch_size=self.read_batch_size):
-            for row in batch.to_pylist():
-                yield row
-
-    @staticmethod
-    def _build_pyarrow_fs(path: str, storage_options: dict):
-        """Return a PyArrow filesystem for the given *path* and *storage_options*."""
-        import pyarrow.fs as paf
-
-        if not path.startswith("s3://"):
-            # Local or other filesystem — let PyArrow auto-detect.
-            fs, _ = paf.FileSystem.from_uri(path)
-            return fs
-
-        s3_kwargs: dict = {
-            "region": storage_options.get("region", "fr-par"),
-        }
-        access_key = storage_options.get("aws_access_key_id", "")
-        secret_key = storage_options.get("aws_secret_access_key", "")
-        if access_key:
-            s3_kwargs["access_key"] = access_key
-        if secret_key:
-            s3_kwargs["secret_key"] = secret_key
-        endpoint = storage_options.get("endpoint_url", "")
-        if endpoint:
-            s3_kwargs["endpoint_override"] = endpoint
-
-        return paf.S3FileSystem(**s3_kwargs)
-
-    # ------------------------------------------------------------------
-    # Length
-    # ------------------------------------------------------------------
-
-    def __len__(self):
-        if self.limit is not None:
-            return self._total_batches(self.limit)
-        raise NotImplementedError(
-            "UnityCatalogDataset length is unknown without a full scan; "
-            "set `limit` to get a bounded epoch."
-        )
+        files = pyarrow_dataset.dataset(path.removeprefix("s3://"), filesystem=filesystem_for(path, options), format="parquet")
+        return files.to_batches(batch_size=self.read_batch_size)

@@ -1,73 +1,43 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from datetime import datetime
-from datetime import timezone
+from urllib.parse import quote
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset, utc
 
 
-def _coerce_version(version):
-    """Accept str (ISO 8601) or datetime; return tz-aware UTC datetime or None."""
-    if version is None or isinstance(version, datetime):
-        if isinstance(version, datetime) and version.tzinfo is None:
-            return version.replace(tzinfo=timezone.utc)
-        return version
-    parsed = datetime.fromisoformat(str(version).replace("Z", "+00:00"))
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
-
-
-class LangfuseDataset(Dataset):
-    """Streaming dataset backed by a Langfuse dataset.
+class LangfuseDataset(PlatformDataset):
+    """A Langfuse dataset.
 
     See https://langfuse.com/docs/evaluation/experiments/datasets. Each
-    Langfuse `DatasetItem` exposes `input`, `expected_output`, `metadata`,
-    and `id`; those names become the variables available to the Jinja2
-    `input_template` / `output_template`. Auth comes from env vars
-    (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`); set
-    them in `.env`.
-
-    Example:
-
-    ```python
-    ds = LangfuseDataset(
-        dataset_name="mmlu_subset",
-        input_template='{"messages":[{"role":"user","content":{{ input | tojson }}}]}',
-        output_template='{"role":"assistant","content":{{ expected_output | tojson }}}',
-        batch_size=1,
-    )
-    program.evaluate(x=ds)
-    ```
+    item is handed to the templates as `input`, `expected_output`,
+    `metadata` and `id`. Auth comes from the environment
+    (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`).
 
     Args:
-        dataset_name (str): The Langfuse dataset name
-            (`langfuse.get_dataset(name)`).
-        version (str | datetime): Optional. The UTC point-in-time snapshot
-            to pin items to (Langfuse datasets are versioned by timestamp,
-            not by string tag — see `Langfuse.get_dataset(version=...)`).
-            Accepts an ISO 8601 string (`"2026-04-15T00:00:00Z"`), a YAML
-            timestamp (already parsed to `datetime`), or `None` for the
-            latest state.
-        streaming (bool): If `True` (default), fetch items one page at a
-            time as the dataset is iterated — items don't need to fit in
-            memory and `__len__` is unknown unless `limit` is set. If
-            `False`, prefetch the entire dataset upfront via
-            `Langfuse.get_dataset(...)`.
-        page_size (int): Items per page request when streaming. Defaults
-            to `50`, matching the SDK's `fetch_items_page_size` default.
-        input_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessages`.
+        dataset_name (str): The Langfuse dataset name.
+        version (str | datetime): Optional. The UTC point in time to pin the
+            items to: Langfuse versions a dataset by timestamp, so an ISO 8601
+            string (`"2026-04-15T00:00:00Z"`) or a YAML timestamp. None reads
+            the latest state.
+        streaming (bool): Read the items page by page as the rows are
+            iterated (the default), or the whole dataset at once
+            (`False`), which is also when the length is known without a
+            `limit`.
+        page_size (int): Items per page when streaming. Defaults to 50,
+            the SDK's own default.
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
         input_template (str): See `Dataset`.
-        output_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessage`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
         output_template (str): See `Dataset`.
         tools_template (str): See `Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to `1`.
-        limit (int): Optional. See `Dataset`. Caps how many items are
-            consumed.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`.
+        repeat (int): See `Dataset`.
     """
+
+    provider = sdk = package = extra = "langfuse"
 
     def __init__(
         self,
@@ -98,66 +68,35 @@ class LangfuseDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
-        )
-        self.dataset_name = dataset_name
-        self.version = _coerce_version(version)
-        self.streaming = streaming
-        self.page_size = page_size
-
-        # Imported lazily so the project doesn't require the langfuse package
-        # unless this dataset type is actually used.
-        try:
-            from langfuse import get_client
-        except ImportError as e:
-            raise missing('langfuse', 'langfuse', 'langfuse') from e
-
-        self._client = get_client()
-        self._dataset = (
-            None
-            if streaming
-            else self._client.get_dataset(dataset_name, version=self.version)
+            dataset_name=dataset_name,
+            version=utc(version),
+            streaming=streaming,
+            page_size=page_size,
         )
 
-    def _iter_rows(self):
-        if not self.streaming:
-            for item in self._dataset.items:
-                yield self._item_to_row(item)
-            return
+    def connect(self):
+        client = self.load_sdk().get_client()
+        # Whole dataset: fetched once here, its items read back as many times as the rows are.
+        self.snapshot = None if self.streaming else client.get_dataset(self.dataset_name, version=self.version)
+        return client
 
-        from urllib.parse import quote
+    def records(self):
+        if self.snapshot is not None:
+            return self.snapshot.items
+        return self._pages()
 
-        encoded_name = quote(self.dataset_name, safe="")
-        page = 1
-        while True:
-            page_data = self._client.api.dataset_items.list(
-                dataset_name=encoded_name,
-                page=page,
-                limit=self.page_size,
-                version=self.version,
-            )
-            for item in page_data.data:
-                yield self._item_to_row(item)
-            if page_data.meta.total_pages <= page:
-                break
+    def _pages(self):
+        """The items page after page, under the dataset's URL-encoded name, at the pinned version."""
+        name = quote(self.dataset_name, safe="")
+        page, pages = 1, 1
+        while page <= pages:
+            listing = self.client.api.dataset_items.list(dataset_name=name, page=page, limit=self.page_size, version=self.version)
+            yield from listing.data
+            pages = listing.meta.total_pages
             page += 1
 
-    @staticmethod
-    def _item_to_row(item):
-        return {
-            "input": item.input,
-            "expected_output": item.expected_output,
-            "metadata": item.metadata,
-            "id": item.id,
-        }
+    def row(self, item):
+        return {"input": item.input, "expected_output": item.expected_output, "metadata": item.metadata, "id": item.id}
 
-    def __len__(self):
-        if self.streaming and self.limit is None:
-            raise NotImplementedError(
-                "Streaming Langfuse datasets have unknown length; set `limit` "
-                "or use `streaming=False`."
-            )
-        if self.limit is not None:
-            n = self.limit
-        else:
-            n = len(self._dataset.items)
-        return self._total_batches(n)
+    def count(self):
+        return None if self.snapshot is None else len(self.snapshot.items)

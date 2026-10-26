@@ -1,51 +1,37 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset
 
 
-class OpikDataset(Dataset):
-    """Streaming dataset backed by an Opik (Comet) dataset.
+class OpikDataset(PlatformDataset):
+    """An Opik (Comet) dataset.
 
     See https://www.comet.com/docs/opik/evaluation/manage_datasets. Each
-    Opik dataset item is exposed as a dict — the standard fields are
-    `input`, `expected_output`, `metadata`, plus `id` — and any custom
-    fields the user added at insertion time are forwarded verbatim. Those
-    keys become the Jinja2 variables available to `input_template` /
-    `output_template`. Auth comes from env vars (`OPIK_API_KEY`,
-    `OPIK_WORKSPACE`, `OPIK_URL_OVERRIDE`); set them in `.env`.
-
-    Example:
-
-    ```python
-    ds = OpikDataset(
-        dataset_name="mmlu_subset",
-        input_template='{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}',
-        output_template='{"role":"assistant","content":{{ expected_output.answer | tojson }}}',
-        batch_size=1,
-    )
-    program.evaluate(x=ds)
-    ```
+    item is handed to the templates as the mapping Opik keeps: `input`,
+    `expected_output`, `metadata`, `id`, and any custom field added at
+    insertion. Auth comes from the environment (`OPIK_API_KEY`,
+    `OPIK_WORKSPACE`, `OPIK_URL_OVERRIDE`).
 
     Args:
         dataset_name (str): The Opik dataset name.
-        version (str): Optional. The version name (e.g. `"v1"`) to pin
-            items to a named snapshot via `Dataset.get_version_view`.
-            Defaults to `None` (latest live state).
-        filter_string (str): Optional. Opik OQL filter applied server-side
-            (e.g. `'tags contains "regression"'`).
-        input_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessages`.
+        version (str): Optional. A version name (`"v1"`) to read the
+            dataset's snapshot of that name. None reads the live state.
+        filter_string (str): Optional. An Opik OQL filter, applied on the
+            server (`'tags contains "regression"'`).
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
         input_template (str): See `Dataset`.
-        output_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessage`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
         output_template (str): See `Dataset`.
         tools_template (str): See `Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to `1`.
-        limit (int): Optional. See `Dataset`. Caps how many items are
-            consumed. When set, it is forwarded to Opik as `nb_samples` so
-            only that many rows are fetched.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`; asked of Opik too, so only
+            that many items come over the wire.
+        repeat (int): See `Dataset`.
     """
+
+    provider = sdk = package = extra = "opik"
 
     def __init__(
         self,
@@ -75,33 +61,18 @@ class OpikDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
-        )
-        self.dataset_name = dataset_name
-        self.version = version
-        self.filter_string = filter_string
-
-        # Imported lazily so the project doesn't require the opik package
-        # unless this dataset type is actually used.
-        try:
-            from opik import Opik
-        except ImportError as e:
-            raise missing('opik', 'opik', 'opik') from e
-
-        self._client = Opik()
-        ds = self._client.get_dataset(name=dataset_name)
-        self._dataset = ds.get_version_view(version) if version else ds
-
-    def _iter_rows(self):
-        # `get_items` returns a fully-materialized list, so passing
-        # `nb_samples=limit` keeps the wire payload bounded.
-        yield from self._dataset.get_items(
-            nb_samples=self.limit,
-            filter_string=self.filter_string,
+            dataset_name=dataset_name,
+            version=version,
+            filter_string=filter_string,
         )
 
-    def __len__(self):
-        if self.limit is not None:
-            n = self.limit
-        else:
-            n = self._dataset.dataset_items_count
-        return self._total_batches(n)
+    def connect(self):
+        dataset = self.load_sdk().Opik().get_dataset(name=self.dataset_name)
+        return dataset.get_version_view(self.version) if self.version else dataset
+
+    def records(self):
+        # Opik materializes the whole list: `nb_samples` keeps it to the rows the run reads.
+        return self.client.get_items(nb_samples=self.limit, filter_string=self.filter_string)
+
+    def count(self):
+        return self.client.dataset_items_count
