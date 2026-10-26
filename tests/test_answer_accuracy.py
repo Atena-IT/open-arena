@@ -57,6 +57,10 @@ def test_a_list_of_labels_is_categorical_and_a_number_is_exact():
     assert kind_of({"type": "array", "items": {"enum": ["a", "b"]}}, None) == "categorical"
     assert kind_of({"const": "x"}, None) == "categorical" and kind_of({"type": "boolean"}, None) == "binary"
     assert kind_of({"type": "number"}, None) == "numeric" and kind_of({"type": "array"}, None) == "text" and kind_of({}, 2.5) == "text"
+    # A nullable field is routed by its one other type; a type that names none, or several, is text.
+    assert kind_of({"type": ["string", "null"]}, None) == "text" and kind_of({"type": ["integer", "null"]}, None) == "numeric"
+    assert kind_of({"type": ["null", "boolean"]}, None) == "binary" and kind_of({"type": ["string", "integer"]}, None) == "text"
+    assert kind_of({"type": [1, "null"]}, None) == "text" and kind_of({"type": None}, None) == "text"
     # No schema for the field: its value decides.
     assert kind_of(None, True) == "binary" and kind_of("string", 2.5) == "numeric" and kind_of(None, ["a"]) == "text"
     schema = {"type": "object", "properties": {"labels": {"type": "array", "items": {"enum": ["a", "b", "c"]}}, "n": {"type": "integer"}}}
@@ -64,6 +68,14 @@ def test_a_list_of_labels_is_categorical_and_a_number_is_exact():
     assert _score(r, {"labels": ["a", "b"], "n": 3}, {"labels": ["a", "b"], "n": 3}, schema) == pytest.approx(1.0, abs=1e-6)
     assert _score(r, {"labels": ["a", "b"], "n": 3}, {"labels": ["a", "b"], "n": "3"}, schema) == pytest.approx(0.5, abs=1e-6)  # a number as text is not the number
     assert _score(r, {"n": 3}, {}, schema) == 0.0  # a missing field scores 0
+
+
+def test_a_nullable_field_is_graded_by_its_other_type():
+    schema = {"type": "object", "properties": {"note": {"type": ["string", "null"]}, "count": {"type": ["integer", "null"]}}}
+    r = AnswerAccuracy(schema=schema)
+    assert _score(r, {"note": "the cat sat", "count": 3}, {"note": "the cat sat", "count": 3}, schema) == pytest.approx(1.0, abs=1e-6)
+    assert _score(r, {"note": "the cat sat", "count": 3}, {"note": "the cat sat", "count": 4}, schema) == pytest.approx(0.5, abs=1e-6)
+    assert _score(r, {"note": None, "count": None}, {"note": None, "count": None}, schema) == pytest.approx(1.0, abs=1e-6)  # both sides empty: a match
 
 
 def test_a_nested_answer_is_compared_whole_and_the_out_mask_reaches_inside_it():

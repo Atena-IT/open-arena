@@ -52,10 +52,19 @@ def kind_of(declared, value) -> str:
         items = declared.get("items")
         if {"enum", "const"} & declared.keys() or (isinstance(items, dict) and {"enum", "const"} & items.keys()):
             return "categorical"
-        return {"boolean": "binary", "number": "numeric", "integer": "numeric"}.get(declared.get("type"), "text")
+        return {"boolean": "binary", "number": "numeric", "integer": "numeric"}.get(declared_type(declared), "text")
     if isinstance(value, bool):
         return "binary"
     return "numeric" if isinstance(value, (int, float)) else "text"
+
+
+def declared_type(declared: dict) -> str | None:
+    """The one type a field's schema declares, `null` aside: `["string", "null"]` is a nullable string; anything else is no one type."""
+    kind = declared.get("type")
+    if isinstance(kind, list):
+        kinds = {k for k in kind if k != "null"}
+        return kinds.pop() if len(kinds) == 1 and isinstance(next(iter(kinds)), str) else None
+    return kind if isinstance(kind, str) else None
 
 
 def bounded(score: float) -> float:
