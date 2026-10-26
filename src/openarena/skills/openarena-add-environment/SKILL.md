@@ -118,6 +118,9 @@ Set on the machine (shell or the workspace's `.env`), never in the YAML:
 
 - `ARENA_HARBOR_SANDBOX`: `e2b` by default, or `docker`, `daytona`, `modal`,
   ... A name Harbor does not know is refused, with the known ones.
+- `ARENA_HARBOR_SANDBOX_OPTIONS`: that provider's own settings, a JSON object
+  Harbor hands its environment (`{"namespace": "sandboxes"}` for `ack`, the
+  Kubernetes one). Not JSON, or not an object: refused.
 - `E2B_API_KEY`: E2B's key. When the configured provider fails its
   pre-flight (E2B with no key), trials **silently** run on the local Docker
   instead, with the local defaults below.

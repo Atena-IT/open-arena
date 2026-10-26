@@ -67,6 +67,7 @@ from synalinks.src.modules.module import Module
 from openarena.config.entries import EnvironmentSpec
 from openarena.harbor import (
     LOCAL_SANDBOX,
+    environment_config,
     environment_toml,
     final_answer,
     find_trajectory,
@@ -417,7 +418,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
 
 async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None, kwargs: dict[str, Any] | None = None):
     """One Harbor trial of `task`, named `name` under `trials`, its verifier running the task's `tests/`; its `TrialResult`."""
-    from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, TrialConfig, VerifierConfig
+    from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
     provider = sandbox()
@@ -426,7 +427,7 @@ async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str 
         trial_name=name,
         trials_dir=trials,
         agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {})),
-        environment=EnvironmentConfig(type=provider),
+        environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
     # On the local Docker, one trial at a time (`local_slot`): a batch's rows would otherwise start a container each.

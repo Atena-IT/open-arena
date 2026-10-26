@@ -26,7 +26,8 @@ the agent did is read back from its ATIF trajectory (`trajectory_messages`,
 `final_answer`) into the prediction, `HarborTrajectory`. `agents()` says where each agent runs and which
 provider it calls, `agent_problem` refuses a model or a network it cannot
 work with, and `sandbox_capabilities` / `environment_problems` an entry a
-sandbox provider cannot start.
+sandbox provider cannot start. `environment_config` is what a trial runs on:
+the provider, with its own settings (`ARENA_HARBOR_SANDBOX_OPTIONS`).
 """
 
 from __future__ import annotations
@@ -267,6 +268,44 @@ async def local_slot(sandbox: str):
 
 # -- sandbox providers -------------------------------------------------------------
 
+# The configured provider's own settings: a JSON object, handed to its Harbor environment.
+SANDBOX_OPTIONS = "ARENA_HARBOR_SANDBOX_OPTIONS"
+
+
+def sandbox_options() -> dict[str, Any]:
+    """`ARENA_HARBOR_SANDBOX_OPTIONS`: the configured provider's settings, as Harbor's environment takes them; `{}` when unset.
+
+    A JSON object of the keyword arguments Harbor passes the provider's
+    environment class (what `harbor run --ek` sets): the namespace, registry
+    and node selector of the Kubernetes environment (`ack`), for instance.
+    Which keys a provider takes is Harbor's to say. A value that is not a JSON
+    object raises `ValueError` naming the variable: every trial would
+    otherwise fail on it, and each failed row scores 0.
+    """
+    raw = (os.environ.get(SANDBOX_OPTIONS) or "").strip()
+    if not raw:
+        return {}
+    try:
+        options = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{SANDBOX_OPTIONS} is not JSON ({e}); it holds a JSON object of the provider's settings") from None
+    if not isinstance(options, dict):
+        raise ValueError(f"{SANDBOX_OPTIONS} must be a JSON object of the provider's settings, not {type(options).__name__}")
+    return options
+
+
+def environment_config(sandbox: str):
+    """Harbor's `EnvironmentConfig` for a trial on provider `sandbox`: with `sandbox_options()` when it is the configured one.
+
+    The local Docker a trial falls back to, when the configured provider
+    cannot start, gets none: they are that other provider's settings.
+    """
+    from harbor.models.trial.config import EnvironmentConfig
+
+    from openarena.programs.harbor_program import configured_sandbox
+
+    return EnvironmentConfig(type=sandbox, kwargs=sandbox_options() if sandbox == configured_sandbox() else {})
+
 
 def sandbox_capabilities(name: str) -> dict[str, Any]:
     """What sandbox provider `name` can give: `{installed, gpus, no_network, allowlist}`.
@@ -386,7 +425,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
     import time
     import uuid
 
-    from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, TrialConfig, VerifierConfig
+    from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
     problems = environment_problems(spec, sandbox)
@@ -415,7 +454,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
             trial_name=name,
             trials_dir=work / "trials",
             agent=AgentConfig(name="oracle"),
-            environment=EnvironmentConfig(type=sandbox),
+            environment=environment_config(sandbox),
             verifier=VerifierConfig(disable=True),
         )
         async with local_slot(sandbox):
