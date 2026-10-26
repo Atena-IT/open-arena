@@ -182,8 +182,9 @@ uv run --group docs zensical serve -a localhost:8100   # preview while editing
 | --- | --- |
 | `src/openarena/config/` | the schema: one model per registry entry, a run's config, `check` |
 | `src/openarena/evaluate.py` | `run_sweep`, every model × dataset cell |
+| `src/openarena/results.py` | the cells read off the tuners, as the rows a run reports |
 | `src/openarena/programs/` | the program each dataset kind is answered by |
-| `src/openarena/datasets/` | dataset providers |
+| `src/openarena/datasets/` | dataset providers; `platform.py` is what the ones reading a platform share |
 | `src/openarena/rewards/` | the reward catalog and openarena's own rewards |
 | `src/openarena/leaderboard.py` | `board` gathers results, `rank` scores them |
 | `src/openarena/harbor.py` | Harbor tasks, agents and sandboxes |
