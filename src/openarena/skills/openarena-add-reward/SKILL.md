@@ -44,7 +44,8 @@ rewards:
 `direction` inside `config` is an error, and so is a kwarg the type does not
 take (`reduction` included, on a type whose constructor has none), or a model
 setting naming an id instead of a `models` key (or a model of the wrong
-`type`: `embedding_model` needs `type: embedding`, the others `llm`).
+`type`: `embedding_model` needs `type: embedding`, `decision_model` needs
+`type: decision`, the others `llm`).
 
 Every type also takes the masks `in_mask`, `out_mask`, `in_mask_pattern`,
 `out_mask_pattern` (field names or regexes, applied to both sides at every
@@ -81,7 +82,7 @@ A model judges (reference optional; the judge reads it as `gold_` fields):
 | type | kwargs |
 |---|---|
 | `lm_as_judge` | `language_model`, `instructions` |
-| `rubrics_as_judge` | `language_model`, `rubrics` (required: strings, `{name, description, weight}` mappings, or a preset name), `instructions` |
+| `rubrics_as_judge` | `language_model` or `decision_model`, `rubrics` (required: strings, `{name, description, weight}` mappings, or a preset name), `instructions` |
 | `multi_judge_panel` | `panel_language_models` (required, non-empty), `smart_language_model` (required), `agreement_threshold` (0.2), `instructions` |
 | `rlm_as_judge`, `deep_agent_as_judge` | `language_model`, `sub_language_model`, `instructions`, `max_iterations`, `timeout`, `use_chain_of_thought` |
 
@@ -89,7 +90,8 @@ A model judges (reference optional; the judge reads it as `gold_` fields):
 `tools` cannot be set): `check` refuses it. Use `rlm_as_judge` or
 `deep_agent_as_judge` instead.
 
-Ready-made rubric judges, each taking only `language_model` and `instructions`:
+Ready-made rubric judges, each taking only `language_model` (or
+`decision_model`) and `instructions`:
 `answer_relevancy`, `faithfulness`, `hallucination`, `citation_faithfulness`,
 `contextual_precision`, `contextual_recall`, `contextual_relevancy`,
 `summarization`, `task_completion`, `goal_accuracy`, `plan_quality`,
@@ -116,6 +118,12 @@ reproducible.
 
 - Name `language_model` explicitly; unset, it falls back to the evaluation's
   `default_language_model`.
+- A rubric judge (`rubrics_as_judge`, the ready-made ones) may grade with a
+  `decision_model` instead: a `type: decision` entry (openarena-add-model).
+  Each criterion is then answered on five levels with calibrated
+  probabilities, in one short call and with no critique: cheaper and steadier
+  than a language judge, blind to why. `lm_as_judge` and the agent judges take
+  no `decision_model`.
 - Give the judge its **own** `models.yaml` entry (openarena-add-model), never
   one of the evaluation's `language_models`, and preferably from another
   provider than the candidates (self-preference). A judge is called with its

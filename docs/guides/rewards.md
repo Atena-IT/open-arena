@@ -347,6 +347,7 @@ Every judge takes, besides the masks:
 | field | values | default | effect |
 |---|---|---|---|
 | `language_model` | an `llm` model name | the evaluation's `default_language_model` | the judge (`multi_judge_panel` names its models otherwise) |
+| `decision_model` | a `decision` model name | none | rubric judges only: grade with a decision model instead of the language model ([below](#grading-with-a-decision-model)) |
 | `instructions` | text | the type's own | what the judge is asked to do; replaces the default |
 | `reduction` | `mean`, `sum`, `min`, `max`, `none` | `mean` | how several values from one call combine; a judge returns one, so leave it |
 
@@ -418,6 +419,7 @@ rewards:
 | `rubrics[].description` | text | required | what the judge checks |
 | `rubrics[].weight` | a number above 0 | `1.0` | the criterion's share of the mean |
 | `instructions` | text | grade each criterion independently, then critique | the judge's task |
+| `decision_model` | a `decision` model name | none | grade each criterion with a decision model ([below](#grading-with-a-decision-model)) |
 
 A criterion is a bare string (its name derived from it) or a mapping with
 `name`, `description` and `weight`. `rubrics` can also name a preset from the
@@ -435,8 +437,8 @@ fifteen: each one dilutes the others in the mean.
 ### Ready-made rubric judges
 
 Rubric judges with their criteria built in, for common checks. Each takes
-`language_model`, `instructions`, `reduction` and the masks; none takes
-`rubrics`.
+`language_model`, `decision_model`, `instructions`, `reduction` and the masks;
+none takes `rubrics`.
 
 ```yaml
 rewards:
@@ -466,6 +468,46 @@ mask that keeps them (`out_mask: [thinking]` turns the default off and leaves
     to the judge's reading. Run five rows whose answer you know, read the
     scores, then set `direction`. When in doubt, use `rubrics_as_judge` with a
     criterion that says which way is good ("The answer contains no insult").
+
+### Grading with a decision model
+
+`rubrics_as_judge` and the ready-made rubric judges can grade with a
+`decision` model ([Models](models.md#a-decision-model-as-the-grader)) instead
+of a language model. Each criterion is then asked as one question with five
+ordered levels, from "does not meet the criterion at all" to "meets it
+fully", and the criterion's score is the probability-weighted level,
+normalized to 0 to 1. The reward is the weighted mean of the criteria, as
+with a language judge.
+
+```yaml
+rewards:
+  faithful-fast:
+    type: faithfulness
+    description: Grounded in the context, graded by a decision model.
+    config:
+      decision_model: jev            # a models.yaml name of `type: decision`
+  math-rubrics-fast:
+    type: rubrics_as_judge
+    config:
+      decision_model: jev
+      rubrics:
+        - The final answer is correct
+        - name: units
+          description: The answer states its unit.
+```
+
+| | with `language_model` | with `decision_model` |
+|---|---|---|
+| each criterion | graded 1 to 20, with a written critique | graded on five levels, with a probability per level |
+| the trace shows | the critique | each criterion's level |
+| cost per row | one generation | one short call, a fraction of the price |
+| run to run | steady at `temperature: 0`, as far as the provider allows | steady: the probabilities are calibrated |
+
+**When**: many rows, a tight budget, or scores that must not drift between
+runs. **When not**: you need the judge's reasoning in the trace, or a
+free-form grade (`lm_as_judge` and the agent judges take no
+`decision_model`). With both models named, the decision model grades;
+`instructions` and the masks apply either way.
 
 ### multi_judge_panel
 

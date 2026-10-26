@@ -20,6 +20,7 @@ def _raw(**overrides):
             "m": {"model": "openai/gpt-4o-mini"},
             "judge": {"model": "openai/gpt-4o", "params": {"temperature": 0.0, "max_tokens": None}},
             "embed": {"model": "openai/text-embedding-3-small", "type": "embedding", "params": {"dimensions": 64}},
+            "jev": {"model": "typesafe/jev-latest", "type": "decision"},
         },
         "rewards": {"exact": {"type": "exact_match"}},
         "mcp_servers": {"calc": {"transport": "stdio", "command": "calc-mcp"}},
@@ -64,6 +65,9 @@ def test_a_model_a_reward_or_a_metric_names_is_its_id_or_its_entry_with_params()
     assert cfg.reward_spec("qa") == {"name": "lm_as_judge", "language_model": {"model": "openai/gpt-4o", "temperature": 0.0}, "instructions": "Grade."}
     assert cfg.reward_spec("sim") == {"name": "cosine_similarity", "embedding_model": {"model": "openai/text-embedding-3-small", "dimensions": 64}}
     assert cfg.reward_spec("plain") == {"name": "lm_as_judge", "language_model": "openai/gpt-4o-mini"}  # no params: the bare id
+    fast = _config(rewards={"fast": {"type": "faithfulness", "config": {"decision_model": "jev"}}}, datasets=_dataset(reward="fast", metrics=[{"class": "toxicity", "decision_model": "jev"}]))
+    assert fast.reward_spec("qa") == {"name": "faithfulness", "decision_model": "typesafe/jev-latest"}
+    assert fast.dataset_metrics("qa")[0].kwargs == {"decision_model": "typesafe/jev-latest"}
     judged, exact = cfg.dataset_metrics("qa")
     assert judged.alias == "judged" and judged.kwargs == {"language_model": {"model": "openai/gpt-4o", "temperature": 0.0}}
     assert exact.class_name == "exact_match" and exact.kwargs == {}
@@ -99,7 +103,7 @@ def test_every_name_an_entry_uses_must_be_declared():
     _refused("dataset 'qa' has no `reward:`", datasets={"qa": {"type": "local", "config": {"path": "x", "input_template": "{}"}}})
     _refused("names unknown reward 'exact-mach'; declared in `rewards:`: \\['exact'\\]", datasets=_dataset(reward="exact-mach"))
     _refused(r"`agent.mcp_servers:` references unknown server\(s\) \['ghost'\]", datasets=_dataset(agent={"mcp_servers": ["ghost"]}))
-    _refused("'ghost' is not in `models:`; declared: \\['embed', 'judge', 'm'\\]", evaluation={"language_models": ["ghost"], "datasets": ["qa"]})
+    _refused("'ghost' is not in `models:`; declared: \\['embed', 'jev', 'judge', 'm'\\]", evaluation={"language_models": ["ghost"], "datasets": ["qa"]})
     _refused("rewards.graded.config.language_model: 'ghost' is not in `models:`", rewards={"graded": {"type": "lm_as_judge", "config": {"language_model": "ghost"}}})
     _refused("evaluation.language_model: 'ghost' is not in `models:`", evaluation={"language_models": ["m"], "datasets": ["qa"], "default_language_model": "ghost"})
 
@@ -111,6 +115,9 @@ def test_a_model_must_be_of_the_kind_the_setting_or_the_sweep_needs():
     assert _config(datasets={"qa": passages}, evaluation={"language_models": ["embed"], "datasets": ["qa"]}).dataset_kind("qa") == "embedding"
     _refused("rewards.graded.config.language_model: 'embed' is an embedding model; this setting needs a language model", rewards={"graded": {"type": "lm_as_judge", "config": {"language_model": "embed"}}})
     _refused("datasets.qa.metrics.language_model: 'embed' is an embedding model", datasets=_dataset(metrics=[{"class": "lm_as_judge", "language_model": "embed"}]))
+    _refused("rewards.fast.config.decision_model: 'm' is a language model; this setting needs a decision model", rewards={"fast": {"type": "faithfulness", "config": {"decision_model": "m"}}})
+    _refused("rewards.graded.config.language_model: 'jev' is a decision model; this setting needs a language model", rewards={"graded": {"type": "lm_as_judge", "config": {"language_model": "jev"}}})
+    _refused("'jev' is a decision model; this sweep needs language models", evaluation={"language_models": ["jev"], "datasets": ["qa"]})
     _refused("evaluation.embedding_model: 'm' is a language model; this setting needs an embedding model", evaluation={"language_models": ["m"], "datasets": ["qa"], "default_embedding_model": "m"})
 
 

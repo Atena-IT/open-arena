@@ -2,7 +2,8 @@
 
 """The kinds of model the registry knows, defined once.
 
-A *model type* says what a model does — `llm` answers, `embedding` encodes —
+A *model type* says what a model does — `llm` answers, `embedding` encodes,
+`decision` grades —
 and with it: which rows of litellm's table list its ids (`litellm_mode`),
 which parameters the arena forwards when it builds the framework object, and
 whether the sweep engine can evaluate it yet. Everything else reads from
@@ -184,6 +185,17 @@ MODEL_TYPES: dict[str, ModelType] = {
                 ),
             ),
             local_examples={"vllm": "BAAI/bge-m3", "ollama": "nomic-embed-text"},
+        ),
+        ModelType(
+            name="decision",
+            label="Decision model",
+            description=(
+                "Answers typed questions (yes/no, a choice, a score) with calibrated probabilities, "
+                "fast and cheap; does not generate text. Grades for the rubric judges."
+            ),
+            litellm_mode="evaluation",
+            evaluable=False,
+            local_examples={"ollama": "laya"},
         ),
     )
 }

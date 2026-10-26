@@ -79,6 +79,9 @@ def test_an_entry_may_set_a_rewards_named_kwargs_less_the_hidden_ones_plus_the_m
     assert not (judge & HIDDEN_KWARGS - set(MASK_KWARGS))  # the prompt engineering and the runtime stay hidden
     assert set(MASK_KWARGS) <= judge and set(MASK_KWARGS) <= accepted_kwargs("exact_match")
     assert "name" not in accepted_kwargs("exact_match") and "reduction" in accepted_kwargs("exact_match")
+    # A rubric judge may grade with a decision model; a judge that writes cannot.
+    assert "decision_model" in accepted_kwargs("rubrics_as_judge") and "decision_model" in accepted_kwargs("faithfulness")
+    assert "decision_model" not in accepted_kwargs("lm_as_judge") and "decision_model" not in accepted_kwargs("multi_judge_panel")
 
 
 def test_get_builds_a_reward_from_a_name_or_a_mapping_and_names_the_known_ones_on_a_miss():
@@ -106,6 +109,18 @@ def test_a_model_given_with_params_is_built_with_them_and_a_bare_id_left_to_the_
     assert built["smart_language_model"] == "openai/gpt-4o" and built["instructions"] == "x"
     routed = build_models({"language_model": {"model": "openrouter/x/y"}})["language_model"]
     assert routed.default_kwargs == {"extra_body": {"provider": {"require_parameters": True}}}
+    decided = build_models({"decision_model": {"model": "typesafe/jev-latest"}})["decision_model"]
+    assert isinstance(decided, synalinks.DecisionModel) and decided.model == "typesafe/jev-latest"
+    assert build_models({"decision_model": "typesafe/jev-latest"})["decision_model"] == "typesafe/jev-latest"  # a bare id: the framework's
+
+
+def test_a_rubric_judge_grades_with_a_decision_model_when_given_one():
+    fast = get({"name": "faithfulness", "decision_model": "typesafe/jev-latest"})
+    assert isinstance(fast.program.decision_model, synalinks.DecisionModel) and fast.program.decision_model.model == "typesafe/jev-latest"
+    own = get({"name": "rubrics_as_judge", "rubrics": ["The answer is correct."], "decision_model": {"model": "typesafe/jev-latest"}, "language_model": "openai/gpt-4o"})
+    assert own.program.decision_model.model == "typesafe/jev-latest"  # the decision model grades, the language model is set aside
+    slow = get({"name": "faithfulness", "language_model": "openai/gpt-4o"})
+    assert slow.program.decision_model is None
 
 
 def test_answer_fields_scope_a_reward_to_the_named_top_level_fields_each_kept_whole():

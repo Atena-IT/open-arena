@@ -77,7 +77,7 @@ from openarena.config.entries import (
 from openarena.config.errors import Invalid as Invalid
 from openarena.config.tags import Tag as Tag, Tags as Tags
 
-ModelType = Literal["llm", "embedding"]
+ModelType = Literal["llm", "embedding", "decision"]
 
 # Kwargs of a reward or a metric that name one model, and the type it must be.
 MODEL_KWARGS: dict[str, ModelType] = {
@@ -85,12 +85,13 @@ MODEL_KWARGS: dict[str, ModelType] = {
     "smart_language_model": "llm",
     "sub_language_model": "llm",
     "embedding_model": "embedding",
+    "decision_model": "decision",
 }
 # Kwargs that name several.
 MODEL_LIST_KWARGS: dict[str, ModelType] = {"panel_language_models": "llm"}
 # A model type in words, for the messages.
-A_MODEL: dict[str, str] = {"llm": "a language model", "embedding": "an embedding model"}
-MODELS_OF: dict[str, str] = {"llm": "language models", "embedding": "embedding models"}
+A_MODEL: dict[str, str] = {"llm": "a language model", "embedding": "an embedding model", "decision": "a decision model"}
+MODELS_OF: dict[str, str] = {"llm": "language models", "embedding": "embedding models", "decision": "decision models"}
 
 
 def dataset_kind(entry: dict[str, Any]) -> str:
