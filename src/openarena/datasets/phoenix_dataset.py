@@ -1,48 +1,37 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset
 
 
-class PhoenixDataset(Dataset):
-    """Streaming dataset backed by an Arize Phoenix dataset.
+class PhoenixDataset(PlatformDataset):
+    """An Arize Phoenix dataset.
 
     See https://docs.arize.com/phoenix/datasets-and-experiments. Each
-    Phoenix `DatasetExample` exposes `id`, `input` (dict), `output` (dict),
-    and `metadata` (dict); those names become the variables available to
-    the Jinja2 `input_template` / `output_template`. Auth comes from env
-    vars (`PHOENIX_API_KEY`, `PHOENIX_COLLECTOR_ENDPOINT` or
-    `PHOENIX_HOST` + `PHOENIX_PORT`); set them in `.env`.
-
-    Example:
-
-    ```python
-    ds = PhoenixDataset(
-        dataset_name="mmlu_subset",
-        input_template='{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}',
-        output_template='{"role":"assistant","content":{{ output.answer | tojson }}}',
-        batch_size=1,
-    )
-    program.evaluate(x=ds)
-    ```
+    example is handed to the templates as `id`, `input`, `output` and
+    `metadata` (each a mapping, empty when the example has none). Auth
+    comes from the environment (`PHOENIX_API_KEY`, and
+    `PHOENIX_COLLECTOR_ENDPOINT` or `PHOENIX_HOST` + `PHOENIX_PORT`).
 
     Args:
-        dataset_name (str): The Phoenix dataset name (or ID).
-        version_id (str): Optional. The version ID to pin items to a
-            snapshot. Defaults to `None` (latest version).
-        splits (list): Optional. List of split names to restrict to.
-        input_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessages`.
+        dataset_name (str): The Phoenix dataset name, or its id.
+        version_id (str): Optional. The version to read. None reads the
+            latest.
+        splits (list): Optional. The split names to keep.
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
         input_template (str): See `Dataset`.
-        output_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessage`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
         output_template (str): See `Dataset`.
         tools_template (str): See `Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to `1`.
-        limit (int): Optional. See `Dataset`. Caps how many items are
-            consumed. Phoenix returns the full version in one call, so
-            this is enforced client-side.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`. Phoenix sends the whole
+            version in one call; the cap applies on this side.
+        repeat (int): See `Dataset`.
     """
+
+    provider = sdk = extra = "phoenix"
+    package = "arize-phoenix-client"
 
     def __init__(
         self,
@@ -72,34 +61,22 @@ class PhoenixDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
-        )
-        self.dataset_name = dataset_name
-        self.version_id = version_id
-        self.splits = splits
-
-        # Imported lazily so the project doesn't require the phoenix client
-        # unless this dataset type is actually used.
-        try:
-            from phoenix.client import Client
-        except ImportError as e:
-            raise missing('phoenix', 'arize-phoenix-client', 'phoenix') from e
-
-        self._client = Client()
-        self._dataset = self._client.datasets.get_dataset(
-            dataset=dataset_name,
+            dataset_name=dataset_name,
             version_id=version_id,
             splits=splits,
         )
 
-    def _iter_rows(self):
-        for ex in self._dataset.examples:
-            yield {
-                "id": ex["id"],
-                "input": ex.get("input") or {},
-                "output": ex.get("output") or {},
-                "metadata": ex.get("metadata") or {},
-            }
+    def connect(self):
+        self.load_sdk()
+        from phoenix.client import Client
 
-    def __len__(self):
-        n = self.limit if self.limit is not None else self._dataset.example_count
-        return self._total_batches(n)
+        return Client().datasets.get_dataset(dataset=self.dataset_name, version_id=self.version_id, splits=self.splits)
+
+    def records(self):
+        return self.client.examples
+
+    def row(self, example):
+        return {"id": example["id"], "input": example.get("input") or {}, "output": example.get("output") or {}, "metadata": example.get("metadata") or {}}
+
+    def count(self):
+        return self.client.example_count

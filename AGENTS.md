@@ -13,10 +13,13 @@ dataset out, ranked on leaderboards. A uv project, Python 3.12+.
   `check.py` lists a registry's problems, each with its line and fix.
 - `src/openarena/evaluate.py` (`run_sweep`) runs the cells, model by model, one
   `GridSearch` tuner per dataset; a finished cell is cached in the run's state.
+  `results.py` (`SweepResults`) reads the cells off the tuners into the rows a
+  run reports.
 - `src/openarena/programs/` builds the program a dataset kind is answered by:
   `generator`, `agent` (MCP tools), `a2a`, `embedding`, `tools`, `harbor`.
-- `src/openarena/datasets/` are the dataset providers, `rewards/` the reward
-  catalog and the engine's own rewards, `leaderboard.py` gathers and ranks.
+- `src/openarena/datasets/` are the dataset providers (`platform.py` is what
+  the ones reading a platform share), `rewards/` the reward catalog and the
+  engine's own rewards, `leaderboard.py` gathers and ranks.
 - `src/openarena/cli/` is the `openarena` command; `templates/default/` is what
   `openarena init` writes, and `src/openarena/skills/` the Agent Skills it
   copies into a workspace.

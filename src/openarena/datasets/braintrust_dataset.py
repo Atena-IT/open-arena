@@ -1,56 +1,42 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from openarena.datasets.dataset import Dataset
-from openarena.datasets.extras import missing
+from openarena.datasets.platform import PlatformDataset
 
 
-class BraintrustDataset(Dataset):
-    """Streaming dataset backed by a Braintrust dataset.
+class BraintrustDataset(PlatformDataset):
+    """A Braintrust dataset.
 
-    See https://www.braintrust.dev/docs/guides/datasets. Each Braintrust
-    dataset record exposes `id`, `input` (any JSON), `expected` (any JSON),
-    and `metadata` (dict); those names become the variables available to
-    the Jinja2 `input_template` / `output_template`. Auth comes from env
-    vars (`BRAINTRUST_API_KEY`, optional `BRAINTRUST_APP_URL`,
-    `BRAINTRUST_ORG_NAME`); set them in `.env`.
-
-    Example:
-
-    ```python
-    ds = BraintrustDataset(
-        project="my-project",
-        dataset_name="mmlu_subset",
-        input_template='{"messages":[{"role":"user","content":{{ input.question | tojson }}}]}',
-        output_template='{"role":"assistant","content":{{ expected.answer | tojson }}}',
-        batch_size=1,
-    )
-    program.evaluate(x=ds)
-    ```
+    See https://www.braintrust.dev/docs/guides/datasets. Each record is
+    handed to the templates as `id`, `input`, `expected` and `metadata`
+    (a mapping, empty when the record has none). Auth comes from the
+    environment (`BRAINTRUST_API_KEY`, and `BRAINTRUST_APP_URL`,
+    `BRAINTRUST_ORG_NAME` when needed).
 
     Args:
-        project (str): The Braintrust project name (or use `project_id`).
-        dataset_name (str): The Braintrust dataset name within that
-            project.
-        version (str | int): Optional. Transaction id to pin items to a
-            snapshot. Defaults to `None` (latest).
-        project_id (str): Optional. Alternative to `project` — the
-            project's UUID. Takes precedence over `project` when both are
-            set.
-        org_name (str): Optional. Organization to scope to (for users in
-            multiple orgs). Falls back to `BRAINTRUST_ORG_NAME`.
-        fetch_batch_size (int): Records per Braintrust API batch. Defaults
-            to `1000` (the SDK default).
-        input_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessages`.
+        project (str): The Braintrust project name; or give `project_id`.
+        dataset_name (str): The dataset's name within the project.
+        version (str | int): Optional. A transaction id to pin the records
+            to. None reads the latest state.
+        project_id (str): Optional. The project's UUID, instead of its
+            name; wins over `project` when both are set.
+        org_name (str): Optional. The organization, for a user in several.
+            Falls back to `BRAINTRUST_ORG_NAME`.
+        fetch_batch_size (int): Optional. Records per request to the API;
+            the SDK's own default when unset.
+        input_data_model (DataModel): See `Dataset`.
+        input_schema (dict | str): See `Dataset`.
         input_template (str): See `Dataset`.
-        output_data_model (DataModel): See `Dataset`. Defaults to
-            `ChatMessage`.
+        output_data_model (DataModel): See `Dataset`.
+        output_schema (dict | str): See `Dataset`.
         output_template (str): See `Dataset`.
         tools_template (str): See `Dataset`.
-        batch_size (int): Examples per yielded batch. Defaults to `1`.
-        limit (int): Optional. See `Dataset`. Caps how many records are
-            consumed.
+        batch_size (int): Examples per yielded batch. Defaults to 1.
+        limit (int): Optional. See `Dataset`. Needed for a length: Braintrust
+            gives no count without a full scan.
+        repeat (int): See `Dataset`.
     """
+
+    provider = sdk = package = extra = "braintrust"
 
     def __init__(
         self,
@@ -72,6 +58,10 @@ class BraintrustDataset(Dataset):
         limit: int = None,
         repeat: int = 1,
     ):
+        if project is None and project_id is None:
+            raise ValueError("BraintrustDataset requires `project` or `project_id`.")
+        if dataset_name is None:
+            raise ValueError("BraintrustDataset requires `dataset_name`.")
         super().__init__(
             input_data_model=input_data_model,
             input_schema=input_schema,
@@ -83,49 +73,22 @@ class BraintrustDataset(Dataset):
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
-        )
-        if project is None and project_id is None:
-            raise ValueError("BraintrustDataset requires `project` or `project_id`.")
-        if dataset_name is None:
-            raise ValueError("BraintrustDataset requires `dataset_name`.")
-        self.project = project
-        self.project_id = project_id
-        self.dataset_name = dataset_name
-        self.version = version
-        self.org_name = org_name
-        self.fetch_batch_size = fetch_batch_size
-
-        # Imported lazily so the project doesn't require the braintrust
-        # package unless this dataset type is actually used.
-        try:
-            from braintrust import init_dataset
-        except ImportError as e:
-            raise missing('braintrust', 'braintrust', 'braintrust') from e
-
-        self._dataset = init_dataset(
             project=project,
-            project_id=project_id,
-            name=dataset_name,
+            dataset_name=dataset_name,
             version=version,
+            project_id=project_id,
             org_name=org_name,
+            fetch_batch_size=fetch_batch_size,
         )
 
-    def _iter_rows(self):
-        kwargs = {}
-        if self.fetch_batch_size is not None:
-            kwargs["batch_size"] = self.fetch_batch_size
-        for rec in self._dataset.fetch(**kwargs):
-            yield {
-                "id": rec.get("id"),
-                "input": rec.get("input"),
-                "expected": rec.get("expected"),
-                "metadata": rec.get("metadata") or {},
-            }
+    def connect(self):
+        return self.load_sdk().init_dataset(
+            project=self.project, project_id=self.project_id, name=self.dataset_name, version=self.version, org_name=self.org_name
+        )
 
-    def __len__(self):
-        if self.limit is None:
-            raise NotImplementedError(
-                "Braintrust dataset length is unknown without a full scan; "
-                "set `limit` for a bounded epoch."
-            )
-        return self._total_batches(self.limit)
+    def records(self):
+        request = {} if self.fetch_batch_size is None else {"batch_size": self.fetch_batch_size}
+        return self.client.fetch(**request)
+
+    def row(self, record):
+        return {"id": record.get("id"), "input": record.get("input"), "expected": record.get("expected"), "metadata": record.get("metadata") or {}}

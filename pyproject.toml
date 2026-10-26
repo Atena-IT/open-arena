@@ -1,12 +1,12 @@
 [project]
 name = "openarena"
-version = "0.1.0"
+version = "0.2.0"
 description = "Compare language models and agents on datasets, score them, and rank them on leaderboards."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
-    "synalinks>=0.10.12",
+    "synalinks>=0.10.14",
     "keras-tuner>=1.4.8",
     "a2a-sdk>=1.2.1",
     "datasets>=5.0",

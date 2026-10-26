@@ -1,33 +1,35 @@
-"""`answer_accuracy` — grade every field of the answer with the metric that fits it.
+# License Apache 2.0: (c) 2026 Atena-Reply
 
-The deterministic graders in `metrics` (token-Jaccard `accuracy`,
-plus the `binary_*` / `categorical_*` families) are Metrics, not Rewards, so
-they can't go in a `reward:` block directly. This wraps them as one
-`rewards.Reward` that picks the right metric **per key**, scores each
-key, and averages:
+"""`answer_accuracy` — every field of the answer graded by the metric its type calls for, then averaged.
 
-- With an ``output_schema``, each field is routed by its schema type —
-  ``enum``/``const`` → categorical accuracy, ``boolean`` → binary accuracy,
-  ``number``/``integer`` → exact match, anything else → token-Jaccard accuracy.
-- Without one it falls back to the value's runtime type (booleans → binary,
-  numbers → exact, everything else → token-Jaccard, which collapses to exact
-  match for single-token labels).
+The framework's deterministic graders (token-Jaccard `Accuracy`, and the
+`BinaryAccuracy` / `CategoricalAccuracy` pair) are metrics, not rewards. This
+reward routes each field of the target to one of them, or to exact equality
+for a number, and averages the fields' scores:
 
-The accuracy family is used rather than F1 so a correct negative (boolean
-``False``, an absent label) scores 1.0; it stays Jaccard-based, so multi-token
-and multi-label fields keep partial credit. A multi-field output is graded
-field-appropriately and the per-key scores averaged.
+- a field with a schema (`output_schema`) is routed by what it declares:
+  an `enum` or `const` (or an array of them) is categorical, a `boolean` is
+  binary, a `number` or `integer` is exact, anything else is text;
+- a field without one is routed by its value: a bool is binary, a number is
+  exact, the rest is text (token-Jaccard, exact for a one-token label).
+
+The accuracy family rather than F1, so a correct negative (a `False`, an
+absent label) scores 1.0; Jaccard-based, so a multi-token or multi-label
+field keeps partial credit. A field holding objects (a nested answer, a list
+of tool calls) is compared whole.
 
 ```yaml
 reward:
   name: answer_accuracy
-  in_mask: [verdict, rationale, label]
-  schema: {...}            # optional output_schema for schema-aware routing
+  in_mask: [verdict, label]   # the fields to grade; all of the target's otherwise
+  out_mask: [id]              # names left out at every level, a tool call's id say
 ```
 
-The reward is in [0, 1]. A fresh metric is built per call, so concurrent
-scoring never shares mutable metric state.
+The score is in [0, 1]. Each field is graded by a fresh metric, so concurrent
+scoring shares no state.
 """
+
+from __future__ import annotations
 
 import math
 
@@ -36,178 +38,119 @@ from synalinks.src.backend import JsonDataModel
 from synalinks.src.backend.common.json_utils import in_mask_json, out_mask_json
 from synalinks.src.rewards.reward import Reward
 
-# Each per-key "kind" maps to the metric used for that group. "numeric" is
-# handled by exact equality (no token metric fits a bare number). The accuracy
-# family is used (not F1) because per-example it is symmetric: a correct
-# negative (boolean `False`, the absent label) scores 1.0, whereas token/set-F1
-# only counts the positive class and would score it 0.0. The framework's accuracy
-# metrics are still Jaccard-based, so text/multi-label fields keep partial
-# credit (|A∩B|/|A∪B|) rather than collapsing to all-or-nothing.
-_KIND_METRIC = {
+# The grader of each kind of field; `numeric` is exact equality, which no token metric gives.
+GRADERS = {
     "categorical": synalinks.metrics.CategoricalAccuracy,
     "binary": synalinks.metrics.BinaryAccuracy,
     "text": synalinks.metrics.Accuracy,
 }
 
 
-def _to_scalar(result):
-    """Collapse a metric `result()` (scalar, per-field list, or None) to a float."""
+def kind_of(declared, value) -> str:
+    """`categorical`, `binary`, `numeric` or `text`: what the field's schema says when it has one, else what its value is."""
+    if isinstance(declared, dict):
+        items = declared.get("items")
+        if {"enum", "const"} & declared.keys() or (isinstance(items, dict) and {"enum", "const"} & items.keys()):
+            return "categorical"
+        return {"boolean": "binary", "number": "numeric", "integer": "numeric"}.get(declared_type(declared), "text")
+    if isinstance(value, bool):
+        return "binary"
+    return "numeric" if isinstance(value, (int, float)) else "text"
+
+
+def declared_type(declared: dict) -> str | None:
+    """The one type a field's schema declares, `null` aside: `["string", "null"]` is a nullable string; anything else is no one type."""
+    kind = declared.get("type")
+    if isinstance(kind, list):
+        kinds = {k for k in kind if k != "null"}
+        return kinds.pop() if len(kinds) == 1 and isinstance(next(iter(kinds)), str) else None
+    return kind if isinstance(kind, str) else None
+
+
+def bounded(score: float) -> float:
+    """A score in [0, 1]; NaN (nothing to compare) counts as 0."""
+    return 0.0 if math.isnan(score) else min(1.0, max(0.0, score))
+
+
+def scalar(result) -> float:
+    """A metric's result as one number: a per-field list is averaged, nothing is 0."""
     if result is None:
         return 0.0
     if isinstance(result, (list, tuple)):
-        values = [float(v) for v in result]
-        return sum(values) / len(values) if values else 0.0
+        return sum(float(v) for v in result) / len(result) if result else 0.0
     return float(result)
-
-
-def _clamp(value):
-    """Bound a reward to [0, 1]; map NaN to 0.0."""
-    if math.isnan(value):
-        return 0.0
-    return max(0.0, min(1.0, value))
-
-
-def _schema_kind(node):
-    """Per-field metric kind from its JSON-schema node, or None if undecidable."""
-    if not isinstance(node, dict):
-        return None
-    if "enum" in node or "const" in node:
-        return "categorical"
-    node_type = node.get("type")
-    if node_type == "boolean":
-        return "binary"
-    if node_type in ("number", "integer"):
-        return "numeric"
-    if node_type == "array":
-        items = node.get("items")
-        if isinstance(items, dict) and ("enum" in items or "const" in items):
-            return "categorical"
-    return "text"
-
-
-def _value_kind(value):
-    """Per-field metric kind from the runtime value (schema-free fallback)."""
-    if isinstance(value, bool):
-        return "binary"
-    if isinstance(value, (int, float)):
-        return "numeric"
-    return "text"  # str / list / dict -> token-Jaccard (exact for one token)
-
-
-def _submodel(json_obj, keys, props):
-    """A JsonDataModel holding only `keys` of `json_obj` — top-level selection
-    with the values' subtrees intact (unlike in_mask, which filters by key name
-    at every nesting level and would empty nested objects)."""
-    sub = {k: json_obj[k] for k in keys if k in json_obj}
-    schema = {
-        "type": "object",
-        "properties": {k: (props or {}).get(k) or {} for k in keys},
-    }
-    return JsonDataModel(schema=schema, json=sub)
 
 
 class AnswerAccuracy(Reward):
     """Grade each field of the answer with the deterministic metric that fits its type, and average.
 
     Args:
-        schema: Optional ``output_schema`` (JSON Schema) for schema-aware routing
-            of fields to categorical / binary / numeric / text.
-        in_mask / out_mask / in_mask_pattern / out_mask_pattern: field selection.
-        name: reward instance name.
+        schema: Optional. The `output_schema` (JSON Schema) each field is
+            routed by; a field it does not declare is routed by its value.
+        in_mask / in_mask_pattern: The fields to grade, by name or by
+            pattern; every field of the target otherwise.
+        out_mask / out_mask_pattern: Names left out of the comparison, at
+            every level.
+        name: The reward instance's name.
     """
 
-    def __init__(
-        self,
-        schema=None,
-        in_mask=None,
-        out_mask=None,
-        in_mask_pattern=None,
-        out_mask_pattern=None,
-        name="answer_accuracy",
-    ):
+    def __init__(self, schema=None, in_mask=None, out_mask=None, in_mask_pattern=None, out_mask_pattern=None, name="answer_accuracy"):
+        # The masks are applied here, not by the base class: it masks at every level, which would empty a nested answer.
         super().__init__(name=name)
         self.schema = schema
-        self.in_mask = in_mask
-        self.out_mask = out_mask
-        self.in_mask_pattern = in_mask_pattern
-        self.out_mask_pattern = out_mask_pattern
+        self.keep, self.keep_pattern = in_mask, in_mask_pattern
+        self.drop, self.drop_pattern = out_mask, out_mask_pattern
 
-    def _candidate_keys(self, true_json):
-        """Keys of the gold to score, after applying the user's in/out masks.
+    def fields(self, target: dict) -> list[str]:
+        """The target's fields to grade: what the in-mask keeps, less what the out-mask drops."""
+        chosen = target
+        if self.keep or self.keep_pattern:
+            chosen = in_mask_json(chosen, mask=self.keep, pattern=self.keep_pattern)
+        if self.drop or self.drop_pattern:
+            chosen = out_mask_json(chosen, mask=self.drop, pattern=self.drop_pattern)
+        return list(chosen)
 
-        Mirrors how the framework's metrics mask fields: in-mask first (list ``in_mask``
-        OR'd with regex ``in_mask_pattern``), then out-mask — so pattern-based
-        masking configured in YAML reaches the routing too.
-        """
-        masked = true_json
-        if self.in_mask or self.in_mask_pattern:
-            masked = in_mask_json(masked, mask=self.in_mask, pattern=self.in_mask_pattern)
-        if self.out_mask or self.out_mask_pattern:
-            masked = out_mask_json(masked, mask=self.out_mask, pattern=self.out_mask_pattern)
-        return list(masked)
-
-    def _key_kind(self, key, value, props):
-        """Route a key to a metric kind: schema first, runtime value as fallback."""
-        if props is not None and isinstance(props.get(key), dict):
-            kind = _schema_kind(props[key])
-            if kind is not None:
-                return kind
-        return _value_kind(value)
-
-    def _drop_out_masked(self, json_obj):
-        """Apply the user's out_mask (list + pattern) recursively to a raw dict."""
-        if self.out_mask or self.out_mask_pattern:
-            return out_mask_json(json_obj, mask=self.out_mask, pattern=self.out_mask_pattern)
-        return json_obj
+    def _without_dropped(self, data: dict) -> dict:
+        return out_mask_json(data, mask=self.drop, pattern=self.drop_pattern) if self.drop or self.drop_pattern else data
 
     async def call(self, y_true, y_pred):
-        if y_pred is None or y_true is None:
+        if y_true is None or y_pred is None:
             return 0.0
-        # Group the gold's keys by metric kind (schema-driven, value as
-        # fallback), score each group with the type-appropriate metric, then
-        # average weighted by key count (= mean of per-key scores).
-        true_json = y_true.get_json() or {}
-        pred_json = y_pred.get_json() or {}
-        keys = self._candidate_keys(true_json)
-        if not keys:
+        target, answer = y_true.get_json() or {}, y_pred.get_json() or {}
+        fields = self.fields(target)
+        if not fields:
             return 0.0
-        props = self.schema.get("properties") if isinstance(self.schema, dict) else None
+        declared = (self.schema.get("properties") or {}) if isinstance(self.schema, dict) else {}
+        by_kind: dict[str, list[str]] = {}
+        for field in fields:
+            by_kind.setdefault(kind_of(declared.get(field), target[field]), []).append(field)
 
-        groups: dict[str, list] = {}
-        for k in keys:
-            groups.setdefault(self._key_kind(k, true_json[k], props), []).append(k)
-
-        parts = []  # (score, weight)
-        for kind, group_keys in groups.items():
+        weighted = 0.0
+        for kind, names in by_kind.items():
             if kind == "numeric":
-                hits = sum(1.0 for k in group_keys if k in pred_json and pred_json[k] == true_json[k])
-                parts.append((hits / len(group_keys), len(group_keys)))
+                score = sum(1.0 for name in names if name in answer and answer[name] == target[name]) / len(names)
             else:
-                # Select the group's keys by building TOP-LEVEL sub-models, not
-                # via the metric's in_mask: in_mask keeps only the listed key
-                # names at every nesting level, so masking a key whose value
-                # holds nested objects (tool_calls, an array-of-objects schema
-                # property) would strip the nested fields and leave the metric
-                # nothing to compare (score pinned to 0 for any prediction).
-                # The user's out_mask IS applied recursively here, so volatile
-                # nested keys (the tool-call `id`) stay out of the score.
-                m = _KIND_METRIC[kind](in_mask=[], average="macro")
-                sub_true = _submodel(self._drop_out_masked(true_json), group_keys, props)
-                sub_pred = _submodel(self._drop_out_masked(pred_json), group_keys, props)
-                parts.append((_to_scalar(await m(sub_true, sub_pred)), len(group_keys)))
+                score = await self._grade(kind, names, declared, self._without_dropped(target), self._without_dropped(answer))
+            weighted += score * len(names)
+        return bounded(weighted / len(fields))
 
-        total_w = sum(w for _, w in parts)
-        if not total_w:
-            return 0.0
-        return _clamp(sum(s * w for s, w in parts) / total_w)
+    async def _grade(self, kind: str, names: list[str], declared: dict, target: dict, answer: dict) -> float:
+        """The kind's grader over the named fields alone, each field's value whole (a metric's own in-mask would hollow out a nested one)."""
+        shape = {"type": "object", "properties": {name: declared.get(name) or {} for name in names}}
+
+        def only(data):
+            return JsonDataModel(schema=shape, json={name: data[name] for name in names if name in data})
+
+        grader = GRADERS[kind](in_mask=[], average="macro")
+        return scalar(await grader(only(target), only(answer)))
 
     def get_config(self):
         return {
             "schema": self.schema,
-            "in_mask": self.in_mask,
-            "out_mask": self.out_mask,
-            "in_mask_pattern": self.in_mask_pattern,
-            "out_mask_pattern": self.out_mask_pattern,
+            "in_mask": self.keep,
+            "out_mask": self.drop,
+            "in_mask_pattern": self.keep_pattern,
+            "out_mask_pattern": self.drop_pattern,
             "name": self.name,
         }
 
