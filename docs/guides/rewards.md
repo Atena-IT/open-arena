@@ -290,7 +290,11 @@ rewards:
 
 Arguments must match exactly: `{"city": "Paris"}` and `{"city": "paris"}`
 differ, and so do `{"limit": 10}` and `{"limit": "10"}`. Write the gold calls
-in the form the function declaration asks for.
+in the form the function declaration asks for. Each gold call is
+`{"name": ..., "arguments": {...}}`; the wire shape the model answers in,
+`{"id", "type", "function": {"name", "arguments"}}` with the arguments a
+JSON string, is read the same way, so a benchmark's gold column goes in as
+published.
 
 It needs no mask: the automatic field choice keeps the `tool_calls` field
 whole, and a call's `id`, which differs from run to run, is never compared.
