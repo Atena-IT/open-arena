@@ -157,3 +157,70 @@ def test_a_sandbox_provider_refuses_what_it_cannot_give():
     assert environment_problems(EnvironmentSpec(docker_image="x", network_mode="allowlist", allowed_hosts=["pypi.org"]), "e2b") == []
     # Docker decides per host: nothing refused up front.
     assert environment_problems(EnvironmentSpec(docker_image="x", gpus=1), "docker") == []
+
+
+def test_the_configured_provider_runs_with_its_options_and_the_fallback_without(monkeypatch):
+    from openarena.harbor import environment_config
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes", "node_selector": {"pool": "sandbox"}}')
+    assert environment_config("ack").kwargs == {"namespace": "arena-sandboxes", "node_selector": {"pool": "sandbox"}}
+    # The local Docker a trial falls back to is another provider: those settings are not its own.
+    assert environment_config("docker").kwargs == {}
+    monkeypatch.delenv("ARENA_HARBOR_SANDBOX_OPTIONS")
+    assert environment_config("ack").kwargs == {}
+
+
+@pytest.mark.parametrize("raw", ['{"namespace": ', '["arena-sandboxes"]', '"arena-sandboxes"'])
+def test_sandbox_options_are_a_json_object_or_refused(monkeypatch, raw):
+    from openarena.harbor import sandbox_options
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", raw)
+    with pytest.raises(ValueError, match="ARENA_HARBOR_SANDBOX_OPTIONS"):
+        sandbox_options()
+
+
+def test_malformed_options_stop_the_run_before_any_row_whichever_provider_runs(monkeypatch):
+    import asyncio
+
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '["arena-sandboxes"]')
+    # E2B has no key here, so trials would fall back to the local Docker, which gets no options:
+    # the mistake is still reported, not hidden by the fallback.
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name == "docker")
+    issue = harbor_program.sandbox_issue()
+    assert issue is not None and "ARENA_HARBOR_SANDBOX_OPTIONS" in issue and "list" in issue
+    # And the cell fails before its first row, as an unknown provider does.
+    with pytest.raises(ValueError, match="ARENA_HARBOR_SANDBOX_OPTIONS"):
+        asyncio.run(harbor_program.build_harbor("openai/gpt-4o", None, {}, None))
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
+    assert harbor_program.sandbox_issue() is None
+
+
+def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
+    import asyncio
+
+    from harbor.trial.trial import Trial
+    from openarena.programs import harbor_program
+
+    seen = {}
+
+    class Ran:
+        async def run(self):
+            return "result"
+
+    async def create(config):
+        seen["config"] = config
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "sandbox", lambda: "ack")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
+    (tmp_path / "task").mkdir()
+    result = asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t", "terminus-2", "openai/gpt-4o"))
+    assert result == "result"
+    assert seen["config"].environment.type == "ack"
+    assert seen["config"].environment.kwargs == {"namespace": "arena-sandboxes"}

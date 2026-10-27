@@ -446,6 +446,21 @@ can give what it asks for.
     credentials, which Harbor checks before a trial. A name Harbor does not
     know is refused, with the list of those it does.
 
+    A provider's own settings go in `ARENA_HARBOR_SANDBOX_OPTIONS`, a JSON
+    object Harbor hands its environment as it is (what `harbor run --ek`
+    sets). The Kubernetes provider, `ack`, runs each trial as a pod of the
+    cluster your kubeconfig, or the pod the arena runs in, reaches:
+
+    ```shell
+    export ARENA_HARBOR_SANDBOX=ack
+    export ARENA_HARBOR_SANDBOX_OPTIONS='{"namespace": "sandboxes"}'
+    ```
+
+    Which keys a provider takes is Harbor's to say; one it does not know
+    fails the trial with Harbor's error. A value that is not a JSON object
+    stops the run before its first row, whichever provider the trials would
+    run on. The local Docker a trial falls back to gets none of them.
+
 !!! warning "The silent fallback"
     When the configured provider cannot start (E2B with no `E2B_API_KEY`),
     trials run on the local Docker instead. That keeps a first run working,
@@ -455,6 +470,7 @@ can give what it asks for.
 | setting | default | what it does |
 |---|---|---|
 | `ARENA_HARBOR_SANDBOX` | `e2b` | the sandbox provider |
+| `ARENA_HARBOR_SANDBOX_OPTIONS` | none | the provider's own settings, a JSON object Harbor hands its environment |
 | `E2B_API_KEY` | none | E2B's key; without it, trials fall back to the local Docker |
 | `ARENA_HARBOR_LOCAL_CPUS` | `2` | CPUs a local Docker sandbox gets when the entry leaves `cpus` blank (no more than the machine has) |
 | `ARENA_HARBOR_LOCAL_MEMORY_MB` | `2048` | memory a local Docker sandbox gets when the entry leaves `memory_mb` blank |

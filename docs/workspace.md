@@ -272,13 +272,15 @@ editing the file.
     | variable | what it does | default |
     |---|---|---|
     | `ARENA_HARBOR_SANDBOX` | where trials run: a Harbor environment type (`e2b`, `docker`, `daytona`, `modal`, ...) | `e2b` |
+    | `ARENA_HARBOR_SANDBOX_OPTIONS` | that provider's own settings, a JSON object Harbor hands its environment (`{"namespace": "sandboxes"}` for the Kubernetes one, `ack`) | none |
     | `E2B_API_KEY` | E2B's key. Without it, the `e2b` setting falls back to the local Docker | none |
     | `ARENA_HARBOR_LOCAL_CPUS`, `ARENA_HARBOR_LOCAL_MEMORY_MB` | CPUs and memory a local Docker task gets when its environment sets none | 2, 2048 |
     | `ARENA_HARBOR_LOCAL_TRIALS` | trials at once on the local Docker | 1 |
     | `ARENA_HARBOR_WORKDIR` | where Harbor's task folders and trials go instead of the run folder | the run's `harbor/` |
 
     An unknown `ARENA_HARBOR_SANDBOX` value stops the run with the list of
-    known ones, rather than scoring every task 0.
+    known ones, rather than scoring every task 0, and so does an
+    `ARENA_HARBOR_SANDBOX_OPTIONS` that is not a JSON object.
 
 === "Dataset sources"
 

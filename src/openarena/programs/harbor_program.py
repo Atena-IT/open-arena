@@ -67,11 +67,13 @@ from synalinks.src.modules.module import Module
 from openarena.config.entries import EnvironmentSpec
 from openarena.harbor import (
     LOCAL_SANDBOX,
+    environment_config,
     environment_toml,
     final_answer,
     find_trajectory,
     local_limits,
     local_slot,
+    sandbox_options,
     trajectory_messages,
 )
 from openarena.programs.utils import safe_name
@@ -154,9 +156,15 @@ def sandbox_note() -> str | None:
 
 
 def sandbox_issue() -> str | None:
-    """Why no task can start at all, as one sentence, or None: an unknown provider, or none with credentials and no Docker."""
+    """Why no task can start at all, as one sentence, or None: an unknown provider or its options, or none with credentials and no Docker.
+
+    The options are checked whichever provider ends up running: a malformed
+    `ARENA_HARBOR_SANDBOX_OPTIONS` is a mistake to fix, not one the Docker
+    fallback (which gets none) should hide.
+    """
     try:
         name = configured_sandbox()
+        sandbox_options()
     except ValueError as e:
         return str(e)
     used = sandbox()
@@ -417,7 +425,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
 
 async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None, kwargs: dict[str, Any] | None = None):
     """One Harbor trial of `task`, named `name` under `trials`, its verifier running the task's `tests/`; its `TrialResult`."""
-    from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TaskConfig, TrialConfig, VerifierConfig
+    from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
     provider = sandbox()
@@ -426,7 +434,7 @@ async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str 
         trial_name=name,
         trials_dir=trials,
         agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {})),
-        environment=EnvironmentConfig(type=provider),
+        environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
     # On the local Docker, one trial at a time (`local_slot`): a batch's rows would otherwise start a container each.
@@ -621,6 +629,7 @@ def no_answer_guard(program) -> NoAnswerGuard | None:
 async def build_harbor(model_id: str, dataset, spec: dict, reward, metrics=None, contexts=None, work_dir="harbor", lm_kwargs=None, model_name=None):
     """Build (and compile) a program that asks each row of a Harbor agent driven by `model_id` with its entry's `lm_kwargs`."""
     sandbox()  # an unknown sandbox fails the cell, not each of its rows
+    sandbox_options()  # and so do malformed options, whichever provider the rows run on
     inputs = synalinks.Input(
         schema=dataset.input_schema,
         data_model=dataset.input_data_model if dataset.input_schema is None else None,

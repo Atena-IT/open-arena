@@ -395,6 +395,7 @@ provider name Harbor does not know fails the run with the list of known ones.
 | variable | default | what it does |
 |---|---|---|
 | `ARENA_HARBOR_SANDBOX` | `e2b` | the sandbox provider |
+| `ARENA_HARBOR_SANDBOX_OPTIONS` | none | the provider's own settings, a JSON object Harbor hands its environment |
 | `ARENA_HARBOR_LOCAL_TRIALS` | `1` | trials at once on the local Docker |
 | `ARENA_HARBOR_LOCAL_CPUS`, `ARENA_HARBOR_LOCAL_MEMORY_MB` | `2`, `2048` | default limits for a dataset over an environment, on the local Docker |
 | `ARENA_HARBOR_WORKDIR` | the run's state folder | where task copies and trials are written |
