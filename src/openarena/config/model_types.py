@@ -122,7 +122,8 @@ class ModelType:
         }
 
 
-REASONING_EFFORTS = ("disable", "low", "medium", "high")
+# The levels litellm passes on (`minimal`, `xhigh` and `max` included); a model takes the ones its provider lists.
+REASONING_EFFORTS = ("disable", "minimal", "low", "medium", "high", "xhigh", "max")
 
 MODEL_TYPES: dict[str, ModelType] = {
     t.name: t
@@ -146,7 +147,7 @@ MODEL_TYPES: dict[str, ModelType] = {
                         "Default leaves it to the provider."
                     ),
                     choices=REASONING_EFFORTS,
-                    labels={"disable": "Off", "low": "Light", "medium": "Normal", "high": "Deep"},
+                    labels={"disable": "Off", "minimal": "Minimal", "low": "Low", "medium": "Medium", "high": "High", "xhigh": "Extra high", "max": "Max"},
                 ),
                 Param(
                     "temperature",
@@ -170,11 +171,11 @@ MODEL_TYPES: dict[str, ModelType] = {
             name="embedding",
             label="Embedding model",
             description=(
-                "Turns text into vectors, for similarity rewards and retrieval. "
-                "Evaluating embedding models is in the works."
+                "Turns text into vectors, for similarity rewards and retrieval; "
+                "evaluated on retrieval datasets."
             ),
             litellm_mode="embedding",
-            evaluable=False,
+            evaluable=True,
             params=(
                 Param(
                     "dimensions",
