@@ -104,9 +104,6 @@ HIDDEN_KWARGS = {
     "reset_sandbox",
     "recursive",
     "max_subagent_depth",
-    # the framework's decision models (0.10.5): a kind of model the models registry has no type for yet;
-    # unset, a judge grades with its `language_model`, as before
-    "decision_model",
     # fine budgets and metric internals
     "max_llm_calls",
     "max_output_chars",
@@ -174,6 +171,8 @@ _MODEL_KWARGS = {
     "smart_language_model": "llm",
     "sub_language_model": "llm",
     "embedding_model": "embedding",
+    # A rubric judge may grade with a decision model instead of its language model.
+    "decision_model": "decision",
 }
 _MODEL_LIST_KWARGS = {"panel_language_models": "llm"}
 
@@ -227,6 +226,8 @@ def _model(value, kind: str):
         return value
     if kind == "embedding":
         return synalinks.EmbeddingModel(**value)
+    if kind == "decision":
+        return synalinks.DecisionModel(**value)
     from openarena.programs.utils import language_model
 
     return language_model(value["model"], {k: v for k, v in value.items() if k != "model"})

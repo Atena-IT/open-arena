@@ -41,6 +41,7 @@ from synalinks.src.utils.naming import to_snake_case  # noqa: E402
 from synalinks.src.utils.keras_tuner_utils import _run_trial_async  # noqa: E402
 
 from openarena.config import Config, MetricEntry  # noqa: E402
+from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
 from openarena.lookups.prices import ensure_priced  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
@@ -644,7 +645,7 @@ async def run_sweep(
     # (the ones under test, the judges) is priced from the first source that
     # knows it, not only litellm's live table (lookups/prices.py).
     for entry in cfg.models.values():
-        ensure_priced(entry.model, "embedding" if entry.type == "embedding" else "chat")
+        ensure_priced(entry.model, MODEL_TYPES[entry.type].litellm_mode)
 
     # Optional process-wide reproducibility seed. `set_seed`
     # seeds both `numpy.random` and `random` — LM sampling temperature is

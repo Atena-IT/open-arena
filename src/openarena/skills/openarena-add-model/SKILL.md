@@ -1,6 +1,6 @@
 ---
 name: openarena-add-model
-description: Use when a language model or an embedding model has to be added to, changed in, or chosen from an openarena workspace (models.yaml) — writing the entry with its litellm id, type and params, picking the provider prefix and the environment variables it needs, and referencing it from evaluations, judges and leaderboards by its name.
+description: Use when a language model, an embedding model or a decision model has to be added to, changed in, or chosen from an openarena workspace (models.yaml) — writing the entry with its litellm id, type and params, picking the provider prefix and the environment variables it needs, and referencing it from evaluations, judges and leaderboards by its name.
 ---
 
 # openarena-add-model
@@ -18,7 +18,7 @@ own row. Depth: `docs/guides/models.md`.
 models:
   gpt-4o-mini:                       # the name everything refers to
     model: openai/gpt-4o-mini        # required: <provider>/<id>, as litellm routes it
-    type: llm                        # llm (default) or embedding
+    type: llm                        # llm (default), embedding or decision
     params:                          # optional; only what the type takes, below
       temperature: 0
       max_tokens: 2048
@@ -35,6 +35,10 @@ models:
     model: ollama/all-minilm
     type: embedding
     tags: [local]
+  jev:
+    model: typesafe/jev-latest       # needs TYPESAFE_API_KEY
+    type: decision                   # grades typed questions; a rubric judge's `decision_model`
+    tags: [judge]
 ```
 
 No other field is accepted (`provider:`, or a param beside `model:`, is an
@@ -48,6 +52,7 @@ error). The name: a letter or digit, then letters, digits, `_`, `.`, `-`.
 | `llm` | `max_tokens` | integer, at least 1 |
 | `llm` | `reasoning_effort` | `disable`, `low`, `medium` or `high` |
 | `embedding` | `dimensions` | integer, at least 1 |
+| `decision` | none | leave `params` out |
 
 Nothing else: `api_base`, `top_p`, `seed`, `stop` are refused. Leave a param
 out to keep the provider's default. Where params actually apply:
@@ -99,6 +104,10 @@ its own variable.
 - `embedding` models go in `embedding_model`, `default_embedding_model`, and in
   the `language_models` of a sweep over retrieval (`embedding:`) datasets only;
   such a sweep cannot mix in other dataset kinds.
+- `decision` models go in a rubric judge's `decision_model` only
+  (`rubrics_as_judge` and the ready-made rubric judges): they grade typed
+  questions with calibrated probabilities, write nothing, and cannot be under
+  test. `typesafe/...` ids need `TYPESAFE_API_KEY`; `ollama/laya` runs locally.
 - Local ids (`ollama/`, `vllm/`, ...) cost 0. A hosted id no price source knows
   still runs but also shows a cost of 0: check its cost after the first run.
 - Price and end-of-life date are per id; entries sharing an id share them.

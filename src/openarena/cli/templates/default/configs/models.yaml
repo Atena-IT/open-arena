@@ -5,7 +5,7 @@
 #   <name>:
 #     model: <provider>/<id>     # required; the prefix picks the provider (ollama/, openai/, anthropic/,
 #                                # gemini/, vllm/ via HOSTED_VLLM_API_BASE, ...); hosted ones need their *_API_KEY
-#     type: llm                  # `llm` (default) or `embedding`
+#     type: llm                  # `llm` (default), `embedding` or `decision`
 #     params: {}                 # what the type takes: temperature, max_tokens, reasoning_effort, ...
 #     modalities: [text]         # what it reads: text, image, audio, ...
 #     description: ...
@@ -30,3 +30,10 @@ models:
   #   model: ollama/all-minilm
   #   type: embedding
   #   tags: [local]
+
+  # A decision model, for a rubric judge's `decision_model` (rewards.yaml): grades typed
+  # questions with calibrated probabilities, writes nothing. Needs TYPESAFE_API_KEY.
+  # jev:
+  #   model: typesafe/jev-latest
+  #   type: decision
+  #   tags: [judge]

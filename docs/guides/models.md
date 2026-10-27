@@ -48,13 +48,18 @@ models:
     params:
       dimensions: 384
     tags: [local]
+  jev:
+    model: typesafe/jev-latest       # needs TYPESAFE_API_KEY
+    type: decision                   # grades typed questions with calibrated probabilities; does not write
+    description: The decision model the rubric judges grade with.
+    tags: [judge]
 ```
 
 | field | values | default | effect |
 |---|---|---|---|
 | name (the key) | a letter or digit, then letters, digits, `_`, `.`, `-`; at most 128 characters | | what every other file and every result calls the model |
 | `model` | `<provider>/<id>`, a litellm id | required | which provider is called, and which model there |
-| `type` | `llm`, `embedding` | `llm` | what the model does: which params it takes, where it may be named |
+| `type` | `llm`, `embedding`, `decision` | `llm` | what the model does: which params it takes, where it may be named |
 | `params` | a mapping, by type ([below](#params)) | `{}` | settings sent with each call; a param left out keeps the provider's default |
 | `modalities` | a list of `text`, `image`, `audio` | `[text]` | a fact about the model, for listings |
 | `description` | text | none | shown by `openarena models list` |
@@ -115,6 +120,7 @@ cp .env.template .env
 # .env
 OPENAI_API_KEY=sk-...
 OPENROUTER_API_KEY=sk-or-...
+TYPESAFE_API_KEY=ts-...
 OLLAMA_API_BASE=http://localhost:11434
 HOSTED_VLLM_API_BASE=http://localhost:8000/v1
 ```
@@ -215,11 +221,13 @@ own provider.
 |---|---|---|
 | `llm` | answers prompts: chat, structured output, tool calls, agents | an evaluation's `language_models`; a reward's `language_model`, `smart_language_model`, `sub_language_model`, `panel_language_models`; `default_language_model` |
 | `embedding` | turns text into vectors | the `language_models` of a sweep over retrieval datasets (`embedding:` in [Datasets](datasets.md)); a reward's or metric's `embedding_model`; `default_embedding_model` |
+| `decision` | answers typed questions (yes/no, a choice, a score) with calibrated probabilities; does not write text | a rubric judge's `decision_model` ([Rewards](rewards.md#grading-with-a-decision-model)) |
 
 The type is checked wherever the model is named: a judge set to an embedding
 model, or an embedding model in the `language_models` of a sweep over text
 datasets, is an error. A sweep runs one type, so a retrieval dataset cannot
-share an evaluation with other kinds of dataset.
+share an evaluation with other kinds of dataset. A decision model cannot be
+under test: it only grades.
 
 ## `params`
 
@@ -232,6 +240,7 @@ not sent, and the provider's default applies.
 | `llm` | `max_tokens` | an integer, at least 1 | the longest answer, in tokens |
 | `llm` | `reasoning_effort` | `disable`, `low`, `medium`, `high` | how much the model thinks before answering, where it can |
 | `embedding` | `dimensions` | an integer, at least 1 | the vector size, where the model lets you pick |
+| `decision` | none | | a decision model takes no params; `params` must be left out or empty |
 
 ### `temperature`
 
@@ -412,6 +421,35 @@ rewards:
 
 An evaluation's `default_language_model` is the model a reward uses when its
 config names none ([Running evaluations](evaluations.md)).
+
+### A decision model as the grader
+
+A `decision` model does not write: asked a typed question (is this true,
+which option, which level) it answers with a calibrated probability per
+option, in one short call. The rubric judges can grade with one instead of a
+language model: name it in the reward's `decision_model`
+([Rewards](rewards.md#grading-with-a-decision-model)).
+
+```yaml
+models:
+  jev:
+    model: typesafe/jev-latest       # hosted: needs TYPESAFE_API_KEY
+    type: decision
+    tags: [judge]
+  laya:
+    model: ollama/laya               # local: `ollama pull laya` first
+    type: decision
+    tags: [judge, local]
+```
+
+- **Why.** A fraction of a language judge's cost and latency, and a steadier
+  score: the probabilities are calibrated, so the same answer gets the same
+  grade.
+- **What you give up.** No critique: the trace shows each criterion's level,
+  not why. A judge that must write (`lm_as_judge`, the agent judges) cannot
+  use one.
+- **Where it can be named.** A rubric judge's `decision_model`, and nowhere
+  else: not in `language_models`, not as a `language_model`.
 
 ## Prices
 

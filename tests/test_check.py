@@ -223,6 +223,30 @@ def test_cli(configs):
     assert listed.exit_code == 0
 
 
+def test_a_decision_model_is_named_only_where_a_rubric_judge_grades_with_one(tmp_path):
+    _write(tmp_path, "models", {"jev": {"model": "typesafe/jev-latest", "type": "decision"}, "judge": {"model": "openai/gpt-4o"}})
+    assert not check_file(tmp_path / "models.yaml").problems
+    report = check_file(
+        _write(
+            tmp_path,
+            "rewards",
+            {
+                "fast": {"type": "faithfulness", "config": {"decision_model": "jev"}},
+                "wrong": {"type": "lm_as_judge", "config": {"language_model": "jev"}},
+                "swapped": {"type": "faithfulness", "config": {"decision_model": "judge"}},
+                "writer": {"type": "lm_as_judge", "config": {"decision_model": "jev"}},
+            },
+        )
+    )
+    assert _problems(report) == {("error", "rewards.wrong.config.language_model"), ("error", "rewards.swapped.config.decision_model"), ("error", "rewards.writer.config.decision_model")}
+    assert _message(report, "rewards.wrong.config.language_model") == "'jev' is a decision model; this setting needs a language model"
+    assert _fix(report, "rewards.wrong.config.language_model") == "name a language model instead: judge"
+    assert _message(report, "rewards.swapped.config.decision_model") == "'judge' is a language model; this setting needs a decision model"
+    assert _fix(report, "rewards.swapped.config.decision_model") == "name a decision model instead: jev"
+    with_params = check_file(_write(tmp_path, "models", {"jev": {"model": "typesafe/jev-latest", "type": "decision", "params": {"temperature": 0}}}))
+    assert _problems(with_params) == {("error", "models.jev")} and "no parameters" in _message(with_params, "models.jev")
+
+
 def test_models_call_options_belong_under_params(tmp_path):
     report = check_file(_write(tmp_path, "models", {"qwen": {"model": "ollama/qwen3", "temprature": 0}}))
     assert _problems(report) == {("error", "models.qwen.temprature")}
