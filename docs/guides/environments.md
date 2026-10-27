@@ -457,8 +457,9 @@ can give what it asks for.
     ```
 
     Which keys a provider takes is Harbor's to say; one it does not know
-    fails the trial with Harbor's error. The local Docker a trial falls back
-    to gets none of them.
+    fails the trial with Harbor's error. A value that is not a JSON object
+    stops the run before its first row, whichever provider the trials would
+    run on. The local Docker a trial falls back to gets none of them.
 
 !!! warning "The silent fallback"
     When the configured provider cannot start (E2B with no `E2B_API_KEY`),

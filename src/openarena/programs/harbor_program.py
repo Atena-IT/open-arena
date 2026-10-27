@@ -73,6 +73,7 @@ from openarena.harbor import (
     find_trajectory,
     local_limits,
     local_slot,
+    sandbox_options,
     trajectory_messages,
 )
 from openarena.programs.utils import safe_name
@@ -155,9 +156,15 @@ def sandbox_note() -> str | None:
 
 
 def sandbox_issue() -> str | None:
-    """Why no task can start at all, as one sentence, or None: an unknown provider, or none with credentials and no Docker."""
+    """Why no task can start at all, as one sentence, or None: an unknown provider or its options, or none with credentials and no Docker.
+
+    The options are checked whichever provider ends up running: a malformed
+    `ARENA_HARBOR_SANDBOX_OPTIONS` is a mistake to fix, not one the Docker
+    fallback (which gets none) should hide.
+    """
     try:
         name = configured_sandbox()
+        sandbox_options()
     except ValueError as e:
         return str(e)
     used = sandbox()
@@ -622,6 +629,7 @@ def no_answer_guard(program) -> NoAnswerGuard | None:
 async def build_harbor(model_id: str, dataset, spec: dict, reward, metrics=None, contexts=None, work_dir="harbor", lm_kwargs=None, model_name=None):
     """Build (and compile) a program that asks each row of a Harbor agent driven by `model_id` with its entry's `lm_kwargs`."""
     sandbox()  # an unknown sandbox fails the cell, not each of its rows
+    sandbox_options()  # and so do malformed options, whichever provider the rows run on
     inputs = synalinks.Input(
         schema=dataset.input_schema,
         data_model=dataset.input_data_model if dataset.input_schema is None else None,

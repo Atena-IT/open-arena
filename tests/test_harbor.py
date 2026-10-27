@@ -180,6 +180,25 @@ def test_sandbox_options_are_a_json_object_or_refused(monkeypatch, raw):
         sandbox_options()
 
 
+def test_malformed_options_stop_the_run_before_any_row_whichever_provider_runs(monkeypatch):
+    import asyncio
+
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '["arena-sandboxes"]')
+    # E2B has no key here, so trials would fall back to the local Docker, which gets no options:
+    # the mistake is still reported, not hidden by the fallback.
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name == "docker")
+    issue = harbor_program.sandbox_issue()
+    assert issue is not None and "ARENA_HARBOR_SANDBOX_OPTIONS" in issue and "list" in issue
+    # And the cell fails before its first row, as an unknown provider does.
+    with pytest.raises(ValueError, match="ARENA_HARBOR_SANDBOX_OPTIONS"):
+        asyncio.run(harbor_program.build_harbor("openai/gpt-4o", None, {}, None))
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
+    assert harbor_program.sandbox_issue() is None
+
+
 def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
     import asyncio
 
