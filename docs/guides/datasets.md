@@ -83,7 +83,7 @@ These live in `config`, next to the provider's own settings.
 | `output_template` | Jinja2 rendering a JSON object | none | the expected answer the reward compares with; leave out for an inputs-only dataset |
 | `input_schema` | JSON Schema, as YAML or a JSON string | chat messages | the shape `input_template` renders |
 | `output_schema` | JSON Schema, as YAML or a JSON string | one chat message | the shape `output_template` renders, and the structure the model answers in |
-| `tools_template` | Jinja2 rendering a JSON list of tool declarations, `{type: function, function: {...}}` each | none | the row's tools, sent with a `tools:` dataset's request as a Chat Completions request carries them ([Tool calls](#tool-calls)) |
+| `tools_template` | Jinja2 rendering the row's tool declarations: a JSON list of `{type: function, function: {...}}`, or a shape put into that one for you ([Tool calls](#tool-calls)) | none | the row's tools, sent with a `tools:` dataset's request as a Chat Completions request carries them ([Tool calls](#tool-calls)) |
 | `limit` | integer | all rows | read at most this many rows, the first ones in the source's order |
 | `batch_size` | integer | `1` | rows in flight at once |
 | `repeat` | integer, at least 1 | `1` | each row is sent this many times in a row, each copy scored as a row |
@@ -100,8 +100,9 @@ repeated rows weigh each question more without adding questions.
 ## Templates: from a row to JSON
 
 Both templates are Jinja2 over **one row**: each column of the row is a
-variable. Each must render to a **JSON object**, which is then read against
-its schema.
+variable, and the whole row is `row`, for a column whose name is not an
+identifier (`row["Question Text"]`). Each must render to a **JSON object**,
+which is then read against its schema.
 
 - `input_template` is what the model receives: `{"question": ...}` for
   question answering.
@@ -116,7 +117,9 @@ on the first quote or newline in a question.
 | you write | for |
 |---|---|
 | `{{ question \| tojson }}` | a column |
+| `{{ row["Question Text"] \| tojson }}` | a column whose name has a space, a dash or a dot |
 | `{{ input.question \| tojson }}` | a field of a column holding an object |
+| `{{ (answers \| fromjson)[0].name \| tojson }}` | a column holding JSON as text |
 | `{{ answers.text[0] \| tojson }}` | an item of a list |
 | `{{ answer.split('####')[-1] \| trim \| tojson }}` | Python string methods and Jinja filters |
 | `{{ "ABCD"[answer] \| tojson }}` | an index turned into a letter |
@@ -275,9 +278,9 @@ input. When you only want it to select rows, select at the source (Opik's
 `filter_string`, Phoenix's `splits`) or keep a separate file.
 
 !!! note "Column names"
-    A column is a template variable, so its name must be a valid identifier.
-    A column called `expected answer` or `gold-label` cannot be named in a
-    template: rename it in the file or at the source.
+    A column is a template variable when its name is a valid identifier. A
+    column called `expected answer` or `gold-label` is read through the whole
+    row instead: `{{ row["expected answer"] | tojson }}`.
 
 ### Schemas
 
@@ -1025,12 +1028,20 @@ datasets:
     reward: tool-calls                 # type: tool_calls_accuracy
 ```
 
-A row whose declarations are bare, `{"name", "description", "parameters"}`
-without the `function` envelope, is wrapped by the template:
-`tools_template: '[{% for f in functions %}{"type": "function", "function": {{ f | tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]'`.
-A declaration in any other shape is refused when the row is read, with the
-shape to write, since the API would refuse the request. A `tools_template`
-on a dataset with no `tools:` block is refused too: nothing would send them.
+Datasets ship their tools in other shapes too, and what the template renders
+is put in the request's shape for you: one declaration alone is a list of
+one; a bare `{"name", "description", "parameters"}` is wrapped in the
+`function` envelope; `parameters` written as a mapping of typed fields, as
+xLAM does (`{"city": {"type": "str"}, "days": {"type": "int, optional"}}`),
+become an object schema, each field required unless it has a `default` or its
+type says optional, and a Python type name (`str`, `List[int]`, `dict`) its
+JSON Schema word, an array with the `items` providers require (`List[int]`:
+integers). A field named `type` is a field like any other. Tools stored as
+JSON text are read with `fromjson`:
+`tools_template: '{{ tools | fromjson | tojson }}'`. A declaration with no
+`name` is refused when the row is read, with the shape to write, since the
+API would refuse the request. A `tools_template` on a dataset with no
+`tools:` block is refused too: nothing would send them.
 
 ## Extra metrics
 
@@ -1074,7 +1085,7 @@ shows up when the run loads the dataset.
 | two answering blocks | `check` | the blocks are mutually exclusive |
 | `tools:` with neither `tool_schemas` nor a `tools_template` | `check` | at least one function declaration, with both ways to give them |
 | `tools_template` without a `tools:` block | `check` | it only offers tools to a `tools:` dataset, with `tools: {}` to add |
-| a `tools_template` that renders no list, or a bare `{name, parameters}` declaration | the run | the row is refused when read, with the `{type: function, function: {...}}` shape to write |
+| a `tools_template` declaring a tool with no `name`, or rendering something other than declarations | the run | the row is refused when read, with the `{type: function, function: {...}}` shape to write |
 | `harbor_tasks` without `harbor:` | `check` | it needs a `harbor:` block, with `harbor: {agent: terminus-2}` to add |
 | `instructions` or `answer_file` in a `harbor_tasks` dataset's `harbor:` | `check` | they have no effect on task folders, with where each belongs instead |
 | a column the row does not have | the run | the template fails on the first row |

@@ -36,9 +36,9 @@ TEMPLATES = {
 }
 
 
-def _dataset(tmp_path, **templates):
+def _dataset(tmp_path, rows=ROWS, **templates):
     path = tmp_path / "calls.jsonl"
-    path.write_text("\n".join(json.dumps(r) for r in ROWS))
+    path.write_text("\n".join(json.dumps(r) for r in rows))
     return LocalDataset(path=str(path), batch_size=2, **{**TEMPLATES, **templates})
 
 
@@ -65,12 +65,37 @@ def test_each_input_is_the_request_the_row_makes_its_messages_and_its_tools(tmp_
     assert ds.row_schema == synalinks.ChatMessages.get_schema()
 
 
+def test_a_rows_tools_in_the_shapes_datasets_ship_reach_the_request_in_the_wire_shape(tmp_path):
+    # As xLAM ships them: JSON text, a bare declaration, its parameters a mapping of fields typed the Python way.
+    fields = {"city": {"type": "str"}, "days": {"type": "List[int]", "default": [1]}, "unit": {"type": "str, optional"}, "when": {"type": "Moment"}, "type": {"type": "str", "default": "game"}}
+    bare = {"name": "get_weather", "description": "The weather.", "parameters": fields}  # a field named `type`, as xLAM has
+    flat = {"type": "function", **bare}  # as the Responses API declares a tool: no `function` envelope
+    rows = [{**ROWS[0], "tools": json.dumps([bare])}, {**ROWS[1], "tools": json.dumps(flat)}]  # a list, then one alone
+    [(x, _)] = list(_dataset(tmp_path, rows=rows, tools_template="{{ tools | fromjson | tojson }}"))
+    properties = {
+        "city": {"type": "string"},
+        "days": {"type": "array", "items": {"type": "integer"}, "default": [1]},  # providers refuse an array without `items`
+        "unit": {"type": "string"},
+        "when": {},
+        "type": {"type": "string", "default": "game"},
+    }
+    wire = {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "The weather.",
+            "parameters": {"type": "object", "properties": properties, "required": ["city", "when"]},
+        },
+    }
+    assert [row.get_json()[TOOLS_FIELD] for row in x] == [[wire], [wire]]
+    # The wire shape, and a parameters schema already written as one, are handed on as they are.
+    [(x, _)] = list(_dataset(tmp_path, tools_template="{{ tools | tojson }}"))
+    assert x[0].get_json()[TOOLS_FIELD] == ROWS[0]["tools"]
+
+
 def test_a_declaration_the_api_would_refuse_is_refused_when_the_row_is_read(tmp_path):
-    bare = "{{ [{'name': 'get_weather', 'parameters': {}}] | tojson }}"
-    with pytest.raises(ValueError, match='wrap it as {"type": "function", "function": <the declaration>}'):
-        list(_dataset(tmp_path, tools_template=bare))
-    with pytest.raises(ValueError, match="JSON list"):
-        list(_dataset(tmp_path, tools_template="{{ tools[0] | tojson }}"))
+    with pytest.raises(ValueError, match='a tool declaration is {"type": "function", "function": {...}}'):
+        list(_dataset(tmp_path, tools_template="{{ [{'parameters': {}}] | tojson }}"))  # no name: nothing to wrap
     with pytest.raises(ValueError, match="rename it"):
         list(_dataset(tmp_path, tools_template="[]", input_template='{"messages": [], "tools": []}'))
     assert tool_declaration_problem(_tool("f")) is None

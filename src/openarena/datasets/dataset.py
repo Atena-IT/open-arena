@@ -1,9 +1,94 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 import json as _json
+import re
 
+import jinja2
 import synalinks
 from synalinks.src.datasets.dataset import TOOLS_FIELD  # noqa: F401 — the request's `tools` field, re-exported for the tools program
+
+# The templates' Jinja environment: an unknown variable is an error, as in synalinks, and `fromjson` reads a
+# column that holds JSON as text, the way many tool-calling datasets ship their tools and calls.
+JINJA = jinja2.Environment(undefined=jinja2.StrictUndefined)
+JINJA.filters["fromjson"] = _json.loads
+
+
+class RowTemplate:
+    """A template that also sees the whole row as `row`: `row["Question Text"]` reads a column no identifier can name.
+
+    A column called `row` keeps its own value.
+    """
+
+    def __init__(self, source: str):
+        self.template = JINJA.from_string(source)
+
+    def render(self, **row) -> str:
+        return self.template.render({"row": row, **row})
+
+
+class ToolsTemplate(RowTemplate):
+    """The row's tools template, what it renders handed on in the wire shape (`tool_declarations`)."""
+
+    def render(self, **row) -> str:
+        return _json.dumps(tool_declarations(_json.loads(super().render(**row))))
+
+
+# A parameter's type as Python names it, the way some datasets write it (`str`, `List[int]`, `int, optional`), in
+# JSON Schema's words.
+JSON_TYPES = {
+    "str": "string", "string": "string",
+    "int": "integer", "integer": "integer",
+    "float": "number", "number": "number",
+    "bool": "boolean", "boolean": "boolean",
+    "list": "array", "tuple": "array", "array": "array",
+    "dict": "object", "object": "object",
+    "none": "null", "null": "null",
+}
+
+
+def tool_declarations(tools) -> list:
+    """`tools` as a Chat Completions request declares them, from the shapes datasets ship them in.
+
+    One declaration or a list of them. A bare `{name, description, parameters}` is wrapped as
+    `{"type": "function", "function": ...}`, and parameters written as a mapping of fields made an object
+    schema, a field required unless it has a `default` or its type says optional. Each field's type is put in
+    JSON Schema's words, or left out when it names none. Anything else is handed on as it is, for the check
+    that follows to name.
+    """
+    declared = []
+    for tool in tools if isinstance(tools, list) else [tools]:
+        if isinstance(tool, dict) and isinstance(tool.get("name"), str):
+            # A flat declaration (`{"type": "function", "name": ...}`, as the Responses API writes it) keeps no `type` inside.
+            tool = {"type": "function", "function": {key: value for key, value in tool.items() if key != "type"}}
+        function = tool.get("function") if isinstance(tool, dict) else None
+        if isinstance(function, dict) and isinstance(function.get("parameters"), dict):
+            tool = {**tool, "function": {**function, "parameters": _parameters(function["parameters"])}}
+        declared.append(tool)
+    return declared
+
+
+def _parameters(parameters: dict) -> dict:
+    # A schema says its `type` in words; a mapping of fields may hold a field named `type`, itself a mapping.
+    schema = isinstance(parameters.get("type"), (str, list)) or isinstance(parameters.get("properties"), dict)
+    if not schema and parameters and all(isinstance(field, dict) for field in parameters.values()):
+        optional = [name for name, field in parameters.items() if "default" in field or "optional" in str(field.get("type", "")).lower()]
+        parameters = {"type": "object", "properties": parameters, "required": [name for name in parameters if name not in optional]}
+    if isinstance(parameters.get("properties"), dict):
+        parameters = {**parameters, "properties": {name: _typed(field) for name, field in parameters["properties"].items()}}
+    return parameters
+
+
+def _typed(field):
+    """A field with its type in JSON Schema's words (one it cannot name left out), and an array its `items`, which providers require."""
+    if not isinstance(field, dict) or not isinstance(field.get("type"), str):
+        return field
+    words = [JSON_TYPES[word] for word in re.findall(r"[a-z]+", field["type"].lower()) if word in JSON_TYPES]
+    rest = {key: value for key, value in field.items() if key != "type"}
+    if not words:
+        return rest
+    if words[0] == "array" and "items" not in rest:
+        rest["items"] = {"type": words[1]} if len(words) > 1 else {}  # `List[int]`: integers; `list`: anything
+    return {**rest, "type": words[0]}
 
 
 class Dataset(synalinks.datasets.Dataset):
@@ -13,9 +98,11 @@ class Dataset(synalinks.datasets.Dataset):
     Jinja2 templates over a row (`input_template`, `output_template` and
     `tools_template`, the row's own tool declarations as a Chat Completions
     request carries them, with `row_schema` the row's shape without them),
-    `limit`, `repeat`, `batch_size`, the `(x, y)` batches. The difference is
+    `limit`, `repeat`, `batch_size`, the `(x, y)` batches. Two differences.
     `_close_objects`: an `input_schema` or `output_schema` written by hand
-    is marked closed, object by object, before the base class reads it.
+    is marked closed, object by object, before the base class reads it. And
+    the templates are compiled in the engine's `JINJA`, as `RowTemplate`s:
+    each sees the whole row as `row` beside its columns, and has `fromjson`.
     """
 
     def __init__(
@@ -32,19 +119,29 @@ class Dataset(synalinks.datasets.Dataset):
         repeat: int = 1,
         **kwargs,
     ):
+        # Compiled first, so a template that does not parse fails before the source is opened (a Hub dataset downloaded).
+        compiled = (
+            None if input_template is None else RowTemplate(input_template),
+            None if output_template is None else RowTemplate(output_template),
+            None if tools_template is None else ToolsTemplate(tools_template),
+        )
+        # synalinks compiles the templates in a Jinja environment of its own, which has no `fromjson`: it is handed
+        # stand-ins, present where the templates are, and the engine's own replace them.
         super().__init__(
             input_data_model=input_data_model,
             input_schema=_coerce_schema(input_schema),
-            input_template=input_template,
+            input_template=None if input_template is None else "{}",
             output_data_model=output_data_model,
             output_schema=_coerce_schema(output_schema),
-            output_template=output_template,
-            tools_template=tools_template,
+            output_template=None if output_template is None else "{}",
+            tools_template=None if tools_template is None else "[]",
             batch_size=batch_size,
             limit=limit,
             repeat=repeat,
             **kwargs,
         )
+        self.input_template, self.output_template, self.tools_template = input_template, output_template, tools_template
+        self._input_tmpl, self._output_tmpl, self._tools_tmpl = compiled
 
 
 def _coerce_schema(schema):
