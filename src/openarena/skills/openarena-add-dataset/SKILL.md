@@ -76,13 +76,13 @@ escapes them; never write `"{{ question }}"`.
   `{"type": "function", "function": {...}}`, not an object. Only for rows
   that bring their own tools.
 - Columns: `{{ question }}`, a field `{{ input.question }}`, an item
-  `{{ answers.text[0] }}`. Filters: `| tojson`, `| trim`, `| lower`,
-  `| string`, `| replace('a', 'b')`, `| join(', ')`, Python string methods
-  (`answer.split('####')[-1]`).
+  `{{ answers.text[0] }}`, and the whole row as `row` for a name that is not
+  an identifier (`{{ row["gold-label"] }}`, `{{ row["Question Text"] }}`).
+  Filters: `| tojson`, `| trim`, `| lower`, `| string`, `| replace('a', 'b')`,
+  `| join(', ')`, `| fromjson` for a column holding JSON as text, Python
+  string methods (`answer.split('####')[-1]`).
 - **Strict.** A variable the row lacks is an error, not an empty string. For
-  an optional column write `{{ hint | default("") | tojson }}`. A column name
-  must be a valid identifier (`gold-label` cannot be named): rename it at the
-  source.
+  an optional column write `{{ hint | default("") | tojson }}`.
 - **No metadata template.** What the model should see goes in the input;
   rows you only want to select, select at the source.
 - **Quoting.** Write the template as a single-quoted YAML string; a single
@@ -235,8 +235,12 @@ Tools that differ per row (a tool-calling benchmark): the row is a Chat
 Completions request, `messages` + `tools`. `input_template` renders the
 messages (the default input shape, no `input_schema`), `config.tools_template`
 the tools, a JSON list of `{"type": "function", "function": {name,
-description, parameters}}` as the request sends them; any other shape is
-refused when the row is read. The row's tools are sent as the request's,
+description, parameters}}` as the request sends them. The shapes datasets ship
+are put in that one for you: a declaration alone, a bare `{name, description,
+parameters}`, and parameters written as typed fields (xLAM's `{"city":
+{"type": "str"}}`); tools stored as JSON text are `{{ tools | fromjson |
+tojson }}`. A declaration with no name is refused when the row is read. The
+row's tools are sent as the request's,
 never in the prompt, beside the block's `tool_schemas` (which may then be
 left out: `tools: {}`); the row's own system prompt is kept. Refused without
 a `tools:` block.

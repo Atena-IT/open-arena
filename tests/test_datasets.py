@@ -153,6 +153,25 @@ def test_a_template_needs_every_variable_it_names_and_the_input_template_is_requ
         Rows(output_template=None, output_schema=A_SCHEMA)
 
 
+# -- what a template sees ----------------------------------------------------------
+
+
+def test_the_whole_row_is_row_for_a_column_no_name_can_reach():
+    ds = Rows(rows=[{"Question Text": "2+2", "a": "4"}], input_template='{"q": {{ row["Question Text"] | tojson }}}')
+    assert _json(next(iter(ds)))[0] == [{"q": "2+2"}]
+
+
+def test_a_column_named_row_keeps_its_own_value():
+    ds = Rows(rows=[{"row": "2+2", "a": "4"}], input_template='{"q": {{ row | tojson }}}')
+    assert _json(next(iter(ds)))[0] == [{"q": "2+2"}]
+
+
+def test_fromjson_reads_a_column_that_holds_json_text():
+    calls = json.dumps([{"name": "get_weather", "arguments": {"city": "Rome"}}])
+    ds = Rows(rows=[{"q": "Weather?", "a": calls}], output_template='{"a": {{ (a | fromjson)[0].name | tojson }}}')
+    assert _json(next(iter(ds)))[1] == [{"a": "get_weather"}]
+
+
 # -- the registry ----------------------------------------------------------------
 
 
@@ -342,6 +361,14 @@ def test_without_a_split_every_split_is_read_in_order_and_the_loader_gets_its_kw
     assert len(ds) == 3  # the splits' lengths, summed
     only = HuggingFaceDataset("org/bench", split="test", streaming=False, **TEMPLATES)
     assert list(only._iter_rows()) == ROWS[2:] and len(only) == 1
+
+
+def test_a_template_that_does_not_parse_fails_before_the_source_is_opened(monkeypatch):
+    seen = []
+    _hf(monkeypatch, {"train": ROWS}, seen)
+    with pytest.raises(jinja2.TemplateSyntaxError):
+        HuggingFaceDataset("org/bench", split="train", **{**TEMPLATES, "output_template": '{"a": {{ a | tojson }'})
+    assert seen == []  # nothing downloaded for a dataset that cannot render
 
 
 def test_a_streaming_source_has_a_length_only_under_a_limit(monkeypatch):
