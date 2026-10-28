@@ -81,8 +81,9 @@ def undecoded(dataset):
     """`dataset` with its image and audio columns left undecoded: `{bytes, path}`, the file as it is stored."""
     from datasets import Audio, Image
 
-    first = next(iter(dataset.values()), None) if hasattr(dataset, "keys") else dataset
-    for name, feature in dict(getattr(first, "features", None) or {}).items():
+    if hasattr(dataset, "keys"):
+        return type(dataset)({name: undecoded(split) for name, split in dataset.items()})
+    for name, feature in dict(getattr(dataset, "features", None) or {}).items():
         if isinstance(feature, (Image, Audio)) and feature.decode:
             dataset = dataset.cast_column(name, type(feature)(decode=False))
     return dataset
