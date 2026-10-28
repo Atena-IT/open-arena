@@ -105,7 +105,7 @@ rerun with `--no-cache` to redo one where only some rows failed.
 
 | symptom | likely cause | fix |
 |---|---|---|
-| one model `FAILED`, `no row got an answer`, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE` | set the key in `.env`; ask the user to start the server (do not start it yourself); rerun |
+| one model `FAILED`, `no row got an answer`, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE`, or `sglang/...` with no SGLang server | set the key in `.env`; ask the user to start the server (do not start it yourself); rerun |
 | `FAILED`, `could not load the MCP tools of [...]` | an MCP server down, its command not on the PATH, or it exposes no tools | openarena-add-mcp-tools; rerun |
 | model not found | a wrong id in `models.yaml` | fix `model:` |
 | `INVALID` at the dataset | wrong `path` / `name` / `split`, or a template naming a missing column | look at a real row; fix `config` (openarena-add-dataset) |
