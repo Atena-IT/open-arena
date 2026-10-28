@@ -295,7 +295,8 @@ part, whatever it holds:
 - a URL, or a path inside a `folder` dataset (`images/1.png`), read when its
   batch is sent.
 
-The input is then chat messages, so leave `input_schema` out:
+The input is then chat messages, so leave `input_schema` out (keep an
+`output_schema` for the answer):
 
 ```yaml
 datasets:
@@ -306,6 +307,11 @@ datasets:
       split: test
       input_template: '{"messages": [{"role": "user", "content": [{"type": "text", "text": {{ query | tojson }}}, {{ image | as_image | tojson }}]}]}'
       output_template: '{"answer": {{ label[0] | tojson }}}'
+      output_schema:
+        type: object
+        properties:
+          answer: {type: string, description: The final answer only}
+        required: [answer]
 ```
 
 An audio part keeps its file's format (`wav`, `mp3`, `flac`); providers differ

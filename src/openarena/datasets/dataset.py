@@ -45,12 +45,23 @@ def as_image(context, value) -> dict:
     return {"type": "image_url", "image_url": {"url": where}}
 
 
+def _audio_format(raw: bytes) -> str:
+    """The format of audio bytes from their header: `flac`, `mp3`, `ogg`, else `wav`."""
+    if raw.startswith(b"fLaC"):
+        return "flac"
+    if raw.startswith(b"ID3") or raw[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
+        return "mp3"
+    if raw.startswith(b"OggS"):
+        return "ogg"
+    return "wav"
+
+
 @jinja2.pass_context
 def as_audio(context, value) -> dict:
     """An audio column's value as an `input_audio` part in its file's `format` (`wav`, `mp3`, `flac`): the
     file's bytes inlined, a URL or a file left for synalinks to read, one batch at a time."""
     raw, where = _media(context, value)
-    format = os.path.splitext(where.split("?")[0])[1].lstrip(".").lower() or "wav"
+    format = os.path.splitext(where.split("?")[0])[1].lstrip(".").lower() or (_audio_format(raw) if raw else "wav")
     if raw is not None:
         return {"type": "input_audio", "input_audio": {"data": base64.b64encode(raw).decode("ascii"), "format": format}}
     return {"type": "input_audio", "input_audio": {"url" if _URL.match(where) else "path": where, "format": format}}

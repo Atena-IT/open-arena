@@ -39,6 +39,7 @@ ROWS = {
     "gsm8k-20": _GSM8K,
     "gsm8k-terminal": _GSM8K,
     "gsm8k-tools": _GSM8K,
+    "chartqa": {"query": "What is the peak?", "image": "https://example.com/chart.png", "label": ["2020"]},
     "mmlu-math": {"question": "2 + 2 = ?", "choices": [3, 4, 5, 6], "answer": 1},
     "passages": {"query": "capital of France", "passages": ["Paris is the capital.", "Rome is in Italy."], "gold": ["Paris is the capital."]},
     "weather-calls": {"question": "Weather in Paris?", "calls": [{"name": "get_weather", "arguments": {"city": "Paris"}}]},
