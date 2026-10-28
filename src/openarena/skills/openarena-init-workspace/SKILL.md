@@ -162,7 +162,8 @@ there nor in the shell; `check`, `list` and `leaderboards run` need no keys.
 Hosted models need their provider's key (`OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, ...); `ollama/...` ids need a local
 Ollama (`OLLAMA_API_BASE` if it is not on `localhost:11434`); `vllm/...` ids
-need `HOSTED_VLLM_API_BASE` (ending in `/v1`). Harbor datasets run trials on
+need `HOSTED_VLLM_API_BASE` (ending in `/v1`); `sglang/...` ids an SGLang
+server (`SGLANG_API_BASE` if it is not on `localhost:30000/v1`). Harbor datasets run trials on
 E2B with `E2B_API_KEY`, else on the local Docker (`ARENA_HARBOR_SANDBOX`
 picks another provider). `openarena evaluations run` does not trace into
 MLflow, even with `MLFLOW_TRACKING_URI` set: only the arena app traces. Do

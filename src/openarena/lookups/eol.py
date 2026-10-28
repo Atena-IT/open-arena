@@ -61,7 +61,8 @@ _RETRY_S = 3600
 
 # Arena prefixes whose ids name OpenAI models, and so fall under the schedule.
 _OPENAI_PREFIXES = {"openai", "azure", "azure_ai"}
-_PROVIDER_ALIASES = {"vllm": "hosted_vllm", "cohere": "cohere_chat"}
+# `vllm` and `sglang` are synalinks' prefixes for a server litellm calls `hosted_vllm`.
+_PROVIDER_ALIASES = {"vllm": "hosted_vllm", "sglang": "hosted_vllm", "cohere": "cohere_chat"}
 
 # OpenRouter's vendor segment -> the prefix that vendor's own models are keyed
 # by, where the two differ (`google` is `gemini` in litellm's table). Only

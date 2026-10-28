@@ -84,11 +84,13 @@ environment, never from `models.yaml`:
 | `openrouter/` | `openrouter/mistralai/ministral-14b-2512` | `OPENROUTER_API_KEY` |
 | `ollama/` | `ollama/qwen3:8b` | a running Ollama; `OLLAMA_API_BASE` if not `http://localhost:11434` |
 | `vllm/` | `vllm/Qwen/Qwen3-4B` | `HOSTED_VLLM_API_BASE`, the server's endpoint with `/v1` |
+| `sglang/` | `sglang/Qwen/Qwen3-4B` | `SGLANG_API_BASE`, the server's endpoint with `/v1` (default `http://localhost:30000/v1`) |
 
 Any provider litellm supports works the same way. Do not guess an id: use one
 the user gave, one the provider documents, or one already in the file. A base
 URL is per provider, so every `vllm/` entry hits the one server
-`HOSTED_VLLM_API_BASE` names.
+`HOSTED_VLLM_API_BASE` names, and every `sglang/` entry the one
+`SGLANG_API_BASE` names.
 
 Put variables in the workspace's `.env` (beside `configs/`; copy
 `.env.template`). Only `openarena evaluations run` loads it, and it never
@@ -107,8 +109,9 @@ its own variable.
 - `decision` models go in a rubric judge's `decision_model` only
   (`rubrics_as_judge` and the ready-made rubric judges): they grade typed
   questions with calibrated probabilities, write nothing, and cannot be under
-  test. `typesafe/...` ids need `TYPESAFE_API_KEY`; `ollama/laya` runs locally.
-- Local ids (`ollama/`, `vllm/`, ...) cost 0. A hosted id no price source knows
+  test. `typesafe/...` ids need `TYPESAFE_API_KEY`; `ollama/laya` and
+  `sglang/kev` (a decision checkpoint SGLang serves) run locally.
+- Local ids (`ollama/`, `vllm/`, `sglang/`, ...) cost 0. A hosted id no price source knows
   still runs but also shows a cost of 0: check its cost after the first run.
 - Price and end-of-life date are per id; entries sharing an id share them.
 

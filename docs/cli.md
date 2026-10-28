@@ -104,7 +104,7 @@ What a run reads from the environment, through that file or your shell:
 | variable | for |
 |---|---|
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, ... | the hosted models your `models.yaml` ids call ([Models](guides/models.md)) |
-| `OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE` | local model servers not on their default address |
+| `OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`, `SGLANG_API_BASE` | local model servers not on their default address |
 | `E2B_API_KEY`, `ARENA_HARBOR_SANDBOX`, `ARENA_HARBOR_WORKDIR` | Harbor trials: the sandbox provider, and where task folders and trials go ([Environments](guides/environments.md)) |
 | `MLFLOW_TRACKING_URI`, `MLFLOW_EXPERIMENT_NAME`, `ARENA_MLFLOW_TRACING` | MLflow tracing, for the arena app and `run_sweep` called from Python; `openarena evaluations run` does not switch tracing on |
 

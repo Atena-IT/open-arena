@@ -2,7 +2,7 @@
 
 """What a model id costs per token, from the first source that knows.
 
-1. A local server (`ollama/...`, `vllm/...`): free, there is no bill.
+1. A local server (`ollama/...`, `vllm/...`, `sglang/...`): free, there is no bill.
 2. litellm's pricing table: the live one litellm downloads at import, filled
    with the rows only the copy shipped inside the package has
    (`eol.fill_from_bundled`); the source says which of the two it was.
@@ -44,7 +44,7 @@ Source = Literal["local", "litellm", "litellm-bundled", "openrouter"]
 
 # Served by a server of your own: no bill to price.
 LOCAL_PROVIDERS = frozenset(
-    {"ollama", "ollama_chat", "vllm", "hosted_vllm", "lm_studio", "llamafile"}
+    {"ollama", "ollama_chat", "vllm", "hosted_vllm", "sglang", "lm_studio", "llamafile"}
 )
 
 # A vendor's own prefix -> how OpenRouter spells that vendor (`gemini/x` is `google/x` there).
