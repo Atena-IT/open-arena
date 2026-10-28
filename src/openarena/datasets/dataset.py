@@ -1,16 +1,80 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
+import ast
+import base64
 import json as _json
+import mimetypes
+import os
 import re
 
 import jinja2
 import synalinks
 from synalinks.src.datasets.dataset import TOOLS_FIELD  # noqa: F401 — the request's `tools` field, re-exported for the tools program
 
-# The templates' Jinja environment: an unknown variable is an error, as in synalinks, and `fromjson` reads a
-# column that holds JSON as text, the way many tool-calling datasets ship their tools and calls.
+# Where a relative image or audio path in a row is read from: the folder of a dataset that has one (`FolderDataset`).
+MEDIA_DIR = "__media_dir__"
+# The first bytes of the image formats providers take, for an image that comes without a file name.
+_IMAGE_MAGIC = ((b"\x89PNG", "image/png"), (b"\xff\xd8\xff", "image/jpeg"), (b"GIF8", "image/gif"), (b"RIFF", "image/webp"))
+_URL = re.compile(r"(https?|file|data):")
+
+
+def _media(context, value) -> tuple[bytes | None, str]:
+    """An image or audio value as `(bytes, file name)` when it holds the file, Hugging Face's undecoded
+    `{bytes, path}`; else `(None, where it is)`, a URL, or a path made absolute against the dataset's folder."""
+    if isinstance(value, dict):
+        if isinstance(value.get("bytes"), (bytes, bytearray)) and value["bytes"]:
+            return bytes(value["bytes"]), value.get("path") or ""
+        value = value.get("path") or value.get("src")
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"no image or audio in {value!r}")
+    if _URL.match(value):
+        return None, value
+    return None, os.path.abspath(os.path.join(context.get(MEDIA_DIR) or "", value))
+
+
+@jinja2.pass_context
+def as_image(context, value) -> dict:
+    """An image column's value as a chat message's `image_url` part: the file's bytes inlined, a URL or a file
+    left for synalinks to read, one batch at a time."""
+    raw, where = _media(context, value)
+    if raw is not None:
+        mime = mimetypes.guess_type(where)[0] or next((m for magic, m in _IMAGE_MAGIC if raw.startswith(magic)), "image/png")
+        where = f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+    elif not _URL.match(where):
+        where = f"file://{where}"
+    return {"type": "image_url", "image_url": {"url": where}}
+
+
+def _audio_format(raw: bytes) -> str:
+    """The format of audio bytes from their header: `flac`, `mp3`, `ogg`, else `wav`."""
+    if raw.startswith(b"fLaC"):
+        return "flac"
+    if raw.startswith(b"ID3") or raw[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
+        return "mp3"
+    if raw.startswith(b"OggS"):
+        return "ogg"
+    return "wav"
+
+
+@jinja2.pass_context
+def as_audio(context, value) -> dict:
+    """An audio column's value as an `input_audio` part in its file's `format` (`wav`, `mp3`, `flac`): the
+    file's bytes inlined, a URL or a file left for synalinks to read, one batch at a time."""
+    raw, where = _media(context, value)
+    format = os.path.splitext(where.split("?")[0])[1].lstrip(".").lower() or (_audio_format(raw) if raw else "wav")
+    if raw is not None:
+        return {"type": "input_audio", "input_audio": {"data": base64.b64encode(raw).decode("ascii"), "format": format}}
+    return {"type": "input_audio", "input_audio": {"url" if _URL.match(where) else "path": where, "format": format}}
+
+
+# The templates' Jinja environment: an unknown variable is an error, as in synalinks. `fromjson` reads a column
+# that holds JSON as text, the way many tool-calling datasets ship their tools and calls; `fromliteral` one
+# written as Python writes a list (`"['$6', '$7']"`); `as_image` and `as_audio` make a column a message's part.
 JINJA = jinja2.Environment(undefined=jinja2.StrictUndefined)
 JINJA.filters["fromjson"] = _json.loads
+JINJA.filters["fromliteral"] = ast.literal_eval
+JINJA.filters["as_image"] = as_image
+JINJA.filters["as_audio"] = as_audio
 
 
 class RowTemplate:
@@ -102,7 +166,8 @@ class Dataset(synalinks.datasets.Dataset):
     `_close_objects`: an `input_schema` or `output_schema` written by hand
     is marked closed, object by object, before the base class reads it. And
     the templates are compiled in the engine's `JINJA`, as `RowTemplate`s:
-    each sees the whole row as `row` beside its columns, and has `fromjson`.
+    each sees the whole row as `row` beside its columns, and has `fromjson`,
+    `fromliteral`, `as_image` and `as_audio`.
     """
 
     def __init__(
@@ -142,6 +207,12 @@ class Dataset(synalinks.datasets.Dataset):
         )
         self.input_template, self.output_template, self.tools_template = input_template, output_template, tools_template
         self._input_tmpl, self._output_tmpl, self._tools_tmpl = compiled
+
+    def _media_dir(self, folder) -> None:
+        """Read a relative image or audio path in a row (`images/1.png`) from `folder`, the dataset's own."""
+        for template in (self._input_tmpl, self._output_tmpl, self._tools_tmpl):
+            if template is not None:
+                template.template.globals[MEDIA_DIR] = str(folder)
 
 
 def _coerce_schema(schema):

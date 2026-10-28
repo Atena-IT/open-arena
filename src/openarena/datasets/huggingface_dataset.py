@@ -72,3 +72,33 @@ class HuggingFaceDataset(Dataset, synalinks.datasets.HuggingFaceDataset):
             streaming=streaming,
             **kwargs,
         )
+        # Images and audio come as their files' bytes, which `as_image` and `as_audio` hand on: decoding them would
+        # need Pillow or torchcodec, and the model wants the file anyway.
+        self._dataset = undecoded(self._dataset)
+
+
+def undecoded(dataset):
+    """`dataset` with its image and audio columns, nested ones too, left undecoded: `{bytes, path}`, the file as stored."""
+    if hasattr(dataset, "keys"):
+        return type(dataset)({name: undecoded(split) for name, split in dataset.items()})
+    features = getattr(dataset, "features", None)
+    if features is None:
+        return dataset
+    undecoded_features = _undecoded_feature(features)
+    return dataset if undecoded_features == features else dataset.cast(undecoded_features)
+
+
+def _undecoded_feature(feature):
+    """`feature` with every `Image` and `Audio` in it, however deep in a dict, list or sequence, set not to decode."""
+    from datasets import Audio, Image
+
+    if isinstance(feature, (Image, Audio)):
+        return type(feature)(decode=False) if feature.decode else feature
+    if isinstance(feature, dict):
+        return type(feature)({name: _undecoded_feature(sub) for name, sub in feature.items()})
+    if isinstance(feature, list):
+        return [_undecoded_feature(sub) for sub in feature]
+    if hasattr(feature, "feature"):
+        inner = _undecoded_feature(feature.feature)
+        return feature if inner == feature.feature else type(feature)(inner, **{k: v for k, v in vars(feature).items() if k not in ("feature", "id", "_type")})
+    return feature

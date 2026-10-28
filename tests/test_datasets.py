@@ -172,6 +172,70 @@ def test_fromjson_reads_a_column_that_holds_json_text():
     assert _json(next(iter(ds)))[1] == [{"a": "get_weather"}]
 
 
+def test_fromliteral_reads_a_list_written_as_python_writes_it():
+    ds = Rows(rows=[{"q": "Cost?", "a": "['$6', '$7']"}], output_template='{"a": {{ (a | fromliteral)[1] | tojson }}}')
+    assert _json(next(iter(ds)))[1] == [{"a": "$7"}]
+
+
+# -- images and audio, as parts of the message ------------------------------------
+
+PNG = b"\x89PNG\r\n\x1a\n" + bytes(8)
+WITH_MEDIA = '{"messages": [{"role": "user", "content": [{"type": "text", "text": {{ q | tojson }}}, {{ m | %s | tojson }}]}]}'
+
+
+def _part(media, filter="as_image"):
+    """The media part the model is sent for one row whose column `m` holds `media`."""
+    ds = Rows(rows=[{"q": "What is shown?", "m": media, "a": "4"}], input_template=WITH_MEDIA % filter, input_schema=None)
+    [[x], _] = _json(next(iter(ds)))
+    text, part = x["messages"][0]["content"]
+    assert text == {"type": "text", "text": "What is shown?"}
+    return part
+
+
+def test_an_image_held_as_bytes_is_inlined_and_one_elsewhere_is_left_to_be_read_with_its_batch():
+    import base64
+
+    inline = f"data:image/png;base64,{base64.b64encode(PNG).decode()}"
+    assert _part({"bytes": PNG, "path": None}) == {"type": "image_url", "image_url": {"url": inline}}  # the type read off its first bytes
+    assert _part({"bytes": PNG, "path": "chart.jpg"})["image_url"]["url"].startswith("data:image/jpeg;base64,")  # else its name's
+    assert _part("https://example.com/cat.png") == {"type": "image_url", "image_url": {"url": "https://example.com/cat.png"}}
+
+
+def test_an_audio_part_keeps_its_files_format():
+    import base64
+
+    assert _part({"bytes": b"fLaC", "path": "clip.flac"}, "as_audio") == {
+        "type": "input_audio",
+        "input_audio": {"data": base64.b64encode(b"fLaC").decode(), "format": "flac"},
+    }
+    assert _part("https://example.com/a.mp3?sig=1", "as_audio") == {
+        "type": "input_audio",
+        "input_audio": {"url": "https://example.com/a.mp3?sig=1", "format": "mp3"},
+    }
+    with pytest.raises(ValueError, match="no image or audio"):
+        _part(None, "as_audio")
+
+
+def test_a_folder_datasets_relative_image_is_read_from_the_folder(tmp_path):
+    (tmp_path / "1.json").write_text(json.dumps({"q": "What is shown?", "image": "images/1.png"}))
+    ds = FolderDataset(tmp_path, input_template=WITH_MEDIA.replace("m |", "image |") % "as_image")
+    [x] = _json(next(iter(ds)))[0]  # inputs only: no expected answer
+    assert x["messages"][0]["content"][1]["image_url"]["url"] == f"file://{tmp_path / 'images' / '1.png'}"
+
+
+def test_hugging_face_images_and_audio_are_read_undecoded():
+    import datasets
+
+    from openarena.datasets.huggingface_dataset import undecoded
+
+    # Stored as the Hub stores them, `{bytes, path}`, then typed: decoding either would need Pillow or torchcodec.
+    rows = datasets.Dataset.from_dict(
+        {"q": ["What?"], "image": [{"bytes": PNG, "path": "a.png"}], "audio": [{"bytes": b"RIFF", "path": "a.wav"}]}
+    ).cast_column("image", datasets.Image()).cast_column("audio", datasets.Audio())
+    row = undecoded(datasets.DatasetDict({"test": rows}))["test"][0]
+    assert row["image"] == {"bytes": PNG, "path": "a.png"} and row["audio"] == {"bytes": b"RIFF", "path": "a.wav"}
+
+
 # -- the registry ----------------------------------------------------------------
 
 

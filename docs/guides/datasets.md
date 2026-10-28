@@ -120,6 +120,8 @@ on the first quote or newline in a question.
 | `{{ row["Question Text"] \| tojson }}` | a column whose name has a space, a dash or a dot |
 | `{{ input.question \| tojson }}` | a field of a column holding an object |
 | `{{ (answers \| fromjson)[0].name \| tojson }}` | a column holding JSON as text |
+| `{{ (options \| fromliteral) \| tojson }}` | a column holding a list written as Python writes it, `"['$6', '$7']"` |
+| `{{ image \| as_image \| tojson }}` | an image column as a message part ([below](#images-and-audio)) |
 | `{{ answers.text[0] \| tojson }}` | an item of a list |
 | `{{ answer.split('####')[-1] \| trim \| tojson }}` | Python string methods and Jinja filters |
 | `{{ "ABCD"[answer] \| tojson }}` | an index turned into a letter |
@@ -281,6 +283,41 @@ input. When you only want it to select rows, select at the source (Opik's
     A column is a template variable when its name is a valid identifier. A
     column called `expected answer` or `gold-label` is read through the whole
     row instead: `{{ row["expected answer"] | tojson }}`.
+
+### Images and audio
+
+A model that reads images or audio gets them inside its message, as parts of
+its content beside the text. `as_image` and `as_audio` make a column such a
+part, whatever it holds:
+
+- a Hugging Face `Image` or `Audio` column, read undecoded: the file's own
+  bytes, sent inline;
+- a URL, or a path inside a `folder` dataset (`images/1.png`), read when its
+  batch is sent.
+
+The input is then chat messages, so leave `input_schema` out (keep an
+`output_schema` for the answer):
+
+```yaml
+datasets:
+  chartqa:
+    type: huggingface
+    config:
+      path: HuggingFaceM4/ChartQA
+      split: test
+      input_template: '{"messages": [{"role": "user", "content": [{"type": "text", "text": {{ query | tojson }}}, {{ image | as_image | tojson }}]}]}'
+      output_template: '{"answer": {{ label[0] | tojson }}}'
+      output_schema:
+        type: object
+        properties:
+          answer: {type: string, description: The final answer only}
+        required: [answer]
+```
+
+An audio part keeps its file's format (`wav`, `mp3`, `flac`); providers differ
+in the formats they take. Evaluate such a dataset with models that read images
+or audio: one that reads text only is refused or ignores the part, depending
+on the provider. Video is not supported yet.
 
 ### Schemas
 
