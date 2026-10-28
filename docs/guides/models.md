@@ -240,7 +240,7 @@ not sent, and the provider's default applies.
 |---|---|---|---|
 | `llm` | `temperature` | a number, 0 to 2 | how much the model samples; lower is more consistent |
 | `llm` | `max_tokens` | an integer, at least 1 | the longest answer, in tokens |
-| `llm` | `reasoning_effort` | `disable`, `low`, `medium`, `high` | how much the model thinks before answering, where it can |
+| `llm` | `reasoning_effort` | `disable`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | how much the model thinks before answering, where it can |
 | `embedding` | `dimensions` | an integer, at least 1 | the vector size, where the model lets you pick |
 | `decision` | none | | a decision model takes no params; `params` must be left out or empty |
 
@@ -280,7 +280,7 @@ How much a model that can think does so before answering.
 | value | effect |
 |---|---|
 | `disable` | turns native thinking off, for local models that think by default (Ollama's `qwen3`, `deepseek-r1`) |
-| `low`, `medium`, `high` | the effort, where the model supports levels |
+| `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
 More effort usually means better answers on hard rows, at the price of more
