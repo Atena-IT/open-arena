@@ -88,6 +88,7 @@ class FolderDataset(Dataset):
         self.recursive = recursive
         self.format = format
         self.encoding = encoding
+        self._media_dir(self.path)
 
     def files(self) -> list[Path]:
         """The files that are records, in name order."""

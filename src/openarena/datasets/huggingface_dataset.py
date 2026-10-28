@@ -72,3 +72,17 @@ class HuggingFaceDataset(Dataset, synalinks.datasets.HuggingFaceDataset):
             streaming=streaming,
             **kwargs,
         )
+        # Images and audio come as their files' bytes, which `as_image` and `as_audio` hand on: decoding them would
+        # need Pillow or torchcodec, and the model wants the file anyway.
+        self._dataset = undecoded(self._dataset)
+
+
+def undecoded(dataset):
+    """`dataset` with its image and audio columns left undecoded: `{bytes, path}`, the file as it is stored."""
+    from datasets import Audio, Image
+
+    first = next(iter(dataset.values()), None) if hasattr(dataset, "keys") else dataset
+    for name, feature in dict(getattr(first, "features", None) or {}).items():
+        if isinstance(feature, (Image, Audio)) and feature.decode:
+            dataset = dataset.cast_column(name, type(feature)(decode=False))
+    return dataset

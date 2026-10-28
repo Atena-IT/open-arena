@@ -79,8 +79,14 @@ escapes them; never write `"{{ question }}"`.
   `{{ answers.text[0] }}`, and the whole row as `row` for a name that is not
   an identifier (`{{ row["gold-label"] }}`, `{{ row["Question Text"] }}`).
   Filters: `| tojson`, `| trim`, `| lower`, `| string`, `| replace('a', 'b')`,
-  `| join(', ')`, `| fromjson` for a column holding JSON as text, Python
-  string methods (`answer.split('####')[-1]`).
+  `| join(', ')`, `| fromjson` for a column holding JSON as text,
+  `| fromliteral` for a list written as Python writes it (`"['$6', '$7']"`),
+  Python string methods (`answer.split('####')[-1]`).
+- **Images and audio.** `{{ image | as_image | tojson }}` and
+  `{{ audio | as_audio | tojson }}` make a column a part of the message: a
+  Hugging Face image or audio column, a URL, or a path inside a `folder`
+  dataset. The input is then `{"messages": [{"role": "user", "content":
+  [{"type": "text", "text": ...}, <the parts>]}]}`, with no `input_schema`.
 - **Strict.** A variable the row lacks is an error, not an empty string. For
   an optional column write `{{ hint | default("") | tojson }}`.
 - **No metadata template.** What the model should see goes in the input;
