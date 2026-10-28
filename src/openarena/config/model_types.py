@@ -164,7 +164,7 @@ MODEL_TYPES: dict[str, ModelType] = {
                     min=1,
                 ),
             ),
-            local_examples={"vllm": "Qwen/Qwen3-4B", "ollama": "llama3.2"},
+            local_examples={"vllm": "Qwen/Qwen3-4B", "sglang": "Qwen/Qwen3-4B", "ollama": "llama3.2"},
         ),
         ModelType(
             name="embedding",
@@ -195,7 +195,8 @@ MODEL_TYPES: dict[str, ModelType] = {
             ),
             litellm_mode="evaluation",
             evaluable=False,
-            local_examples={"ollama": "laya"},
+            # SGLang serves decision checkpoints (Kev) as `sglang/<model>`; vLLM has no such prefix.
+            local_examples={"ollama": "laya", "sglang": "kev"},
         ),
     )
 }

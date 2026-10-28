@@ -262,6 +262,7 @@ editing the file.
     | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, ... | a hosted model: the key of each provider prefix in `models.yaml`, judges included |
     | `OLLAMA_API_BASE` | `ollama/...` ids, when Ollama is not on `http://localhost:11434` |
     | `HOSTED_VLLM_API_BASE` | `vllm/...` ids: your server's OpenAI endpoint, ending in `/v1` |
+    | `SGLANG_API_BASE` | `sglang/...` ids (chat models and decision checkpoints), when SGLang is not on `http://localhost:30000/v1` |
 
     These are read by litellm, so any provider variable litellm knows works.
     Since a model entry takes no address of its own, there is one address per

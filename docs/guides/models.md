@@ -96,6 +96,7 @@ the provider's own model id. The prefix picks the provider; there is no
 | `openrouter/` | `openrouter/mistralai/ministral-14b-2512` | `OPENROUTER_API_KEY` |
 | `ollama/` | `ollama/qwen3:8b` | a running Ollama; `OLLAMA_API_BASE` when it is not at `http://localhost:11434` |
 | `vllm/` | `vllm/Qwen/Qwen3-4B` | `HOSTED_VLLM_API_BASE`: your server's OpenAI endpoint, `/v1` included |
+| `sglang/` | `sglang/Qwen/Qwen3-4B` | `SGLANG_API_BASE`: your server's OpenAI endpoint, `/v1` included (default `http://localhost:30000/v1`) |
 
 Any provider [litellm supports](https://docs.litellm.ai/docs/providers) works
 the same way, with the variables litellm reads for it.
@@ -123,6 +124,7 @@ OPENROUTER_API_KEY=sk-or-...
 TYPESAFE_API_KEY=ts-...
 OLLAMA_API_BASE=http://localhost:11434
 HOSTED_VLLM_API_BASE=http://localhost:8000/v1
+SGLANG_API_BASE=http://localhost:30000/v1
 ```
 
 A base URL is per provider, not per model: every `vllm/` entry reaches the one
@@ -440,6 +442,10 @@ models:
     model: ollama/laya               # local: `ollama pull laya` first
     type: decision
     tags: [judge, local]
+  kev:
+    model: sglang/kev                # local: a decision checkpoint SGLang serves
+    type: decision
+    tags: [judge, local]
 ```
 
 - **Why.** A fraction of a language judge's cost and latency, and a steadier
@@ -459,7 +465,7 @@ litellm has a price for every model the run may call, the models under test and
 the judges, from the first source that knows one:
 
 1. **A local server.** An `ollama/`, `ollama_chat/`, `vllm/`, `hosted_vllm/`,
-   `lm_studio/` or `llamafile/` id costs 0: there is no bill.
+   `sglang/`, `lm_studio/` or `llamafile/` id costs 0: there is no bill.
 2. **litellm's pricing table.** The live one, filled with the rows only the
    copy shipped in the package has.
 3. **OpenRouter's catalogue.** For an `openrouter/` id, and for a vendor's

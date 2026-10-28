@@ -135,7 +135,7 @@ def task_files(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None 
 # -- Harbor's agents -------------------------------------------------------------
 
 # Providers served from the arena's own machine by default: a sandbox cannot reach them.
-LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm")
+LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm", "sglang")
 
 
 def agents() -> list[dict[str, Any]]:

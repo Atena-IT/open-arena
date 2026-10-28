@@ -425,8 +425,8 @@ Each call is priced by litellm from its token counts. Before the first cell,
 the run looks up a price for every model in `models.yaml`, the ones under test
 and the judges, from the first source that knows it:
 
-1. a local server (`ollama/`, `vllm/`, `hosted_vllm/`, `lm_studio/`,
-   `llamafile/`): free, there is no bill;
+1. a local server (`ollama/`, `vllm/`, `hosted_vllm/`, `sglang/`,
+   `lm_studio/`, `llamafile/`): free, there is no bill;
 2. litellm's pricing table;
 3. OpenRouter's catalogue, which also prices many vendors' direct ids when
    OpenRouter serves the same model.

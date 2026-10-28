@@ -145,6 +145,7 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     assert "anthropic models only" in agent_problem("claude-code", "openai/gpt-4o", public)
     assert "no-network" in agent_problem("codex", "openai/gpt-4o", offline)
     assert "cannot reach 'ollama/qwen3'" in agent_problem("opencode", "ollama/qwen3", public)
+    assert "cannot reach 'sglang/kev'" in agent_problem("opencode", "sglang/kev", public)
     # terminus-2 calls its model from the arena: any model, any network.
     assert agent_problem("terminus-2", "ollama/qwen3", offline) is None
 

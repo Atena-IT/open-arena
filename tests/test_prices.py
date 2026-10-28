@@ -46,6 +46,8 @@ def sources(monkeypatch):
 def test_a_server_of_your_own_is_free():
     assert model_price("ollama/qwen3") == Price(0.0, 0.0, "local")
     assert model_price("vllm/llama-4") == Price(0.0, 0.0, "local")
+    # SGLang is a synalinks prefix for a server of your own, like `vllm`.
+    assert model_price("sglang/kev") == Price(0.0, 0.0, "local")
 
 
 def test_litellms_live_table_answers_first(sources):
