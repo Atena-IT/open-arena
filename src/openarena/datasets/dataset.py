@@ -22,8 +22,8 @@ def _media(context, value) -> tuple[bytes | None, str]:
     """An image or audio value as `(bytes, file name)` when it holds the file, Hugging Face's undecoded
     `{bytes, path}`; else `(None, where it is)`, a URL, or a path made absolute against the dataset's folder."""
     if isinstance(value, dict):
-        if value.get("bytes"):
-            return value["bytes"], value.get("path") or ""
+        if isinstance(value.get("bytes"), (bytes, bytearray)) and value["bytes"]:
+            return bytes(value["bytes"]), value.get("path") or ""
         value = value.get("path") or value.get("src")
     if not isinstance(value, str) or not value:
         raise ValueError(f"no image or audio in {value!r}")
