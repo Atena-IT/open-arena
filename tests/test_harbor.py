@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import time
 import tomllib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import openarena
@@ -16,7 +16,7 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_clock, task_files, virtual_now
+from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, clock_jump_command, probe_facts, probe_notes, task_clock, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -400,3 +400,46 @@ def test_a_wrong_task_clock_is_refused_naming_the_task(tmp_path, change, says):
     with pytest.raises(Invalid, match=says) as refused:
         task_clock(folder)
     assert str(refused.value).startswith("task 'week': ")
+
+
+TUESDAY = datetime(2026, 3, 3, 8, tzinfo=timezone.utc)
+
+
+def _armed(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    assert subprocess.run(["sh", "-c", clock_arm_command(ClockSpec(start="2026-03-02T08:00:00Z"), str(path))]).returncode == 0
+    return path
+
+
+@POSIX_SH
+def test_the_jump_moves_a_frozen_clock_to_the_step_time_once(tmp_path):
+    path = _armed(tmp_path)
+    armed_text = path.read_text()
+    before = json.loads(armed_text)
+    jump = clock_jump_command(TUESDAY, str(path))
+    assert subprocess.run(["sh", "-c", jump]).returncode == 0
+    after = json.loads(path.read_text())
+    assert virtual_now(after, time.time()) == TUESDAY.timestamp()
+    assert {k: after[k] for k in ("t0", "rate", "anchor")} == {k: before[k] for k in ("t0", "rate", "anchor")}
+    assert path.read_text().startswith(armed_text[: armed_text.index(' "anchor"')])  # the arm's check of t0 and rate still matches
+    assert subprocess.run(["sh", "-c", jump]).returncode == 0 and json.loads(path.read_text()) == after
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+@POSIX_SH
+def test_the_jump_never_goes_back_and_needs_the_clock(tmp_path):
+    path = _armed(tmp_path)
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(path))]).returncode == 0
+    back = subprocess.run(["sh", "-c", clock_jump_command(TUESDAY - timedelta(hours=1), str(path))], capture_output=True, text=True)
+    assert back.returncode != 0 and "past" in back.stderr
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(tmp_path / "none.json"))], capture_output=True).returncode != 0
+    (tmp_path / "garbage.json").write_text("not a clock")
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(tmp_path / "garbage.json"))], capture_output=True).returncode != 0
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+@pytest.mark.skipif(shutil.which("busybox") is None, reason="busybox is not installed")
+def test_the_jump_runs_under_busybox(tmp_path):
+    path = _armed(tmp_path)
+    assert subprocess.run(["busybox", "sh", "-c", clock_jump_command(TUESDAY, str(path))]).returncode == 0
+    assert virtual_now(json.loads(path.read_text()), time.time()) == TUESDAY.timestamp()

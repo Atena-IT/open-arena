@@ -124,6 +124,36 @@ def virtual_now(clock: dict[str, float], real_now: float) -> float:
     return clock["t0"] + (real_now - clock["anchor"]) * clock["rate"] + clock.get("ahead", 0)
 
 
+# The jump's awk, on one line: read the clock file's four numbers (keeping the text of t0, rate and anchor),
+# exit 3 when the clock is already at the target, 2 when past it, 4 when the file does not read; else print it moved.
+_JUMP_AWK = (
+    r'function field(k, f) { if (!match(text, "\"" k "\": *-?[0-9][0-9.eE+-]*")) { bad = 1; return 0 } '
+    r'f = substr(text, RSTART, RLENGTH); sub(/^"[a-z0-9]+": */, "", f); return f } '
+    r"{ text = text $0 } "
+    r'END { t0 = field("t0"); rate = field("rate"); anchor = field("anchor"); ahead = field("ahead"); '
+    r'if (bad) { print "arena clock: " path " cannot be read" > "/dev/stderr"; exit 4 } '
+    r"current = t0 + (now - anchor) * rate + ahead; "
+    r'if (current > target) { print "arena clock: already past this step\047s time, left as it is" > "/dev/stderr"; exit 2 } '
+    r"if (current == target) exit 3; "
+    r'printf "{\"t0\": %s, \"rate\": %s, \"anchor\": %s, \"ahead\": %.0f}\n", t0, rate, anchor, target - t0 - (now - anchor) * rate }'
+)
+
+
+def clock_jump_command(target: datetime, path: str = CLOCK_FILE) -> str:
+    """The POSIX shell command (`sh` and `awk`) that moves the clock at `path` forward to `target`, the time a step begins.
+
+    Already there (a rerun): nothing changes. Past it, or no clock that reads: it fails, so the step fails
+    and says why (Harbor drops what a step's setup prints when it succeeds). Written beside and moved into
+    place, a temporary file per process, keeping t0, rate and anchor as written for the arm's check.
+    """
+    file = shlex.quote(path)
+    tmp = shlex.quote(f"{path}.jump") + ".$$"
+    return (
+        f'( awk -v now="$(date +%s)" -v target={int(target.timestamp())} -v path={file} {shlex.quote(_JUMP_AWK)} {file} > {tmp}; '
+        f"case $? in 0) chmod 644 {tmp} && mv {tmp} {file} ;; 3) rm -f {tmp} ;; *) rm -f {tmp}; exit 1 ;; esac ) || exit 1"
+    )
+
+
 def task_clock(folder: Path) -> TaskClock | None:
     """The clock a Harbor task folder declares in `[metadata.arena.clock]`, checked against the whole task; None without one.
 
