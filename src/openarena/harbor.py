@@ -42,7 +42,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from openarena.config.entries import ClockSpec, EnvironmentSpec
+from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec
 from openarena.config.errors import Invalid
 
 # Our transport name -> Harbor's.
@@ -140,9 +140,15 @@ def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] |
         "workdir": spec.workdir,
         "env": spec.env or None,
     }
+    healthcheck = spec.healthcheck
+    if spec.clock is not None:
+        arm = clock_arm_command(spec.clock)
+        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed.
+        command = f"{arm} && ({healthcheck.command})" if healthcheck is not None else arm
+        healthcheck = (healthcheck or HealthcheckSpec(command=arm)).model_copy(update={"command": command})
     parts = [_table("[environment]", fields)]
-    if spec.healthcheck is not None:
-        parts.append(_table("[environment.healthcheck]", spec.healthcheck.model_dump()))
+    if healthcheck is not None:
+        parts.append(_table("[environment.healthcheck]", healthcheck.model_dump()))
     for name in spec.mcp_servers:
         parts.append(_table("[[environment.mcp_servers]]", mcp_server(name, servers[name])))
     return "\n\n".join(parts) + "\n"

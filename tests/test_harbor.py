@@ -93,6 +93,29 @@ def test_virtual_time_follows_the_formula():
     assert virtual_now({**clock, "rate": 0.0}, 9999.0) == 1030
 
 
+CLOCK = {"start": "2026-01-05T09:00:00Z", "rate": 60}
+
+
+def test_a_clock_arms_in_the_healthcheck_and_keeps_theirs():
+    spec = EnvironmentSpec(docker_image="x", clock=CLOCK, healthcheck={"command": "false || true", "retries": 7})
+    hc = tomllib.loads(task_files(spec)["task.toml"])["environment"]["healthcheck"]
+    # Theirs in a subshell: an arm that failed cannot be rescued by an `||` of theirs.
+    assert hc["command"] == clock_arm_command(spec.clock) + " && (false || true)"
+    assert hc["retries"] == 7
+    bare = tomllib.loads(task_files(EnvironmentSpec(docker_image="x", clock=CLOCK))["task.toml"])["environment"]["healthcheck"]
+    assert bare["command"] == clock_arm_command(ClockSpec(**CLOCK)) and bare["retries"] == 3
+    assert spec.healthcheck.command == "false || true"  # the entry keeps what was written
+
+
+def test_no_clock_writes_the_same_task_as_before():
+    spec = EnvironmentSpec(docker_image="x", healthcheck={"command": "test -d /app"})
+    assert task_files(spec)["task.toml"] == (
+        '[environment]\nbuild_timeout_sec = 600\ndocker_image = "x"\nos = "linux"\nnetwork_mode = "public"\n\n'
+        '[environment.healthcheck]\ncommand = "test -d /app"\ninterval_sec = 5\ntimeout_sec = 30\nstart_period_sec = 0\n'
+        "start_interval_sec = 5\nretries = 3\n"
+    )
+
+
 def test_task_files_read_back_as_harbor_toml():
     spec = EnvironmentSpec(
         dockerfile="FROM python:3.12-slim\nWORKDIR /app",
