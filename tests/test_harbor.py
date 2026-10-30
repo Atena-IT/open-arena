@@ -1,13 +1,22 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
+import json
+import os
+import posixpath
+import shutil
+import subprocess
+import time
 import tomllib
+from datetime import datetime, timezone
+from pathlib import Path
 
+import openarena
 import pytest
 import yaml
-from openarena.config import EnvironmentSpec
+from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import task_files
+from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -33,6 +42,88 @@ def test_allowed_hosts_go_with_an_allowlist():
     with pytest.raises(ValidationError, match="only read with"):
         EnvironmentSpec(docker_image="x", allowed_hosts=["pypi.org"])
     assert EnvironmentSpec(docker_image="x", network_mode="allowlist", allowed_hosts=[" pypi.org ", ""]).allowed_hosts == ["pypi.org"]
+
+
+def test_a_clock_has_an_aware_start_and_a_bounded_rate():
+    clock = ClockSpec(start="2026-01-05T10:00:00+01:00", rate=60)
+    assert clock.start == datetime(2026, 1, 5, 9, 0, tzinfo=timezone.utc)
+    assert ClockSpec(start="2026-01-05T09:00:00Z").rate == 0
+    assert ClockSpec(start="2026-01-05T09:00:00Z", rate=86400).rate == 86400
+    for rate in (-1, 86400.5):
+        with pytest.raises(ValidationError):
+            ClockSpec(start="2026-01-05T09:00:00Z", rate=rate)
+    with pytest.raises(ValidationError, match="offset"):
+        ClockSpec(start="2026-01-05T09:00:00")
+    with pytest.raises(ValidationError):
+        ClockSpec(start="2026-01-05T09:00:00Z", speed=2)
+
+
+def test_a_clock_needs_a_posix_sandbox():
+    with pytest.raises(ValidationError, match="Windows"):
+        EnvironmentSpec(docker_image="x", os="windows", clock={"start": "2026-01-05T09:00:00Z"})
+    assert EnvironmentSpec(docker_image="x").clock is None
+
+
+POSIX_SH = pytest.mark.skipif(shutil.which("sh") is None, reason="the arm is a POSIX shell command")
+
+
+@POSIX_SH
+def test_the_arm_writes_the_clock_once(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    command = clock_arm_command(ClockSpec(start="2026-01-05T09:00:00Z", rate=60), str(path))
+    assert subprocess.run(["sh", "-c", command]).returncode == 0
+    first = json.loads(path.read_text())
+    assert first["t0"] == 1767603600 and first["rate"] == 60 and first["ahead"] == 0
+    assert abs(first["anchor"] - time.time()) < 5
+    assert oct(path.stat().st_mode & 0o777) == "0o644"
+    time.sleep(1.1)
+    assert subprocess.run(["sh", "-c", command]).returncode == 0
+    assert json.loads(path.read_text()) == first  # a healthcheck retry does not move the anchor
+
+
+@POSIX_SH
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root writes anywhere")
+def test_an_arm_that_cannot_write_fails(tmp_path):
+    locked = tmp_path / "locked"
+    locked.mkdir(mode=0o555)
+    command = clock_arm_command(ClockSpec(start="2026-01-05T09:00:00Z"), str(locked / "arena" / "clock.json"))
+    assert subprocess.run(["sh", "-c", command]).returncode != 0
+
+
+def test_virtual_time_follows_the_formula():
+    clock = {"t0": 1000.0, "rate": 60.0, "anchor": 500.0, "ahead": 30.0}
+    assert virtual_now(clock, 510.0) == 1000 + 10 * 60 + 30
+    assert virtual_now({**clock, "rate": 0.0}, 9999.0) == 1030
+
+
+CLOCK = {"start": "2026-01-05T09:00:00Z", "rate": 60}
+
+
+def test_a_clock_arms_in_the_healthcheck_and_keeps_theirs():
+    spec = EnvironmentSpec(docker_image="x", clock=CLOCK, healthcheck={"command": "false || true", "retries": 7})
+    hc = tomllib.loads(task_files(spec)["task.toml"])["environment"]["healthcheck"]
+    # Theirs in a subshell: an arm that failed cannot be rescued by an `||` of theirs.
+    assert hc["command"] == clock_arm_command(spec.clock) + " && (false || true\n)"
+    assert hc["retries"] == 7
+    bare = tomllib.loads(task_files(EnvironmentSpec(docker_image="x", clock=CLOCK))["task.toml"])["environment"]["healthcheck"]
+    assert bare["command"] == clock_arm_command(ClockSpec(**CLOCK)) and bare["retries"] == 3
+    assert spec.healthcheck.command == "false || true"  # the entry keeps what was written
+
+
+def test_no_clock_writes_the_same_task_as_before():
+    spec = EnvironmentSpec(docker_image="x", healthcheck={"command": "test -d /app"})
+    assert task_files(spec)["task.toml"] == (
+        '[environment]\nbuild_timeout_sec = 600\ndocker_image = "x"\nos = "linux"\nnetwork_mode = "public"\n\n'
+        '[environment.healthcheck]\ncommand = "test -d /app"\ninterval_sec = 5\ntimeout_sec = 30\nstart_period_sec = 0\n'
+        "start_interval_sec = 5\nretries = 3\n"
+    )
+
+
+def test_the_check_reads_the_sandbox_clock():
+    out = 'os: Debian\nclock: 1000 {"t0": 1767603600, "rate": 60, "anchor": 990, "ahead": 0}\n'
+    assert probe_facts(out) == {"os": "Debian", "clock": "2026-01-05T09:10:00Z (rate 60)"}
+    assert "clock" not in probe_facts("os: Debian\n")
+    assert probe_facts("clock: garbage\n") == {"clock": "unreadable"}
 
 
 def test_task_files_read_back_as_harbor_toml():
@@ -225,3 +316,43 @@ def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
     assert result == "result"
     assert seen["config"].environment.type == "ack"
     assert seen["config"].environment.kwargs == {"namespace": "arena-sandboxes"}
+
+
+@POSIX_SH
+def test_their_healthcheck_runs_after_the_arm_even_with_a_comment(tmp_path):
+    folder = str(tmp_path / "arena")
+    for theirs, code in (("true  # wait for the API", 0), ("false  # wait for the API", 1)):
+        spec = EnvironmentSpec(docker_image="x", clock=CLOCK, healthcheck={"command": theirs})
+        hc = tomllib.loads(task_files(spec)["task.toml"])["environment"]["healthcheck"]
+        assert subprocess.run(["sh", "-c", hc["command"].replace(posixpath.dirname(CLOCK_FILE), folder)]).returncode == code
+
+
+@POSIX_SH
+def test_the_arm_replaces_a_clock_left_with_other_settings(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    path.parent.mkdir()
+    path.write_text('{"t0": 0, "rate": 1, "anchor": 0, "ahead": 0}\n')  # baked into the image, say
+    assert subprocess.run(["sh", "-c", clock_arm_command(ClockSpec(**CLOCK), str(path))]).returncode == 0
+    clock = json.loads(path.read_text())
+    assert clock["t0"] == 1767603600 and clock["rate"] == 60 and abs(clock["anchor"] - time.time()) < 5
+
+
+@POSIX_SH
+def test_arms_started_together_all_succeed(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    command = clock_arm_command(ClockSpec(**CLOCK), str(path))
+    runs = [subprocess.Popen(["sh", "-c", command], stderr=subprocess.DEVNULL) for _ in range(30)]
+    assert [run.wait() for run in runs] == [0] * 30
+    assert json.loads(path.read_text())["t0"] == 1767603600
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+def test_the_init_template_names_the_clock():
+    template = Path(openarena.__file__).parent / "cli" / "templates" / "default" / "configs" / "environments.yaml"
+    assert "#     clock: {start:" in template.read_text()
+
+
+def test_the_check_notes_an_unreadable_clock():
+    assert any("clock" in note for note in probe_notes({"clock": "unreadable"}))
+    assert probe_notes({"clock": "2026-01-05T09:00:00Z (rate 0)", "tmux": "tmux 3.4"}) == []
+    assert probe_notes({"tmux": "missing"}) == [PROBE_NOTES["tmux"]]

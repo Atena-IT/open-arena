@@ -51,6 +51,7 @@ environments:
     build_timeout_sec: 600
     healthcheck: {command: "test -f /app/ready", interval_sec: 5, retries: 3}
     mcp_servers: [fetch]               # mcp_servers.yaml keys handed to the agent
+    clock: {start: "2026-01-05T09:00:00Z", rate: 0}   # one virtual time for every server in the sandbox; 0 is frozen
 ```
 
 - **Build context**: `environments/<name>/environment/` beside `configs/`

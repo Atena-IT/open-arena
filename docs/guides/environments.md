@@ -120,6 +120,7 @@ linger. A `docker_image` environment needs no folder.
 | `env` | map of string to string | `{}` | environment variables set in the container |
 | `build_timeout_sec` | number above 0 | `600` | how long building the image may take, in seconds |
 | `healthcheck` | mapping | none | a command that says when the sandbox is ready |
+| `clock` | mapping | none | a virtual start time and rate, read in the sandbox from `/run/arena/clock.json` |
 | `mcp_servers` | list of names | `[]` | MCP servers the agent is given, by their `mcp_servers` key |
 | `description` | string | none | a line shown when browsing |
 | `tags` | list of strings | `[]` | labels for browsing, e.g. `python`, `gpu`, `offline` |
@@ -356,6 +357,72 @@ the agent's first commands race the service and fail.
 They are written to the task's `[environment.healthcheck]` as they are. The
 command's tools must be in the image: `curl` is not in `python:3.12-slim`,
 hence the install above.
+
+## Virtual clock: `clock`
+
+```yaml
+environments:
+  world:
+    docker_image: python:3.12-slim
+    clock: {start: "2026-01-05T09:00:00Z", rate: 0}
+```
+
+A clock gives every process in the sandbox the same virtual time: the MCP
+servers the agent is given (a mail server that dates what it sends, say), the
+agent's own commands, and the verifier. Use one when the world the agent works
+in keeps a time that should not be the machine's: a deadline, a calendar, an
+email from "yesterday".
+
+| field | default | |
+|---|---|---|
+| `start` | required | the virtual time when the sandbox is ready, ISO 8601 with an offset (`Z` for UTC) |
+| `rate` | `0` | virtual seconds per real second: `0` frozen, `1` real time, up to `86400` (a day a second) |
+
+A frozen clock, the default, gives every trial of a row the same time, so runs
+are reproducible: that is what an evaluation usually wants.
+
+**How it is armed.** Before your own healthcheck, if any, Harbor runs a shell
+command that writes `/run/arena/clock.json` once:
+
+```json
+{"t0": 1767603600, "rate": 0, "anchor": 1767700000, "ahead": 0}
+```
+
+`t0` is `start` in epoch seconds and `anchor` the real time the file was
+written; every reader computes `now = t0 + (real_now - anchor) * rate + ahead`.
+So `start` is the moment the sandbox is ready, not the moment the agent begins:
+Harbor sets the agent up after the healthcheck, and with a running clock the
+agent starts later in virtual time by its install time times the rate. Your own
+healthcheck command runs after the arm, in a subshell, with its own timings; an
+arm that fails (the image's user cannot create `/run/arena`) fails the
+healthcheck, and the trial with it.
+
+**How to read it.** The path is fixed, so a server finds it whoever started it:
+
+- the file is there: use the virtual time;
+- it is there but cannot be read or parsed: fail, rather than fall back to real time;
+- it is not there: the environment has no clock, use the machine's.
+
+```python
+import json, time
+from pathlib import Path
+
+def now() -> float:
+    clock = Path("/run/arena/clock.json")
+    if not clock.exists():
+        return time.time()
+    c = json.loads(clock.read_text())
+    return c["t0"] + (time.time() - c["anchor"]) * c["rate"] + c["ahead"]
+```
+
+The arena's environment check (`openarena.harbor.probe`) reports the virtual
+time it read.
+
+**What it does not reach.** MCP servers served over HTTP from outside the
+sandbox; `agent:` datasets, whose servers run on the arena's own machine; and
+Harbor task folders, whose `task.toml` is their own (copy the healthcheck from a
+generated task to give one a clock). A clock needs `os: linux`, and nothing
+stops an agent running as root from rewriting the file.
 
 ## MCP servers
 

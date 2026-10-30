@@ -35,12 +35,15 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import posixpath
+import shlex
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from openarena.config.entries import EnvironmentSpec
+from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec
 from openarena.config.errors import Invalid
 
 # Our transport name -> Harbor's.
@@ -92,6 +95,32 @@ def mcp_server(name: str, connection: dict[str, Any]) -> dict[str, Any]:
     return server
 
 
+# Where an environment's virtual clock lives in the sandbox: one fixed path, so every process finds it,
+# whoever started it (an agent's MCP client may not pass its variables on to the servers it starts).
+CLOCK_FILE = "/run/arena/clock.json"
+
+
+def clock_arm_command(clock: ClockSpec, path: str = CLOCK_FILE) -> str:
+    """The POSIX shell command that writes the clock to `path` once: `t0` and `rate` from the entry, `anchor` the real time now.
+
+    Written beside and moved into place, so a reader never sees half a file; a file already
+    there is left alone, so a healthcheck retry does not move the anchor. It fails when `path`
+    cannot be written, and the healthcheck with it, rather than letting a trial run on real time.
+    """
+    head = '{"t0": %d, "rate": %s,' % (int(clock.start.timestamp()), json.dumps(clock.rate))
+    line = head + ' "anchor": %s, "ahead": 0}\\n'
+    folder, target = (shlex.quote(p) for p in (posixpath.dirname(path) or ".", path))
+    # Each run writes its own file beside (`$$`, its process id), so runs that overlap never share one.
+    tmp = shlex.quote(f"{path}.tmp") + ".$$"
+    # Kept only when it holds this entry's start and rate: a retry keeps its anchor, a file left by anything else is replaced.
+    return f'mkdir -p {folder} && {{ grep -qsF {shlex.quote(head)} {target} || {{ printf {shlex.quote(line)} "$(date +%s)" > {tmp} && chmod 644 {tmp} && mv {tmp} {target}; }}; }}'
+
+
+def virtual_now(clock: dict[str, float], real_now: float) -> float:
+    """The virtual time, in epoch seconds, of a clock file read at `real_now`: AgentEnv's formula."""
+    return clock["t0"] + (real_now - clock["anchor"]) * clock["rate"] + clock.get("ahead", 0)
+
+
 def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None = None) -> str:
     """The `[environment]` section of `task.toml`, with its sub-tables.
 
@@ -116,9 +145,16 @@ def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] |
         "workdir": spec.workdir,
         "env": spec.env or None,
     }
+    healthcheck = spec.healthcheck
+    if spec.clock is not None:
+        arm = clock_arm_command(spec.clock)
+        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
+        # and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
+        command = f"{arm} && ({healthcheck.command}\n)" if healthcheck is not None else arm
+        healthcheck = (healthcheck or HealthcheckSpec(command=arm)).model_copy(update={"command": command})
     parts = [_table("[environment]", fields)]
-    if spec.healthcheck is not None:
-        parts.append(_table("[environment.healthcheck]", spec.healthcheck.model_dump()))
+    if healthcheck is not None:
+        parts.append(_table("[environment.healthcheck]", healthcheck.model_dump()))
     for name in spec.mcp_servers:
         parts.append(_table("[[environment.mcp_servers]]", mcp_server(name, servers[name])))
     return "\n\n".join(parts) + "\n"
@@ -406,11 +442,42 @@ for tool in python3 tmux git curl; do
   fi
 done
 """
+PROBE_SH += f'if [ -f {CLOCK_FILE} ]; then echo "clock: $(date +%s) $(tr -d \'\\n\' < {CLOCK_FILE})"; fi\n'
+# The facts a check reports, by the name `PROBE_SH` prints each under.
+PROBE_FACTS = ("os", "user", "workdir", "python3", "tmux", "git", "curl", "clock")
+
+
+def probe_facts(output: str) -> dict[str, str]:
+    """`PROBE_SH`'s `name: value` lines as facts, `clock` turned into the virtual time it read (or `unreadable`, never real time)."""
+    facts = {}
+    for line in output.splitlines():
+        key, sep, value = line.partition(": ")
+        if sep and key in PROBE_FACTS:
+            facts[key] = value.strip()
+    if "clock" in facts:
+        try:
+            read_at, _, raw = facts["clock"].partition(" ")
+            clock = json.loads(raw)
+            at = datetime.fromtimestamp(virtual_now(clock, float(read_at)), timezone.utc)
+            facts["clock"] = f"{at:%Y-%m-%dT%H:%M:%SZ} (rate {clock['rate']:g})"
+        except (ValueError, TypeError, KeyError, OverflowError, OSError):
+            facts["clock"] = "unreadable"
+    return facts
+
+
 # What a check reports beside the probe's facts, by tool missing.
 PROBE_NOTES = {
     "tmux": "tmux is missing: terminus-2 installs it at the start of every task, which needs a package manager and the network, and fails without; install it in the Dockerfile.",
     "python3": "python3 is missing: an agent that runs Python (most do) will fail; start from an image that has it.",
 }
+
+
+def probe_notes(facts: dict[str, str]) -> list[str]:
+    """What of the probe's facts will trouble an agent, one sentence each."""
+    notes = [note for tool, note in PROBE_NOTES.items() if facts.get(tool) == "missing"]
+    if facts.get("clock") == "unreadable":
+        notes.append(f"the clock at {CLOCK_FILE} cannot be read: something in the image or its healthcheck changed it, and every server that reads it will fail.")
+    return notes
 
 
 async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], context: Path | None, work: Path, sandbox: str) -> dict[str, Any]:
@@ -460,11 +527,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
         async with local_slot(sandbox):
             result = await (await Trial.create(config)).run()
         out =work / "trials" / name / "agent" / "oracle.txt"
-        facts = {}
-        for line in (out.read_text() if out.is_file() else "").splitlines():
-            key, sep, value = line.partition(": ")
-            if sep and key in ("os", "user", "workdir", "python3", "tmux", "git", "curl"):
-                facts[key] = value.strip()
+        facts = probe_facts(out.read_text() if out.is_file() else "")
         info = result.exception_info
         error = None
         if info is not None:
@@ -478,7 +541,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
                 error = f"nothing could run in the sandbox (exit {code or '?'}): the image likely has no {spec.workdir}; create it in a Dockerfile (WORKDIR {spec.workdir}), or clear the working directory"
             else:
                 error = f"the sandbox started, but nothing could run in it (exit {code or '?'})"
-        notes = [note for tool, note in PROBE_NOTES.items() if facts.get(tool) == "missing"]
+        notes = probe_notes(facts)
         return {"ok": error is None, "sandbox": sandbox, "seconds": round(time.monotonic() - began, 1), "facts": facts, "notes": notes, "error": error}
     except Exception as e:  # noqa: BLE001 - whatever stopped the check is its answer
         return {"ok": False, "sandbox": sandbox, "seconds": round(time.monotonic() - began, 1), "facts": {}, "notes": [], "error": f"{type(e).__name__}: {e}"}
