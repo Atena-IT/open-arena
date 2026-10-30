@@ -13,7 +13,7 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import clock_arm_command, task_files, virtual_now
+from openarena.harbor import clock_arm_command, probe_facts, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -114,6 +114,13 @@ def test_no_clock_writes_the_same_task_as_before():
         '[environment.healthcheck]\ncommand = "test -d /app"\ninterval_sec = 5\ntimeout_sec = 30\nstart_period_sec = 0\n'
         "start_interval_sec = 5\nretries = 3\n"
     )
+
+
+def test_the_check_reads_the_sandbox_clock():
+    out = 'os: Debian\nclock: 1000 {"t0": 1767603600, "rate": 60, "anchor": 990, "ahead": 0}\n'
+    assert probe_facts(out) == {"os": "Debian", "clock": "2026-01-05T09:10:00Z (rate 60)"}
+    assert "clock" not in probe_facts("os: Debian\n")
+    assert probe_facts("clock: garbage\n") == {"clock": "unreadable"}
 
 
 def test_task_files_read_back_as_harbor_toml():

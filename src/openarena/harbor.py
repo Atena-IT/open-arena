@@ -39,6 +39,7 @@ import posixpath
 import shlex
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -436,6 +437,29 @@ for tool in python3 tmux git curl; do
   fi
 done
 """
+PROBE_SH += f'if [ -f {CLOCK_FILE} ]; then echo "clock: $(date +%s) $(tr -d \'\\n\' < {CLOCK_FILE})"; fi\n'
+# The facts a check reports, by the name `PROBE_SH` prints each under.
+PROBE_FACTS = ("os", "user", "workdir", "python3", "tmux", "git", "curl", "clock")
+
+
+def probe_facts(output: str) -> dict[str, str]:
+    """`PROBE_SH`'s `name: value` lines as facts, `clock` turned into the virtual time it read (or `unreadable`, never real time)."""
+    facts = {}
+    for line in output.splitlines():
+        key, sep, value = line.partition(": ")
+        if sep and key in PROBE_FACTS:
+            facts[key] = value.strip()
+    if "clock" in facts:
+        try:
+            read_at, _, raw = facts["clock"].partition(" ")
+            clock = json.loads(raw)
+            at = datetime.fromtimestamp(virtual_now(clock, float(read_at)), timezone.utc)
+            facts["clock"] = f"{at:%Y-%m-%dT%H:%M:%SZ} (rate {clock['rate']:g})"
+        except (ValueError, TypeError, KeyError, OverflowError, OSError):
+            facts["clock"] = "unreadable"
+    return facts
+
+
 # What a check reports beside the probe's facts, by tool missing.
 PROBE_NOTES = {
     "tmux": "tmux is missing: terminus-2 installs it at the start of every task, which needs a package manager and the network, and fails without; install it in the Dockerfile.",
@@ -490,11 +514,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
         async with local_slot(sandbox):
             result = await (await Trial.create(config)).run()
         out =work / "trials" / name / "agent" / "oracle.txt"
-        facts = {}
-        for line in (out.read_text() if out.is_file() else "").splitlines():
-            key, sep, value = line.partition(": ")
-            if sep and key in ("os", "user", "workdir", "python3", "tmux", "git", "curl"):
-                facts[key] = value.strip()
+        facts = probe_facts(out.read_text() if out.is_file() else "")
         info = result.exception_info
         error = None
         if info is not None:
