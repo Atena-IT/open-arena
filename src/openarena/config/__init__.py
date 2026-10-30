@@ -59,6 +59,7 @@ from openarena.config.entries import (
     Direction as Direction,
     HarborBlock as HarborBlock,
     EnvironmentEntry as EnvironmentEntry,
+    ClockSpec as ClockSpec,
     EnvironmentSpec as EnvironmentSpec,
     HealthcheckSpec as HealthcheckSpec,
     EvaluationEntry as EvaluationEntry,

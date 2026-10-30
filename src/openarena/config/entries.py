@@ -19,6 +19,7 @@ Harbor sandbox, a sweep's grid), which the app also takes alone to check or laun
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
@@ -634,6 +635,27 @@ class HealthcheckSpec(BaseModel):
         return value.strip()
 
 
+class ClockSpec(BaseModel):
+    """An environment's virtual clock: the time it starts at and how fast it runs.
+
+    Armed in the sandbox at `/run/arena/clock.json` by the healthcheck
+    (`openarena.harbor`), where every process reads
+    `now = t0 + (real_now - anchor) * rate + ahead`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    start: datetime = Field(description="The virtual time when the sandbox is ready, ISO 8601 with an offset, e.g. `2026-01-05T09:00:00Z`.")
+    rate: float = Field(default=0, ge=0, le=86400, description="Virtual seconds per real second: 0 is frozen, 1 real time, 86400 a day a second.")
+
+    @field_validator("start")
+    @classmethod
+    def _aware(cls, start: datetime) -> datetime:
+        if start.tzinfo is None:
+            raise ValueError("`start` needs an offset, e.g. `2026-01-05T09:00:00Z`: a time without one means a different moment on every machine")
+        return start.astimezone(timezone.utc)
+
+
 class EnvironmentSpec(BaseModel):
     """The sandbox a Harbor task's agent works in: its `[environment]` and its `environment/Dockerfile`.
 
@@ -659,6 +681,7 @@ class EnvironmentSpec(BaseModel):
     build_timeout_sec: float = Field(default=600, gt=0, description="How long building the image may take.")
     healthcheck: HealthcheckSpec | None = None
     mcp_servers: list[Name] = Field(default_factory=list, description="MCP servers the agent is given, by their key in the MCP servers registry.")
+    clock: ClockSpec | None = Field(default=None, description="A virtual clock every process in the sandbox reads; none keeps real time.")
 
     @field_validator("docker_image", "dockerfile", "workdir")
     @classmethod
@@ -693,6 +716,8 @@ class EnvironmentSpec(BaseModel):
             raise Invalid("an `allowlist` network lets nothing through without `allowed_hosts`", "add `allowed_hosts: [pypi.org]`, or set `network_mode: public`")
         if self.network_mode != "allowlist" and self.allowed_hosts:
             raise Invalid(f"`allowed_hosts` is only read with `network_mode: allowlist`, not {self.network_mode!r}", "set `network_mode: allowlist`, or remove `allowed_hosts:`")
+        if self.clock is not None and self.os == "windows":
+            raise Invalid("a clock is armed by a POSIX shell command, which a Windows sandbox cannot run", "set `os: linux`, or remove `clock:`")
         return self
 
     @property

@@ -1,10 +1,11 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
 import tomllib
+from datetime import datetime, timezone
 
 import pytest
 import yaml
-from openarena.config import EnvironmentSpec
+from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
 from openarena.harbor import task_files
@@ -33,6 +34,26 @@ def test_allowed_hosts_go_with_an_allowlist():
     with pytest.raises(ValidationError, match="only read with"):
         EnvironmentSpec(docker_image="x", allowed_hosts=["pypi.org"])
     assert EnvironmentSpec(docker_image="x", network_mode="allowlist", allowed_hosts=[" pypi.org ", ""]).allowed_hosts == ["pypi.org"]
+
+
+def test_a_clock_has_an_aware_start_and_a_bounded_rate():
+    clock = ClockSpec(start="2026-01-05T10:00:00+01:00", rate=60)
+    assert clock.start == datetime(2026, 1, 5, 9, 0, tzinfo=timezone.utc)
+    assert ClockSpec(start="2026-01-05T09:00:00Z").rate == 0
+    assert ClockSpec(start="2026-01-05T09:00:00Z", rate=86400).rate == 86400
+    for rate in (-1, 86400.5):
+        with pytest.raises(ValidationError):
+            ClockSpec(start="2026-01-05T09:00:00Z", rate=rate)
+    with pytest.raises(ValidationError, match="offset"):
+        ClockSpec(start="2026-01-05T09:00:00")
+    with pytest.raises(ValidationError):
+        ClockSpec(start="2026-01-05T09:00:00Z", speed=2)
+
+
+def test_a_clock_needs_a_posix_sandbox():
+    with pytest.raises(ValidationError, match="Windows"):
+        EnvironmentSpec(docker_image="x", os="windows", clock={"start": "2026-01-05T09:00:00Z"})
+    assert EnvironmentSpec(docker_image="x").clock is None
 
 
 def test_task_files_read_back_as_harbor_toml():
