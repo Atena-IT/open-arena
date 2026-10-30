@@ -36,14 +36,18 @@ import asyncio
 import json
 import os
 import posixpath
+import re
 import shlex
 import threading
+import tomllib
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec
+from pydantic import ValidationError
+
+from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec, TaskClock
 from openarena.config.errors import Invalid
 
 # Our transport name -> Harbor's.
@@ -121,6 +125,147 @@ def virtual_now(clock: dict[str, float], real_now: float) -> float:
     return clock["t0"] + (real_now - clock["anchor"]) * clock["rate"] + clock.get("ahead", 0)
 
 
+# The jump's awk, on one line: read the clock file's four numbers (keeping the text of t0, rate and anchor),
+# exit 3 when the clock is already at the target, 2 when past it, 4 when the file does not read; else print it moved.
+_JUMP_AWK = (
+    r'function field(k, f) { if (!match(text, "\"" k "\": *-?[0-9][0-9.eE+-]*")) { bad = 1; return 0 } '
+    r'f = substr(text, RSTART, RLENGTH); sub(/^"[a-z0-9]+": */, "", f); return f } '
+    r"{ text = text $0 } "
+    r'END { t0 = field("t0"); rate = field("rate"); anchor = field("anchor"); ahead = field("ahead"); '
+    r'if (bad) { print "arena clock: " path " cannot be read" > "/dev/stderr"; exit 4 } '
+    r"current = t0 + (now - anchor) * rate + ahead; "
+    r'if (current > target) { print "arena clock: already past this step\047s time, left as it is" > "/dev/stderr"; exit 2 } '
+    r"if (current == target) exit 3; "
+    r'printf "{\"t0\": %s, \"rate\": %s, \"anchor\": %s, \"ahead\": %.0f}\n", t0, rate, anchor, target - t0 - (now - anchor) * rate }'
+)
+
+
+def clock_jump_command(target: datetime, path: str = CLOCK_FILE) -> str:
+    """The POSIX shell command (`sh` and `awk`) that moves the clock at `path` forward to `target`, the time a step begins.
+
+    Already there (a rerun): nothing changes. Past it, or no clock that reads: it fails, so the step fails
+    and says why (Harbor drops what a step's setup prints when it succeeds). Written beside and moved into
+    place, a temporary file per process, keeping t0, rate and anchor as written for the arm's check.
+    """
+    file = shlex.quote(path)
+    tmp = shlex.quote(f"{path}.jump") + ".$$"
+    return (
+        f'( awk -v now="$(date +%s)" -v target={int(target.timestamp())} -v path={file} {shlex.quote(_JUMP_AWK)} {file} > {tmp}; '
+        f"case $? in 0) chmod 644 {tmp} && mv {tmp} {file} ;; 3) rm -f {tmp} ;; *) rm -f {tmp}; exit 1 ;; esac ) || exit 1"
+    )
+
+
+def task_clock(folder: Path) -> TaskClock | None:
+    """The clock a Harbor task folder declares in `[metadata.arena.clock]`, checked against the whole task; None without one.
+
+    Raises `Invalid` naming the task. Step times must name its `[[steps]]`, in the order they run,
+    and need its agent to run as root, the user that armed the clock: each step's `setup.sh`,
+    which moves the clock, runs as that step's agent.
+    """
+    config = tomllib.loads((folder / "task.toml").read_text(encoding="utf-8"))
+    # `metadata` is free: an `arena` label of another kind is not a clock.
+    metadata = config.get("metadata")
+    arena = metadata.get("arena") if isinstance(metadata, dict) else None
+    declared = arena.get("clock") if isinstance(arena, dict) else None
+    if declared is None:
+        return None
+
+    def refuse(message: str, fix: str | None = None) -> Invalid:
+        return Invalid(f"task {folder.name!r}: {message}", fix)
+
+    try:
+        clock = TaskClock.model_validate(declared)
+    except ValidationError as e:
+        said = "; ".join(f"{'.'.join(map(str, err['loc'])) or 'clock'}: {err['msg']}" for err in e.errors())
+        raise refuse(f"`[metadata.arena.clock]`: {said}") from e
+    if (config.get("environment") or {}).get("os") == "windows":
+        raise refuse("a clock is armed by POSIX shell commands, which a Windows sandbox cannot run", "set `os = \"linux\"` in `[environment]`, or remove `[metadata.arena.clock]`")
+    steps = config.get("steps") or []
+    order = [step.get("name") for step in steps]
+    unknown = [name for name in clock.steps if name not in order]
+    if unknown:
+        raise refuse(f"step {unknown[0]!r} in `[metadata.arena.clock.steps]` is not one of its steps ({', '.join(map(str, order)) or 'none'})", "name one of the task's `[[steps]]`")
+    timed = [(name, clock.steps[name]) for name in order if name in clock.steps]
+    for (before, at), (after, then) in zip(timed, timed[1:]):
+        if then <= at:
+            raise refuse(f"step {after!r} begins at or before step {before!r}: step times follow the order the steps run", f"give {after!r} a time after {before!r}'s")
+    users = [(config.get("agent") or {}).get("user")] + [(step.get("agent") or {}).get("user") for step in steps]
+    others = [user for user in users if user not in (None, "root", 0, "0")]
+    if clock.steps and others:
+        raise refuse(f"step times need the agent to run as root, not as user {others[0]!r}: each step's setup.sh, which moves the clock, runs as the step's agent", "remove `user` from `[agent]` and the steps, or remove `[metadata.arena.clock.steps]`")
+    return clock
+
+
+def armed_healthcheck_command(clock: ClockSpec, theirs: str | None) -> str:
+    """The healthcheck command that arms `clock`, then runs `theirs` when there is one.
+
+    Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
+    and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
+    """
+    arm = clock_arm_command(clock)
+    return f"{arm} && ({theirs}\n)" if theirs is not None else arm
+
+
+# What an earlier arming wrote, recognized so that arming again replaces it rather than stacking on it (an export,
+# re-imported, its clock then changed): the arm with the author's check after it, and a step's jump line.
+_ARMED = re.compile(r"^mkdir -p \S+ && \{ grep -qsF .+? \|\| \{ printf .+?; \}; \}(?: && \((?P<theirs>.*)\n\))?$", re.S)
+_JUMP_LINE = re.compile(r'^\( awk -v now="\$\(date \+%s\)" -v target=-?\d+ -v path=.*$')
+
+
+def _authors_healthcheck(command: str) -> str | None:
+    """The author's own healthcheck inside a command earlier armings wrapped: the command itself when none did."""
+    while (armed := _ARMED.match(command)) is not None:
+        if armed.group("theirs") is None:
+            return None
+        command = armed.group("theirs")
+    return command
+
+
+def arm_task(folder: Path) -> bool:
+    """Arm, in place, the clock a Harbor task folder declares: the copy made for one trial, check or export.
+
+    The healthcheck arms it (`armed_healthcheck_command`), written back through Harbor's own `TaskConfig`
+    so Harbor reads the same task; each step with a declared time jumps it at the top of its `setup.sh`,
+    after the author's shebang. What an earlier arming wrote is replaced, so arming again changes nothing
+    and an edited clock leaves no trace of the old one. False, writing nothing, without a declaration or
+    when already armed for it.
+    """
+    clock = task_clock(folder)
+    if clock is None:
+        return False
+    from harbor.models.task.config import HealthcheckConfig, TaskConfig
+
+    changed = False
+    toml_path = folder / "task.toml"
+    config = TaskConfig.model_validate_toml(toml_path.read_text(encoding="utf-8"))
+    theirs = config.environment.healthcheck
+    command = armed_healthcheck_command(clock, _authors_healthcheck(theirs.command) if theirs is not None else None)
+    if theirs is None or theirs.command != command:
+        config.environment.healthcheck = theirs.model_copy(update={"command": command}) if theirs is not None else HealthcheckConfig(command=command)
+        toml_path.write_text(config.model_dump_toml(), encoding="utf-8", newline="\n")
+        changed = True
+    for step in config.steps or []:
+        setup = folder / "steps" / step.name / "workdir" / "setup.sh"
+        at = clock.steps.get(step.name)
+        if at is None and not setup.is_file():
+            continue
+        text = setup.read_text(encoding="utf-8") if setup.is_file() else "#!/bin/bash\n"
+        kept = "".join(line for line in text.splitlines(keepends=True) if not _JUMP_LINE.match(line))
+        jump = f"{clock_jump_command(at)}\n" if at is not None else ""
+        if kept.startswith("#!"):
+            shebang, _, rest = kept.partition("\n")
+            new = f"{shebang}\n{jump}{rest}"
+        else:
+            new = f"{jump}{kept}"
+        if new == text:
+            continue
+        setup.parent.mkdir(parents=True, exist_ok=True)
+        setup.write_text(new, encoding="utf-8", newline="\n")
+        setup.chmod(0o755)
+        changed = True
+    return changed
+
+
 def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None = None) -> str:
     """The `[environment]` section of `task.toml`, with its sub-tables.
 
@@ -147,11 +292,8 @@ def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] |
     }
     healthcheck = spec.healthcheck
     if spec.clock is not None:
-        arm = clock_arm_command(spec.clock)
-        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
-        # and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
-        command = f"{arm} && ({healthcheck.command}\n)" if healthcheck is not None else arm
-        healthcheck = (healthcheck or HealthcheckSpec(command=arm)).model_copy(update={"command": command})
+        command = armed_healthcheck_command(spec.clock, healthcheck.command if healthcheck is not None else None)
+        healthcheck = (healthcheck or HealthcheckSpec(command=command)).model_copy(update={"command": command})
     parts = [_table("[environment]", fields)]
     if healthcheck is not None:
         parts.append(_table("[environment.healthcheck]", healthcheck.model_dump()))

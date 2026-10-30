@@ -67,6 +67,7 @@ from synalinks.src.modules.module import Module
 from openarena.config.entries import EnvironmentSpec
 from openarena.harbor import (
     LOCAL_SANDBOX,
+    arm_task,
     environment_config,
     environment_toml,
     final_answer,
@@ -342,6 +343,8 @@ def copy_task(source: Path, folder: Path) -> Path:
     if not (source / "task.toml").is_file():
         raise ValueError(f"{source} is not a Harbor task: it has no task.toml")
     shutil.copytree(source, folder, dirs_exist_ok=True)
+    # The copy, never the source, gets the clock the task declares.
+    arm_task(folder)
     return folder
 
 

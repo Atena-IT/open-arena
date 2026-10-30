@@ -297,6 +297,51 @@ chmod +x tests/test.sh solution/solve.sh
     defines it. The row's `question`, shown in the trials log, is the first
     step's `instruction.md`.
 
+### A clock across steps
+
+A task can run on the same virtual clock as an environment (see
+[Environments](environments.md), its Virtual clock section) and say when each
+of its steps begins. It declares the clock in `task.toml`'s `[metadata]`,
+which Harbor does not read:
+
+```toml
+[metadata.arena.clock]
+start = "2026-03-02T08:00:00Z"   # the virtual time when the sandbox is ready
+rate = 0                         # frozen: required with step times
+
+[metadata.arena.clock.steps]     # optional: when each step begins
+day2 = "2026-03-03T08:00:00Z"
+day3 = "2026-03-04T08:00:00Z"
+```
+
+openarena arms the clock in the copy of the task it makes for each trial; the
+source folder is never changed.
+
+- **The healthcheck** writes the clock before your own healthcheck runs.
+- **Each step with a time** jumps the clock there at the top of its
+  `workdir/setup.sh`, before your commands; a `setup.sh` is created when the
+  step has none.
+- **A step not listed** keeps the clock where the previous step left it.
+
+Anything that copies a task through `openarena.programs.harbor_program.copy_task`
+arms it the same way.
+
+These rules are checked before any trial runs, and each refusal names the task:
+
+- `start` and `rate` follow the environment clock's rules, and every time
+  carries an offset (`Z` for UTC) and is to the second.
+- The task runs on Linux: the clock is armed by POSIX shell commands, so
+  `[environment] os = "windows"` is refused.
+- Step names are the task's `[[steps]]`. Their times increase in the order the
+  steps run, and none comes before `start`.
+- Step times need `rate = 0` and an agent that runs as root: each step's
+  `setup.sh`, which moves the clock, runs as that step's agent.
+
+A jump never moves the clock back: a step that finds it already past its time
+fails, and says so. A plain `harbor run` of the source folder runs on real time,
+because Harbor ignores `[metadata]`. Run the task through openarena, or run a copy
+that `copy_task` armed.
+
 ## A dataset of tasks
 
 A `harbor_tasks` dataset reads a folder of tasks, one row per task.

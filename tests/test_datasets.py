@@ -485,3 +485,17 @@ def test_each_task_folder_is_a_row_named_by_its_folder_with_its_instruction(tmp_
     assert x[0].get_json() == rows[0] and y[0].get_json() == {"task": "b-task"}
     with pytest.raises(FileNotFoundError, match="no Harbor tasks folder"):
         HarborTasksDataset(tmp_path / "nowhere")
+
+
+def test_a_task_with_a_wrong_clock_stops_the_dataset(tmp_path):
+    from openarena.config.errors import Invalid
+    from openarena.datasets.harbor_tasks_dataset import HarborTasksDataset
+
+    tasks = {"good": "[agent]\ntimeout_sec = 60\n", "bad": '[metadata.arena.clock]\nstart = "2026-03-02T08:00:00"\n'}
+    for name, toml_text in tasks.items():
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "task.toml").write_text(toml_text)
+        (tmp_path / name / "instruction.md").write_text("Do it.\n")
+    with pytest.raises(Invalid, match="task 'bad'"):
+        HarborTasksDataset(tmp_path)
+    assert len(HarborTasksDataset(tmp_path, tasks=["good"])) == 1  # only the named tasks are read

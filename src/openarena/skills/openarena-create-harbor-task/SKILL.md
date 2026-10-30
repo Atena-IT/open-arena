@@ -27,7 +27,7 @@ one, `tasks/hello-world/`: copy it and change it.
 
 ### task.toml
 
-openarena runs it as written and adds nothing. On the local Docker a task
+openarena runs it as written, adding only the clock a task declares (below). On the local Docker a task
 without `cpus` and `memory_mb` gets the whole machine (the 2 CPU / 2048 MB
 defaults are for environment datasets only): always set them.
 
@@ -50,6 +50,13 @@ memory_mb = 1024
 # network_mode = "no-network"        # "public" by default; then only terminus-2 works (see below)
 # docker_image = "python:3.12-slim"  # a prebuilt image instead of environment/Dockerfile
 ```
+
+Clock across steps (optional). A task can declare `[metadata.arena.clock]`
+with `start = "2026-03-02T08:00:00Z"` and `rate = 0`, and
+`[metadata.arena.clock.steps]` mapping step names to the time each begins.
+openarena arms the clock in the copy it runs, and jumps it at the top of each
+listed step's `workdir/setup.sh`. Step times need `rate = 0` and an agent
+that runs as root. See `docs/guides/harbor-tasks.md`, "A clock across steps".
 
 ### instruction.md
 

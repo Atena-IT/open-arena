@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import time
 import tomllib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import openarena
@@ -16,7 +16,20 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_files, virtual_now
+from openarena.harbor import (
+    CLOCK_FILE,
+    PROBE_NOTES,
+    arm_task,
+    armed_healthcheck_command,
+    clock_arm_command,
+    clock_jump_command,
+    probe_facts,
+    probe_notes,
+    task_clock,
+    task_files,
+    virtual_now,
+)
+from openarena.programs.harbor_program import copy_task
 from pydantic import ValidationError
 
 
@@ -356,3 +369,170 @@ def test_the_check_notes_an_unreadable_clock():
     assert any("clock" in note for note in probe_notes({"clock": "unreadable"}))
     assert probe_notes({"clock": "2026-01-05T09:00:00Z (rate 0)", "tmux": "tmux 3.4"}) == []
     assert probe_notes({"tmux": "missing"}) == [PROBE_NOTES["tmux"]]
+
+
+STEPPED = '''
+[metadata.arena.clock]
+start = "2026-03-02T08:00:00Z"
+rate = 0
+[metadata.arena.clock.steps]
+day2 = "2026-03-03T08:00:00Z"
+day3 = "2026-03-04T08:00:00Z"
+[[steps]]
+name = "day1"
+[[steps]]
+name = "day2"
+[[steps]]
+name = "day3"
+'''
+
+
+def _task(folder, toml_text):
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "task.toml").write_text(toml_text)
+    return folder
+
+
+def test_a_task_declares_a_clock_and_its_step_times(tmp_path):
+    clock = task_clock(_task(tmp_path / "week", STEPPED))
+    assert clock.rate == 0 and clock.steps["day3"] == datetime(2026, 3, 4, 8, tzinfo=timezone.utc)
+    assert task_clock(_task(tmp_path / "plain", "[agent]\ntimeout_sec = 60\n")) is None
+
+
+@pytest.mark.parametrize(("change", "says"), [
+    (('day2 = "2026-03-03T08:00:00Z"', 'day9 = "2026-03-03T08:00:00Z"'), "day9"),  # not a step
+    (('day3 = "2026-03-04T08:00:00Z"', 'day3 = "2026-03-02T09:00:00Z"'), "day3"),  # before day2
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-01T08:00:00Z"'), "start"),  # before start
+    (("rate = 0", "rate = 60"), "rate"),  # a running clock with steps
+    (("rate = 0", "rate = 0\nspeed = 2"), "speed"),  # an unknown key
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-03T08:00:00"'), "offset"),  # no offset
+    (('name = "day2"', 'name = "day2"\n[steps.agent]\nuser = "agent"'), "user"),  # a non-root agent
+])
+def test_a_wrong_task_clock_is_refused_naming_the_task(tmp_path, change, says):
+    folder = _task(tmp_path / "week", STEPPED.replace(*change))
+    with pytest.raises(Invalid, match=says) as refused:
+        task_clock(folder)
+    assert str(refused.value).startswith("task 'week': ")
+
+
+TUESDAY = datetime(2026, 3, 3, 8, tzinfo=timezone.utc)
+
+
+def _armed(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    assert subprocess.run(["sh", "-c", clock_arm_command(ClockSpec(start="2026-03-02T08:00:00Z"), str(path))]).returncode == 0
+    return path
+
+
+@POSIX_SH
+def test_the_jump_moves_a_frozen_clock_to_the_step_time_once(tmp_path):
+    path = _armed(tmp_path)
+    armed_text = path.read_text()
+    before = json.loads(armed_text)
+    jump = clock_jump_command(TUESDAY, str(path))
+    assert subprocess.run(["sh", "-c", jump]).returncode == 0
+    after = json.loads(path.read_text())
+    assert virtual_now(after, time.time()) == TUESDAY.timestamp()
+    assert {k: after[k] for k in ("t0", "rate", "anchor")} == {k: before[k] for k in ("t0", "rate", "anchor")}
+    assert path.read_text().startswith(armed_text[: armed_text.index(' "anchor"')])  # the arm's check of t0 and rate still matches
+    assert subprocess.run(["sh", "-c", jump]).returncode == 0 and json.loads(path.read_text()) == after
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+@POSIX_SH
+def test_the_jump_never_goes_back_and_needs_the_clock(tmp_path):
+    path = _armed(tmp_path)
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(path))]).returncode == 0
+    back = subprocess.run(["sh", "-c", clock_jump_command(TUESDAY - timedelta(hours=1), str(path))], capture_output=True, text=True)
+    assert back.returncode != 0 and "past" in back.stderr
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(tmp_path / "none.json"))], capture_output=True).returncode != 0
+    (tmp_path / "garbage.json").write_text("not a clock")
+    assert subprocess.run(["sh", "-c", clock_jump_command(TUESDAY, str(tmp_path / "garbage.json"))], capture_output=True).returncode != 0
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+@pytest.mark.skipif(shutil.which("busybox") is None, reason="busybox is not installed")
+def test_the_jump_runs_under_busybox(tmp_path):
+    path = _armed(tmp_path)
+    assert subprocess.run(["busybox", "sh", "-c", clock_jump_command(TUESDAY, str(path))]).returncode == 0
+    assert virtual_now(json.loads(path.read_text()), time.time()) == TUESDAY.timestamp()
+
+
+def _stepped_task(folder):
+    """A three-day task with a clock, the author's healthcheck, other config and a day3 setup.sh with no shebang."""
+    _task(folder, STEPPED + '\n[environment.healthcheck]\ncommand = "test -d /app"\nretries = 5\n\n[verifier.env]\nTOKEN = "x"\n\n[metadata]\nowner = "qa"\n')
+    (folder / "steps" / "day3" / "workdir").mkdir(parents=True)
+    (folder / "steps" / "day3" / "workdir" / "setup.sh").write_text("echo day3\n")
+    return folder
+
+
+def _files(folder):
+    return {p.relative_to(folder): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+
+
+def test_a_copy_is_armed_and_the_source_left_alone(tmp_path):
+    from harbor.models.task.config import TaskConfig
+
+    source = _stepped_task(tmp_path / "src")
+    before = _files(source)
+    copy = copy_task(source, tmp_path / "copy")
+    assert _files(source) == before
+    armed = TaskConfig.model_validate_toml((copy / "task.toml").read_text())
+    original = TaskConfig.model_validate_toml((source / "task.toml").read_text())
+    clock = task_clock(source)
+    assert armed.environment.healthcheck.command == armed_healthcheck_command(clock, "test -d /app")
+    assert armed.environment.healthcheck.retries == original.environment.healthcheck.retries == 5
+    assert armed.model_dump(exclude={"environment": {"healthcheck"}}) == original.model_dump(exclude={"environment": {"healthcheck"}})
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/bash\n{clock_jump_command(clock.steps['day2'])}\n"
+    assert (copy / "steps/day3/workdir/setup.sh").read_text() == f"{clock_jump_command(clock.steps['day3'])}\necho day3\n"
+    assert not (copy / "steps/day1/workdir/setup.sh").exists()
+    assert oct((copy / "steps/day2/workdir/setup.sh").stat().st_mode & 0o777) == "0o755"
+
+
+def test_the_jump_goes_after_the_authors_shebang(tmp_path):
+    source = _task(tmp_path / "src", STEPPED)
+    (source / "steps" / "day2" / "workdir").mkdir(parents=True)
+    (source / "steps" / "day2" / "workdir" / "setup.sh").write_text("#!/bin/sh\necho hi\n")
+    copy = copy_task(source, tmp_path / "copy")
+    jump = clock_jump_command(task_clock(source).steps["day2"])
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/sh\n{jump}\necho hi\n"
+
+
+def test_arming_twice_changes_nothing_and_a_plain_task_is_copied_as_is(tmp_path):
+    copy = copy_task(_stepped_task(tmp_path / "src"), tmp_path / "copy")
+    once = _files(copy)
+    assert arm_task(copy) is False
+    assert _files(copy) == once
+    plain = _task(tmp_path / "plain", "[agent]\ntimeout_sec = 60\n")
+    assert _files(copy_task(plain, tmp_path / "plain-copy")) == _files(plain)
+
+
+def test_rearming_with_a_changed_clock_replaces_the_old_arm_and_jumps(tmp_path):
+    from harbor.models.task.config import TaskConfig
+
+    copy = copy_task(_stepped_task(tmp_path / "src"), tmp_path / "copy")  # an export, armed for Monday
+    toml_path = copy / "task.toml"
+    toml_path.write_text(toml_path.read_text().replace("2026-03-02T08:00:00Z", "2026-03-01T08:00:00Z").replace("2026-03-04T08:00:00Z", "2026-03-05T08:00:00Z"))
+    assert arm_task(copy) is True  # re-imported and edited: armed for the new clock
+    clock = task_clock(copy)
+    healthcheck = TaskConfig.model_validate_toml(toml_path.read_text()).environment.healthcheck
+    assert healthcheck.command == armed_healthcheck_command(clock, "test -d /app")  # one arm, the author's check kept
+    assert (copy / "steps/day3/workdir/setup.sh").read_text() == f"{clock_jump_command(clock.steps['day3'])}\necho day3\n"
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/bash\n{clock_jump_command(clock.steps['day2'])}\n"
+
+
+def test_other_arena_metadata_is_not_a_clock(tmp_path):
+    assert task_clock(_task(tmp_path / "label", '[metadata]\narena = "benchmark-a"\n')) is None
+    assert task_clock(_task(tmp_path / "table", '[metadata.arena]\nsuite = "mail"\n')) is None
+
+
+@pytest.mark.parametrize(("change", "says"), [
+    (('[[steps]]\nname = "day1"', '[environment]\nos = "windows"\n\n[[steps]]\nname = "day1"'), "Windows"),  # a POSIX clock
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-03T08:00:00.750Z"'), "second"),  # a fraction of a second
+    (('start = "2026-03-02T08:00:00Z"', 'start = "2026-03-02T08:00:00.5Z"'), "second"),
+])
+def test_a_task_clock_needs_linux_and_whole_seconds(tmp_path, change, says):
+    folder = _task(tmp_path / "week", STEPPED.replace(*change))
+    with pytest.raises(Invalid, match=says) as refused:
+        task_clock(folder)
+    assert str(refused.value).startswith("task 'week': ")
