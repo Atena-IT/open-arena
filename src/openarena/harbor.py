@@ -107,9 +107,13 @@ def clock_arm_command(clock: ClockSpec, path: str = CLOCK_FILE) -> str:
     there is left alone, so a healthcheck retry does not move the anchor. It fails when `path`
     cannot be written, and the healthcheck with it, rather than letting a trial run on real time.
     """
-    line = '{"t0": %d, "rate": %s, "anchor": %%s, "ahead": 0}\\n' % (int(clock.start.timestamp()), json.dumps(clock.rate))
-    folder, target, tmp = (shlex.quote(p) for p in (posixpath.dirname(path) or ".", path, f"{path}.tmp"))
-    return f'mkdir -p {folder} && {{ [ -f {target} ] || {{ printf {shlex.quote(line)} "$(date +%s)" > {tmp} && chmod 644 {tmp} && mv {tmp} {target}; }}; }}'
+    head = '{"t0": %d, "rate": %s,' % (int(clock.start.timestamp()), json.dumps(clock.rate))
+    line = head + ' "anchor": %s, "ahead": 0}\\n'
+    folder, target = (shlex.quote(p) for p in (posixpath.dirname(path) or ".", path))
+    # Each run writes its own file beside (`$$`, its process id), so runs that overlap never share one.
+    tmp = shlex.quote(f"{path}.tmp") + ".$$"
+    # Kept only when it holds this entry's start and rate: a retry keeps its anchor, a file left by anything else is replaced.
+    return f'mkdir -p {folder} && {{ grep -qsF {shlex.quote(head)} {target} || {{ printf {shlex.quote(line)} "$(date +%s)" > {tmp} && chmod 644 {tmp} && mv {tmp} {target}; }}; }}'
 
 
 def virtual_now(clock: dict[str, float], real_now: float) -> float:
@@ -144,8 +148,9 @@ def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] |
     healthcheck = spec.healthcheck
     if spec.clock is not None:
         arm = clock_arm_command(spec.clock)
-        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed.
-        command = f"{arm} && ({healthcheck.command})" if healthcheck is not None else arm
+        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
+        # and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
+        command = f"{arm} && ({healthcheck.command}\n)" if healthcheck is not None else arm
         healthcheck = (healthcheck or HealthcheckSpec(command=arm)).model_copy(update={"command": command})
     parts = [_table("[environment]", fields)]
     if healthcheck is not None:
@@ -467,6 +472,14 @@ PROBE_NOTES = {
 }
 
 
+def probe_notes(facts: dict[str, str]) -> list[str]:
+    """What of the probe's facts will trouble an agent, one sentence each."""
+    notes = [note for tool, note in PROBE_NOTES.items() if facts.get(tool) == "missing"]
+    if facts.get("clock") == "unreadable":
+        notes.append(f"the clock at {CLOCK_FILE} cannot be read: something in the image or its healthcheck changed it, and every server that reads it will fail.")
+    return notes
+
+
 async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], context: Path | None, work: Path, sandbox: str) -> dict[str, Any]:
     """Start `spec` the way a task would, look inside, and stop it: `{ok, sandbox, seconds, facts, notes, error}`.
 
@@ -528,7 +541,7 @@ async def probe(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]], conte
                 error = f"nothing could run in the sandbox (exit {code or '?'}): the image likely has no {spec.workdir}; create it in a Dockerfile (WORKDIR {spec.workdir}), or clear the working directory"
             else:
                 error = f"the sandbox started, but nothing could run in it (exit {code or '?'})"
-        notes = [note for tool, note in PROBE_NOTES.items() if facts.get(tool) == "missing"]
+        notes = probe_notes(facts)
         return {"ok": error is None, "sandbox": sandbox, "seconds": round(time.monotonic() - began, 1), "facts": facts, "notes": notes, "error": error}
     except Exception as e:  # noqa: BLE001 - whatever stopped the check is its answer
         return {"ok": False, "sandbox": sandbox, "seconds": round(time.monotonic() - began, 1), "facts": {}, "notes": [], "error": f"{type(e).__name__}: {e}"}

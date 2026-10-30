@@ -15,6 +15,7 @@
 #     env: {}                    # environment variables in the container
 #     build_timeout_sec: 600
 #     healthcheck: {command: ..., interval_sec: 5, retries: 3}
+#     clock: {start: "2026-01-05T09:00:00Z", rate: 0}   # one virtual time for every server in the sandbox; 0 is frozen
 #     mcp_servers: []            # `mcp_servers` keys the agent is given
 #     description: ...
 #     tags: [...]

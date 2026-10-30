@@ -2,18 +2,21 @@
 
 import json
 import os
+import posixpath
 import shutil
 import subprocess
 import time
 import tomllib
 from datetime import datetime, timezone
+from pathlib import Path
 
+import openarena
 import pytest
 import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import clock_arm_command, probe_facts, task_files, virtual_now
+from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -100,7 +103,7 @@ def test_a_clock_arms_in_the_healthcheck_and_keeps_theirs():
     spec = EnvironmentSpec(docker_image="x", clock=CLOCK, healthcheck={"command": "false || true", "retries": 7})
     hc = tomllib.loads(task_files(spec)["task.toml"])["environment"]["healthcheck"]
     # Theirs in a subshell: an arm that failed cannot be rescued by an `||` of theirs.
-    assert hc["command"] == clock_arm_command(spec.clock) + " && (false || true)"
+    assert hc["command"] == clock_arm_command(spec.clock) + " && (false || true\n)"
     assert hc["retries"] == 7
     bare = tomllib.loads(task_files(EnvironmentSpec(docker_image="x", clock=CLOCK))["task.toml"])["environment"]["healthcheck"]
     assert bare["command"] == clock_arm_command(ClockSpec(**CLOCK)) and bare["retries"] == 3
@@ -313,3 +316,43 @@ def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
     assert result == "result"
     assert seen["config"].environment.type == "ack"
     assert seen["config"].environment.kwargs == {"namespace": "arena-sandboxes"}
+
+
+@POSIX_SH
+def test_their_healthcheck_runs_after_the_arm_even_with_a_comment(tmp_path):
+    folder = str(tmp_path / "arena")
+    for theirs, code in (("true  # wait for the API", 0), ("false  # wait for the API", 1)):
+        spec = EnvironmentSpec(docker_image="x", clock=CLOCK, healthcheck={"command": theirs})
+        hc = tomllib.loads(task_files(spec)["task.toml"])["environment"]["healthcheck"]
+        assert subprocess.run(["sh", "-c", hc["command"].replace(posixpath.dirname(CLOCK_FILE), folder)]).returncode == code
+
+
+@POSIX_SH
+def test_the_arm_replaces_a_clock_left_with_other_settings(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    path.parent.mkdir()
+    path.write_text('{"t0": 0, "rate": 1, "anchor": 0, "ahead": 0}\n')  # baked into the image, say
+    assert subprocess.run(["sh", "-c", clock_arm_command(ClockSpec(**CLOCK), str(path))]).returncode == 0
+    clock = json.loads(path.read_text())
+    assert clock["t0"] == 1767603600 and clock["rate"] == 60 and abs(clock["anchor"] - time.time()) < 5
+
+
+@POSIX_SH
+def test_arms_started_together_all_succeed(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    command = clock_arm_command(ClockSpec(**CLOCK), str(path))
+    runs = [subprocess.Popen(["sh", "-c", command], stderr=subprocess.DEVNULL) for _ in range(30)]
+    assert [run.wait() for run in runs] == [0] * 30
+    assert json.loads(path.read_text())["t0"] == 1767603600
+    assert sorted(p.name for p in path.parent.iterdir()) == ["clock.json"]
+
+
+def test_the_init_template_names_the_clock():
+    template = Path(openarena.__file__).parent / "cli" / "templates" / "default" / "configs" / "environments.yaml"
+    assert "#     clock: {start:" in template.read_text()
+
+
+def test_the_check_notes_an_unreadable_clock():
+    assert any("clock" in note for note in probe_notes({"clock": "unreadable"}))
+    assert probe_notes({"clock": "2026-01-05T09:00:00Z (rate 0)", "tmux": "tmux 3.4"}) == []
+    assert probe_notes({"tmux": "missing"}) == [PROBE_NOTES["tmux"]]
