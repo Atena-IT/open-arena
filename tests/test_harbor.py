@@ -16,7 +16,20 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, clock_jump_command, probe_facts, probe_notes, task_clock, task_files, virtual_now
+from openarena.harbor import (
+    CLOCK_FILE,
+    PROBE_NOTES,
+    arm_task,
+    armed_healthcheck_command,
+    clock_arm_command,
+    clock_jump_command,
+    probe_facts,
+    probe_notes,
+    task_clock,
+    task_files,
+    virtual_now,
+)
+from openarena.programs.harbor_program import copy_task
 from pydantic import ValidationError
 
 
@@ -443,3 +456,52 @@ def test_the_jump_runs_under_busybox(tmp_path):
     path = _armed(tmp_path)
     assert subprocess.run(["busybox", "sh", "-c", clock_jump_command(TUESDAY, str(path))]).returncode == 0
     assert virtual_now(json.loads(path.read_text()), time.time()) == TUESDAY.timestamp()
+
+
+def _stepped_task(folder):
+    """A three-day task with a clock, the author's healthcheck, other config and a day3 setup.sh with no shebang."""
+    _task(folder, STEPPED + '\n[environment.healthcheck]\ncommand = "test -d /app"\nretries = 5\n\n[verifier.env]\nTOKEN = "x"\n\n[metadata]\nowner = "qa"\n')
+    (folder / "steps" / "day3" / "workdir").mkdir(parents=True)
+    (folder / "steps" / "day3" / "workdir" / "setup.sh").write_text("echo day3\n")
+    return folder
+
+
+def _files(folder):
+    return {p.relative_to(folder): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+
+
+def test_a_copy_is_armed_and_the_source_left_alone(tmp_path):
+    from harbor.models.task.config import TaskConfig
+
+    source = _stepped_task(tmp_path / "src")
+    before = _files(source)
+    copy = copy_task(source, tmp_path / "copy")
+    assert _files(source) == before
+    armed = TaskConfig.model_validate_toml((copy / "task.toml").read_text())
+    original = TaskConfig.model_validate_toml((source / "task.toml").read_text())
+    clock = task_clock(source)
+    assert armed.environment.healthcheck.command == armed_healthcheck_command(clock, "test -d /app")
+    assert armed.environment.healthcheck.retries == original.environment.healthcheck.retries == 5
+    assert armed.model_dump(exclude={"environment": {"healthcheck"}}) == original.model_dump(exclude={"environment": {"healthcheck"}})
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/bash\n{clock_jump_command(clock.steps['day2'])}\n"
+    assert (copy / "steps/day3/workdir/setup.sh").read_text() == f"{clock_jump_command(clock.steps['day3'])}\necho day3\n"
+    assert not (copy / "steps/day1/workdir/setup.sh").exists()
+    assert oct((copy / "steps/day2/workdir/setup.sh").stat().st_mode & 0o777) == "0o755"
+
+
+def test_the_jump_goes_after_the_authors_shebang(tmp_path):
+    source = _task(tmp_path / "src", STEPPED)
+    (source / "steps" / "day2" / "workdir").mkdir(parents=True)
+    (source / "steps" / "day2" / "workdir" / "setup.sh").write_text("#!/bin/sh\necho hi\n")
+    copy = copy_task(source, tmp_path / "copy")
+    jump = clock_jump_command(task_clock(source).steps["day2"])
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/sh\n{jump}\necho hi\n"
+
+
+def test_arming_twice_changes_nothing_and_a_plain_task_is_copied_as_is(tmp_path):
+    copy = copy_task(_stepped_task(tmp_path / "src"), tmp_path / "copy")
+    once = _files(copy)
+    assert arm_task(copy) is False
+    assert _files(copy) == once
+    plain = _task(tmp_path / "plain", "[agent]\ntimeout_sec = 60\n")
+    assert _files(copy_task(plain, tmp_path / "plain-copy")) == _files(plain)

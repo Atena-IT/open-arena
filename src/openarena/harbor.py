@@ -190,6 +190,55 @@ def task_clock(folder: Path) -> TaskClock | None:
     return clock
 
 
+def armed_healthcheck_command(clock: ClockSpec, theirs: str | None) -> str:
+    """The healthcheck command that arms `clock`, then runs `theirs` when there is one.
+
+    Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
+    and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
+    """
+    arm = clock_arm_command(clock)
+    return f"{arm} && ({theirs}\n)" if theirs is not None else arm
+
+
+def arm_task(folder: Path) -> bool:
+    """Arm, in place, the clock a Harbor task folder declares: the copy made for one trial, check or export.
+
+    The healthcheck arms it (`armed_healthcheck_command`), written back through Harbor's own `TaskConfig`
+    so Harbor reads the same task; each step with a declared time jumps it at the top of its `setup.sh`,
+    after the author's shebang. False, writing nothing, without a declaration or when already armed.
+    """
+    clock = task_clock(folder)
+    if clock is None:
+        return False
+    from harbor.models.task.config import HealthcheckConfig, TaskConfig
+
+    changed = False
+    toml_path = folder / "task.toml"
+    config = TaskConfig.model_validate_toml(toml_path.read_text(encoding="utf-8"))
+    theirs = config.environment.healthcheck
+    if theirs is None or not theirs.command.startswith(clock_arm_command(clock)):
+        command = armed_healthcheck_command(clock, theirs.command if theirs is not None else None)
+        config.environment.healthcheck = theirs.model_copy(update={"command": command}) if theirs is not None else HealthcheckConfig(command=command)
+        toml_path.write_text(config.model_dump_toml(), encoding="utf-8", newline="\n")
+        changed = True
+    for name, at in clock.steps.items():
+        jump = clock_jump_command(at)
+        setup = folder / "steps" / name / "workdir" / "setup.sh"
+        text = setup.read_text(encoding="utf-8") if setup.is_file() else "#!/bin/bash\n"
+        if jump in text:
+            continue
+        if text.startswith("#!"):
+            shebang, _, rest = text.partition("\n")
+            text = f"{shebang}\n{jump}\n{rest}"
+        else:
+            text = f"{jump}\n{text}"
+        setup.parent.mkdir(parents=True, exist_ok=True)
+        setup.write_text(text, encoding="utf-8", newline="\n")
+        setup.chmod(0o755)
+        changed = True
+    return changed
+
+
 def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None = None) -> str:
     """The `[environment]` section of `task.toml`, with its sub-tables.
 
@@ -216,11 +265,8 @@ def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] |
     }
     healthcheck = spec.healthcheck
     if spec.clock is not None:
-        arm = clock_arm_command(spec.clock)
-        # Theirs runs in a subshell after the arm, so an `||` of theirs cannot pass a healthcheck whose arm failed,
-        # and closes on a line of its own, so a trailing `# comment` of theirs cannot swallow the `)`.
-        command = f"{arm} && ({healthcheck.command}\n)" if healthcheck is not None else arm
-        healthcheck = (healthcheck or HealthcheckSpec(command=arm)).model_copy(update={"command": command})
+        command = armed_healthcheck_command(spec.clock, healthcheck.command if healthcheck is not None else None)
+        healthcheck = (healthcheck or HealthcheckSpec(command=command)).model_copy(update={"command": command})
     parts = [_table("[environment]", fields)]
     if healthcheck is not None:
         parts.append(_table("[environment.healthcheck]", healthcheck.model_dump()))
