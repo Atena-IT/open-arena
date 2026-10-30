@@ -1,0 +1,2315 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/guides/mcp-tools/">
+      
+      
+      
+        <link rel="prev" href="../datasets/">
+      
+      
+        <link rel="next" href="../a2a-agents/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>MCP tools - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MCP tools
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-tools-a2a-agents-environments-or-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MCP tools, A2A agents, environments or <code>tools:</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-server-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The server entry
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The server entry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which transport
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stdio-how-the-process-is-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        stdio: how the process is started
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-servers-url-and-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Remote servers: url and headers
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Secrets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-there-is-no-field-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What there is no field for
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-agent-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The <code>agent:</code> block
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The agent: block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-a-row-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a row runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        max_iterations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-model-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the model sees
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-gets-recorded-and-scored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What gets recorded and scored
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fair-comparisons" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fair comparisons
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#servers-that-keep-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Servers that keep state
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tools-in-a-harbor-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tools in a Harbor sandbox
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-tools-a2a-agents-environments-or-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        MCP tools, A2A agents, environments or <code>tools:</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-server-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The server entry
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The server entry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which transport
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stdio-how-the-process-is-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        stdio: how the process is started
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-servers-url-and-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Remote servers: url and headers
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Secrets
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-there-is-no-field-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What there is no field for
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-agent-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The <code>agent:</code> block
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The agent: block">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-a-row-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How a row runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        max_iterations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-model-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the model sees
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-gets-recorded-and-scored" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What gets recorded and scored
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fair-comparisons" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fair comparisons
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#servers-that-keep-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Servers that keep state
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tools-in-a-harbor-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tools in a Harbor sandbox
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common mistakes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Commands
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="mcp-tools">MCP tools<a class="headerlink" href="#mcp-tools" title="Permanent link">&para;</a></h1>
+<p><code>configs/mcp_servers.yaml</code> holds connections to
+<a href="https://modelcontextprotocol.io">MCP</a> tool servers: programs that expose
+tools (fetch a page, query a database, run code) over a standard protocol. A
+dataset with an <code>agent:</code> block hands those tools to the model under test. On
+each row the model may call them, read the results, call again, and then
+answers. The answer is scored by the dataset's reward as usual.</p>
+<p>Use this to measure how well models <strong>use</strong> tools: whether they pick the right
+one, pass sensible arguments, stop in time, and turn what they read into the
+right answer. Every model runs the same loop over the same tools, so the
+comparison is about the model.</p>
+<pre class="mermaid"><code>flowchart LR
+  row[row: input_template] --&gt; step
+  subgraph agent["agent loop, up to max_iterations turns"]
+    step[model picks tool calls] --&gt;|calls| tools[(MCP servers)]
+    tools --&gt;|results| step
+  end
+  step --&gt;|no more calls, or turns used up| final[model writes the answer]
+  final --&gt; reward[dataset reward]</code></pre>
+<h2 id="mcp-tools-a2a-agents-environments-or-tools">MCP tools, A2A agents, environments or <code>tools:</code><a class="headerlink" href="#mcp-tools-a2a-agents-environments-or-tools" title="Permanent link">&para;</a></h2>
+<p>Four ways to evaluate something that acts. Pick by what you are testing.</p>
+<table>
+<thead>
+<tr>
+<th>you want to test</th>
+<th>use</th>
+<th>what runs</th>
+<th>the axis is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>models choosing and using live tools, in a loop the arena runs</td>
+<td><code>agent:</code> + MCP servers (this page)</td>
+<td>the arena's tool loop, the real servers</td>
+<td>models</td>
+</tr>
+<tr>
+<td>which function a model would call, with which arguments, without running anything</td>
+<td><a href="../datasets/#tool-calls"><code>tools:</code></a></td>
+<td>one call with the declared tools (the dataset's, or each row's own), nothing executed, <code>tool_calls_accuracy</code></td>
+<td>models</td>
+</tr>
+<tr>
+<td>an agent you built and deploy yourself, as a black box</td>
+<td><a href="../a2a-agents/">A2A agents</a></td>
+<td>your service, its own loop and tools</td>
+<td>agents</td>
+</tr>
+<tr>
+<td>a model working in a sandbox: a terminal, files, packages</td>
+<td><a href="../environments/">Environments</a>, <a href="../harbor-tasks/">Harbor tasks</a></td>
+<td>a Harbor agent in a container (MCP servers optional)</td>
+<td>models</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>agent:</code> versus <code>tools:</code>.</strong> <code>tools:</code> grades the decision only: the gold
+  calls are in the dataset, so it is cheap, deterministic and needs no server.
+  <code>agent:</code> grades the outcome: the tools really run and the final answer is
+  scored. Use <code>tools:</code> to test function calling itself; use <code>agent:</code> when the
+  answer depends on what the tools return.</li>
+<li><strong><code>agent:</code> versus A2A.</strong> With <code>agent:</code> the arena owns the loop and the
+  prompt, and only the model changes. With A2A the agent is yours, its prompt,
+  its tools and its model included; the arena only sends a message and scores
+  the reply. Use A2A to compare versions of an agent, not models.</li>
+<li><strong><code>agent:</code> versus environments.</strong> An <code>agent:</code> row is a few tool calls over
+  a protocol. An environment gives an agent a whole machine, which is slower
+  and heavier. Use an environment when the work is done in a shell or on
+  files; an environment can also take MCP servers
+  (<a href="#tools-in-a-harbor-sandbox">below</a>).</li>
+</ul>
+<h2 id="the-server-entry">The server entry<a class="headerlink" href="#the-server-entry" title="Permanent link">&para;</a></h2>
+<p>One entry per server. Its key is the name datasets and environments refer to,
+and it also prefixes the server's tool names (see
+<a href="#what-the-model-sees">what the model sees</a>).</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">stdio: a local process</label><label for="__tabbed_1_2">streamable_http: a running server</label><label for="__tabbed_1_3">sse: an older server</label><label for="__tabbed_1_4">websocket</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">mcp_servers</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">fetch</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stdio</span><span class="w">                   </span><span class="c1"># the default; spawn a process</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx</span><span class="w">                       </span><span class="c1"># required: the executable</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">mcp-server-fetch</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># its arguments, one per item</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w">                               </span><span class="c1"># variables the process gets</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">USER_AGENT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openarena-eval</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="c1"># cwd: /abs/path/to/server         # its working directory</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fetches a URL and returns it as markdown.</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">web</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">local</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">mcp_servers</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">docs</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamable_http</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8080/mcp</span><span class="w">     </span><span class="c1"># required: the endpoint</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span><span class="w">                           </span><span class="c1"># sent on every request</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer ${DOCS_TOKEN}</span><span class="w">   </span><span class="c1"># read from the environment or .env</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Search over the product documentation.</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">search</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">mcp_servers</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">legacy-search</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sse</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/sse</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">X-Api-Key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SEARCH_API_KEY}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">mcp_servers</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">calc</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">websocket</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ws://localhost:8765</span><span class="w">            </span><span class="c1"># ws:// or wss://</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>transport</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>transport</code></td>
+<td>all</td>
+<td><code>stdio</code> (default), <code>streamable_http</code>, <code>sse</code> or <code>websocket</code></td>
+</tr>
+<tr>
+<td><code>command</code></td>
+<td>stdio</td>
+<td>required. The executable to spawn: <code>uvx</code>, <code>npx</code>, <code>python</code>, a path</td>
+</tr>
+<tr>
+<td><code>args</code></td>
+<td>stdio</td>
+<td>its arguments, a list; blank items are dropped</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td>stdio</td>
+<td>environment variables for the process; keys without spaces</td>
+</tr>
+<tr>
+<td><code>cwd</code></td>
+<td>stdio</td>
+<td>the process's working directory</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td>streamable_http, sse, websocket</td>
+<td>required. Starts with <code>http://</code>, <code>https://</code>, <code>ws://</code> or <code>wss://</code></td>
+</tr>
+<tr>
+<td><code>headers</code></td>
+<td>streamable_http, sse</td>
+<td>HTTP headers on every request, typically <code>Authorization</code>; keys without spaces</td>
+</tr>
+<tr>
+<td><code>description</code>, <code>tags</code></td>
+<td>all</td>
+<td>for listings (<code>openarena mcp-servers list</code>) only</td>
+</tr>
+</tbody>
+</table>
+<p>A field another transport reads is an error, not ignored: a <code>url</code> on a stdio
+server, or <code>headers</code> on a websocket one. Any other field (<code>timeout</code>, <code>tools</code>,
+...) is an error too.</p>
+<h3 id="which-transport">Which transport<a class="headerlink" href="#which-transport" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>transport</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stdio</code></td>
+<td>The server is a package or a script you can launch: most published MCP servers. Nothing to keep running; the run starts it.</td>
+</tr>
+<tr>
+<td><code>streamable_http</code></td>
+<td>The server runs on its own, locally or remotely, at a URL. The protocol's current HTTP transport: prefer it for any HTTP server that supports it.</td>
+</tr>
+<tr>
+<td><code>sse</code></td>
+<td>An HTTP server that only speaks the older Server-Sent Events transport. Its URL usually ends in <code>/sse</code>.</td>
+</tr>
+<tr>
+<td><code>websocket</code></td>
+<td>A server that serves MCP over websockets. No <code>headers</code>, so it cannot carry a key that way. Not usable in a <a href="#tools-in-a-harbor-sandbox">Harbor sandbox</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>The server's own docs say which transport it serves and at which path. A
+wrong transport or path shows when the run connects, not in <code>openarena check</code>.</p>
+<h3 id="stdio-how-the-process-is-started">stdio: how the process is started<a class="headerlink" href="#stdio-how-the-process-is-started" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">A stdio server does not see your <code>.env</code></p>
+<p>The run reads the workspace's <code>.env</code>, but a stdio server does not inherit
+the run's environment. It gets a short safe list (<code>HOME</code>, <code>LOGNAME</code>,
+<code>PATH</code>, <code>SHELL</code>, <code>TERM</code>, <code>USER</code> on Linux and macOS) plus what <code>env:</code> sets.
+A server that needs <code>GITHUB_TOKEN</code> or <code>BRAVE_API_KEY</code> fails unless <code>env:</code>
+passes it: <code>env: {GITHUB_TOKEN: "${GITHUB_TOKEN}"}</code> hands it the value
+from your shell or <code>.env</code> (<a href="#secrets">Secrets</a>).</p>
+</div>
+<ul>
+<li><strong>One process per tool call.</strong> The tool list is read once, when the run
+  prepares a model's program. After that, every tool call opens a fresh
+  connection: for stdio, a new process that serves that one call and exits.
+  Keep start-up cheap (<code>uvx</code> and <code>npx</code> cache their package after the first
+  download), and do not count on anything the server keeps in memory between
+  two calls.</li>
+<li><strong>Relative paths</strong> in <code>command</code>, <code>args</code> and <code>cwd</code> are read from the folder
+  you run <code>openarena</code> in, not from <code>configs/</code>. Use absolute paths, or set
+  <code>cwd:</code>, for a script of your own.</li>
+<li><code>PATH</code> is the run's, so <code>uvx</code>, <code>npx</code> or <code>python</code> are found as in your shell.</li>
+</ul>
+<h3 id="remote-servers-url-and-headers">Remote servers: url and headers<a class="headerlink" href="#remote-servers-url-and-headers" title="Permanent link">&para;</a></h3>
+<p>The server must be up before the run starts, and reachable from the machine
+that runs <code>openarena</code>. The run reads every server's tool list while it
+prepares, before any cell runs. A server that is down, a <code>command</code> that is not
+found, or servers that list no tools fail the cells of every model on that
+dataset, with <code>could not load the MCP tools of [...]</code> and the cause, and the
+run goes on with the other datasets; <code>openarena evaluations run</code> then exits 1.
+Start the server and run the evaluation again: a plain resume runs the failed
+cells. A server that goes down mid-run
+fails the tool call, which the model sees as an error
+(<a href="#how-a-row-runs">below</a>).</p>
+<h3 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h3>
+<p>Write a key as <code>${NAME}</code>, never as its value. When a run reads its config,
+after it has loaded the workspace's <code>.env</code>, every <code>${NAME}</code> in a string is
+replaced by the environment variable <code>NAME</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">mcp_servers</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">github</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npx</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"-y"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"@modelcontextprotocol/server-github"</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">GITHUB_PERSONAL_ACCESS_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${GITHUB_TOKEN}</span><span class="w">   </span><span class="c1"># passes the value on to the process</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">docs</span><span class="p">:</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">streamable_http</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8080/mcp</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Bearer ${DOCS_TOKEN}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># .env, beside configs/</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">GITHUB_TOKEN</span><span class="o">=</span>ghp_...
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nv">DOCS_TOKEN</span><span class="o">=</span>...
+</code></pre></div>
+<ul>
+<li><strong>The file holds no secret.</strong> <code>mcp_servers.yaml</code> and the run's copy,
+  <code>.open-arena/&lt;evaluation&gt;/config.yaml</code>, keep <code>${GITHUB_TOKEN}</code>, not its
+  value, so either can be committed or shared.</li>
+<li><strong>This is how a stdio server gets a key.</strong> It inherits only the safe list
+  above plus its <code>env:</code>, so a variable in <code>.env</code> reaches it only when <code>env:</code>
+  names it: <code>env: {API_KEY: "${API_KEY}"}</code>.</li>
+<li><strong>An unset variable stops the run before it starts</strong>, naming the variable
+  and where it is used. <code>openarena check</code> warns about a <code>${NAME}</code> set neither
+  in your shell nor in the workspace's <code>.env</code>.</li>
+<li><code>$${NAME}</code> writes a literal <code>${NAME}</code>, for a value that must keep the
+  characters.</li>
+<li>An HTTP server's token can only go in <code>headers:</code>. Use a key scoped to the
+  evaluation, read-only where the server allows it.</li>
+</ul>
+<h3 id="what-there-is-no-field-for">What there is no field for<a class="headerlink" href="#what-there-is-no-field-for" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>No tool filter.</strong> The model gets every tool each listed server exposes.
+  To hide tools, run the server in a mode that exposes fewer (many take flags
+  for that, given in <code>args</code>), or put a small server of your own in front.</li>
+<li><strong>No timeout.</strong> There is no per-call or per-row timeout to set; HTTP
+  transports use the client's built-in defaults. A tool that hangs holds its
+  row, so keep your servers' own timeouts sensible.</li>
+</ul>
+<h2 id="the-agent-block">The <code>agent:</code> block<a class="headerlink" href="#the-agent-block" title="Permanent link">&para;</a></h2>
+<p>A dataset with an <code>agent:</code> block is answered by the tool loop. The
+evaluation's <code>language_models</code> are ordinary models from <code>models.yaml</code>; each
+must support tool calling, which <code>check</code> cannot know.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">web-questions</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">questions.jsonl</span><span class="w">            </span><span class="c1"># {"question": "...", "answer": "..."}</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">object</span><span class="p p-Indicator">,</span><span class="nt"> properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The answer only</span><span class="p p-Indicator">}},</span><span class="nt"> required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]}</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nt">agent</span><span class="p">:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">      </span><span class="nt">mcp_servers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fetch</span><span class="p p-Indicator">]</span><span class="w">             </span><span class="c1"># mcp_servers.yaml keys, at least one</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">      </span><span class="nt">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">                </span><span class="c1"># tool-calling turns per row (default 5)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">        </span><span class="no">Answer the question. Fetch the pages you need first; do not answer</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">        </span><span class="no">from memory.</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">judge</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>default</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mcp_servers</code></td>
+<td></td>
+<td>required. A list of <code>mcp_servers.yaml</code> keys, at least one. Their tools are merged into one list</td>
+</tr>
+<tr>
+<td><code>max_iterations</code></td>
+<td>5</td>
+<td>tool-calling turns per row (<a href="#max_iterations">below</a>)</td>
+</tr>
+<tr>
+<td><code>instructions</code></td>
+<td>a generic "helpful agent" line</td>
+<td>the instructions for every turn; say when to use the tools</td>
+</tr>
+<tr>
+<td><code>final_instructions</code></td>
+<td><code>instructions</code></td>
+<td>instructions for the last call, the one that writes the answer</td>
+</tr>
+<tr>
+<td><code>use_chain_of_thought</code></td>
+<td>false</td>
+<td>have the model reason before each tool decision; for non-reasoning models</td>
+</tr>
+<tr>
+<td><code>return_inputs_with_trajectory</code></td>
+<td>true</td>
+<td>keep the tool trajectory (<code>messages</code>) beside the answer (<a href="#what-gets-recorded-and-scored">scoring</a>)</td>
+</tr>
+<tr>
+<td><code>return_inputs</code></td>
+<td>false</td>
+<td>also put the row's input fields in the prediction</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>function_calling</code></td>
+<td>the only loop there is</td>
+</tr>
+</tbody>
+</table>
+<p><code>language_model</code> and <code>tools</code> are set by the run and refused here. Every other
+key goes to the agent as a setting, so a misspelled one (<code>max_iteration:</code>)
+passes <code>check</code> and stops the run when the program is built.</p>
+<details class="details">
+<summary>Other agent settings</summary>
+<p>The block also forwards <code>temperature</code>, <code>max_tokens</code>, <code>top_p</code>, <code>top_k</code>,
+<code>reasoning_effort</code>, <code>examples</code>, <code>use_inputs_schema</code>, <code>use_outputs_schema</code>
+and <code>prompt_template</code> to the agent. Set here, they apply to every model of
+the evaluation alike. A model's own sampling params belong in
+<code>models.yaml</code> (<a href="../models/#params">Models</a>); set a param in one
+place, not both. Leave <code>autonomous</code> at its default: the run needs the
+agent to execute the tools itself.</p>
+</details>
+<h3 id="how-a-row-runs">How a row runs<a class="headerlink" href="#how-a-row-runs" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>sequenceDiagram
+  participant R as row
+  participant M as model under test
+  participant S as MCP servers
+  R-&gt;&gt;M: the rendered input, the instructions, every tool
+  loop at most max_iterations turns
+    M-&gt;&gt;S: one or more tool calls (run concurrently)
+    S--&gt;&gt;M: results, or "error: ..."
+  end
+  Note over M: stops early when a turn has no tool call
+  M-&gt;&gt;R: final call: the answer, in the output_schema</code></pre>
+<ol>
+<li>Each turn, the model sees the conversation so far and the full tool list,
+   and either calls tools or does not. Several calls in one turn run at once.</li>
+<li>A turn without a tool call ends the loop. So does the last allowed turn.</li>
+<li>A last call writes the answer from the whole trajectory, shaped by the
+   dataset's <code>output_schema</code> (an <code>answer</code> field above). It is made even when
+   the turns ran out: a model cut off mid-search still answers, usually
+   badly, and is scored for it.</li>
+<li>A tool that fails (bad arguments, a server error) does not fail the row.
+   Its result becomes <code>error: &lt;message&gt;</code> in the conversation, and the model
+   may retry or work around it. That is part of what is measured.</li>
+</ol>
+<h3 id="max_iterations">max_iterations<a class="headerlink" href="#max_iterations" title="Permanent link">&para;</a></h3>
+<p>Each turn is a model call, plus the final answer call: a row costs up to
+<code>max_iterations + 1</code> calls of the model under test, and each call re-sends the
+whole conversation, tool results included. Tokens grow with every turn.</p>
+<table>
+<thead>
+<tr>
+<th>setting</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 to 3</td>
+<td>one lookup is enough (a single fetch, a calculator); cuts cost and keeps models from wandering</td>
+</tr>
+<tr>
+<td>5 (default)</td>
+<td>a few dependent lookups</td>
+</tr>
+<tr>
+<td>8 to 15</td>
+<td>multi-hop tasks: search, open, follow a link, compare</td>
+</tr>
+</tbody>
+</table>
+<p>Too low, and good models are cut off before they finish: every model scores
+alike and the evaluation measures the limit. Too high costs money on models
+that loop. Run a few rows (<code>limit: 5</code> on the dataset), read the trajectories,
+and set it a little above what a good model needs.</p>
+<h3 id="what-the-model-sees">What the model sees<a class="headerlink" href="#what-the-model-sees" title="Permanent link">&para;</a></h3>
+<p>Each tool is named <code>&lt;server key&gt;_&lt;tool name&gt;</code>: the <code>fetch</code> tool of the <code>fetch</code>
+server is <code>fetch_fetch</code>, and two servers can both expose <code>search</code> without a
+clash. Its description and parameters are the server's own. Name server keys
+plainly, since every model reads them.</p>
+<h2 id="what-gets-recorded-and-scored">What gets recorded and scored<a class="headerlink" href="#what-gets-recorded-and-scored" title="Permanent link">&para;</a></h2>
+<p>A row's prediction is the answer, with the trajectory beside it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"messages"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="p">{</span><span class="nt">"role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"assistant"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool_calls"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"function"</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">      </span><span class="nt">"function"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fetch_fetch"</span><span class="p">,</span><span class="w"> </span><span class="nt">"arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com"</span><span class="p">}}}]},</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">"role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tool"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool_call_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c1"</span><span class="p">,</span><span class="w"> </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"# Example Domain ..."</span><span class="p">}</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="p">],</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nt">"answer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Example Domain"</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>the dataset has</th>
+<th>the prediction is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>an <code>output_schema</code> (the usual case)</td>
+<td>its fields, plus <code>messages</code></td>
+</tr>
+<tr>
+<td>an <code>output_schema</code>, and <code>return_inputs_with_trajectory: false</code></td>
+<td>its fields only</td>
+</tr>
+<tr>
+<td>no <code>output_schema</code></td>
+<td><code>messages</code> only: the trajectory is the answer</td>
+</tr>
+<tr>
+<td><code>return_inputs: true</code></td>
+<td>the row's input fields as well; an input field named like an answer field, or <code>messages</code>, stops the run before it starts</td>
+</tr>
+</tbody>
+</table>
+<p>How each kind of <a href="../rewards/">reward</a> reads it:</p>
+<table>
+<thead>
+<tr>
+<th>reward</th>
+<th>reads</th>
+<th>use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exact_match</code>, <code>answer_accuracy</code>, ...</td>
+<td>the answer fields only: a deterministic reward is limited to the fields the <code>output_template</code> renders, so <code>messages</code> never counts</td>
+<td>a short, checkable answer</td>
+</tr>
+<tr>
+<td><code>lm_as_judge</code>, <code>rubrics_as_judge</code>, ...</td>
+<td>the whole prediction, trajectory included</td>
+<td>free-text answers; asking whether the answer is backed by what the tools returned</td>
+</tr>
+<tr>
+<td><code>tool_correctness</code>, <code>tool_use</code>, <code>argument_correctness</code>, <code>step_efficiency</code>, <code>agent_loop_detection</code>, <code>task_completion</code></td>
+<td>the whole prediction</td>
+<td><strong>how</strong> the model worked, not only the result; good as extra <a href="../datasets/#extra-metrics"><code>metrics:</code></a> beside the main reward</td>
+</tr>
+<tr>
+<td><code>tool_calls_accuracy</code></td>
+<td>a top-level <code>tool_calls</code></td>
+<td>not this page: it scores <a href="../datasets/#tool-calls"><code>tools:</code></a> datasets and reads nothing from an agent's <code>messages</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Score the answer, watch the process</p>
+<p>Make the main <code>reward</code> about the answer, and add one or two tool-use
+judges under <code>metrics:</code>. A model that gets the right answer in two calls
+and one that needs eight then show the same reward and a different
+<code>step_efficiency</code>.</p>
+</div>
+<p>Cost, tokens and latency, when you list them under <code>metrics:</code>
+(<a href="../evaluations/#metrics-the-columns-beside-reward">Running evaluations</a>),
+cover every turn of the loop. Judges are counted apart (<code>reward_cost</code>).
+Per-row trajectories are not written to <code>result.json</code>, and
+<code>openarena evaluations run</code> does not trace into MLflow; to keep them, run the
+sweep from Python with <code>on_sample</code> (<a href="../results/">Reading results</a>) or from the
+arena app.</p>
+<h2 id="fair-comparisons">Fair comparisons<a class="headerlink" href="#fair-comparisons" title="Permanent link">&para;</a></h2>
+<p>The tools are part of the test. Keep them the same for every model, and as
+few as the task needs.</p>
+<ul>
+<li><strong>Give only the tools the task needs.</strong> Every tool is in every prompt. Extra
+  tools cost tokens on each turn and give weaker models more ways to go wrong.
+  That may be what you want to measure, or may be noise.</li>
+<li><strong>One evaluation, one tool set.</strong> Every model of an evaluation gets the same
+  servers, the same <code>max_iterations</code> and the same instructions. To compare
+  tool sets, write two datasets over the same rows with different <code>agent:</code>
+  blocks, and put both in the evaluation.</li>
+<li><strong>Pin the server.</strong> <code>uvx mcp-server-fetch</code> runs the latest release; a new
+  version can change tool names, descriptions or output between two runs.
+  Pin it (<code>args: [mcp-server-fetch==&lt;version&gt;]</code>, <code>npx -y &lt;package&gt;@&lt;version&gt;</code>)
+  for results you will compare later.</li>
+<li><strong>Live data moves.</strong> A web or search tool returns something different next
+  week. Models in one run see nearly the same web; runs a month apart do not.
+  For a benchmark meant to last, point the tools at a fixed copy of the data.</li>
+</ul>
+<h2 id="servers-that-keep-state">Servers that keep state<a class="headerlink" href="#servers-that-keep-state" title="Permanent link">&para;</a></h2>
+<p>Some tools change something: write a file, insert a row, open a ticket. Then
+what one row did can change what the next row sees.</p>
+<ul>
+<li>Rows of a batch run at the same time (<code>batch_size</code>), so their tool calls
+  interleave on a shared server.</li>
+<li>Models run one after the other against the same server: the second model
+  sees what the first left behind.</li>
+<li>A stdio server is a fresh process per tool call, so in-memory state does
+  not survive from one call to the next, even within a row. State on disk, in
+  a database or in a remote service does.</li>
+<li>Resuming reruns only the cells that did not finish, against the server as
+  it is now.</li>
+</ul>
+<p>To keep results comparable:</p>
+<table>
+<thead>
+<tr>
+<th>approach</th>
+<th>how</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>read-only tools</td>
+<td>the safest: expose only tools that read</td>
+</tr>
+<tr>
+<td>isolate per row</td>
+<td>have the tools key their state on something the row provides, such as an id in the input</td>
+</tr>
+<tr>
+<td>reset between runs</td>
+<td>restore the database or files before each run, and run with <code>--no-cache</code> so every cell starts from the same state</td>
+</tr>
+<tr>
+<td>one row at a time</td>
+<td><code>batch_size: 1</code> in the dataset's <code>config:</code>, and no <code>batch_size</code> on the evaluation (it would override it)</td>
+</tr>
+</tbody>
+</table>
+<p>When each row needs its own clean machine, an <a href="../environments/">environment</a>
+is the better fit: every Harbor trial gets a fresh sandbox.</p>
+<h2 id="tools-in-a-harbor-sandbox">Tools in a Harbor sandbox<a class="headerlink" href="#tools-in-a-harbor-sandbox" title="Permanent link">&para;</a></h2>
+<p>An <a href="../environments/">environment</a> can hand servers to its agent with
+<code>mcp_servers: [...]</code>. They are written into the Harbor task, and Harbor
+carries less than a dataset's agent does:</p>
+<ul>
+<li><code>stdio</code>, <code>sse</code> and <code>streamable_http</code> only; <code>websocket</code> is refused.</li>
+<li>No <code>headers</code>, and no stdio <code>env</code> or <code>cwd</code>: Harbor would drop them, so a
+  server that sets them is refused. Put a stdio server's variables in the
+  environment's <code>env:</code> instead.</li>
+<li>A stdio command runs inside the sandbox, so the image must have it (<code>uvx</code>
+  needs <code>uv</code> installed in the Dockerfile).</li>
+<li>An HTTP server must be reachable from the sandbox, not on <code>localhost</code>.</li>
+</ul>
+<h2 id="common-mistakes">Common mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<p><code>openarena check configs</code> catches the shape of an entry and every reference
+by name (<a href="../check/">Checking configs</a>):</p>
+<table>
+<thead>
+<tr>
+<th>mistake</th>
+<th>what <code>check</code> reports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a stdio server without <code>command</code></td>
+<td><code>a stdio server needs a `command` to spawn</code></td>
+</tr>
+<tr>
+<td><code>url: localhost:8080/mcp</code></td>
+<td><code>`url` must start with http://, https://, ws:// or wss://</code></td>
+</tr>
+<tr>
+<td><code>command</code> on an HTTP server, <code>headers</code> on a websocket one</td>
+<td><code>a &lt;transport&gt; server does not take [...]; it reads [...]</code>, and which transport reads it</td>
+</tr>
+<tr>
+<td><code>transport: http</code></td>
+<td><code>Input should be 'stdio', 'streamable_http', 'sse' or 'websocket'</code></td>
+</tr>
+<tr>
+<td><code>timeout:</code> or another unknown field on a server</td>
+<td><code>not a field of a `mcp_servers` entry</code>, with the fields it reads</td>
+</tr>
+<tr>
+<td><code>mcp_servers: []</code> or <code>mcp_servers: fetch</code> in <code>agent:</code></td>
+<td>it cannot be empty; write it as a list</td>
+</tr>
+<tr>
+<td><code>agent.mcp_servers</code> naming a server not in <code>mcp_servers.yaml</code></td>
+<td>an unknown reference</td>
+</tr>
+<tr>
+<td><code>tools:</code> or <code>language_model:</code> inside <code>agent:</code></td>
+<td><code>`agent:` keys [...] are set by the run</code></td>
+</tr>
+<tr>
+<td><code>agent:</code> and <code>tools:</code> on one dataset</td>
+<td><code>`agent`, `tools` are mutually exclusive</code></td>
+</tr>
+</tbody>
+</table>
+<p>What <code>check</code> cannot see shows up when the run reaches it
+(<a href="../results/#when-a-cell-failed-or-scored-0">Reading results</a>):</p>
+<table>
+<thead>
+<tr>
+<th>symptom</th>
+<th>likely cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the dataset's cells fail: <code>no MCP tools loaded from servers [...]</code></td>
+<td>the server started but lists no tools</td>
+</tr>
+<tr>
+<td>the dataset's cells fail: <code>could not load the MCP tools of [...]</code>, connection refused</td>
+<td>the HTTP server is not running, or its URL or transport is wrong</td>
+</tr>
+<tr>
+<td>the dataset's cells fail: <code>could not load the MCP tools of [...]: FileNotFoundError: ... No such file or directory</code></td>
+<td><code>command</code> is not on <code>PATH</code>, or a relative path read from the wrong folder</td>
+</tr>
+<tr>
+<td>the run stops while preparing: an unexpected keyword</td>
+<td>a misspelled <code>agent:</code> setting</td>
+</tr>
+<tr>
+<td>the run refuses to start: <code>not set in the environment: NAME (at ...)</code></td>
+<td>a <code>${NAME}</code> whose variable is neither exported nor in <code>.env</code></td>
+</tr>
+<tr>
+<td>tool results read <code>error: ...</code> about a missing key</td>
+<td>a stdio server's variable is in <code>.env</code> but <code>env:</code> does not pass it (<code>env: {KEY: "${KEY}"}</code>)</td>
+</tr>
+<tr>
+<td>every model scores about the same, and low</td>
+<td><code>max_iterations</code> too low, or models without tool calling</td>
+</tr>
+</tbody>
+</table>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>openarena<span class="w"> </span>mcp-servers<span class="w"> </span>list<span class="w"> </span>--configs<span class="w"> </span>configs<span class="w">   </span><span class="c1"># every server: transport, command, url</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs<span class="w">                        </span><span class="c1"># shapes and references</span>
+</code></pre></div>
+<p>To add servers with a coding agent, the workspace's <code>openarena-add-mcp-tools</code>
+skill walks through it (<a href="../../coding-agents/">Coding agents</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../datasets/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Datasets">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Datasets
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../a2a-agents/" class="md-footer__link md-footer__link--next" aria-label="Next: A2A agents">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                A2A agents
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

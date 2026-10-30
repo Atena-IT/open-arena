@@ -1,0 +1,2042 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/introduction/">
+      
+      
+      
+        <link rel="prev" href="./..">
+      
+      
+        <link rel="next" href="../workspace/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Introduction - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="../assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The pieces
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The pieces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-they-reference-each-other" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How they reference each other
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#names-are-the-glue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Names are the glue
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-minimal-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A minimal workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run does
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a run does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ranking-is-a-separate-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ranking is a separate step
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-answers-each-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What answers each row
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What answers each row">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-one-fits-your-goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which one fits your goal
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a reward
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#designing-evaluations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Designing evaluations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-runs-where" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What runs where
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-arena" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The arena
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where to go next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The pieces
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The pieces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-they-reference-each-other" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How they reference each other
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#names-are-the-glue" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Names are the glue
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-minimal-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A minimal workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What a run does
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What a run does">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ranking-is-a-separate-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ranking is a separate step
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-answers-each-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What answers each row
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What answers each row">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-one-fits-your-goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Which one fits your goal
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-reward" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Choosing a reward
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#designing-evaluations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Designing evaluations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-runs-where" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What runs where
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-arena" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The arena
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where to go next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h1>
+<p>openarena answers one question: <strong>which model, or agent, does this job best,
+at what cost?</strong> You describe the candidates and the job in YAML. openarena
+runs every candidate on every dataset, scores each answer, and ranks them.</p>
+<p>Use it when you have to pick, or keep picking: a cheaper model for a task that
+already works, a local model to replace a hosted one, the model that uses your
+MCP tools best, the deployed agent that answers your users best, the coding
+agent that solves your tasks in a sandbox. It measures on your data, on your
+machine, and keeps every score so the next comparison builds on the last one.</p>
+<p>This page is the mental model: the pieces, how they name each other, what a
+run does, and which setup fits which goal. The guides then go through each
+piece field by field.</p>
+<h2 id="the-pieces">The pieces<a class="headerlink" href="#the-pieces" title="Permanent link">&para;</a></h2>
+<p>Everything is declared in <strong>registries</strong>: one YAML file per kind of thing,
+under <code>configs/</code>, each a mapping of names to entries.</p>
+<table>
+<thead>
+<tr>
+<th>registry</th>
+<th>an entry is</th>
+<th>it names</th>
+<th>it is named by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../guides/models/">models</a></td>
+<td>a litellm model id, its type (<code>llm</code> or <code>embedding</code>) and its params</td>
+<td>nothing</td>
+<td>evaluations, judge rewards, leaderboards</td>
+</tr>
+<tr>
+<td><a href="../guides/rewards/">rewards</a></td>
+<td>a catalog reward (<code>type</code>), its kwargs (<code>config</code>), and which way is better (<code>direction</code>)</td>
+<td>its judge model, if any</td>
+<td>datasets</td>
+</tr>
+<tr>
+<td><a href="../guides/datasets/">datasets</a></td>
+<td>where the rows come from, how each row becomes a question and an expected answer, what answers it, and the reward that scores it</td>
+<td>a reward, MCP servers, an environment</td>
+<td>evaluations, leaderboards</td>
+</tr>
+<tr>
+<td><a href="../guides/mcp-tools/">mcp_servers</a></td>
+<td>a tool server, reached over <code>stdio</code>, <code>streamable_http</code>, <code>sse</code> or <code>websocket</code></td>
+<td>nothing</td>
+<td>datasets with an <code>agent:</code> block, environments</td>
+</tr>
+<tr>
+<td><a href="../guides/a2a-agents/">a2a_agents</a></td>
+<td>a remote agent reached over A2A: a URL, headers, a timeout</td>
+<td>nothing</td>
+<td>evaluations over <code>a2a</code> datasets</td>
+</tr>
+<tr>
+<td><a href="../guides/environments/">environments</a></td>
+<td>a sandbox: a Docker image or a Dockerfile, resources, network</td>
+<td>MCP servers</td>
+<td>datasets with a <code>harbor:</code> block</td>
+</tr>
+<tr>
+<td><a href="../guides/evaluations/">evaluations</a></td>
+<td>a sweep: the models (or agents) × the datasets to run</td>
+<td>models or A2A agents, datasets</td>
+<td><code>openarena evaluations run</code></td>
+</tr>
+<tr>
+<td><a href="../guides/leaderboards/">leaderboards</a></td>
+<td>a way to rank finished runs: a scope and each metric's share of the score</td>
+<td>datasets, models</td>
+<td><code>openarena leaderboards run</code></td>
+</tr>
+</tbody>
+</table>
+<p><a href="../guides/harbor-tasks/">Harbor tasks</a> are the one piece that is not a
+registry entry. They are folders under <code>tasks/</code>, each with its instruction,
+its sandbox and its own tests, read by a dataset of <code>type: harbor_tasks</code>.</p>
+<h3 id="how-they-reference-each-other">How they reference each other<a class="headerlink" href="#how-they-reference-each-other" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>flowchart LR
+  E[evaluation] --&gt;|language_models| M[models]
+  E --&gt;|"language_models (a2a sweep)"| A[a2a_agents]
+  E --&gt;|datasets| D[datasets]
+  D --&gt;|reward| R[rewards]
+  R --&gt;|config.language_model| M
+  D --&gt;|agent.mcp_servers| S[mcp_servers]
+  D --&gt;|harbor.environment| V[environments]
+  V --&gt;|mcp_servers| S
+  D --&gt;|"type: harbor_tasks"| T[(tasks/ folders)]
+  E ==&gt;|evaluations run| O[(.open-arena/*/result.json)]
+  L[leaderboard] -.-&gt;|reads| O
+  L -.-&gt;|scope| D</code></pre>
+<p>The evaluation is the root: it says what to run, and everything else is
+reached from it by name. A leaderboard is not tied to an evaluation. It reads
+the results every run left behind and ranks the models in its scope.</p>
+<h3 id="names-are-the-glue">Names are the glue<a class="headerlink" href="#names-are-the-glue" title="Permanent link">&para;</a></h3>
+<p>Every reference is a <strong>registry name</strong>, never a provider id. A dataset's
+<code>reward</code> is a <code>rewards</code> key. An evaluation's <code>language_models</code> are <code>models</code>
+keys. A judge's <code>language_model</code> is a <code>models</code> key too, and must be a chat
+model. Names match <code>^[A-Za-z0-9][A-Za-z0-9_.-]*$</code>, up to 128 characters.</p>
+<p>This has consequences worth knowing:</p>
+<ul>
+<li><strong>Two entries calling one id are two models.</strong> <code>gpt-4o-mini</code> and
+  <code>gpt-4o-mini-hot</code> can both call <code>openai/gpt-4o-mini</code> with a different
+  <code>temperature</code>, and are compared as two candidates. That is how you compare
+  settings, not only models.</li>
+<li><strong>Scores are stored under the name.</strong> A leaderboard joins runs by model and
+  dataset name. Rename an entry and its earlier scores no longer line up with
+  its new ones. Point an entry at another id while keeping its name, and new
+  runs score something else under the old name.</li>
+<li><strong>A typo is caught before anything runs.</strong> <code>openarena check configs</code> resolves
+  every reference across the registry files and says which line to fix. See
+  <a href="../guides/check/">Checking configs</a>.</li>
+</ul>
+<h2 id="a-minimal-workspace">A minimal workspace<a class="headerlink" href="#a-minimal-workspace" title="Permanent link">&para;</a></h2>
+<p>The smallest set of entries that runs and ranks, shown together here but kept
+in <code>models.yaml</code>, <code>rewards.yaml</code>, <code>datasets.yaml</code>, <code>evaluations.yaml</code> and
+<code>leaderboards.yaml</code>. Follow the names: <code>math-compare</code> names two models and a
+dataset, the dataset names a reward, and the leaderboard scopes the dataset.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">qwen38</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/qwen3.8:27b-mlx</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">gpt-4o-mini</span><span class="p">:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">exact-match</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact_match</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span><span class="nt">gsm8k-20</span><span class="p">:</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">}}</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The final number only</span><span class="p p-Indicator">}}</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">  </span><span class="nt">math-compare</span><span class="p">:</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="w">  </span><span class="nt">math</span><span class="p">:</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Math, quality only</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><code>openarena init</code> writes a workspace with entries like these and more, each
+file explaining its own fields in comments. See <a href="../workspace/">The workspace</a>.</p>
+<h2 id="what-a-run-does">What a run does<a class="headerlink" href="#what-a-run-does" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>math-compare
+</code></pre></div>
+<ol>
+<li><strong>Reads <code>.env</code></strong> beside <code>configs/</code>, never over a variable already set.
+   That is where provider keys go, and the values of any <code>${NAME}</code> a config
+   uses (<a href="../workspace/#secrets-in-configs">Secrets in configs</a>).</li>
+<li><strong>Gathers the evaluation</strong>: the entry, the datasets it lists, and the
+   rewards, MCP servers, environments and A2A agents those name. Every model
+   is kept, since rewards and metrics name their models by key.</li>
+<li><strong>Validates it whole</strong>, each <code>${NAME}</code> replaced by its variable. An unset
+   variable, an unknown name, a judge that is not a chat model, a chat model
+   on an embedding dataset, a Harbor agent that cannot call the model: the
+   run stops here, before any call.</li>
+<li><strong>Writes a snapshot</strong> to <code>.open-arena/&lt;evaluation&gt;/config.yaml</code>, and copies
+   the environments' build folders and the <code>harbor_tasks</code> folders beside it.
+   That snapshot is exactly what ran, with the <code>${NAME}</code> references kept
+   rather than the secrets.</li>
+<li><strong>Prepares each dataset</strong>: reads its rows, renders each through
+   <code>input_template</code> (the question) and <code>output_template</code> (the expected
+   answer), and builds what answers it, once per model.</li>
+<li><strong>Runs the grid model by model</strong>: every dataset for the first model, then
+   the next, so a local server loads each model once. One <strong>cell</strong> is one
+   model on one dataset. Rows go in batches of <code>batch_size</code>: the
+   <code>--batch-size</code> option, else the evaluation's, else the dataset's, else 1.</li>
+<li><strong>Scores every answer</strong> with the dataset's reward, from 0 to 1. The cell's
+   <code>reward</code> is the mean over its rows; the cost and tokens the calls used are
+   recorded beside it, with any extra <code>metrics</code>.</li>
+<li><strong>Writes <code>result.json</code></strong> next to the snapshot, and prints one table per
+   dataset: a row per model, a column per metric.</li>
+</ol>
+<pre class="mermaid"><code>flowchart LR
+  rows[(dataset rows)] --&gt;|input_template| q[question]
+  rows --&gt;|output_template| ref[expected answer]
+  q --&gt; m{{model or agent}}
+  m --&gt; a[answer]
+  a --&gt; r[reward]
+  ref --&gt; r
+  r --&gt; cell[cell: reward, cost, tokens]
+  cell --&gt; res[(result.json)]
+  res --&gt; board[leaderboard]</code></pre>
+<p>A finished cell is kept. Run the same evaluation again and it resumes: cells
+that completed are read back, cells that failed or never ran are run. This is
+what makes a long sweep cheap to fix: correct a key or a template, run again.
+When you change something finished cells depend on (the model list, a
+dataset's reward or metrics), add <code>--no-cache</code> to start over. See
+<a href="../guides/evaluations/">Running evaluations</a> and
+<a href="../guides/results/">Reading results</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">A failed cell is a result, not a crash</p>
+<p>One model failing does not stop the others: every cell runs, and every
+failure is reported. A cell that cannot give a score (a template naming
+a missing column, an agent whose MCP servers give no tools, a missing key
+or a model server that is down, so that no row got an answer) prints
+<code>&lt;model&gt; failed: &lt;why&gt;</code> and shows <code>—</code> in the table, and the command
+exits 1 once the table is printed. A plain rerun runs those cells again.
+A cell where only some rows failed finishes, and those rows score 0.
+Read the warnings and the failed lines before the scores.</p>
+</div>
+<h3 id="ranking-is-a-separate-step">Ranking is a separate step<a class="headerlink" href="#ranking-is-a-separate-step" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>math
+</code></pre></div>
+<p>A leaderboard reads every <code>result.json</code> under <code>.open-arena/</code>, takes the
+newest score of each model on each dataset, and ranks the models in its scope.
+Each metric is normalized per dataset against the models in scope, weighted by
+its share, and the result averaged over the datasets. With no <code>shares</code>, the
+reward weighs most and the other measurements break ties. Budgets (cost at
+most 0.05, say) are hard limits: a model breaking one is left out of the
+ranking and listed as over budget. A model not scored on every dataset in
+scope is listed as not ranked.</p>
+<p>Keeping the two steps apart is deliberate. You pay for a run once and rank it
+as many ways as you need: quality only, quality per dollar, one domain, every
+domain. And runs add up: a model run this week on math and next week on code
+ranks on both. See <a href="../guides/leaderboards/">Leaderboards</a>.</p>
+<h2 id="what-answers-each-row">What answers each row<a class="headerlink" href="#what-answers-each-row" title="Permanent link">&para;</a></h2>
+<p>A dataset says what answers its rows with at most one block. That choice
+decides what is under test, what the answer looks like, and which rewards make
+sense.</p>
+<table>
+<thead>
+<tr>
+<th>block</th>
+<th>what is under test</th>
+<th>what the reward scores</th>
+<th>the evaluation's <code>language_models</code></th>
+<th>guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>none, or <code>generator:</code></td>
+<td>a chat model, one call per row</td>
+<td>the model's structured answer</td>
+<td>chat models</td>
+<td><a href="../guides/datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td><code>tools:</code></td>
+<td>a chat model's tool calls, one call, nothing executed</td>
+<td>the calls it made</td>
+<td>chat models</td>
+<td><a href="../guides/datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td><code>agent:</code></td>
+<td>a chat model working with real tools over MCP, in a loop</td>
+<td>the agent's final answer</td>
+<td>chat models</td>
+<td><a href="../guides/mcp-tools/">MCP tools</a></td>
+</tr>
+<tr>
+<td><code>a2a: {}</code></td>
+<td>a remote agent, whatever is inside it</td>
+<td>the agent's reply</td>
+<td>A2A agents</td>
+<td><a href="../guides/a2a-agents/">A2A agents</a></td>
+</tr>
+<tr>
+<td><code>harbor:</code> with an <code>environment</code></td>
+<td>a model driving a Harbor agent (<code>terminus-2</code>, <code>claude-code</code>, <code>codex</code>, ...) in a sandbox, on your rows</td>
+<td>what it wrote to <code>answer_file</code>, else its last message</td>
+<td>chat models</td>
+<td><a href="../guides/environments/">Environments</a></td>
+</tr>
+<tr>
+<td><code>harbor:</code> on <code>type: harbor_tasks</code></td>
+<td>the same, on task folders with their own tests</td>
+<td>the score the tests gave</td>
+<td>chat models</td>
+<td><a href="../guides/harbor-tasks/">Harbor tasks</a></td>
+</tr>
+<tr>
+<td><code>embedding:</code></td>
+<td>an embedding model retrieving the row's passages</td>
+<td>the passages it returned</td>
+<td>embedding models</td>
+<td><a href="../guides/datasets/">Datasets</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="which-one-fits-your-goal">Which one fits your goal<a class="headerlink" href="#which-one-fits-your-goal" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:6"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Plain model QA</label><label for="__tabbed_1_2">Tool calling</label><label for="__tabbed_1_3">Agent with MCP tools</label><label for="__tabbed_1_4">Remote agents</label><label for="__tabbed_1_5">Sandboxed tasks</label><label for="__tabbed_1_6">Retrieval</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>Block:</strong> none, or <code>generator:</code> for <code>instructions</code> and
+<code>chain_of_thought</code>.</p>
+<p><strong>Pick it when</strong> the job is a question in, an answer out: extraction,
+classification, math, summaries, multiple choice. It is the cheapest and
+fastest setup, one call per row, and the easiest to score exactly.</p>
+<p><strong>It does not tell you</strong> how the model behaves with tools or over many
+steps.</p>
+</div>
+<div class="tabbed-block">
+<p><strong>Block:</strong> <code>tools:</code> with <code>tool_schemas</code>, the functions every row shares;
+or <code>tools: {}</code> with a <code>tools_template</code> in <code>config</code>, when each row brings
+its own, the row being a Chat Completions request (<code>messages</code> + <code>tools</code>),
+the way a tool-calling benchmark is published.</p>
+<p><strong>Pick it when</strong> you want to know whether a model picks the right function
+with the right arguments, without running a tool server. Nothing executes,
+so it is fast, repeatable and safe. Score it with <code>tool_calls_accuracy</code>
+against the expected calls.</p>
+<p><strong>It does not tell you</strong> whether the model recovers from a tool's error or
+uses a result well: there is no result. For that, use <code>agent:</code>.</p>
+</div>
+<div class="tabbed-block">
+<p><strong>Block:</strong> <code>agent:</code> naming <code>mcp_servers</code>.</p>
+<p><strong>Pick it when</strong> the job needs real tools: search, a database, your own
+API. The model calls the tools, reads the results and decides, until it
+answers. This measures the model as an agent over your tools.</p>
+<p><strong>Trade-offs:</strong> each row is several calls, so it costs more and takes
+longer. The servers must be reachable from your machine. A tool whose
+answers change over time makes scores drift between runs.</p>
+</div>
+<div class="tabbed-block">
+<p><strong>Block:</strong> <code>a2a: {}</code>, and the evaluation lists <code>a2a_agents</code> keys.</p>
+<p><strong>Pick it when</strong> what you compare is an agent already deployed behind the
+A2A protocol, built with any stack. Each row is sent as one message and
+the reply is scored. openarena does not see or choose the model inside.</p>
+<p><strong>Constraint:</strong> an evaluation's axis is either models or A2A agents, so
+<code>a2a</code> datasets go in an evaluation of their own.</p>
+</div>
+<div class="tabbed-block">
+<p><strong>Block:</strong> <code>harbor:</code>.</p>
+<p><strong>Pick it when</strong> the job is done by acting, not replying: editing files,
+running code, working a terminal. The model drives a Harbor agent in a
+sandbox. Over your rows, name an <code>environment</code> and score the answer with
+any reward. Over task folders (<code>type: harbor_tasks</code>), each task's own
+tests score it, read by the <code>harbor_verifier</code> reward.</p>
+<p><strong>Trade-offs:</strong> the slowest and most expensive setup: a sandbox per row,
+many calls per row. It needs Docker, or a sandbox provider's key.</p>
+</div>
+<div class="tabbed-block">
+<p><strong>Block:</strong> <code>embedding:</code>.</p>
+<p><strong>Pick it when</strong> you choose an embedding model for search. Each row brings
+a query and its passages, the model under test ranks them and returns the
+top <code>k</code>, and <code>retrieval_recall</code> scores how many of the expected passages
+came back.</p>
+<p><strong>Constraint:</strong> an embedding dataset runs in an evaluation of its own,
+over embedding models.</p>
+</div>
+</div>
+</div>
+<pre class="mermaid"><code>flowchart TD
+  start{What do you compare?} --&gt;|deployed agents| a2a["a2a: {}"]
+  start --&gt;|embedding models| emb["embedding:"]
+  start --&gt;|chat models| acts{Is the job done by acting?}
+  acts --&gt;|"no, by answering"| tools{Does it need tools?}
+  tools --&gt;|no| gen["generator (or no block)"]
+  tools --&gt;|"the call, not its result"| tc["tools:"]
+  tools --&gt;|real tools| ag["agent: + mcp_servers"]
+  acts --&gt;|"yes: files, code, a terminal"| hb{Task folders with tests?}
+  hb --&gt;|yes| ht["harbor: on harbor_tasks"]
+  hb --&gt;|no| he["harbor: + environment"]</code></pre>
+<h2 id="choosing-a-reward">Choosing a reward<a class="headerlink" href="#choosing-a-reward" title="Permanent link">&para;</a></h2>
+<p>Every dataset names one reward, the primary score of its cells. It scores one
+answer from 0 to 1, and its <code>direction</code> says which way is better on a
+leaderboard.</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>examples</th>
+<th>how it scores</th>
+<th>pick it when</th>
+<th>watch out for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>deterministic</td>
+<td><code>exact_match</code>, <code>answer_accuracy</code>, <code>tool_calls_accuracy</code>, <code>retrieval_recall</code></td>
+<td>compares the answer with the fields <code>output_template</code> renders, each field whole (a list of calls, a nested object); what else the program returns stays out of the score</td>
+<td>there is one right answer: a number, a label, a choice, a call</td>
+<td>an answer right in substance but different in form scores 0 (<code>"42"</code> and <code>"42.0"</code>); tighten the <code>output_schema</code></td>
+</tr>
+<tr>
+<td>a model judges</td>
+<td><code>lm_as_judge</code>, <code>rubrics_as_judge</code>, <code>multi_judge_panel</code>, ...</td>
+<td>a judge model (a <code>models</code> key) reads the answer, with the expected answer when there is one</td>
+<td>the answer is open text: a summary, an explanation, an agent's report</td>
+<td>every row costs a judge call; a judge has its biases; changing the judge changes every score</td>
+</tr>
+<tr>
+<td>the task's own tests</td>
+<td><code>harbor_verifier</code></td>
+<td>reads the score a Harbor task's <code>tests/</code> wrote</td>
+<td><code>type: harbor_tasks</code> datasets</td>
+<td>the tests are the spec: a weak test passes a wrong solution</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Prefer deterministic when you can</p>
+<p>A deterministic reward is free, instant and gives the same score every
+time, so a gap between two models is a gap between the models. Shape the
+answer so it can be compared: the final number only, a letter, a label
+from an <code>enum</code> in the <code>output_schema</code>. Reach for a judge when the answer
+cannot be reduced to a value.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Keep the judge out of the race</p>
+<p>A judge that is also under test grades its own style. Name a judge model
+that is not in the evaluation's <code>language_models</code>, and keep it the same
+across the runs you want to compare.</p>
+</div>
+<p>With a judge, <code>output_template</code> is optional: without a reference, the judge
+grades the answer on the question and its instructions. A dataset can also
+record extra scores beside its reward with <code>metrics:</code>; they show as columns
+and can weigh on a leaderboard. See <a href="../guides/rewards/">Rewards</a>.</p>
+<h2 id="designing-evaluations">Designing evaluations<a class="headerlink" href="#designing-evaluations" title="Permanent link">&para;</a></h2>
+<p>An evaluation is a grid: every model on every dataset. A few rules of thumb:</p>
+<ul>
+<li><strong>One evaluation per question you want answered.</strong> <code>math-compare</code>,
+  <code>support-agents</code>: small grids are quick to run and to resume. Leaderboards
+  bring them back together.</li>
+<li><strong>Start small.</strong> A dataset's <code>limit</code> caps its rows. Run 20 rows, read the
+  answers and the failures, then raise it. A template bug then costs 20 calls,
+  not 2,000.</li>
+<li><strong>One kind of axis per evaluation.</strong> Chat models, embedding models and A2A
+  agents each need an evaluation of their own.</li>
+<li><strong><code>batch_size</code> is concurrency.</strong> A batch is sent at once: larger batches
+  finish sooner and hit rate limits sooner, and a local model server may need
+  it low.</li>
+<li><strong><code>seed</code> is not determinism.</strong> It seeds the engine's own randomness, not the
+  provider's sampling. For steadier answers, set <code>temperature: 0</code> on the
+  model.</li>
+</ul>
+<h2 id="what-runs-where">What runs where<a class="headerlink" href="#what-runs-where" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Models are called through <a href="https://docs.litellm.ai/">litellm</a>.</strong> Any
+  provider it routes (OpenAI, Anthropic, Gemini, Mistral, Ollama, vLLM, ...)
+  works, with that provider's key in the environment or in <code>.env</code>. Each call
+  is priced from litellm's table, completed before the run from other price
+  sources; a model on a local server (<code>ollama/</code>, <code>vllm/</code>) costs nothing.</li>
+<li><strong>Runs happen on your machine</strong>, one cell after another. No server is
+  needed, and a run's state stays under <code>.open-arena/&lt;evaluation&gt;/</code>.</li>
+<li><strong>MCP servers</strong> are spawned by the run (<code>stdio</code>) or reached by URL from
+  your machine.</li>
+<li><strong>Harbor trials run in a sandbox</strong>: the provider named by
+  <code>ARENA_HARBOR_SANDBOX</code>, E2B by default (with an <code>E2B_API_KEY</code>), and the
+  local Docker when that provider has no credentials.</li>
+</ul>
+<h2 id="the-arena">The arena<a class="headerlink" href="#the-arena" title="Permanent link">&para;</a></h2>
+<p>openarena is the engine of the <strong>arena</strong>, a web app that edits the same
+registries from forms, runs the same evaluations, and shows the leaderboards.
+A workspace written by <code>openarena init</code> is a workspace the arena opens as it
+is. This site documents the engine and its command; the app has its own
+documentation in the repository.</p>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li>New here: the <a href="../">Quickstart</a>, then <a href="../workspace/">The workspace</a>.</li>
+<li>Writing entries: <a href="../guides/models/">Models</a>, <a href="../guides/rewards/">Rewards</a>,
+  <a href="../guides/datasets/">Datasets</a>, then the guide for the block you picked.</li>
+<li>Running and reading: <a href="../guides/evaluations/">Running evaluations</a>,
+  <a href="../guides/results/">Reading results</a>, <a href="../guides/leaderboards/">Leaderboards</a>.</li>
+<li>Working with a coding agent: <a href="../coding-agents/">With a coding agent</a>.</li>
+<li>Every command and option: <a href="../cli/">CLI reference</a>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="./.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Quickstart">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Quickstart
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../workspace/" class="md-footer__link md-footer__link--next" aria-label="Next: The workspace">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                The workspace
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>

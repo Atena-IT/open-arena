@@ -1,0 +1,2034 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Compare language models and agents on datasets, score them, and rank them on leaderboards.">
+      
+      
+      
+        <link rel="canonical" href="https://atena-it.github.io/open-arena/">
+      
+      
+      
+      
+        <link rel="next" href="./introduction/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="./assets/openarena-mark-dark.svg">
+      <meta name="generator" content="zensical-0.0.70">
+    
+    
+      
+        <title>Quickstart - openarena</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="./assets/stylesheets/modern/main.e442bf79.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="./assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="./stylesheets/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="" title="openarena" class="md-header__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="./assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            openarena
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Quickstart
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="" title="openarena" class="md-nav__button md-logo" aria-label="openarena" data-md-component="logo">
+      
+  <img src="./assets/openarena-mark-dark.svg" alt="openarena">
+
+    </a>
+    openarena
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Atena-IT/open-arena" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Atena-IT/open-arena
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Quickstart
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Install
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-create-a-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Create a workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-give-it-a-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Give it a model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-set-your-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Set your keys
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-check-the-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Check the configs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-run-the-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Run the evaluation
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Run the evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-smoke-is-made-of" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What <code>smoke</code> is made of
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rank-the-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Rank the models
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where to go next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./introduction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Introduction
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./workspace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The workspace
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Guides
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Guides
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Models
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Datasets
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  MCP tools
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/a2a-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  A2A agents
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/environments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Environments
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/harbor-tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor tasks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/evaluations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running evaluations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/leaderboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reading results
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./guides/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking configs
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./coding-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  With a coding agent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  CLI reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  API reference
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/entries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Configuration entries
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Run configuration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Checking
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Running a sweep
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/leaderboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Leaderboards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Dataset providers
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/rewards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Rewards
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/harbor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Harbor
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Install
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-create-a-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Create a workspace
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-give-it-a-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Give it a model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-set-your-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Set your keys
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-check-the-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. Check the configs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-run-the-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Run the evaluation
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Run the evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-smoke-is-made-of" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What <code>smoke</code> is made of
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Running again
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rank-the-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Rank the models
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where to go next
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h1>
+<p align="center">
+  <img src="assets/openarena-logo-light.svg#only-light" alt="Open Arena by Atena" height="160">
+  <img src="assets/openarena-logo-dark.svg#only-dark" alt="Open Arena by Atena" height="160">
+</p>
+
+<p><strong>openarena</strong> compares language models, and agents, on datasets. It runs every
+model you name on every dataset you name, scores each answer with a reward,
+and ranks the models on leaderboards. Everything is declared in YAML files and
+run from one command, <code>openarena</code>, on your own machine. No server and no web
+app: files in, files out.</p>
+<p>This page takes you from nothing to a first ranking. You will:</p>
+<ol>
+<li>install the <code>openarena</code> command,</li>
+<li>create a workspace, a folder that already holds a working setup,</li>
+<li>give it a model it can reach (a local one, or a hosted one and its key),</li>
+<li>check the configs, run an evaluation, and rank the result.</li>
+</ol>
+<p>Each step says what it does and why, so that when something differs on your
+machine you know where to look. The guides go deeper on every file.</p>
+<pre class="mermaid"><code>flowchart LR
+    A[openarena init] --&gt; B[.env: keys]
+    B --&gt; C[openarena check configs]
+    C --&gt; D[openarena evaluations run smoke]
+    D --&gt; E[".open-arena/smoke/result.json"]
+    E --&gt; F[openarena leaderboards run overall]</code></pre>
+<div class="admonition info">
+<p class="admonition-title">Working with a coding agent?</p>
+<p><code>openarena init</code> also writes an <code>AGENTS.md</code> guide and one Agent Skill per
+task into the workspace. Start Claude Code, Codex, Cursor or another coding
+agent in the folder and ask in plain words ("add Mistral Small and compare
+it on GSM8K"). See <a href="coding-agents/">With a coding agent</a>. Reading this
+page first still helps you check what it does.</p>
+</div>
+<h2 id="1-install">1. Install<a class="headerlink" href="#1-install" title="Permanent link">&para;</a></h2>
+<p>openarena is a Python package (Python 3.12 or newer), developed in
+<a href="https://github.com/Atena-IT/open-arena">open-arena</a>. It installs one command,
+<code>openarena</code>. The simplest way to get it is <a href="https://docs.astral.sh/uv/">uv</a>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">As a tool</label><label for="__tabbed_1_2">From a clone</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s2">"git+https://github.com/Atena-IT/open-arena"</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>openarena<span class="w"> </span>--help
+</code></pre></div>
+<p><code>openarena</code> is then on your <code>PATH</code> in any folder. Pick this when you want
+to <strong>use</strong> openarena and keep your workspace wherever you like.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Atena-IT/open-arena
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>open-arena
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>uv<span class="w"> </span>sync
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>uv<span class="w"> </span>run<span class="w"> </span>openarena<span class="w"> </span>--help
+</code></pre></div>
+<p>Pick this when you want to <strong>change</strong> openarena, or follow its main branch
+closely. The command lives in the clone's <code>.venv</code>: prefix every command on
+this site with <code>uv run --project &lt;path-to-open-arena&gt;</code> (which keeps the
+folder you are in), or activate the environment once with
+<code>source .venv/bin/activate</code> and type <code>openarena</code> anywhere.</p>
+</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Datasets kept on a platform</p>
+<p>Reading rows from Hugging Face or from local files needs nothing more.
+Reading them from an observability platform (Langfuse, LangSmith, Opik,
+Phoenix, Braintrust, Unity Catalog) needs that platform's SDK, shipped as
+an extra of the package: <code>openarena[langfuse]</code>, ..., or <code>openarena[all]</code>
+for every one. The clone's <code>uv sync</code> installs them all. You need none of
+them for this page. See <a href="guides/datasets/">Datasets</a>.</p>
+</div>
+<h2 id="2-create-a-workspace">2. Create a workspace<a class="headerlink" href="#2-create-a-workspace" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>openarena<span class="w"> </span>init<span class="w"> </span>my-arena
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>my-arena
+</code></pre></div>
+<p>A workspace is a plain folder. <code>init</code> fills it with a setup that runs as it
+is, so your first run tests your machine, not your YAML:</p>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>What it is for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>configs/</code></td>
+<td>The registries, one YAML file each: <code>models</code>, <code>rewards</code>, <code>datasets</code>, <code>mcp_servers</code>, <code>a2a_agents</code>, <code>environments</code>, <code>evaluations</code>, <code>leaderboards</code>. Every file explains its own fields in comments.</td>
+</tr>
+<tr>
+<td><code>tasks/hello-world/</code></td>
+<td>A Harbor task folder, for evaluating agents in a sandbox (not used on this page).</td>
+</tr>
+<tr>
+<td><code>environments/python/</code></td>
+<td>The build context of the <code>python</code> sandbox environment (not used on this page).</td>
+</tr>
+<tr>
+<td><code>.env.template</code></td>
+<td>Every key and endpoint a run can read, commented out, each with a line on when you need it.</td>
+</tr>
+<tr>
+<td><code>.gitignore</code></td>
+<td>Keeps <code>.env</code> (your keys) and <code>.open-arena/</code> (your runs) out of git.</td>
+</tr>
+<tr>
+<td><code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>.agents/skills/</code></td>
+<td>The guide and skills a coding agent reads.</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>A short version of this page.</td>
+</tr>
+</tbody>
+</table>
+<p>The output ends with the next steps it expects you to take; they are the rest
+of this page.</p>
+<p><code>init</code> writes into the current folder when you give no name
+(<code>openarena init</code>). It refuses to overwrite any file already there, and then
+writes nothing at all; <code>--force</code> overwrites. See
+<a href="workspace/">The workspace</a> for every file and how registries refer to
+each other.</p>
+<div class="admonition warning">
+<p class="admonition-title">Run every command from the workspace root</p>
+<p><code>openarena</code> looks for <code>./configs</code>, reads the <code>.env</code> beside it, and keeps
+runs in <code>./.open-arena</code>, all relative to where you stand. Run it from
+somewhere else and it stops with
+<code>no configs folder at configs; write one with openarena init</code>. The
+commands take <code>--configs DIR</code> (and the run commands <code>--state-dir DIR</code>)
+when you need another layout; see the <a href="cli/">CLI reference</a>.</p>
+</div>
+<h2 id="3-give-it-a-model">3. Give it a model<a class="headerlink" href="#3-give-it-a-model" title="Permanent link">&para;</a></h2>
+<p>The example evaluation, <code>smoke</code>, is a deliberately small sweep: one model
+answers 20 grade-school math questions from GSM8K, and an exact-match reward
+checks each answer. Before it can run, the model it names must be reachable.</p>
+<p>Models are declared in <code>configs/models.yaml</code>. Each entry has a <strong>name</strong>, which
+everything else in the workspace uses, and the <strong>id</strong> it calls, in litellm's
+<code>&lt;provider&gt;/&lt;model&gt;</code> form. The prefix picks the provider, and the provider
+decides what you need: a local server, or an API key.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">qwen38</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ollama/qwen3.8:27b-mlx</span><span class="w">     </span><span class="c1"># a local Ollama, no API key needed</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Qwen 3.8 27B (MLX) served by a local Ollama, no API key needed.</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">local</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">gpt-4o-mini</span><span class="p">:</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gpt-4o-mini</span><span class="w">          </span><span class="c1"># needs OPENAI_API_KEY</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OpenAI's small model, the hosted baseline.</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">openai</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">hosted</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p><code>params</code> is passed with every call. <code>temperature: 0</code> makes answers as
+repeatable as the provider allows, which is what you want when comparing
+models. <a href="guides/models/">Models</a> covers every field.</p>
+<p>Choose one of these setups.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Local model (Ollama)</label><label for="__tabbed_2_2">Hosted model (OpenAI)</label><label for="__tabbed_2_3">Both, side by side</label><label for="__tabbed_2_4">Another provider</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><code>smoke</code> uses <code>qwen38</code> out of the box. Install <a href="https://ollama.com">Ollama</a>,
+then pull the model:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ollama<span class="w"> </span>pull<span class="w"> </span>qwen3.8:27b-mlx
+</code></pre></div>
+<p>No key is needed. <code>ollama/...</code> ids reach Ollama at its default address;
+if yours runs elsewhere, set <code>OLLAMA_API_BASE</code> in <code>.env</code> (step 4).</p>
+<p><strong>When to pick it:</strong> you want a first run that costs nothing and sends no
+data off your machine. <strong>Trade-off:</strong> a 27B model is slow without a strong
+GPU. Any model you have already pulled works: change the <code>model:</code> id of
+<code>qwen38</code> to it (for example <code>ollama/llama3.2</code>), or add your own entry and
+name it in <code>smoke</code>.</p>
+</div>
+<div class="tabbed-block">
+<p><code>gpt-4o-mini</code> is already declared. Put your key in <code>.env</code> (step 4), then
+point <code>smoke</code> at it in <code>configs/evaluations.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">smoke</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A first run on the hosted baseline.</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<p><strong>When to pick it:</strong> you have no GPU, or you want the fastest first run.
+<strong>Trade-off:</strong> each run costs a little, and the questions go to the
+provider.</p>
+</div>
+<div class="tabbed-block">
+<p>A comparison needs at least two models. With Ollama running and
+<code>OPENAI_API_KEY</code> set, list both:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">smoke</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gpt-4o-mini</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<p>Each model × dataset pair runs as its own cell, so one model failing
+does not stop the other.</p>
+</div>
+<div class="tabbed-block">
+<p>Add an entry with that provider's prefix, then name it in <code>smoke</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">models</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">my-claude</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic/&lt;model-id&gt;</span><span class="w">    </span><span class="c1"># the provider's own id; needs ANTHROPIC_API_KEY</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</code></pre></div>
+<p><code>.env.template</code> lists the keys of the common providers (<code>OPENAI_API_KEY</code>,
+<code>ANTHROPIC_API_KEY</code>, <code>GEMINI_API_KEY</code>, <code>MISTRAL_API_KEY</code>, <code>GROQ_API_KEY</code>,
+<code>OPENROUTER_API_KEY</code>) and the endpoint of a vLLM server
+(<code>HOSTED_VLLM_API_BASE</code>, with its <code>/v1</code> suffix). See
+<a href="guides/models/">Models</a> for providers and their settings.</p>
+</div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Names, not ids</p>
+<p>An evaluation lists models by their <strong>name</strong> in <code>models.yaml</code>
+(<code>gpt-4o-mini</code>, <code>qwen38</code>), never by the id they call. Two entries calling
+the same id with different <code>params</code> are two models, and rank separately.</p>
+</div>
+<h2 id="4-set-your-keys">4. Set your keys<a class="headerlink" href="#4-set-your-keys" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cp<span class="w"> </span>.env.template<span class="w"> </span>.env
+</code></pre></div>
+<p>Then uncomment and fill in only what your models need, for example
+<code>OPENAI_API_KEY=sk-...</code>. Nothing else is needed for this page.</p>
+<p><code>openarena evaluations run</code> loads <code>.env</code> from the workspace before anything
+reads the environment. It <strong>never overrides a variable already set</strong> in your
+shell: if you exported an old <code>OPENAI_API_KEY</code> earlier, that one wins. Unset
+it, or fix it, rather than editing <code>.env</code> again.</p>
+<p><code>.env</code> stays out of git (<code>.gitignore</code> lists it). Keep keys there, never in
+the YAML files, which you will want to commit and share. A field that must
+carry a secret (an agent's <code>headers</code>, say) names the variable as <code>${NAME}</code>
+and the run fills it in from the environment; see
+<a href="workspace/#secrets-in-configs">Secrets in configs</a>.</p>
+<h2 id="5-check-the-configs">5. Check the configs<a class="headerlink" href="#5-check-the-configs" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>openarena<span class="w"> </span>check<span class="w"> </span>configs
+</code></pre></div>
+<p><code>check</code> reads every registry file with the same strict schema the run uses,
+then resolves the references between them: a dataset's reward, an
+evaluation's models and datasets. It runs nothing and calls no model, so it
+is instant. On the fresh workspace every file is clean:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>✓ configs/models.yaml: 2 models, no problems
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>✓ configs/rewards.yaml: 2 rewards, no problems
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>✓ configs/datasets.yaml: 3 datasets, no problems
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>...
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>✓ configs/evaluations.yaml: 2 evaluations, no problems
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>✓ configs/leaderboards.yaml: 2 leaderboards, no problems
+</code></pre></div>
+<p>Run it after every edit. A typo in a name is the most common mistake, and
+<code>check</code> points at the line and suggests the fix:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>✗ configs/evaluations.yaml: 2 evaluations, 1 error
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  error    line 15  evaluations.smoke.language_models[0]
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>           'gpt4o-mini' is not in `models`
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>     fix   change 'gpt4o-mini' to 'gpt-4o-mini'
+</code></pre></div>
+<p>It exits with status 1 on an error, so it also fits a CI step or a
+pre-commit hook. Because it calls nothing, it cannot tell you that a key is
+missing or a model is not pulled; the run shows that (step 6). See
+<a href="guides/check/">Checking configs</a> for every kind of problem it reports.</p>
+<h2 id="6-run-the-evaluation">6. Run the evaluation<a class="headerlink" href="#6-run-the-evaluation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>openarena<span class="w"> </span>evaluations<span class="w"> </span>run<span class="w"> </span>smoke
+</code></pre></div>
+<p>What happens:</p>
+<ol>
+<li><code>.env</code> is loaded, as in step 4.</li>
+<li>The evaluation <code>smoke</code> and the entries it names are gathered into one
+   config and validated. A copy is written to <code>.open-arena/smoke/config.yaml</code>,
+   so you can always see exactly what ran.</li>
+<li>Every model in <code>language_models</code> runs on every dataset in <code>datasets</code>. Each
+   model × dataset pair is a <strong>cell</strong>: the dataset's rows are rendered into
+   questions, the model answers them <code>batch_size</code> rows at a time, and the
+   dataset's reward scores each answer. A cell's <code>reward</code> is the mean over
+   its rows.</li>
+<li>A table is printed per dataset, a row per model and a column per metric,
+   <code>reward</code> first. The result is saved to <code>.open-arena/smoke/result.json</code>.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>  qwen38 running…
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  qwen38 done reward 0.8500
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>     gsm8k-20
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>┏━━━━━━━━┳━━━━━━━━┓
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>┃ model  ┃ reward ┃
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>┡━━━━━━━━╇━━━━━━━━┩
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>│ qwen38 │ 0.8500 │
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>└────────┴────────┘
+</code></pre></div>
+<p>Your numbers will differ. With the exact-match reward, <code>0.8500</code> means 17 of
+the 20 answers were exactly the reference. The run also prints the engine's
+own progress lines between these; <code>-v</code> adds a progress bar, <code>-vv</code> a line per
+batch.</p>
+<h3 id="what-smoke-is-made-of">What <code>smoke</code> is made of<a class="headerlink" href="#what-smoke-is-made-of" title="Permanent link">&para;</a></h3>
+<p>You need not edit anything to run it, but knowing the three entries behind it
+is what lets you change it. <code>smoke</code> in <code>evaluations.yaml</code> names the models and
+the datasets:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">evaluations</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">smoke</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A first run on the local model.</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">language_models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">qwen38</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># `models` keys</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span><span class="w">               </span><span class="c1"># `datasets` keys</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>language_models</code></td>
+<td>list of <code>models</code> names</td>
+<td>required</td>
+<td>The models compared. Each one runs on every dataset.</td>
+</tr>
+<tr>
+<td><code>datasets</code></td>
+<td>list of <code>datasets</code> names</td>
+<td>required, at least one</td>
+<td>The datasets every model runs on.</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>integer, 1 or more</td>
+<td>each dataset's own</td>
+<td>Rows sent at once, for every dataset of the evaluation. Higher is faster, until the provider rate-limits you. <code>--batch-size N</code> overrides it for one run.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>none</td>
+<td>Shown by <code>openarena evaluations list</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The dataset <code>gsm8k-20</code> in <code>datasets.yaml</code> says where the rows come from, how
+each row becomes a question and a reference answer, what answers it, and
+which reward scores it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">datasets</span><span class="p">:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">gsm8k-20</span><span class="p">:</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">huggingface</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Grade-school math word problems, GSM8K test split, 20 rows.</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai/gsm8k</span><span class="w">                </span><span class="c1"># the Hugging Face dataset</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w">                         </span><span class="c1"># only the first 20 rows</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">      </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">      </span><span class="c1"># Jinja2 over the row's columns: what the model is asked</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">      </span><span class="nt">input_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"question":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">question</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">      </span><span class="c1"># the reference: the text after `####`, commas removed</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">      </span><span class="nt">output_template</span><span class="p">:</span><span class="w"> </span><span class="s">'{"answer":</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">answer.split(</span><span class="se">''</span><span class="s">####</span><span class="se">''</span><span class="s">)[-1]</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">replace(</span><span class="se">''</span><span class="s">,</span><span class="se">''</span><span class="s">,</span><span class="nv"> </span><span class="se">''''</span><span class="s">)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">trim</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">tojson</span><span class="nv"> </span><span class="s">}}}'</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">      </span><span class="nt">input_schema</span><span class="p">:</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">          </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="nv">The question to answer</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">question</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="w">      </span><span class="nt">output_schema</span><span class="p">:</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">object</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="w">        </span><span class="nt">properties</span><span class="p">:</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="w">          </span><span class="nt">answer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">string</span><span class="p p-Indicator">,</span><span class="nt"> description</span><span class="p">:</span><span class="w"> </span><span class="s">"The</span><span class="nv"> </span><span class="s">final</span><span class="nv"> </span><span class="s">numeric</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">only,</span><span class="nv"> </span><span class="s">no</span><span class="nv"> </span><span class="s">units</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">commas"</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">answer</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">        </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="w">    </span><span class="nt">generator</span><span class="p">:</span><span class="w">                          </span><span class="c1"># one model call per row</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="w">      </span><span class="nt">chain_of_thought</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a><span class="w">      </span><span class="nt">instructions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Solve the problem. Reply with the final number only, no units, no commas.</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="w">    </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact-match</span><span class="w">                 </span><span class="c1"># a `rewards` key</span>
+</code></pre></div>
+<p>The parts that matter most:</p>
+<ul>
+<li><strong><code>type</code> and the provider settings</strong> (<code>path</code>, <code>name</code>, <code>split</code>, <code>limit</code>)
+  say where the rows come from. <code>limit</code> keeps a first run short; remove it to
+  run the whole split.</li>
+<li><strong><code>input_template</code> / <code>output_template</code></strong> turn each raw row into the JSON
+  the model receives and the JSON the reward compares against. Here the
+  reference is cleaned so that exact match is fair: GSM8K stores the worked
+  solution followed by <code>#### 72</code>, and only <code>72</code> is kept.</li>
+<li><strong><code>input_schema</code> / <code>output_schema</code></strong> describe that JSON. The output schema
+  is also what the model is asked to produce, so its <code>description</code> reads as
+  an instruction: "the final numeric answer only".</li>
+<li><strong><code>generator</code></strong> says a model answers each row in one call.
+  <code>chain_of_thought: true</code> lets it reason before answering, which usually
+  helps on math; <code>instructions</code> is said to it before every row.</li>
+<li><strong><code>reward</code></strong> names the scorer, a key of <code>rewards.yaml</code>.</li>
+</ul>
+<p>And the reward <code>exact-match</code> in <code>rewards.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">rewards</span><span class="p">:</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">exact-match</span><span class="p">:</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exact_match</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">One when the answer is exactly the reference, zero otherwise.</span>
+</code></pre></div>
+<p><code>exact_match</code> is strict and free: no grader model, no cost, but <code>"72"</code> and
+<code>"72 apples"</code> differ. It is the right choice for answers with one canonical
+form (numbers, labels, ids). For free text, use a judge reward such as
+<code>lm_as_judge</code>, which <code>rewards.yaml</code> shows commented out. See
+<a href="guides/rewards/">Rewards</a> for the catalog and how to choose, and
+<a href="guides/datasets/">Datasets</a> for every provider, template and answering
+block.</p>
+<h3 id="running-again">Running again<a class="headerlink" href="#running-again" title="Permanent link">&para;</a></h3>
+<p>Runs resume. Each finished cell is kept under <code>.open-arena/smoke/</code>, and
+running <code>smoke</code> again only runs the cells that are not scored yet, so an
+interrupted run picks up where it stopped. Add a model to <code>smoke</code> and only
+that model runs. <code>--no-cache</code> starts the evaluation over.</p>
+<div class="admonition warning">
+<p class="admonition-title">A model that cannot be reached fails its cell</p>
+<p>A model that cannot be reached does not stop the run, but its cell
+gives no score. With a missing key (<code>Missing credentials ...
+OPENAI_API_KEY</code>) or a model Ollama has not pulled, every call fails, and
+the cell ends with
+<code>qwen38 failed: no row got an answer: all N row(s) failed; the first error: &lt;error&gt;</code>
+and <code>—</code> in the table. The other cells still run, and at the end the
+command prints <code>1 cell(s) failed: qwen38 × gsm8k-20</code> and exits 1.</p>
+<p>Fix the cause and run the same command again: a failed cell is not
+kept, so the plain rerun runs it, with no <code>--no-cache</code>. A cell where only
+some rows failed (a rate limit, say) is different: it finishes, those
+rows score 0, and that score is kept.</p>
+</div>
+<p>Other mistakes and what you see:</p>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>no configs folder at configs</code></td>
+<td>Run from outside the workspace</td>
+<td><code>cd</code> into the folder holding <code>configs/</code>, or pass <code>--configs</code></td>
+</tr>
+<tr>
+<td><code>no evaluation 'smok' in configs; choose one of: harbor, smoke</code></td>
+<td>Wrong evaluation name</td>
+<td>Use a listed name; <code>openarena evaluations list</code> shows them</td>
+</tr>
+<tr>
+<td><code>failed: no row got an answer ...</code> naming <code>Missing credentials</code></td>
+<td>Key not in <code>.env</code>, or a stale one exported in the shell</td>
+<td>Set the key, then rerun</td>
+</tr>
+<tr>
+<td><code>failed: no row got an answer ...</code> with a connection or "not found" error</td>
+<td>Ollama not running, or the model not pulled</td>
+<td>Start Ollama, <code>ollama pull</code> the model, rerun</td>
+</tr>
+<tr>
+<td><code>failed: ...</code> under a model</td>
+<td>The cell raised an error; the message says why</td>
+<td>Fix what it names, and rerun</td>
+</tr>
+<tr>
+<td><code>not set in the environment: NAME (at ...)</code></td>
+<td>A config uses <code>${NAME}</code> and the variable is set nowhere</td>
+<td>Add it to <code>.env</code>, or export it</td>
+</tr>
+</tbody>
+</table>
+<p><code>--json FILE</code> also writes the result to a file of your choice. See
+<a href="guides/evaluations/">Running evaluations</a> for every option, metrics beyond
+the reward and the trial state, and <a href="guides/results/">Reading results</a> for
+what <code>result.json</code> holds.</p>
+<h2 id="7-rank-the-models">7. Rank the models<a class="headerlink" href="#7-rank-the-models" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>openarena<span class="w"> </span>leaderboards<span class="w"> </span>run<span class="w"> </span>overall
+</code></pre></div>
+<p>A leaderboard runs nothing. It reads every <code>result.json</code> under
+<code>.open-arena/</code>, takes the newest score of each model × dataset cell across
+all your runs, and ranks the models in its scope. So you can rank as often as
+you like, and a model scored in one evaluation is ranked against a model
+scored in another. With no finished run yet, it stops with
+<code>no finished runs under .open-arena</code>.</p>
+<p>With two models scored on <code>gsm8k-20</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Overall — Every model on every dataset, reward first.
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Datasets: gsm8k-20
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Shares: reward 100%
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>┏━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>┃ # ┃ model       ┃  score ┃ reward ↑ ┃ frontier ┃
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>┡━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>│ 1 │ gpt-4o-mini │ 1.0000 │   0.9000 │    ★     │
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>│ 2 │ qwen38      │ 0.0500 │   0.8500 │          │
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>└───┴─────────────┴────────┴──────────┴──────────┘
+</code></pre></div>
+<p>How to read it:</p>
+<ul>
+<li><strong><code>reward ↑</code></strong> is the raw mean reward; the arrow says higher is better.</li>
+<li><strong><code>score</code></strong> is relative, not absolute. Each metric is rescaled per dataset
+  across the models in scope, the best to 1 and the worst to a floor of 0.05,
+  then weighted by its share and averaged over the datasets. That is why
+  <code>0.90</code> against <code>0.85</code> reads as <code>1.0000</code> against <code>0.0500</code>: the score says
+  who is ahead, the <code>reward</code> column says by how much. With a single model the
+  score is always <code>1.0000</code>.</li>
+<li><strong><code>frontier</code></strong> marks the models no other model beats on every weighted
+  metric at once.</li>
+<li>A model in scope that was not scored on every dataset in scope is listed
+  under the table as <code>Not ranked</code>, with what it is missing.</li>
+</ul>
+<p>The workspace has two leaderboards in <code>leaderboards.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">leaderboards</span><span class="p">:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">overall</span><span class="p">:</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Overall</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Every model on every dataset, reward first.</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                       </span><span class="c1"># empty: every dataset scored</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="nt">models</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">                         </span><span class="c1"># empty: every model scored</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                         </span><span class="c1"># empty: the default, reward first</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span><span class="nt">math</span><span class="p">:</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Math, quality only</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Grade-school math, the reward alone decides.</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">math</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">    </span><span class="nt">datasets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gsm8k-20</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">    </span><span class="nt">shares</span><span class="p">:</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">      </span><span class="nt">reward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+</code></pre></div>
+<p><code>overall</code> is the one to start with: it ranks everything you have run. A
+scoped board like <code>math</code> is what you want once you run several kinds of
+datasets and need one ranking per question you care about. <code>shares</code> is how
+you trade quality against cost or latency, once your evaluations record those
+metrics; <code>budgets</code> leaves out models over a hard limit.</p>
+<p>The leaderboard also looks up each model's end-of-life date online. Pass
+<code>--no-eol</code> to skip that, for example offline. <code>--json FILE</code> writes the
+ranking to a file. See <a href="guides/leaderboards/">Leaderboards</a> for scopes,
+shares and budgets.</p>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<p>You now have the whole loop: declare, check, run, rank. Everything else is
+more entries in the same files.</p>
+<table>
+<thead>
+<tr>
+<th>You want to</th>
+<th>Read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Understand how a sweep turns rows into a ranking</td>
+<td><a href="introduction/">Introduction</a></td>
+</tr>
+<tr>
+<td>Know every file of the workspace and how they refer to each other</td>
+<td><a href="workspace/">The workspace</a></td>
+</tr>
+<tr>
+<td>Add or tune models, local or hosted</td>
+<td><a href="guides/models/">Models</a></td>
+</tr>
+<tr>
+<td>Bring your own benchmark (files, Hugging Face, an observability platform)</td>
+<td><a href="guides/datasets/">Datasets</a></td>
+</tr>
+<tr>
+<td>Score free text, with a judge or rubrics</td>
+<td><a href="guides/rewards/">Rewards</a></td>
+</tr>
+<tr>
+<td>Evaluate a model that calls tools</td>
+<td><a href="guides/mcp-tools/">MCP tools</a></td>
+</tr>
+<tr>
+<td>Compare remote agents</td>
+<td><a href="guides/a2a-agents/">A2A agents</a></td>
+</tr>
+<tr>
+<td>Evaluate agents on tasks in a sandbox (the workspace's <code>harbor</code> evaluation; needs <code>OPENAI_API_KEY</code>, and Docker or <code>E2B_API_KEY</code>)</td>
+<td><a href="guides/harbor-tasks/">Harbor tasks</a>, <a href="guides/environments/">Environments</a></td>
+</tr>
+<tr>
+<td>Rank by quality, cost and latency together</td>
+<td><a href="guides/leaderboards/">Leaderboards</a></td>
+</tr>
+<tr>
+<td>Let a coding agent do the editing</td>
+<td><a href="coding-agents/">With a coding agent</a></td>
+</tr>
+<tr>
+<td>Look up a command or option</td>
+<td><a href="cli/">CLI reference</a></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+        
+          
+          <a href="./introduction/" class="md-footer__link md-footer__link--next" aria-label="Next: Introduction">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Introduction
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["content.code.copy","content.tabs.link","navigation.sections","navigation.top","navigation.footer","search.highlight"],"redirect":null,"search":"./assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="./assets/javascripts/bundle.a2388154.min.js"></script>
+      
+    
+  </body>
+</html>
