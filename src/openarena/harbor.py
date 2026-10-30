@@ -36,6 +36,7 @@ import asyncio
 import json
 import os
 import posixpath
+import re
 import shlex
 import threading
 import tomllib
@@ -200,12 +201,29 @@ def armed_healthcheck_command(clock: ClockSpec, theirs: str | None) -> str:
     return f"{arm} && ({theirs}\n)" if theirs is not None else arm
 
 
+# What an earlier arming wrote, recognized so that arming again replaces it rather than stacking on it (an export,
+# re-imported, its clock then changed): the arm with the author's check after it, and a step's jump line.
+_ARMED = re.compile(r"^mkdir -p \S+ && \{ grep -qsF .+? \|\| \{ printf .+?; \}; \}(?: && \((?P<theirs>.*)\n\))?$", re.S)
+_JUMP_LINE = re.compile(r'^\( awk -v now="\$\(date \+%s\)" -v target=-?\d+ -v path=.*$')
+
+
+def _authors_healthcheck(command: str) -> str | None:
+    """The author's own healthcheck inside a command earlier armings wrapped: the command itself when none did."""
+    while (armed := _ARMED.match(command)) is not None:
+        if armed.group("theirs") is None:
+            return None
+        command = armed.group("theirs")
+    return command
+
+
 def arm_task(folder: Path) -> bool:
     """Arm, in place, the clock a Harbor task folder declares: the copy made for one trial, check or export.
 
     The healthcheck arms it (`armed_healthcheck_command`), written back through Harbor's own `TaskConfig`
     so Harbor reads the same task; each step with a declared time jumps it at the top of its `setup.sh`,
-    after the author's shebang. False, writing nothing, without a declaration or when already armed.
+    after the author's shebang. What an earlier arming wrote is replaced, so arming again changes nothing
+    and an edited clock leaves no trace of the old one. False, writing nothing, without a declaration or
+    when already armed for it.
     """
     clock = task_clock(folder)
     if clock is None:
@@ -216,24 +234,28 @@ def arm_task(folder: Path) -> bool:
     toml_path = folder / "task.toml"
     config = TaskConfig.model_validate_toml(toml_path.read_text(encoding="utf-8"))
     theirs = config.environment.healthcheck
-    if theirs is None or not theirs.command.startswith(clock_arm_command(clock)):
-        command = armed_healthcheck_command(clock, theirs.command if theirs is not None else None)
+    command = armed_healthcheck_command(clock, _authors_healthcheck(theirs.command) if theirs is not None else None)
+    if theirs is None or theirs.command != command:
         config.environment.healthcheck = theirs.model_copy(update={"command": command}) if theirs is not None else HealthcheckConfig(command=command)
         toml_path.write_text(config.model_dump_toml(), encoding="utf-8", newline="\n")
         changed = True
-    for name, at in clock.steps.items():
-        jump = clock_jump_command(at)
-        setup = folder / "steps" / name / "workdir" / "setup.sh"
-        text = setup.read_text(encoding="utf-8") if setup.is_file() else "#!/bin/bash\n"
-        if jump in text:
+    for step in config.steps or []:
+        setup = folder / "steps" / step.name / "workdir" / "setup.sh"
+        at = clock.steps.get(step.name)
+        if at is None and not setup.is_file():
             continue
-        if text.startswith("#!"):
-            shebang, _, rest = text.partition("\n")
-            text = f"{shebang}\n{jump}\n{rest}"
+        text = setup.read_text(encoding="utf-8") if setup.is_file() else "#!/bin/bash\n"
+        kept = "".join(line for line in text.splitlines(keepends=True) if not _JUMP_LINE.match(line))
+        jump = f"{clock_jump_command(at)}\n" if at is not None else ""
+        if kept.startswith("#!"):
+            shebang, _, rest = kept.partition("\n")
+            new = f"{shebang}\n{jump}{rest}"
         else:
-            text = f"{jump}\n{text}"
+            new = f"{jump}{kept}"
+        if new == text:
+            continue
         setup.parent.mkdir(parents=True, exist_ok=True)
-        setup.write_text(text, encoding="utf-8", newline="\n")
+        setup.write_text(new, encoding="utf-8", newline="\n")
         setup.chmod(0o755)
         changed = True
     return changed

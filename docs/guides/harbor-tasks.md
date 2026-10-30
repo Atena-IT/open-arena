@@ -323,7 +323,8 @@ source folder is never changed.
   step has none.
 - **A step not listed** keeps the clock where the previous step left it.
 
-The arena's task check and its export arm a task the same way.
+Anything that copies a task through `openarena.programs.harbor_program.copy_task`
+arms it the same way.
 
 These rules are checked before any trial runs, and each refusal names the task:
 
@@ -336,8 +337,8 @@ These rules are checked before any trial runs, and each refusal names the task:
 
 A jump never moves the clock back: a step that finds it already past its time
 fails, and says so. A plain `harbor run` of the source folder runs on real time,
-because Harbor ignores `[metadata]`. Run the task through openarena, or use the
-arena's export.
+because Harbor ignores `[metadata]`. Run the task through openarena, or run a copy
+that `copy_task` armed.
 
 ## A dataset of tasks
 

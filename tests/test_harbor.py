@@ -505,3 +505,17 @@ def test_arming_twice_changes_nothing_and_a_plain_task_is_copied_as_is(tmp_path)
     assert _files(copy) == once
     plain = _task(tmp_path / "plain", "[agent]\ntimeout_sec = 60\n")
     assert _files(copy_task(plain, tmp_path / "plain-copy")) == _files(plain)
+
+
+def test_rearming_with_a_changed_clock_replaces_the_old_arm_and_jumps(tmp_path):
+    from harbor.models.task.config import TaskConfig
+
+    copy = copy_task(_stepped_task(tmp_path / "src"), tmp_path / "copy")  # an export, armed for Monday
+    toml_path = copy / "task.toml"
+    toml_path.write_text(toml_path.read_text().replace("2026-03-02T08:00:00Z", "2026-03-01T08:00:00Z").replace("2026-03-04T08:00:00Z", "2026-03-05T08:00:00Z"))
+    assert arm_task(copy) is True  # re-imported and edited: armed for the new clock
+    clock = task_clock(copy)
+    healthcheck = TaskConfig.model_validate_toml(toml_path.read_text()).environment.healthcheck
+    assert healthcheck.command == armed_healthcheck_command(clock, "test -d /app")  # one arm, the author's check kept
+    assert (copy / "steps/day3/workdir/setup.sh").read_text() == f"{clock_jump_command(clock.steps['day3'])}\necho day3\n"
+    assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/bash\n{clock_jump_command(clock.steps['day2'])}\n"
