@@ -656,6 +656,33 @@ class ClockSpec(BaseModel):
         return start.astimezone(timezone.utc)
 
 
+class TaskClock(ClockSpec):
+    """A Harbor task folder's clock, `[metadata.arena.clock]` in its task.toml: a `ClockSpec`, plus when each step begins.
+
+    Step times need a frozen clock: on a running one, a long step would overrun the next step's time.
+    The checks that need the whole task (step names, their order, the agent's user) are `openarena.harbor.task_clock`'s.
+    """
+
+    steps: dict[str, datetime] = Field(default_factory=dict, description="Step name -> the virtual time it begins at, ISO 8601 with an offset.")
+
+    @field_validator("steps")
+    @classmethod
+    def _aware_steps(cls, steps: dict[str, datetime]) -> dict[str, datetime]:
+        for name, at in steps.items():
+            if at.tzinfo is None:
+                raise ValueError(f"step {name!r} needs an offset, e.g. `2026-01-05T09:00:00Z`")
+        return {name: at.astimezone(timezone.utc) for name, at in steps.items()}
+
+    @model_validator(mode="after")
+    def _frozen_and_after_start(self) -> TaskClock:
+        if self.steps and self.rate != 0:
+            raise Invalid("step times need a frozen clock (`rate = 0`): on a running one, a long step would overrun the next step's time", "set `rate = 0`, or remove `[metadata.arena.clock.steps]`")
+        early = [name for name, at in self.steps.items() if at < self.start]
+        if early:
+            raise Invalid(f"step {early[0]!r} begins before the clock's start", "give every step a time at or after `start`")
+        return self
+
+
 class EnvironmentSpec(BaseModel):
     """The sandbox a Harbor task's agent works in: its `[environment]` and its `environment/Dockerfile`.
 

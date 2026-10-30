@@ -38,12 +38,15 @@ import os
 import posixpath
 import shlex
 import threading
+import tomllib
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec
+from pydantic import ValidationError
+
+from openarena.config.entries import ClockSpec, EnvironmentSpec, HealthcheckSpec, TaskClock
 from openarena.config.errors import Invalid
 
 # Our transport name -> Harbor's.
@@ -119,6 +122,42 @@ def clock_arm_command(clock: ClockSpec, path: str = CLOCK_FILE) -> str:
 def virtual_now(clock: dict[str, float], real_now: float) -> float:
     """The virtual time, in epoch seconds, of a clock file read at `real_now`: AgentEnv's formula."""
     return clock["t0"] + (real_now - clock["anchor"]) * clock["rate"] + clock.get("ahead", 0)
+
+
+def task_clock(folder: Path) -> TaskClock | None:
+    """The clock a Harbor task folder declares in `[metadata.arena.clock]`, checked against the whole task; None without one.
+
+    Raises `Invalid` naming the task. Step times must name its `[[steps]]`, in the order they run,
+    and need its agent to run as root, the user that armed the clock: each step's `setup.sh`,
+    which moves the clock, runs as that step's agent.
+    """
+    config = tomllib.loads((folder / "task.toml").read_text(encoding="utf-8"))
+    declared = ((config.get("metadata") or {}).get("arena") or {}).get("clock")
+    if declared is None:
+        return None
+
+    def refuse(message: str, fix: str | None = None) -> Invalid:
+        return Invalid(f"task {folder.name!r}: {message}", fix)
+
+    try:
+        clock = TaskClock.model_validate(declared)
+    except ValidationError as e:
+        said = "; ".join(f"{'.'.join(map(str, err['loc'])) or 'clock'}: {err['msg']}" for err in e.errors())
+        raise refuse(f"`[metadata.arena.clock]`: {said}") from e
+    steps = config.get("steps") or []
+    order = [step.get("name") for step in steps]
+    unknown = [name for name in clock.steps if name not in order]
+    if unknown:
+        raise refuse(f"step {unknown[0]!r} in `[metadata.arena.clock.steps]` is not one of its steps ({', '.join(map(str, order)) or 'none'})", "name one of the task's `[[steps]]`")
+    timed = [(name, clock.steps[name]) for name in order if name in clock.steps]
+    for (before, at), (after, then) in zip(timed, timed[1:]):
+        if then <= at:
+            raise refuse(f"step {after!r} begins at or before step {before!r}: step times follow the order the steps run", f"give {after!r} a time after {before!r}'s")
+    users = [(config.get("agent") or {}).get("user")] + [(step.get("agent") or {}).get("user") for step in steps]
+    others = [user for user in users if user not in (None, "root", 0, "0")]
+    if clock.steps and others:
+        raise refuse(f"step times need the agent to run as root, not as user {others[0]!r}: each step's setup.sh, which moves the clock, runs as the step's agent", "remove `user` from `[agent]` and the steps, or remove `[metadata.arena.clock.steps]`")
+    return clock
 
 
 def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None = None) -> str:

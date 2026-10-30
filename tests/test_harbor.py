@@ -16,7 +16,7 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_files, virtual_now
+from openarena.harbor import CLOCK_FILE, PROBE_NOTES, clock_arm_command, probe_facts, probe_notes, task_clock, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -356,3 +356,47 @@ def test_the_check_notes_an_unreadable_clock():
     assert any("clock" in note for note in probe_notes({"clock": "unreadable"}))
     assert probe_notes({"clock": "2026-01-05T09:00:00Z (rate 0)", "tmux": "tmux 3.4"}) == []
     assert probe_notes({"tmux": "missing"}) == [PROBE_NOTES["tmux"]]
+
+
+STEPPED = '''
+[metadata.arena.clock]
+start = "2026-03-02T08:00:00Z"
+rate = 0
+[metadata.arena.clock.steps]
+day2 = "2026-03-03T08:00:00Z"
+day3 = "2026-03-04T08:00:00Z"
+[[steps]]
+name = "day1"
+[[steps]]
+name = "day2"
+[[steps]]
+name = "day3"
+'''
+
+
+def _task(folder, toml_text):
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "task.toml").write_text(toml_text)
+    return folder
+
+
+def test_a_task_declares_a_clock_and_its_step_times(tmp_path):
+    clock = task_clock(_task(tmp_path / "week", STEPPED))
+    assert clock.rate == 0 and clock.steps["day3"] == datetime(2026, 3, 4, 8, tzinfo=timezone.utc)
+    assert task_clock(_task(tmp_path / "plain", "[agent]\ntimeout_sec = 60\n")) is None
+
+
+@pytest.mark.parametrize(("change", "says"), [
+    (('day2 = "2026-03-03T08:00:00Z"', 'day9 = "2026-03-03T08:00:00Z"'), "day9"),  # not a step
+    (('day3 = "2026-03-04T08:00:00Z"', 'day3 = "2026-03-02T09:00:00Z"'), "day3"),  # before day2
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-01T08:00:00Z"'), "start"),  # before start
+    (("rate = 0", "rate = 60"), "rate"),  # a running clock with steps
+    (("rate = 0", "rate = 0\nspeed = 2"), "speed"),  # an unknown key
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-03T08:00:00"'), "offset"),  # no offset
+    (('name = "day2"', 'name = "day2"\n[steps.agent]\nuser = "agent"'), "user"),  # a non-root agent
+])
+def test_a_wrong_task_clock_is_refused_naming_the_task(tmp_path, change, says):
+    folder = _task(tmp_path / "week", STEPPED.replace(*change))
+    with pytest.raises(Invalid, match=says) as refused:
+        task_clock(folder)
+    assert str(refused.value).startswith("task 'week': ")
