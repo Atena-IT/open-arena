@@ -35,12 +35,14 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import posixpath
+import shlex
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from openarena.config.entries import EnvironmentSpec
+from openarena.config.entries import ClockSpec, EnvironmentSpec
 from openarena.config.errors import Invalid
 
 # Our transport name -> Harbor's.
@@ -90,6 +92,28 @@ def mcp_server(name: str, connection: dict[str, Any]) -> dict[str, Any]:
     else:
         server["url"] = connection.get("url")
     return server
+
+
+# Where an environment's virtual clock lives in the sandbox: one fixed path, so every process finds it,
+# whoever started it (an agent's MCP client may not pass its variables on to the servers it starts).
+CLOCK_FILE = "/run/arena/clock.json"
+
+
+def clock_arm_command(clock: ClockSpec, path: str = CLOCK_FILE) -> str:
+    """The POSIX shell command that writes the clock to `path` once: `t0` and `rate` from the entry, `anchor` the real time now.
+
+    Written beside and moved into place, so a reader never sees half a file; a file already
+    there is left alone, so a healthcheck retry does not move the anchor. It fails when `path`
+    cannot be written, and the healthcheck with it, rather than letting a trial run on real time.
+    """
+    line = '{"t0": %d, "rate": %s, "anchor": %%s, "ahead": 0}\\n' % (int(clock.start.timestamp()), json.dumps(clock.rate))
+    folder, target, tmp = (shlex.quote(p) for p in (posixpath.dirname(path) or ".", path, f"{path}.tmp"))
+    return f'mkdir -p {folder} && {{ [ -f {target} ] || {{ printf {shlex.quote(line)} "$(date +%s)" > {tmp} && chmod 644 {tmp} && mv {tmp} {target}; }}; }}'
+
+
+def virtual_now(clock: dict[str, float], real_now: float) -> float:
+    """The virtual time, in epoch seconds, of a clock file read at `real_now`: AgentEnv's formula."""
+    return clock["t0"] + (real_now - clock["anchor"]) * clock["rate"] + clock.get("ahead", 0)
 
 
 def environment_toml(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None = None) -> str:

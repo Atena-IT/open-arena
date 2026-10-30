@@ -1,5 +1,10 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
+import json
+import os
+import shutil
+import subprocess
+import time
 import tomllib
 from datetime import datetime, timezone
 
@@ -8,7 +13,7 @@ import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
-from openarena.harbor import task_files
+from openarena.harbor import clock_arm_command, task_files, virtual_now
 from pydantic import ValidationError
 
 
@@ -54,6 +59,38 @@ def test_a_clock_needs_a_posix_sandbox():
     with pytest.raises(ValidationError, match="Windows"):
         EnvironmentSpec(docker_image="x", os="windows", clock={"start": "2026-01-05T09:00:00Z"})
     assert EnvironmentSpec(docker_image="x").clock is None
+
+
+POSIX_SH = pytest.mark.skipif(shutil.which("sh") is None, reason="the arm is a POSIX shell command")
+
+
+@POSIX_SH
+def test_the_arm_writes_the_clock_once(tmp_path):
+    path = tmp_path / "arena" / "clock.json"
+    command = clock_arm_command(ClockSpec(start="2026-01-05T09:00:00Z", rate=60), str(path))
+    assert subprocess.run(["sh", "-c", command]).returncode == 0
+    first = json.loads(path.read_text())
+    assert first["t0"] == 1767603600 and first["rate"] == 60 and first["ahead"] == 0
+    assert abs(first["anchor"] - time.time()) < 5
+    assert oct(path.stat().st_mode & 0o777) == "0o644"
+    time.sleep(1.1)
+    assert subprocess.run(["sh", "-c", command]).returncode == 0
+    assert json.loads(path.read_text()) == first  # a healthcheck retry does not move the anchor
+
+
+@POSIX_SH
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root writes anywhere")
+def test_an_arm_that_cannot_write_fails(tmp_path):
+    locked = tmp_path / "locked"
+    locked.mkdir(mode=0o555)
+    command = clock_arm_command(ClockSpec(start="2026-01-05T09:00:00Z"), str(locked / "arena" / "clock.json"))
+    assert subprocess.run(["sh", "-c", command]).returncode != 0
+
+
+def test_virtual_time_follows_the_formula():
+    clock = {"t0": 1000.0, "rate": 60.0, "anchor": 500.0, "ahead": 30.0}
+    assert virtual_now(clock, 510.0) == 1000 + 10 * 60 + 30
+    assert virtual_now({**clock, "rate": 0.0}, 9999.0) == 1030
 
 
 def test_task_files_read_back_as_harbor_toml():
