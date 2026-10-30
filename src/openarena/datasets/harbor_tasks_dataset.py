@@ -18,6 +18,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from openarena.datasets.dataset import Dataset
+from openarena.harbor import task_clock
 
 INPUT_TEMPLATE = '{"task": {{ task | tojson }}, "path": {{ path | tojson }}, "question": {{ question | tojson }}}'
 INPUT_SCHEMA = {
@@ -86,6 +87,9 @@ class HarborTasksDataset(Dataset):
         self.tasks = list(tasks) if tasks else None
         if not self.path.is_dir():
             raise FileNotFoundError(f"no Harbor tasks folder at {self.path}")
+        # A clock a task declares wrongly stops the dataset here, naming the task, before any trial.
+        for folder in task_folders(self.path, self.tasks):
+            task_clock(folder)
 
     def __len__(self):
         n = len(task_folders(self.path, self.tasks))
