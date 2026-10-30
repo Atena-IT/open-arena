@@ -163,7 +163,10 @@ def task_clock(folder: Path) -> TaskClock | None:
     which moves the clock, runs as that step's agent.
     """
     config = tomllib.loads((folder / "task.toml").read_text(encoding="utf-8"))
-    declared = ((config.get("metadata") or {}).get("arena") or {}).get("clock")
+    # `metadata` is free: an `arena` label of another kind is not a clock.
+    metadata = config.get("metadata")
+    arena = metadata.get("arena") if isinstance(metadata, dict) else None
+    declared = arena.get("clock") if isinstance(arena, dict) else None
     if declared is None:
         return None
 
@@ -175,6 +178,8 @@ def task_clock(folder: Path) -> TaskClock | None:
     except ValidationError as e:
         said = "; ".join(f"{'.'.join(map(str, err['loc'])) or 'clock'}: {err['msg']}" for err in e.errors())
         raise refuse(f"`[metadata.arena.clock]`: {said}") from e
+    if (config.get("environment") or {}).get("os") == "windows":
+        raise refuse("a clock is armed by POSIX shell commands, which a Windows sandbox cannot run", "set `os = \"linux\"` in `[environment]`, or remove `[metadata.arena.clock]`")
     steps = config.get("steps") or []
     order = [step.get("name") for step in steps]
     unknown = [name for name in clock.steps if name not in order]

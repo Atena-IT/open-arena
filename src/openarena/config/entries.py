@@ -675,6 +675,9 @@ class TaskClock(ClockSpec):
 
     @model_validator(mode="after")
     def _frozen_and_after_start(self) -> TaskClock:
+        fractional = [name for name, at in [("start", self.start), *self.steps.items()] if at.microsecond]
+        if fractional:
+            raise Invalid(f"{fractional[0]!r} is not to the second: the clock counts whole seconds", "drop the fraction of a second")
         if self.steps and self.rate != 0:
             raise Invalid("step times need a frozen clock (`rate = 0`): on a running one, a long step would overrun the next step's time", "set `rate = 0`, or remove `[metadata.arena.clock.steps]`")
         early = [name for name, at in self.steps.items() if at < self.start]

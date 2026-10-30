@@ -519,3 +519,20 @@ def test_rearming_with_a_changed_clock_replaces_the_old_arm_and_jumps(tmp_path):
     assert healthcheck.command == armed_healthcheck_command(clock, "test -d /app")  # one arm, the author's check kept
     assert (copy / "steps/day3/workdir/setup.sh").read_text() == f"{clock_jump_command(clock.steps['day3'])}\necho day3\n"
     assert (copy / "steps/day2/workdir/setup.sh").read_text() == f"#!/bin/bash\n{clock_jump_command(clock.steps['day2'])}\n"
+
+
+def test_other_arena_metadata_is_not_a_clock(tmp_path):
+    assert task_clock(_task(tmp_path / "label", '[metadata]\narena = "benchmark-a"\n')) is None
+    assert task_clock(_task(tmp_path / "table", '[metadata.arena]\nsuite = "mail"\n')) is None
+
+
+@pytest.mark.parametrize(("change", "says"), [
+    (('[[steps]]\nname = "day1"', '[environment]\nos = "windows"\n\n[[steps]]\nname = "day1"'), "Windows"),  # a POSIX clock
+    (('day2 = "2026-03-03T08:00:00Z"', 'day2 = "2026-03-03T08:00:00.750Z"'), "second"),  # a fraction of a second
+    (('start = "2026-03-02T08:00:00Z"', 'start = "2026-03-02T08:00:00.5Z"'), "second"),
+])
+def test_a_task_clock_needs_linux_and_whole_seconds(tmp_path, change, says):
+    folder = _task(tmp_path / "week", STEPPED.replace(*change))
+    with pytest.raises(Invalid, match=says) as refused:
+        task_clock(folder)
+    assert str(refused.value).startswith("task 'week': ")

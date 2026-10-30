@@ -329,7 +329,9 @@ arms it the same way.
 These rules are checked before any trial runs, and each refusal names the task:
 
 - `start` and `rate` follow the environment clock's rules, and every time
-  carries an offset (`Z` for UTC).
+  carries an offset (`Z` for UTC) and is to the second.
+- The task runs on Linux: the clock is armed by POSIX shell commands, so
+  `[environment] os = "windows"` is refused.
 - Step names are the task's `[[steps]]`. Their times increase in the order the
   steps run, and none comes before `start`.
 - Step times need `rate = 0` and an agent that runs as root: each step's
