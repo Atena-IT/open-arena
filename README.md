@@ -1,7 +1,7 @@
 <div align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="img/openarena-logo-dark.svg">
-  <img height="160" alt="Open Arena by Atena" src="img/openarena-logo-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Atena-IT/open-arena/main/img/openarena-logo-dark.svg">
+  <img height="160" alt="Open Arena by Atena" src="https://raw.githubusercontent.com/Atena-IT/open-arena/main/img/openarena-logo-light.svg">
 </picture>
 </div>
 
@@ -21,7 +21,7 @@
 [![Tests](https://github.com/Atena-IT/open-arena/actions/workflows/tests.yml/badge.svg)](https://github.com/Atena-IT/open-arena/actions/workflows/tests.yml)
 [![Docs](https://github.com/Atena-IT/open-arena/actions/workflows/docs.yml/badge.svg)](https://atena-it.github.io/open-arena/)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](https://github.com/Atena-IT/open-arena/blob/main/LICENSE)
 
 </div>
 
@@ -198,4 +198,4 @@ the CLI reference must name every command and option.
 
 ## License
 
-[Apache 2.0](LICENSE).
+[Apache 2.0](https://github.com/Atena-IT/open-arena/blob/main/LICENSE).
