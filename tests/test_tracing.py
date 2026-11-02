@@ -11,15 +11,20 @@ import copy
 import json
 import logging
 import os
+import time
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 import litellm
 import pytest
 import synalinks
+import yaml
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.trace import SpanKind, StatusCode
+from test_sweep import _config as _sweep_config
 
+from openarena.evaluate import run_sweep
 from openarena.hooks import otel
 from openarena.hooks.otel import (
     OtelHook,
@@ -140,7 +145,10 @@ class LanguageModel(synalinks.LanguageModel):
     async def _acompletion(self, formatted_messages, **kwargs):
         kwargs.pop("timeout", None)
         return await litellm.acompletion(
-            model=self.model, messages=formatted_messages, mock_response='{"answer": "4"}', **kwargs
+            model=self.model,
+            messages=formatted_messages,
+            mock_response='{"answer": "4"}',
+            **kwargs,
         )
 
 
@@ -173,7 +181,9 @@ def _program():
 def _ask(program, config, *questions):
     async def ask():
         with use_tracing(config, run=RUN):
-            return await asyncio.gather(*(program(Query(question=q)) for q in questions))
+            return await asyncio.gather(
+                *(program(Query(question=q)) for q in questions)
+            )
 
     answers = asyncio.run(ask())
     provider_for(config).force_flush()
@@ -181,7 +191,11 @@ def _ask(program, config, *questions):
 
 
 def _chat_spans(exporter):
-    return [s for s in exporter.get_finished_spans() if s.attributes.get("gen_ai.operation.name") == "chat"]
+    return [
+        s
+        for s in exporter.get_finished_spans()
+        if s.attributes.get("gen_ai.operation.name") == "chat"
+    ]
 
 
 def test_a_program_call_is_one_trace_with_a_chat_span(exported):
@@ -234,7 +248,8 @@ def test_symbolic_calls_make_no_span(exported):
     async def build():
         with use_tracing(_config(), run=RUN):
             generator = synalinks.Generator(
-                data_model=Answer, language_model=LanguageModel(model="openai/gpt-4o-mini")
+                data_model=Answer,
+                language_model=LanguageModel(model="openai/gpt-4o-mini"),
             )
             hook = OtelHook()
             hook.set_module(generator)
@@ -307,4 +322,97 @@ def test_a_traced_program_still_deep_copies(exported):
 
 def test_one_provider_per_destination_list(exported):
     assert provider_for(_config()) is provider_for(_config())
-    assert provider_for(_config()) is not provider_for(TraceConfig(destinations=(datadog("k"),)))
+    assert provider_for(_config()) is not provider_for(
+        TraceConfig(destinations=(datadog("k"),))
+    )
+
+
+# -- a traced run --------------------------------------------------------------------
+
+
+@pytest.fixture
+def mocked_models(monkeypatch):
+    """Every model of a sweep answered by litellm's mock, priced as the real one."""
+    monkeypatch.setattr(
+        synalinks.LanguageModel, "_acompletion", LanguageModel._acompletion
+    )
+
+
+def _sweep(tmp_path, config=None, config_trace=None):
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    path = _sweep_config(tmp_path)
+    if config:
+        raw = yaml.safe_load(path.read_text())
+        config(raw)
+        path.write_text(yaml.safe_dump(raw))
+
+    def run():
+        return asyncio.run(
+            run_sweep(str(path), state_dir=tmp_path / "state", no_cache=True)
+        )
+
+    if config_trace is None:
+        return run()
+    with use_tracing(config_trace, run=RUN):
+        result = run()
+    provider_for(config_trace).force_flush()
+    return result
+
+
+def _scores(result):
+    return sorted((r["model"], r["metric"], r["value"]) for r in result["rows"])
+
+
+def test_a_sweep_inside_use_tracing_sends_every_row(tmp_path, exported, mocked_models):
+    untraced = _sweep(tmp_path / "plain")
+    traced = _sweep(tmp_path / "traced", config_trace=_config())
+    assert _scores(traced) == _scores(untraced)
+    spans = exported.get_finished_spans()
+    roots = {s.context.trace_id for s in spans if s.parent is None}
+    assert len(roots) >= 6  # 3 rows x 2 models, at least
+    assert {
+        s.attributes.get("gen_ai.request.model") for s in _chat_spans(exported)
+    } == {
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+    }
+    assert all(s.attributes["langsmith.trace.session_name"] == RUN for s in spans)
+
+
+def test_a_judge_reward_is_traced(tmp_path, exported, mocked_models):
+    def judged(raw):
+        raw["models"]["judge"] = {"model": "openai/gpt-4.1-mini"}
+        raw["rewards"]["graded"] = {
+            "type": "lm_as_judge",
+            "config": {"language_model": "judge"},
+        }
+        raw["datasets"]["qa"]["reward"] = "graded"
+
+    _sweep(tmp_path, config=judged, config_trace=_config())
+    models = {s.attributes.get("gen_ai.request.model") for s in _chat_spans(exported)}
+    assert "openai/gpt-4.1-mini" in models
+
+
+def test_a_dead_destination_costs_the_run_nothing(tmp_path, monkeypatch, mocked_models):
+    monkeypatch.setattr(otel, "_providers", {})
+    nowhere = TraceConfig(
+        destinations=(
+            otel.Destination(
+                "nowhere", "http://127.0.0.1:9/v1/traces", (), lambda run: {}
+            ),
+        )
+    )
+    assert isinstance(otel._exporter(nowhere.destinations[0]), OTLPSpanExporter)
+    start = time.perf_counter()
+    untraced = _sweep(tmp_path / "plain")
+    plain = time.perf_counter() - start
+    start = time.perf_counter()
+    # No flush: what is timed is the run, the export waits on its own thread.
+    (tmp_path / "traced").mkdir()
+    path = _sweep_config(tmp_path / "traced")
+    with use_tracing(nowhere, run=RUN):
+        traced = asyncio.run(
+            run_sweep(str(path), state_dir=tmp_path / "traced" / "state", no_cache=True)
+        )
+    assert time.perf_counter() - start < plain + otel.EXPORT_TIMEOUT
+    assert _scores(traced) == _scores(untraced)

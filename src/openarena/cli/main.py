@@ -495,17 +495,21 @@ def evaluations_run(
 
     # Imported here: the engine's imports are heavy, and `init` does not need them.
     from openarena.evaluate import run_sweep
+    from openarena.hooks.otel import config_from_env, use_tracing
+    from openarena.programs.observability import run_experiment_name
 
-    result = asyncio.run(
-        run_sweep(
-            str(config_path),
-            no_cache=no_cache,
-            verbose=verbose,
-            state_dir=run_dir,
-            on_event=_progress,
-            batch_size=batch_size,
+    # The trace destinations the environment names (ARENA_TRACE_DESTINATIONS), the run filed under its name.
+    with use_tracing(config_from_env(), run=run_experiment_name(name)):
+        result = asyncio.run(
+            run_sweep(
+                str(config_path),
+                no_cache=no_cache,
+                verbose=verbose,
+                state_dir=run_dir,
+                on_event=_progress,
+                batch_size=batch_size,
+            )
         )
-    )
     (run_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     _results(result)
     if json_out is not None:
