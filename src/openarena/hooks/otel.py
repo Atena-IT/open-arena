@@ -31,7 +31,6 @@ import os
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
-from urllib.parse import quote
 
 import synalinks
 from opentelemetry import context as otel_context
@@ -62,11 +61,8 @@ def _off(value: str | None) -> bool:
 
 
 def _headers(**values: str) -> tuple[tuple[str, str], ...]:
-    # OpenTelemetry percent-decodes header values.
-    return tuple(
-        (name.replace("_", "-"), quote(value, safe=""))
-        for name, value in values.items()
-    )
+    # As given: the exporter sends a dict of headers verbatim.
+    return tuple((name.replace("_", "-"), value) for name, value in values.items())
 
 
 @dataclass(frozen=True)
@@ -267,6 +263,15 @@ def _parts(message: dict) -> dict:
                 "response": message.get("content"),
             }
         )
+    elif isinstance(message.get("content"), list):
+        # A multimodal message: its text, and only the kind of each image or clip,
+        # whose inline data would make the span megabytes (Datadog's intake caps a request at 15 MiB).
+        for item in message["content"]:
+            kind = item.get("type") if isinstance(item, dict) else None
+            if kind == "text":
+                parts.append({"type": "text", "content": item.get("text")})
+            elif kind:
+                parts.append({"type": kind})
     elif message.get("content"):
         parts.append({"type": "text", "content": message["content"]})
     for call in message.get("tool_calls") or []:
@@ -417,7 +422,9 @@ class OtelHook(synalinks.hooks.Hook):
             elif op == "embeddings":
                 cost = getattr(self.module, "last_call_cost", None)
                 span.set_attributes(_cost_attributes(cost))
-            if error := exception or (usage or {}).get("error"):
+            # `exception` is the message, which may be empty.
+            error = exception if exception is not None else (usage or {}).get("error")
+            if error is not None:
                 span.set_status(Status(StatusCode.ERROR, str(error)))
                 # synalinks hands a hook the message, not the exception's class.
                 span.set_attribute("error.type", "_OTHER")

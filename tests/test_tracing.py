@@ -68,7 +68,8 @@ def test_nothing_named_is_nothing_sent():
 def test_langsmith_entry(monkeypatch):
     entry = langsmith("k/ey")
     assert entry.endpoint == "https://api.smith.langchain.com/otel/v1/traces"
-    assert entry.headers == (("x-api-key", "k%2Fey"),)
+    # As given: the exporter sends a dict of headers verbatim (only its env var is percent-decoded).
+    assert entry.headers == (("x-api-key", "k/ey"),)
     assert entry.run_attributes("ws/eval-smoke/1") == {
         "langsmith.trace.session_name": "ws/eval-smoke/1"
     }
@@ -455,3 +456,47 @@ def test_mlflow_is_untouched_by_trace_destinations(monkeypatch):
     assert mlflow.tracing.config.get_config().span_processors == []
     assert not os.environ.get("MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT")
     assert not os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+
+
+class Silent(synalinks.Module):
+    async def call(self, inputs, training=False):
+        raise ValueError()
+
+    async def compute_output_spec(self, inputs, training=False):
+        return inputs
+
+
+def test_an_exception_without_a_message_is_still_an_error(exported):
+    silent = Silent(name="silent")
+    hook = OtelHook()
+    hook.set_module(silent)
+    silent.add_hook(hook)
+
+    async def call():
+        with use_tracing(_config(), run=RUN):
+            await silent(Query(question="?"))
+
+    with pytest.raises(ValueError):
+        asyncio.run(call())
+    provider_for(_config()).force_flush()
+    (span,) = exported.get_finished_spans()
+    assert span.status.status_code == StatusCode.ERROR
+
+
+def test_inline_images_and_audio_stay_out_of_the_span():
+    image = "data:image/png;base64," + "A" * 10_000
+    message = {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What is this?"},
+            {"type": "image_url", "image_url": {"url": image}},
+            {
+                "type": "input_audio",
+                "input_audio": {"data": "B" * 10_000, "format": "wav"},
+            },
+        ],
+    }
+    parts = otel._parts(message)["parts"]
+    assert parts[0] == {"type": "text", "content": "What is this?"}
+    assert [p["type"] for p in parts[1:]] == ["image_url", "input_audio"]
+    assert "AAAA" not in json.dumps(parts) and "BBBB" not in json.dumps(parts)
