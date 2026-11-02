@@ -4,7 +4,9 @@
 #   - Run workflow (Actions → Release): pyproject's version plus .devN, N the run
 #     number, so every manual run is a new version; published to TestPyPI.
 #   - A published pre-release (vX.Y.ZrcN): TestPyPI.
-#   - A published release (vX.Y.Z): PyPI. The tag must match pyproject's version.
+#   - A published release (vX.Y.Z): PyPI once the repository variable
+#     PUBLISH_PYPI is `true`, TestPyPI until then. The tag must match
+#     pyproject's version.
 # Whichever index it went to, `verify` then installs that exact version on a
 # fresh runner and runs it. Neither index ever takes the same version twice.
 name: Release
@@ -62,7 +64,9 @@ jobs:
   publish-testpypi:
     name: Publish to TestPyPI
     needs: build
-    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.event.release.prerelease ||
+      vars.PUBLISH_PYPI != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -79,10 +83,14 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
 
+  # Off until the repository variable PUBLISH_PYPI is `true`, which wants a
+  # `pypi` environment that only tags v* may deploy to.
   publish-pypi:
     name: Publish to PyPI
     needs: build
-    if: github.event_name == 'release' && !github.event.release.prerelease
+    if: >-
+      github.event_name == 'release' && !github.event.release.prerelease &&
+      vars.PUBLISH_PYPI == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
