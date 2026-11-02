@@ -4,12 +4,14 @@
 
 import importlib.util
 import os
+from types import SimpleNamespace
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 import mlflow
 import mlflow.tracing.config
 import mlflow.tracing.provider
+import mlflow.tracing.utils.processor
 import pytest
 
 from openarena.programs import observability
@@ -22,6 +24,20 @@ OTLP = (
     "MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT",
     "MLFLOW_ENABLE_OTEL_GENAI_SEMCONV",
 )
+
+
+def _server(created=None):
+    """A stand-in MLflow client whose experiments exist under `id-<name>`; names it was asked to create go in `created`."""
+
+    def client(tracking_uri=None):
+        return SimpleNamespace(
+            get_experiment_by_name=lambda name: SimpleNamespace(
+                experiment_id=f"id-{name}"
+            ),
+            create_experiment=lambda name: (created or []).append(name),
+        )
+
+    return client
 
 
 def _clean(monkeypatch):
@@ -40,18 +56,25 @@ def _clean(monkeypatch):
         mlflow.tracing.config.TracingConfig(),
     )
     monkeypatch.setattr(observability, "_langsmith_previous", {})
-    monkeypatch.setattr(observability, "_experiment_names", {})
+    monkeypatch.setattr(observability, "_projects", {})
+    monkeypatch.setattr(observability, "_projects_uri", None)
 
 
-@pytest.fixture
-def resets(monkeypatch):
-    """MLflow tracing on (no server to ask), no LangSmith setting, and every provider reset counted."""
+def _traced(monkeypatch):
+    """MLflow tracing on, against a server that is never asked anything over the network."""
     _clean(monkeypatch)
     monkeypatch.setenv("ARENA_MLFLOW_TRACING", "1")
     monkeypatch.setenv("MLFLOW_TRACKING_URI", "sqlite:///unused.db")
     monkeypatch.setattr(
         observability.synalinks, "enable_observability", lambda **kw: None
     )
+    monkeypatch.setattr(mlflow, "MlflowClient", _server())
+
+
+@pytest.fixture
+def resets(monkeypatch):
+    """`_traced`, and every provider rebuild counted instead of run."""
+    _traced(monkeypatch)
     counted = []
     monkeypatch.setattr(mlflow.tracing.provider, "reset", lambda: counted.append(1))
     return counted
@@ -120,28 +143,56 @@ def test_runs_do_not_rebuild_the_provider(resets, monkeypatch):
     assert _routing()
 
 
-def test_routing_outlives_a_provider_reset(monkeypatch):
-    """MLflow's provider reset also empties its tracing config (a new tracking URI resets it too): the router must be there after it."""
-    _clean(monkeypatch)
-    monkeypatch.setenv("ARENA_MLFLOW_TRACING", "1")
-    monkeypatch.setenv("MLFLOW_TRACKING_URI", "sqlite:///unused.db")
-    monkeypatch.setattr(
-        observability.synalinks, "enable_observability", lambda **kw: None
-    )
+def test_enabling_learns_each_experiments_project(resets, monkeypatch):
+    """The project a span goes to is looked up when tracing is enabled, the server just checked, never when a span ends."""
     _switch_on(monkeypatch)
-    previous_uri = mlflow.get_tracking_uri()
+    observability.enable_observability("synalinks_traces/eval-smoke/1")
+    observability.enable_observability()
+    assert observability._projects == {
+        "id-synalinks_traces/eval-smoke/1": "synalinks_traces/eval-smoke/1",
+        "id-synalinks_traces": "synalinks_traces",
+    }
+
+
+def test_a_new_tracking_server_forgets_the_old_ids(monkeypatch):
+    """Ids are per server: after an admin points the arena at another one, its '2' is not the old server's '2'."""
+    _clean(monkeypatch)
+    monkeypatch.setattr(mlflow, "MlflowClient", _server())
+    observability._remember_project("http://a", "run-x")
+    observability._remember_project("http://b", "run-y")
+    assert observability._projects == {"id-run-y": "run-y"}
+
+
+def test_a_project_that_cannot_be_learned_is_said(monkeypatch, caplog):
+    """A server that fails the lookup costs that experiment its project, with a line in the log, never the run."""
+    _clean(monkeypatch)
+
+    def down(tracking_uri=None):
+        raise ConnectionError("refused")
+
+    monkeypatch.setattr(mlflow, "MlflowClient", down)
+    observability._remember_project("http://a", "run-x")
+    assert observability._projects == {}
+    assert "run-x" in caplog.text
+
+
+def test_routing_outlives_a_provider_reset(monkeypatch):
+    """MLflow's provider reset also empties its tracing config, and a tracking URI spelt another way resets it: the router stays."""
+    _traced(monkeypatch)
+    _switch_on(monkeypatch)
     try:
         observability.enable_observability("a")
         assert _routing()
-        # A synalinks hook sets the URI on its first call: no change, no reset.
+        # A synalinks hook sets the same URI on its first call: no change, no reset.
         mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
         assert _routing()
-        mlflow.tracing.provider.reset()  # what a changed tracking URI does
-        observability.enable_observability("b")
+        # A caller spelling the same server another way resets MLflow's config.
+        mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"] + "/")
+        assert _routing()
+        mlflow.tracing.provider.reset()
         assert _routing()
     finally:
         observability._apply_langsmith(False)
-        mlflow.set_tracking_uri(previous_uri)
 
 
 def test_switching_off_gives_back_the_deployments_vars(resets, monkeypatch):
@@ -206,35 +257,73 @@ def test_a_missing_otlp_exporter_keeps_mlflow_tracing(resets, monkeypatch):
     assert not any(name in os.environ for name in OTLP)
 
 
-def test_each_trace_is_filed_under_its_experiment(monkeypatch, tmp_path):
-    """A run and the assistant trace at once into different experiments: each span carries its own project."""
-    _clean(monkeypatch)
-    previous_uri = mlflow.get_tracking_uri()
+def _span_processor_warnings(monkeypatch):
+    """What MLflow says when a span processor fails: it swallows the error and only logs it."""
+    said = []
+    monkeypatch.setattr(
+        mlflow.tracing.utils.processor._logger,
+        "warning",
+        lambda message, *a, **kw: said.append(message),
+    )
+    return said
+
+
+def _real_store(monkeypatch, tmp_path):
+    """MLflow tracing into a temporary store, each trace written as its root span ends.
+
+    Batched or queued, a trace could be written after the test, once MLflow's
+    URI is back to its default, into ./mlruns.
+    """
+    monkeypatch.setenv("MLFLOW_ENABLE_ASYNC_TRACE_LOGGING", "false")
+    monkeypatch.setenv("MLFLOW_USE_BATCH_SPAN_PROCESSOR", "false")
     mlflow.set_tracking_uri(f"sqlite:///{tmp_path.as_posix()}/mlflow.db")
+    mlflow.tracing.provider.reset()
+
+
+def test_each_trace_is_filed_under_its_experiment(monkeypatch, tmp_path):
+    """A run and the assistant trace at once into different experiments: each span carries its own project, through MLflow's own processor path."""
+    _clean(monkeypatch)
+    _real_store(monkeypatch, tmp_path)
+    uri = mlflow.get_tracking_uri()
     try:
+        observability._remember_project(uri, "synalinks_traces/eval-smoke/1")
+        observability._remember_project(uri, "synalinks_traces")
         client = mlflow.MlflowClient()
-        run, base = (
-            client.create_experiment("synalinks_traces/eval-smoke/1"),
-            client.create_experiment("synalinks_traces"),
-        )
+        run = client.get_experiment_by_name(
+            "synalinks_traces/eval-smoke/1"
+        ).experiment_id
+        base = client.get_experiment_by_name("synalinks_traces").experiment_id
+        mlflow.tracing.configure(span_processors=[observability._langsmith_project])
+        warned = _span_processor_warnings(monkeypatch)
         root = mlflow.start_span_no_context("program", experiment_id=run)
         child = mlflow.start_span_no_context("model", parent_span=root)
         other = mlflow.start_span_no_context("assistant", experiment_id=base)
         for span in (child, root, other):
-            observability._langsmith_project(span)
             span.end()
-        assert (
-            root._span.attributes["langsmith.trace.session_name"]
-            == "synalinks_traces/eval-smoke/1"
-        )
-        assert (
-            child._span.attributes["langsmith.trace.session_name"]
-            == "synalinks_traces/eval-smoke/1"
-        )
-        assert (
-            other._span.attributes["langsmith.trace.session_name"] == "synalinks_traces"
-        )
+        # On the OpenTelemetry span as a plain string: MLflow's setter would store JSON quotes.
+        project = "langsmith.trace.session_name"
+        assert root._span.attributes[project] == "synalinks_traces/eval-smoke/1"
+        assert child._span.attributes[project] == "synalinks_traces/eval-smoke/1"
+        assert other._span.attributes[project] == "synalinks_traces"
+        assert warned == []
     finally:
-        mlflow.flush_trace_async_logging()  # into the temporary store, not ./mlruns
-        mlflow.set_tracking_uri(previous_uri)
+        mlflow.tracing.provider.reset()
+
+
+def test_a_span_never_waits_on_the_server(monkeypatch, tmp_path):
+    """A span of an experiment never learned ends without a project, and without calling MLflow."""
+    _clean(monkeypatch)
+    _real_store(monkeypatch, tmp_path)
+    try:
+        unseen = mlflow.MlflowClient().create_experiment("unseen")
+
+        def no_call(*a, **kw):
+            pytest.fail("a span's end called the MLflow server")
+
+        monkeypatch.setattr(mlflow, "MlflowClient", no_call)
+        span = mlflow.start_span_no_context("program", experiment_id=unseen)
+        observability._langsmith_project(span)
+        span.end()
+        assert "langsmith.trace.session_name" not in span._span.attributes
+    finally:
         mlflow.tracing.provider.reset()

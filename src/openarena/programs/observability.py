@@ -82,8 +82,11 @@ LANGSMITH_EXPORT_TIMEOUT = "5"
 # given back when LangSmith is switched off. Empty while LangSmith is off.
 _langsmith_previous: dict[str, str | None] = {}
 
-# Experiment names by id, for the project each span is filed under.
-_experiment_names: dict[str, str | None] = {}
+# The project of each experiment enabled so far, by experiment id, learned
+# when tracing is enabled so a span's end never calls the server. Ids are per
+# tracking server: `_projects_uri` is the one they come from.
+_projects: dict[str, str] = {}
+_projects_uri: str | None = None
 
 
 def _enabled() -> bool:
@@ -160,26 +163,66 @@ def langsmith_env() -> dict[str, str]:
     }
 
 
+def _remember_project(uri: str, name: str) -> None:
+    """Learn the id of experiment `name` on `uri`, creating it, as the project its spans go to.
+
+    Called when tracing is enabled, its server just checked: a span's end then
+    only reads `_projects`. A lookup that fails costs that experiment its
+    project (LangSmith's default one), with a log line, never the run.
+    """
+    global _projects_uri
+    if uri != _projects_uri:
+        _projects.clear()
+        _projects_uri = uri
+    if name in _projects.values():
+        return
+    try:
+        client = mlflow.MlflowClient(tracking_uri=uri)
+        experiment = client.get_experiment_by_name(name)
+        if experiment is None:
+            try:
+                client.create_experiment(name)
+            except mlflow.exceptions.MlflowException:
+                pass  # created by another thread in between: the lookup below finds it
+            experiment = client.get_experiment_by_name(name)
+        _projects[experiment.experiment_id] = name
+    # Any failure: tracing is a convenience, not the run.
+    except Exception as e:  # noqa: BLE001
+        log.warning(
+            "LangSmith: no project for the experiment %s (%s); its traces go to LangSmith's default project.",
+            name,
+            e,
+        )
+
+
 def _langsmith_project(span) -> None:
     """MLflow span processor: file `span` under the project named like its trace's experiment."""
     from mlflow.tracing.trace_manager import InMemoryTraceManager
 
     with InMemoryTraceManager.get_instance().get_trace(span.trace_id) as trace:
         experiment_id = trace.info.experiment_id if trace else None
-    if not experiment_id:
-        return
-    if experiment_id not in _experiment_names:
-        try:
-            _experiment_names[experiment_id] = (
-                mlflow.MlflowClient().get_experiment(experiment_id).name
-            )
-        except Exception:  # noqa: BLE001 — a span is never held up for its project
-            # shortcut: a failed lookup files that experiment's spans under LangSmith's default project for the process's life; retry with a TTL if it ever bites.
-            _experiment_names[experiment_id] = None
-    if name := _experiment_names[experiment_id]:
+    if name := _projects.get(experiment_id):
         # On the OpenTelemetry span itself: MLflow's own setter stores every
         # value as JSON, and LangSmith would read the quotes into the name.
         span._span.set_attribute(LANGSMITH_PROJECT_ATTRIBUTE, name)
+
+
+def _reset_config_keeping_the_router() -> None:
+    """MLflow's `reset_config`, then the router back while LangSmith is on.
+
+    MLflow's provider reset empties its tracing config, and any caller setting
+    the tracking URI spelt another way runs it: the router would be gone until
+    the next `enable_observability`, and the spans in between would land in
+    LangSmith's default project.
+    """
+    mlflow.tracing.config.reset_config()
+    if _langsmith_previous:
+        mlflow.tracing.configure(span_processors=[_langsmith_project])
+
+
+# shortcut: wraps the name MLflow's provider `reset()` calls (MLflow 3.17); if a later MLflow moves it, the router
+# test fails and the router is back only at the next `enable_observability`.
+mlflow.tracing.provider.reset_config = _reset_config_keeping_the_router
 
 
 def _apply_langsmith(on: bool) -> None:
@@ -250,10 +293,12 @@ def enable_observability(experiment_name: str | None = None) -> bool:
     # Set here, before the LangSmith router: a hook setting a new URI later
     # would reset MLflow's tracing config, the router with it.
     mlflow.set_tracking_uri(uri)
-    _apply_langsmith(langsmith_wanted())
-    synalinks.enable_observability(
-        tracking_uri=uri, experiment_name=experiment_name or base_experiment_name()
-    )
+    experiment_name = experiment_name or base_experiment_name()
+    langsmith = langsmith_wanted()
+    _apply_langsmith(langsmith)
+    if langsmith:
+        _remember_project(uri, experiment_name)
+    synalinks.enable_observability(tracking_uri=uri, experiment_name=experiment_name)
     return True
 
 
