@@ -17,7 +17,7 @@ dependencies = [
     "numpy>=2.5",
     "click>=8.5.0",
     "rich>=15.0.0",
-    "harbor[e2b]>=0.23",
+    "harbor[e2b]>=0.23,<0.25",
 ]
 
 # The SDKs of the dataset providers that read a platform, one extra per provider
