@@ -15,6 +15,15 @@ Configuration comes from the environment, matching docker-compose:
     ARENA_MLFLOW_TRACING     on by default; "0" opts out
     MLFLOW_TRACKING_URI      tracking server (unset = observability off)
     MLFLOW_EXPERIMENT_NAME   experiment for traces (default: synalinks_traces)
+    ARENA_LANGSMITH_TRACING  off by default; "1" sends LangSmith a copy
+    LANGSMITH_API_KEY        the key LangSmith's copy is sent with
+    LANGSMITH_ENDPOINT       LangSmith's API (default: api.smith.langchain.com)
+
+LangSmith gets a copy of what MLflow traces, over MLflow's OTLP dual export
+in OpenTelemetry's GenAI conventions, one LangSmith project per experiment:
+spans, tokens and model, not the cost, which LangSmith prices on its own (it
+reads no cost attribute over OTLP). So it rides on MLflow: no MLflow tracing,
+no copy.
 
 On by default: a run's MLflow experiment is where its spend shows, per call
 and per cell. Spans are exported asynchronously (MLflow's own default), but
@@ -33,6 +42,7 @@ had already been sent, then dropped it: tokens showed, cost read $0. So
 
 import logging
 import os
+from urllib.parse import quote
 
 import synalinks
 
@@ -49,6 +59,18 @@ MLFLOW_DEFAULTS = {
     # dropped, and with it the run's cost (module docstring).
     "MLFLOW_USE_BATCH_SPAN_PROCESSOR": "false",
 }
+
+
+LANGSMITH_ENDPOINT = "https://api.smith.langchain.com"
+
+# Seconds an export to LangSmith may take. A new project rebuilds MLflow's
+# tracer provider, whose shutdown flushes what it holds: against a LangSmith
+# that does not answer, the exporter's own 10 s and retries would stall the run.
+LANGSMITH_EXPORT_TIMEOUT = "5"
+
+# The variables this module set for LangSmith, as it set them: switching
+# LangSmith off removes these, never a variable the deployment set itself.
+_langsmith_applied: dict[str, str] = {}
 
 
 def _enabled() -> bool:
@@ -82,6 +104,60 @@ def base_experiment_name() -> str:
     return os.environ.get("MLFLOW_EXPERIMENT_NAME") or DEFAULT_EXPERIMENT
 
 
+def langsmith_wanted() -> bool:
+    """Is LangSmith asked for: switched on, with a key to send to it.
+
+    The key alone is not enough: `LANGSMITH_API_KEY` is also what a LangSmith
+    dataset source reads.
+    """
+    switched_on = os.environ.get("ARENA_LANGSMITH_TRACING", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    return switched_on and bool(os.environ.get("LANGSMITH_API_KEY"))
+
+
+def langsmith_env(project: str) -> dict[str, str]:
+    """The environment that points MLflow's OTLP dual export at LangSmith's `project`."""
+    endpoint = (os.environ.get("LANGSMITH_ENDPOINT") or LANGSMITH_ENDPOINT).rstrip("/")
+    # OpenTelemetry percent-decodes header values; a slash stays as it is.
+    key, project = (
+        quote(os.environ.get("LANGSMITH_API_KEY", ""), safe=""),
+        quote(project, safe="/"),
+    )
+    return {
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": f"{endpoint}/otel/v1/traces",
+        "OTEL_EXPORTER_OTLP_TRACES_HEADERS": f"x-api-key={key},Langsmith-Project={project}",
+        "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
+        "OTEL_EXPORTER_OTLP_TRACES_TIMEOUT": LANGSMITH_EXPORT_TIMEOUT,
+        "MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT": "true",
+        "MLFLOW_ENABLE_OTEL_GENAI_SEMCONV": "true",
+    }
+
+
+def _apply_langsmith(project: str | None) -> None:
+    """Send LangSmith's copy to `project`, or stop sending it (`None`).
+
+    MLflow builds its OTLP exporter, headers included, with its tracer
+    provider: a new project takes a new provider. Rebuilding it ends the
+    export of the spans still open, so it happens only when something changed.
+    """
+    global _langsmith_applied
+    wanted = langsmith_env(project) if project is not None else {}
+    if wanted == _langsmith_applied:
+        return
+    for name, value in _langsmith_applied.items():
+        if name not in wanted and os.environ.get(name) == value:
+            del os.environ[name]
+    os.environ.update(wanted)
+    _langsmith_applied = wanted
+    import mlflow.tracing.provider
+
+    mlflow.tracing.provider.reset()
+
+
 def enable_observability(experiment_name: str | None = None) -> bool:
     """Turn on MLflow tracing when `MLFLOW_TRACKING_URI` is set and its server answers.
 
@@ -102,14 +178,16 @@ def enable_observability(experiment_name: str | None = None) -> bool:
         return False
     unreachable = mlflow_reachable(uri)
     if unreachable:
-        log.warning("MLflow tracing stays off: %s. Start the server, or fix MLFLOW_TRACKING_URI (Settings → Observability).", unreachable)
+        log.warning(
+            "MLflow tracing stays off: %s. Start the server, or fix MLFLOW_TRACKING_URI (Settings → Observability).",
+            unreachable,
+        )
         return False
     for name, value in MLFLOW_DEFAULTS.items():
         os.environ.setdefault(name, value)
-    synalinks.enable_observability(
-        tracking_uri=uri,
-        experiment_name=experiment_name or base_experiment_name(),
-    )
+    experiment_name = experiment_name or base_experiment_name()
+    _apply_langsmith(experiment_name if langsmith_wanted() else None)
+    synalinks.enable_observability(tracking_uri=uri, experiment_name=experiment_name)
     return True
 
 
@@ -124,6 +202,7 @@ def _switch_off() -> None:
     from synalinks.src.backend import config
 
     config._ENABLE_OBSERVABILITY = False
+    _apply_langsmith(None)
 
 
 def mlflow_reachable(uri: str | None = None, timeout: float = 3.0) -> str | None:
