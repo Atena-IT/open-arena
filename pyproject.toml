@@ -18,6 +18,9 @@ dependencies = [
     "click>=8.5.0",
     "rich>=15.0.0",
     "harbor[e2b]>=0.23",
+    # Spans to the trace destinations (hooks/otel.py).
+    "opentelemetry-sdk>=1.30",
+    "opentelemetry-exporter-otlp-proto-http>=1.30",
 ]
 
 # The SDKs of the dataset providers that read a platform, one extra per provider
@@ -25,8 +28,7 @@ dependencies = [
 # provider reads a dataset, which says which extra to install when it is missing.
 [project.optional-dependencies]
 langfuse = ["langfuse>=3.10.1"]
-# The OTLP exporter carries the traces' copy to LangSmith (programs/observability.py).
-langsmith = ["langsmith", "opentelemetry-exporter-otlp-proto-http"]
+langsmith = ["langsmith"]
 opik = ["opik"]
 phoenix = ["arize-phoenix-client"]
 braintrust = ["braintrust"]
