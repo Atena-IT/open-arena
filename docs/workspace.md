@@ -304,7 +304,7 @@ editing the file.
     | `MLFLOW_TRACKING_URI` | the MLflow server runs are traced into; unset means no tracing |
     | `ARENA_MLFLOW_TRACING` | `0`, `false`, `no` or `off` turns tracing off while keeping the URI |
     | `MLFLOW_EXPERIMENT_NAME` | the experiment traces go to when no run names one |
-    | `ARENA_LANGSMITH_TRACING` | `1`, `true`, `yes` or `on` sends LangSmith a copy of what MLflow traces; off by default |
+    | `ARENA_LANGSMITH_TRACING` | `1`, `true`, `yes` or `on` sends LangSmith a copy of everything MLflow traces, the arena assistant's conversations included, one project per experiment; off by default, needs `openarena[langsmith]` |
     | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | the key that copy is sent with, and LangSmith's API (`https://api.smith.langchain.com` by default) |
 
     Tracing is optional; nothing in the workspace depends on it. The arena

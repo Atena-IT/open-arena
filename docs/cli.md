@@ -107,7 +107,7 @@ What a run reads from the environment, through that file or your shell:
 | `OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`, `SGLANG_API_BASE` | local model servers not on their default address |
 | `E2B_API_KEY`, `ARENA_HARBOR_SANDBOX`, `ARENA_HARBOR_WORKDIR` | Harbor trials: the sandbox provider, and where task folders and trials go ([Environments](guides/environments.md)) |
 | `MLFLOW_TRACKING_URI`, `MLFLOW_EXPERIMENT_NAME`, `ARENA_MLFLOW_TRACING` | MLflow tracing, for the arena app and `run_sweep` called from Python; `openarena evaluations run` does not switch tracing on |
-| `ARENA_LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | a copy of MLflow's traces in LangSmith, one project per experiment |
+| `ARENA_LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | a copy of everything MLflow traces in LangSmith, one project per experiment |
 
 The full list, with what each one does, is in
 [The workspace](workspace.md#env-keys-and-endpoints).

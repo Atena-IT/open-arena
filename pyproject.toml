@@ -25,7 +25,8 @@ dependencies = [
 # provider reads a dataset, which says which extra to install when it is missing.
 [project.optional-dependencies]
 langfuse = ["langfuse>=3.10.1"]
-langsmith = ["langsmith"]
+# The OTLP exporter carries the traces' copy to LangSmith (programs/observability.py).
+langsmith = ["langsmith", "opentelemetry-exporter-otlp-proto-http"]
 opik = ["opik"]
 phoenix = ["arize-phoenix-client"]
 braintrust = ["braintrust"]

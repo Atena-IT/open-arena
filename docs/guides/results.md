@@ -455,7 +455,7 @@ asyncio.run(run_sweep(
 | `ARENA_MLFLOW_TRACING` | on by default; `0`, `false`, `no` or `off` turns it off while keeping the URI |
 | `MLFLOW_EXPERIMENT_NAME` | the base of every experiment name |
 | `MLFLOW_HTTP_REQUEST_TIMEOUT`, `MLFLOW_HTTP_REQUEST_MAX_RETRIES` | the client's budget per request; 10 s and 2 retries unless you set them |
-| `ARENA_LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | `1` sends LangSmith a copy of each run's traces, in a project named like its experiment: spans, tokens and model; LangSmith prices the calls itself |
+| `ARENA_LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | `1` sends LangSmith a copy of everything MLflow traces, each trace in the project named like its experiment (a run's in its own): spans, tokens and model; LangSmith prices the calls itself. Needs `openarena[langsmith]` |
 
 What lands in the server:
 

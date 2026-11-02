@@ -19,11 +19,13 @@ Configuration comes from the environment, matching docker-compose:
     LANGSMITH_API_KEY        the key LangSmith's copy is sent with
     LANGSMITH_ENDPOINT       LangSmith's API (default: api.smith.langchain.com)
 
-LangSmith gets a copy of what MLflow traces, over MLflow's OTLP dual export
-in OpenTelemetry's GenAI conventions, one LangSmith project per experiment:
-spans, tokens and model, not the cost, which LangSmith prices on its own (it
-reads no cost attribute over OTLP). So it rides on MLflow: no MLflow tracing,
-no copy.
+LangSmith gets a copy of everything MLflow traces, a run's spans and the
+assistant's turns alike, over MLflow's OTLP dual export in OpenTelemetry's
+GenAI conventions: spans, tokens and model, not the cost, which LangSmith
+prices on its own (it reads no cost attribute over OTLP). So it rides on
+MLflow: no MLflow tracing, no copy. Each span lands in the LangSmith project
+named like its trace's MLflow experiment, so a run's traces sit in a project
+of their own.
 
 On by default: a run's MLflow experiment is where its spend shows, per call
 and per cell. Spans are exported asynchronously (MLflow's own default), but
@@ -40,10 +42,14 @@ had already been sent, then dropped it: tokens showed, cost read $0. So
 `MLFLOW_DEFAULTS` also hands each span to the async queue as it ends.
 """
 
+import importlib.util
 import logging
 import os
 from urllib.parse import quote
 
+import mlflow
+import mlflow.tracing.config
+import mlflow.tracing.provider
 import synalinks
 
 log = logging.getLogger("uvicorn.error")
@@ -63,14 +69,21 @@ MLFLOW_DEFAULTS = {
 
 LANGSMITH_ENDPOINT = "https://api.smith.langchain.com"
 
-# Seconds an export to LangSmith may take. A new project rebuilds MLflow's
-# tracer provider, whose shutdown flushes what it holds: against a LangSmith
-# that does not answer, the exporter's own 10 s and retries would stall the run.
+# The span attribute LangSmith files a span's project by.
+LANGSMITH_PROJECT_ATTRIBUTE = "langsmith.trace.session_name"
+
+# Seconds an export to LangSmith may take. Switching LangSmith on or off
+# rebuilds MLflow's tracer provider, whose shutdown flushes what it holds:
+# against a LangSmith that does not answer, the exporter's own 10 s and
+# retries would stall whoever switched it.
 LANGSMITH_EXPORT_TIMEOUT = "5"
 
-# The variables this module set for LangSmith, as it set them: switching
-# LangSmith off removes these, never a variable the deployment set itself.
-_langsmith_applied: dict[str, str] = {}
+# What the deployment had in the variables LangSmith takes over (None: unset),
+# given back when LangSmith is switched off. Empty while LangSmith is off.
+_langsmith_previous: dict[str, str | None] = {}
+
+# Experiment names by id, for the project each span is filed under.
+_experiment_names: dict[str, str | None] = {}
 
 
 def _enabled() -> bool:
@@ -116,20 +129,30 @@ def langsmith_wanted() -> bool:
         "yes",
         "on",
     )
-    return switched_on and bool(os.environ.get("LANGSMITH_API_KEY"))
+    if not (switched_on and os.environ.get("LANGSMITH_API_KEY")):
+        return False
+    if importlib.util.find_spec("opentelemetry.exporter.otlp.proto.http") is None:
+        # MLflow could not build its tracer provider, and would drop its own spans too.
+        log.warning(
+            "LangSmith tracing stays off: install openarena[langsmith] for its OTLP exporter."
+        )
+        return False
+    return True
 
 
-def langsmith_env(project: str) -> dict[str, str]:
-    """The environment that points MLflow's OTLP dual export at LangSmith's `project`."""
+def langsmith_env() -> dict[str, str]:
+    """The environment that points MLflow's OTLP dual export at LangSmith.
+
+    No project header: it would hold for every span the process exports, a
+    run's and the assistant's alike. Each span names its own project instead
+    (`_langsmith_project`).
+    """
     endpoint = (os.environ.get("LANGSMITH_ENDPOINT") or LANGSMITH_ENDPOINT).rstrip("/")
-    # OpenTelemetry percent-decodes header values; a slash stays as it is.
-    key, project = (
-        quote(os.environ.get("LANGSMITH_API_KEY", ""), safe=""),
-        quote(project, safe="/"),
-    )
+    # OpenTelemetry percent-decodes header values.
+    key = quote(os.environ.get("LANGSMITH_API_KEY", ""), safe="")
     return {
         "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": f"{endpoint}/otel/v1/traces",
-        "OTEL_EXPORTER_OTLP_TRACES_HEADERS": f"x-api-key={key},Langsmith-Project={project}",
+        "OTEL_EXPORTER_OTLP_TRACES_HEADERS": f"x-api-key={key}",
         "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
         "OTEL_EXPORTER_OTLP_TRACES_TIMEOUT": LANGSMITH_EXPORT_TIMEOUT,
         "MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT": "true",
@@ -137,25 +160,64 @@ def langsmith_env(project: str) -> dict[str, str]:
     }
 
 
-def _apply_langsmith(project: str | None) -> None:
-    """Send LangSmith's copy to `project`, or stop sending it (`None`).
+def _langsmith_project(span) -> None:
+    """MLflow span processor: file `span` under the project named like its trace's experiment."""
+    from mlflow.tracing.trace_manager import InMemoryTraceManager
 
-    MLflow builds its OTLP exporter, headers included, with its tracer
-    provider: a new project takes a new provider. Rebuilding it ends the
-    export of the spans still open, so it happens only when something changed.
-    """
-    global _langsmith_applied
-    wanted = langsmith_env(project) if project is not None else {}
-    if wanted == _langsmith_applied:
+    with InMemoryTraceManager.get_instance().get_trace(span.trace_id) as trace:
+        experiment_id = trace.info.experiment_id if trace else None
+    if not experiment_id:
         return
-    for name, value in _langsmith_applied.items():
-        if name not in wanted and os.environ.get(name) == value:
-            del os.environ[name]
-    os.environ.update(wanted)
-    _langsmith_applied = wanted
-    import mlflow.tracing.provider
+    if experiment_id not in _experiment_names:
+        try:
+            _experiment_names[experiment_id] = (
+                mlflow.MlflowClient().get_experiment(experiment_id).name
+            )
+        except Exception:  # noqa: BLE001 — a span is never held up for its project
+            # shortcut: a failed lookup files that experiment's spans under LangSmith's default project for the process's life; retry with a TTL if it ever bites.
+            _experiment_names[experiment_id] = None
+    if name := _experiment_names[experiment_id]:
+        # On the OpenTelemetry span itself: MLflow's own setter stores every
+        # value as JSON, and LangSmith would read the quotes into the name.
+        span._span.set_attribute(LANGSMITH_PROJECT_ATTRIBUTE, name)
 
-    mlflow.tracing.provider.reset()
+
+def _apply_langsmith(on: bool) -> None:
+    """Send LangSmith its copy, or stop sending it.
+
+    MLflow builds its OTLP exporter with its tracer provider, so a change takes
+    a new provider. Rebuilding it ends the export of the spans still open, so
+    it happens only when the switch, the key or the endpoint changed, never
+    because another experiment is traced. The router is checked on every call:
+    MLflow's provider reset (a new tracking URI's too) empties its tracing
+    config, the router with it.
+    """
+    global _langsmith_previous
+    wanted = langsmith_env() if on else {}
+    changed = False
+    if on and not (
+        _langsmith_previous and all(os.environ.get(k) == v for k, v in wanted.items())
+    ):
+        if not _langsmith_previous:
+            _langsmith_previous = {name: os.environ.get(name) for name in wanted}
+        os.environ.update(wanted)
+        changed = True
+    elif not on and _langsmith_previous:
+        for name, value in _langsmith_previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        _langsmith_previous = {}
+        changed = True
+    if changed:
+        mlflow.tracing.provider.reset()
+    processors = mlflow.tracing.config.get_config().span_processors
+    if on != (_langsmith_project in processors):
+        others = [p for p in processors if p is not _langsmith_project]
+        mlflow.tracing.configure(
+            span_processors=[*others, _langsmith_project] if on else others
+        )
 
 
 def enable_observability(experiment_name: str | None = None) -> bool:
@@ -185,9 +247,13 @@ def enable_observability(experiment_name: str | None = None) -> bool:
         return False
     for name, value in MLFLOW_DEFAULTS.items():
         os.environ.setdefault(name, value)
-    experiment_name = experiment_name or base_experiment_name()
-    _apply_langsmith(experiment_name if langsmith_wanted() else None)
-    synalinks.enable_observability(tracking_uri=uri, experiment_name=experiment_name)
+    # Set here, before the LangSmith router: a hook setting a new URI later
+    # would reset MLflow's tracing config, the router with it.
+    mlflow.set_tracking_uri(uri)
+    _apply_langsmith(langsmith_wanted())
+    synalinks.enable_observability(
+        tracking_uri=uri, experiment_name=experiment_name or base_experiment_name()
+    )
     return True
 
 
@@ -202,7 +268,7 @@ def _switch_off() -> None:
     from synalinks.src.backend import config
 
     config._ENABLE_OBSERVABILITY = False
-    _apply_langsmith(None)
+    _apply_langsmith(False)
 
 
 def mlflow_reachable(uri: str | None = None, timeout: float = 3.0) -> str | None:

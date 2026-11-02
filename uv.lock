@@ -3546,6 +3546,7 @@ all = [
     { name = "deltalake" },
     { name = "langfuse" },
     { name = "langsmith" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opik" },
 ]
 braintrust = [
@@ -3556,6 +3557,7 @@ langfuse = [
 ]
 langsmith = [
     { name = "langsmith" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
 ]
 opik = [
     { name = "opik" },
@@ -3591,6 +3593,7 @@ requires-dist = [
     { name = "langsmith", marker = "extra == 'langsmith'" },
     { name = "numpy", specifier = ">=2.5" },
     { name = "openarena", extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog"], marker = "extra == 'all'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'langsmith'" },
     { name = "opik", marker = "extra == 'opik'" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "python-dotenv", specifier = ">=1.0" },
