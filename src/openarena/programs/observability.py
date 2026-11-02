@@ -120,6 +120,17 @@ def base_experiment_name() -> str:
     return os.environ.get("MLFLOW_EXPERIMENT_NAME") or DEFAULT_EXPERIMENT
 
 
+def _otlp_exporter_installed() -> bool:
+    """Is OpenTelemetry's OTLP HTTP exporter installed (the `langsmith` extra brings it)."""
+    try:
+        return (
+            importlib.util.find_spec("opentelemetry.exporter.otlp.proto.http")
+            is not None
+        )
+    except ModuleNotFoundError:  # `opentelemetry.exporter` itself is missing
+        return False
+
+
 def langsmith_wanted() -> bool:
     """Is LangSmith asked for: switched on, with a key to send to it.
 
@@ -134,7 +145,7 @@ def langsmith_wanted() -> bool:
     )
     if not (switched_on and os.environ.get("LANGSMITH_API_KEY")):
         return False
-    if importlib.util.find_spec("opentelemetry.exporter.otlp.proto.http") is None:
+    if not _otlp_exporter_installed():
         # MLflow could not build its tracer provider, and would drop its own spans too.
         log.warning(
             "LangSmith tracing stays off: install openarena[langsmith] for its OTLP exporter."

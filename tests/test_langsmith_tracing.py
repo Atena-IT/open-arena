@@ -81,8 +81,10 @@ def resets(monkeypatch):
 
 
 def _switch_on(monkeypatch, key="k"):
+    """LangSmith switched on, the OTLP exporter installed or not (only the `langsmith` extra brings it)."""
     monkeypatch.setenv("ARENA_LANGSMITH_TRACING", "1")
     monkeypatch.setenv("LANGSMITH_API_KEY", key)
+    monkeypatch.setattr(observability, "_otlp_exporter_installed", lambda: True)
 
 
 def _routing():
@@ -243,15 +245,18 @@ def test_rides_on_mlflow(resets, monkeypatch):
 
 def test_a_missing_otlp_exporter_keeps_mlflow_tracing(resets, monkeypatch):
     """Without the OTLP exporter MLflow cannot build its tracer provider, and every span, MLflow's own too, is dropped."""
-    _switch_on(monkeypatch)
+    monkeypatch.setenv("ARENA_LANGSMITH_TRACING", "1")
+    monkeypatch.setenv("LANGSMITH_API_KEY", "k")
     real = importlib.util.find_spec
-    monkeypatch.setattr(
-        importlib.util,
-        "find_spec",
-        lambda name, *a: (
-            None if name.startswith("opentelemetry.exporter.otlp") else real(name, *a)
-        ),
-    )
+
+    def find_spec(name, *a):
+        # Without the extra, `opentelemetry.exporter` is missing too, and asking
+        # for a module under it raises instead of answering None.
+        if name.startswith("opentelemetry.exporter"):
+            raise ModuleNotFoundError(f"No module named {name!r}")
+        return real(name, *a)
+
+    monkeypatch.setattr(importlib.util, "find_spec", find_spec)
     assert observability.langsmith_wanted() is False
     assert observability.enable_observability("a") is True
     assert not any(name in os.environ for name in OTLP)
