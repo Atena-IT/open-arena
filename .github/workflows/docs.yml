@@ -42,7 +42,7 @@ jobs:
         run: |
           pages=$(find site -name index.html | wc -l)
           echo "$pages pages"
-          test "$pages" -ge 25
+          test "$pages" -ge 26
       - uses: actions/upload-artifact@v7
         with:
           name: site

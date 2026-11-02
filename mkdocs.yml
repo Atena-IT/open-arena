@@ -94,6 +94,7 @@ nav:
       - Checking configs: guides/check.md
   - With a coding agent: coding-agents.md
   - CLI reference: cli.md
+  - Releasing: releasing.md
   - API reference:
       - api/index.md
       - Configuration entries: api/entries.md
