@@ -235,6 +235,29 @@ def test_off_leaves_foreign_otlp_vars(resets, monkeypatch):
     assert resets == []
 
 
+def test_switching_off_holds_while_mlflow_is_down(resets, monkeypatch):
+    """Programs already built keep tracing on their own: an opt-out must stop the copy even when MLflow does not answer."""
+    _switch_on(monkeypatch)
+    observability.enable_observability("a")
+    monkeypatch.setenv("ARENA_LANGSMITH_TRACING", "0")
+    monkeypatch.setattr(
+        observability, "mlflow_reachable", lambda uri=None, timeout=3.0: "down"
+    )
+    assert observability.enable_observability("b") is False
+    assert not any(name in os.environ for name in OTLP)
+    assert not _routing()
+
+
+def test_a_synalinks_that_loses_open_spans_is_said(resets, monkeypatch, caplog):
+    """A synalinks whose Monitor rebuilds MLflow's tracer provider on each module's first call drops LangSmith's copy of the spans still open."""
+    import synalinks.src.hooks.monitor as monitor
+
+    _switch_on(monkeypatch)
+    monkeypatch.delattr(monitor, "experiment_id_of", raising=False)
+    observability.enable_observability("a")
+    assert "SynaLinks/synalinks#150" in caplog.text
+
+
 def test_rides_on_mlflow(resets, monkeypatch):
     """LangSmith gets a copy of what MLflow traces: with MLflow tracing off there is nothing to copy."""
     _switch_on(monkeypatch)
@@ -243,16 +266,21 @@ def test_rides_on_mlflow(resets, monkeypatch):
     assert not any(name in os.environ for name in OTLP)
 
 
-def test_a_missing_otlp_exporter_keeps_mlflow_tracing(resets, monkeypatch):
+@pytest.mark.parametrize("parent_installed", [True, False])
+def test_a_missing_otlp_exporter_keeps_mlflow_tracing(
+    resets, monkeypatch, parent_installed
+):
     """Without the OTLP exporter MLflow cannot build its tracer provider, and every span, MLflow's own too, is dropped."""
     monkeypatch.setenv("ARENA_LANGSMITH_TRACING", "1")
     monkeypatch.setenv("LANGSMITH_API_KEY", "k")
     real = importlib.util.find_spec
 
     def find_spec(name, *a):
-        # Without the extra, `opentelemetry.exporter` is missing too, and asking
-        # for a module under it raises instead of answering None.
         if name.startswith("opentelemetry.exporter"):
+            if parent_installed:
+                return None
+            # Without the extra, `opentelemetry.exporter` is missing too, and
+            # asking for a module under it raises instead of answering None.
             raise ModuleNotFoundError(f"No module named {name!r}")
         return real(name, *a)
 

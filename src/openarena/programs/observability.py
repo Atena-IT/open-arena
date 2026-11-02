@@ -51,6 +51,7 @@ import mlflow
 import mlflow.tracing.config
 import mlflow.tracing.provider
 import synalinks
+import synalinks.src.hooks.monitor as synalinks_monitor
 
 log = logging.getLogger("uvicorn.error")
 
@@ -266,6 +267,12 @@ def _apply_langsmith(on: bool) -> None:
         changed = True
     if changed:
         mlflow.tracing.provider.reset()
+    if changed and on and not hasattr(synalinks_monitor, "experiment_id_of"):
+        log.warning(
+            "LangSmith tracing: synalinks %s rebuilds MLflow's tracer provider on each module's first call, so LangSmith's copy "
+            "loses the spans still open; upgrade to a release with SynaLinks/synalinks#150.",
+            synalinks.__version__,
+        )
     processors = mlflow.tracing.config.get_config().span_processors
     if on != (_langsmith_project in processors):
         others = [p for p in processors if p is not _langsmith_project]
@@ -298,6 +305,10 @@ def enable_observability(experiment_name: str | None = None) -> bool:
             "MLflow tracing stays off: %s. Start the server, or fix MLFLOW_TRACKING_URI (Settings → Observability).",
             unreachable,
         )
+        # Programs already built keep their hooks and trace on: an opt-out of
+        # LangSmith holds whether MLflow answers or not.
+        if not langsmith_wanted():
+            _apply_langsmith(False)
         return False
     for name, value in MLFLOW_DEFAULTS.items():
         os.environ.setdefault(name, value)
