@@ -16,6 +16,9 @@ import time
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 import litellm
+import mlflow
+import mlflow.tracing.config
+import mlflow.tracing.provider
 import pytest
 import synalinks
 import yaml
@@ -26,6 +29,7 @@ from test_sweep import _config as _sweep_config
 
 from openarena.evaluate import run_sweep
 from openarena.hooks import otel
+from openarena.programs import observability
 from openarena.hooks.otel import (
     OtelHook,
     TraceConfig,
@@ -416,3 +420,38 @@ def test_a_dead_destination_costs_the_run_nothing(tmp_path, monkeypatch, mocked_
         )
     assert time.perf_counter() - start < plain + otel.EXPORT_TIMEOUT
     assert _scores(traced) == _scores(untraced)
+
+
+# -- MLflow keeps its own path -----------------------------------------------------
+
+
+def test_mlflow_is_untouched_by_trace_destinations(monkeypatch):
+    """Destinations named, even the old LangSmith switch on: MLflow exports to its server alone."""
+    for name in (
+        "MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT",
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_TRACES_HEADERS",
+    ):
+        monkeypatch.setenv(name, "")
+        monkeypatch.delenv(name)
+    monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith,datadog")
+    monkeypatch.setenv("LANGSMITH_API_KEY", "ls")
+    monkeypatch.setenv("DD_API_KEY", "dd")
+    monkeypatch.setenv("ARENA_LANGSMITH_TRACING", "1")
+    monkeypatch.setenv("ARENA_MLFLOW_TRACING", "1")
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", "sqlite:///unused.db")
+    monkeypatch.setattr(
+        mlflow.tracing.config,
+        "_MLFLOW_TRACING_CONFIG",
+        mlflow.tracing.config.TracingConfig(),
+    )
+    monkeypatch.setattr(
+        observability.synalinks, "enable_observability", lambda **kw: None
+    )
+    monkeypatch.setattr(mlflow.tracing.provider, "reset", lambda: None)
+    monkeypatch.setattr(mlflow, "MlflowClient", lambda tracking_uri=None: None)
+
+    assert observability.enable_observability()
+    assert mlflow.tracing.config.get_config().span_processors == []
+    assert not os.environ.get("MLFLOW_TRACE_ENABLE_OTLP_DUAL_EXPORT")
+    assert not os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")

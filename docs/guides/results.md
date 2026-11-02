@@ -455,7 +455,11 @@ asyncio.run(run_sweep(
 | `ARENA_MLFLOW_TRACING` | on by default; `0`, `false`, `no` or `off` turns it off while keeping the URI |
 | `MLFLOW_EXPERIMENT_NAME` | the base of every experiment name |
 | `MLFLOW_HTTP_REQUEST_TIMEOUT`, `MLFLOW_HTTP_REQUEST_MAX_RETRIES` | the client's budget per request; 10 s and 2 retries unless you set them |
-| `ARENA_LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | `1` sends LangSmith a copy of everything MLflow traces, each trace in the project named like its experiment (a run's in its own): spans, tokens and model; LangSmith prices the calls itself. Needs `openarena[langsmith]` |
+| `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD) |
+| `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | LangSmith's key and API (`https://api.smith.langchain.com` by default) |
+| `DD_API_KEY`, `DD_SITE` | Datadog's API key (not an application key) and site (`datadoghq.com` by default, e.g. `datadoghq.eu`) |
+| `ARENA_TRACE_SERVICE` | the service name the destinations see, Datadog's `ml_app`; `open-arena` by default |
+| `ARENA_TRACE_CONTENT` | `0`, `false`, `no` or `off` keeps prompts and answers out of those spans |
 
 What lands in the server:
 
