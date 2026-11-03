@@ -91,7 +91,12 @@ def _langsmith_agent_run(run: str) -> dict:
     # An agent-based workspace files spans by its agent headers, never a
     # project (LangSmith refuses both at once): the run as metadata, and as the
     # thread its Threads tab groups a run's traces by (on every span, as it asks).
-    return {"langsmith.metadata.run": run, "langsmith.metadata.thread_id": run}
+    # The thread id is a segment of LangSmith's thread URL, whose gateway refuses a slash (%2F)
+    # and so the thread will not open: anything but a name's own characters becomes a colon.
+    return {
+        "langsmith.metadata.run": run,
+        "langsmith.metadata.thread_id": re.sub(r"[^A-Za-z0-9_.:-]", ":", run),
+    }
 
 
 def langsmith(

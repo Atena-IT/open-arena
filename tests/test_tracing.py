@@ -98,8 +98,14 @@ def test_langsmith_agent_headers(monkeypatch):
     # The run is a thread too, so the agent's Threads tab groups a run's traces as a project would.
     assert entry.run_attributes("ws/eval-smoke/1") == {
         "langsmith.metadata.run": "ws/eval-smoke/1",
-        "langsmith.metadata.thread_id": "ws/eval-smoke/1",
+        # LangSmith's gateway refuses a thread id holding a slash (%2F in its URL): the thread will not open.
+        "langsmith.metadata.thread_id": "ws:eval-smoke:1",
     }
+    # The run's prefix is the free-text MLflow experiment: a space or a `#` would break the URL too.
+    thread = entry.run_attributes("arena traces#eu/ws/eval-smoke/1")[
+        "langsmith.metadata.thread_id"
+    ]
+    assert thread == "arena:traces:eu:ws:eval-smoke:1"
 
     monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
     monkeypatch.setenv("LANGSMITH_API_KEY", "k")
