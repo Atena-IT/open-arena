@@ -952,7 +952,8 @@ for found in get("langsmith").list_datasets("qa", limit=20):
 ```
 
 Each dataset comes with its `description` and its `rows` when the platform
-gives them, and the `settings` that open it as that provider's dataset.
+gives them, and the `settings` that open it as that provider's dataset
+(on `mlflow` its `dataset_id`, since two datasets may share a name).
 Datadog lists the project in `DD_LLMOBS_PROJECT_NAME` (else
 `default-project`). The other providers answer `None`.
 

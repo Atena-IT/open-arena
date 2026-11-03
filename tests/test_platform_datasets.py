@@ -573,10 +573,10 @@ def test_opik_and_phoenix_list_what_their_sdk_lists(monkeypatch):
 
     _module(monkeypatch, "opik", Opik=Opik)
     assert get("opik").list_datasets() == [{"name": "bench", "description": "o", "rows": None, "settings": {"dataset_name": "bench"}}]
-    assert seen == [{"max_results": 1000, "sync_items": False}]
+    assert seen == [{"max_results": sys.maxsize, "sync_items": False}]  # every dataset, not the first thousand
 
     class Client:
-        datasets = SimpleNamespace(list=lambda limit: [{"name": "px", "description": "p", "example_count": 4}])
+        datasets = SimpleNamespace(list=lambda **kwargs: [{"name": "px", "description": "p", "example_count": 4}] if not kwargs else [])
 
     _module(monkeypatch, "phoenix")
     _module(monkeypatch, "phoenix.client", Client=Client)
@@ -624,11 +624,15 @@ def test_mlflow_lists_every_name_on_the_source_server(monkeypatch):
         def search_datasets(self, **kwargs):
             seen.append(kwargs)
             first = kwargs["page_token"] is None
-            return _Page([_ds("Bench")] if first else [_ds("old")], "t2" if first else None)
+            return _Page([_ds("Bench", dataset_id="d1")] if first else [_ds("bench", dataset_id="d2")], "t2" if first else None)
 
     monkeypatch.setattr(mlflow, "MlflowClient", Client)
     monkeypatch.setenv("MLFLOW_SOURCE_TRACKING_URI", "http://source:5000")
-    assert get("mlflow").list_datasets("bench") == [{"name": "Bench", "description": None, "rows": None, "settings": {"name": "Bench"}}]
+    # Two datasets of one name, each opened by its own id.
+    assert get("mlflow").list_datasets("bench") == [
+        {"name": "Bench", "description": None, "rows": None, "settings": {"dataset_id": "d1"}},
+        {"name": "bench", "description": None, "rows": None, "settings": {"dataset_id": "d2"}},
+    ]
     assert seen[0] == ("uri", "http://source:5000")
     assert [s["page_token"] for s in seen[1:]] == [None, "t2"]
     assert seen[1]["filter_string"] == "name LIKE '%'"

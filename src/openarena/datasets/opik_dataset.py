@@ -1,6 +1,8 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from openarena.datasets.platform import SCAN, PlatformDataset, listing
+import sys
+
+from openarena.datasets.platform import PlatformDataset, listing
 
 
 class OpikDataset(PlatformDataset):
@@ -79,6 +81,7 @@ class OpikDataset(PlatformDataset):
 
     @classmethod
     def list_datasets(cls, query="", limit=100):
-        # The description only: an item count not already loaded is one more request per dataset.
-        found = cls.load_sdk().Opik().get_datasets(max_results=SCAN, sync_items=False)
+        # The SDK cannot filter by name: every dataset, 100 a request, filtered here; the description only, no item count.
+        # shortcut: a workspace with thousands of datasets pages them all per keystroke, page `rest_client.datasets.find_datasets(name=)` if that bites.
+        found = cls.load_sdk().Opik().get_datasets(max_results=sys.maxsize, sync_items=False)
         return listing(((d.name, d.description, None) for d in found), query, limit)

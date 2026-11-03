@@ -1,6 +1,6 @@
 # License Apache 2.0: (c) 2026 Atena-Reply
 
-from openarena.datasets.platform import SCAN, PlatformDataset, listing
+from openarena.datasets.platform import PlatformDataset, listing
 
 
 class PhoenixDataset(PlatformDataset):
@@ -86,5 +86,5 @@ class PhoenixDataset(PlatformDataset):
         cls.load_sdk()
         from phoenix.client import Client
 
-        found = Client().datasets.list(limit=SCAN)
+        found = Client().datasets.list()  # every dataset, page after page: Phoenix filters by exact name only
         return listing(((d["name"], d.get("description"), d.get("example_count")) for d in found), query, limit)

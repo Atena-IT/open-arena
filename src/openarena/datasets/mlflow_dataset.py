@@ -84,4 +84,5 @@ class MLflowDataset(Dataset, synalinks.datasets.MLflowDataset):
                 if not token:
                     return
 
-        return listing(((d.name, None, None) for d in found()), query, limit, setting="name")
+        # Opened by id: MLflow lets two datasets share a name.
+        return listing(((d.name, None, None, {"dataset_id": d.dataset_id}) for d in found()), query, limit)

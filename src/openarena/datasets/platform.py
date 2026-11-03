@@ -118,22 +118,19 @@ class PlatformDataset(Dataset):
         return self._total_batches(n)
 
 
-# How many datasets a platform that cannot filter by name is asked for, to filter here.
-SCAN = 1000
-
-
-def listing(found: Iterable[tuple[str, str | None, int | None]], query: str, limit: int, setting: str = "dataset_name") -> list[dict]:
+def listing(found: Iterable[tuple], query: str, limit: int, setting: str = "dataset_name") -> list[dict]:
     """`(name, description, rows)` as `list_datasets` answers: the names holding `query` whatever their case, the first `limit`.
 
+    A fourth item, when given, is the settings that open the dataset; else `{setting: name}`.
     `found` is read only as far as it must, so a lazy listing stops paging once `limit` match.
     """
     q = query.strip().lower()
     out: list[dict] = []
     if limit < 1:
         return out
-    for name, description, rows in found:
+    for name, description, rows, *opens in found:
         if name and q in name.lower():
-            out.append({"name": name, "description": description or None, "rows": rows, "settings": {setting: name}})
+            out.append({"name": name, "description": description or None, "rows": rows, "settings": opens[0] if opens else {setting: name}})
             if len(out) >= limit:
                 break
     return out
