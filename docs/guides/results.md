@@ -457,7 +457,7 @@ asyncio.run(run_sweep(
 | `MLFLOW_HTTP_REQUEST_TIMEOUT`, `MLFLOW_HTTP_REQUEST_MAX_RETRIES` | the client's budget per request; 10 s and 2 retries unless you set them |
 | `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD) |
 | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | LangSmith's key and API (`https://api.smith.langchain.com` by default) |
-| `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) |
+| `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) and a thread of its own (`thread_id`), one per run in the agent's Threads tab |
 | `DD_API_KEY`, `DD_SITE` | Datadog's API key (not an application key) and site (`datadoghq.com` by default, e.g. `datadoghq.eu`) |
 | `ARENA_TRACE_SERVICE` | the service name the destinations see, Datadog's `ml_app`; `open-arena` by default |
 | `ARENA_TRACE_CONTENT` | `0`, `false`, `no` or `off` keeps prompts and answers out of those spans |

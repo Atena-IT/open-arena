@@ -95,8 +95,10 @@ def test_langsmith_agent_headers(monkeypatch):
     assert sent["langsmith-agent-id"] == "open-arena"
     assert sent["langsmith-agent-environment"] == "staging"
     # No project pick beside the agent: LangSmith refuses a project with agent headers.
+    # The run is a thread too, so the agent's Threads tab groups a run's traces as a project would.
     assert entry.run_attributes("ws/eval-smoke/1") == {
-        "langsmith.metadata.run": "ws/eval-smoke/1"
+        "langsmith.metadata.run": "ws/eval-smoke/1",
+        "langsmith.metadata.thread_id": "ws/eval-smoke/1",
     }
 
     monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
