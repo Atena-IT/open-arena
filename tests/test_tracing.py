@@ -90,9 +90,14 @@ def test_langsmith_agent_headers(monkeypatch):
     Span attributes do not route them there, so the run rides along as metadata.
     """
     entry = langsmith("k", agent_id="open-arena", environment="staging")
-    assert ("Langsmith-Agent-Id", "open-arena") in entry.headers
-    assert ("Langsmith-Agent-Environment", "staging") in entry.headers
-    assert ("x-api-key", "k") in entry.headers
+    sent = otel._exporter(entry)._client._headers  # what goes on the wire
+    assert sent["x-api-key"] == "k"
+    assert sent["langsmith-agent-id"] == "open-arena"
+    assert sent["langsmith-agent-environment"] == "staging"
+    # No project pick beside the agent: LangSmith refuses a project with agent headers.
+    assert entry.run_attributes("ws/eval-smoke/1") == {
+        "langsmith.metadata.run": "ws/eval-smoke/1"
+    }
 
     monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
     monkeypatch.setenv("LANGSMITH_API_KEY", "k")

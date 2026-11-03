@@ -15,8 +15,8 @@ own; for now `config_from_env` reads the deployment's:
 
     ARENA_TRACE_DESTINATIONS  comma list, `langsmith`, `datadog` (empty: MLflow only)
     LANGSMITH_API_KEY         LangSmith's key, LANGSMITH_ENDPOINT its API
-    LANGSMITH_AGENT_ID,       an agent-based LangSmith workspace's agent and
-    LANGSMITH_AGENT_ENVIRONMENT  environment (local, development, staging, production), both or neither
+    LANGSMITH_AGENT_ID        an agent-based LangSmith workspace's agent, with
+    LANGSMITH_AGENT_ENVIRONMENT  its environment (local, development, staging, production)
     DD_API_KEY                Datadog's API key (the intake refuses application keys)
     DD_SITE                   Datadog's site, e.g. datadoghq.eu (default datadoghq.com)
     ARENA_TRACE_SERVICE       `service.name`, Datadog's ml_app (default open-arena)
@@ -82,9 +82,15 @@ class Destination:
 
 
 def _langsmith_run(run: str) -> dict:
-    # The project a span lands in (a project-based workspace), and the run as
-    # metadata, which is how an agent-based workspace's traces are told apart.
+    # The project a span lands in: a run's spans in a project of their own; the
+    # run as metadata too.
     return {"langsmith.trace.session_name": run, "langsmith.metadata.run": run}
+
+
+def _langsmith_agent_run(run: str) -> dict:
+    # An agent-based workspace files spans by its agent headers, never a
+    # project (LangSmith refuses both at once): the run as metadata only.
+    return {"langsmith.metadata.run": run}
 
 
 def langsmith(
@@ -116,7 +122,7 @@ def langsmith(
         "langsmith",
         f"{endpoint.rstrip('/')}/otel/v1/traces",
         _headers(**headers),
-        _langsmith_run,
+        _langsmith_agent_run if agent_id else _langsmith_run,
     )
 
 
