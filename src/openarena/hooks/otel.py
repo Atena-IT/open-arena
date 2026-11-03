@@ -89,8 +89,9 @@ def _langsmith_run(run: str) -> dict:
 
 def _langsmith_agent_run(run: str) -> dict:
     # An agent-based workspace files spans by its agent headers, never a
-    # project (LangSmith refuses both at once): the run as metadata only.
-    return {"langsmith.metadata.run": run}
+    # project (LangSmith refuses both at once): the run as metadata, and as the
+    # thread its Threads tab groups a run's traces by (on every span, as it asks).
+    return {"langsmith.metadata.run": run, "langsmith.metadata.thread_id": run}
 
 
 def langsmith(
