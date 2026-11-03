@@ -502,7 +502,8 @@ def evaluations_run(
     # The trace destinations the environment names (ARENA_TRACE_DESTINATIONS), the run filed under its name.
     trace = config_from_env()
     # LangSmith prices tokens itself: each model the run calls gets its row there first.
-    price_models(trace, (m.get("model", "") for m in (raw.get("models") or {}).values()))
+    # The ids the run calls, `${NAME}`s replaced: what its spans carry.
+    price_models(trace, (m.get("model", "") for m in (resolved.get("models") or {}).values()))
     with use_tracing(trace, run=run_experiment_name(name)):
         result = asyncio.run(
             run_sweep(

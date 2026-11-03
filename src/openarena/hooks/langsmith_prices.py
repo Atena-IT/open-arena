@@ -29,9 +29,10 @@ from openarena.lookups.prices import model_price
 log = logging.getLogger("uvicorn.error")
 
 ROW = "arena: "
-# What this process last wrote, per price table and model: a launch whose prices did
-# not move asks LangSmith nothing, and a search that missed a row never writes it twice.
-_written: dict[tuple[str, str], tuple[float, float]] = {}
+# What this process last wrote, per price table, account and model, with the row's id: a
+# launch whose prices did not move asks LangSmith nothing, and a row the search misses is
+# still the one rewritten, never written twice.
+_written: dict[tuple[str, str, str], tuple[tuple[float, float], str | None]] = {}
 
 
 def _call(method: str, url: str, key: str, body: dict | None = None):
@@ -63,7 +64,9 @@ def _price(api: str, key: str, model: str) -> None:
     # Unknown is not free, and a local server has no bill: no row for either.
     if price is None or not price.complete or price.source == "local":
         return
-    if _written.get((api, model)) == (price.input, price.output):
+    cache = (api, key, model)
+    known = _written.get(cache)
+    if known and known[0] == (price.input, price.output):
         return
     row = {
         "name": ROW + model,
@@ -75,14 +78,16 @@ def _price(api: str, key: str, model: str) -> None:
         "GET", f"{api}?{urllib.parse.urlencode({'q': model, 'limit': 100})}", key
     )
     ours = next((r for r in found or [] if r.get("name") == row["name"]), None)
-    if ours is None:
-        _call("POST", api, key, row)
+    row_id = ours["id"] if ours else (known[1] if known else None)
+    if row_id is None:
+        row_id = (_call("POST", api, key, row) or {}).get("id")
     elif not (
-        _same(ours.get("prompt_cost"), price.input)
+        ours
+        and _same(ours.get("prompt_cost"), price.input)
         and _same(ours.get("completion_cost"), price.output)
     ):
-        _call("PUT", f"{api}/{ours['id']}", key, row)
-    _written[(api, model)] = (price.input, price.output)
+        _call("PUT", f"{api}/{row_id}", key, row)
+    _written[cache] = ((price.input, price.output), row_id)
 
 
 def price_models(config: TraceConfig, models: Iterable[str]) -> None:

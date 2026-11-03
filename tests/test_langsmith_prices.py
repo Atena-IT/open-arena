@@ -100,6 +100,21 @@ def test_a_search_that_misses_the_row_never_writes_it_twice(langsmith, monkeypat
     langsmith_prices.price_models(config, [MODEL])
     langsmith_prices.price_models(config, [MODEL])
     assert [c[0] for c in langsmith.calls].count("POST") == 1
+    # A price that moved rewrites the row written before, though the search still misses it.
+    monkeypatch.setattr(
+        langsmith_prices, "model_price", lambda model: Price(2e-07, 5e-07, "openrouter")
+    )
+    langsmith_prices.price_models(config, [MODEL])
+    assert [c[0] for c in langsmith.calls].count("POST") == 1
+    assert langsmith.calls[-1][:2] == ("PUT", "/row-1")
+
+
+def test_two_accounts_on_one_endpoint_each_get_their_row(langsmith):
+    for key in ("first", "second"):
+        langsmith_prices.price_models(
+            _config(otel.langsmith(key, "https://eu.api.smith.langchain.com")), [MODEL]
+        )
+    assert [c[2] for c in langsmith.calls if c[0] == "GET"] == ["first", "second"]
 
 
 def test_a_self_hosted_langsmith_keeps_one_api_prefix():
