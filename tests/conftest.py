@@ -17,3 +17,16 @@ def _wide_console(monkeypatch):
     from openarena.cli.main import console
 
     monkeypatch.setattr(console, "width", 1000)
+
+
+@pytest.fixture(autouse=True)
+def _mlflow_tracking_uri(monkeypatch):
+    """Each test starts from MLflow's tracking URI as the one before found it.
+
+    `enable_observability` sets it process-wide, and monkeypatch restores the
+    environment variable, not MLflow's own copy: a test pointing it at a dead
+    server would leave every later test that traces waiting on that server.
+    """
+    from mlflow.tracking._tracking_service import utils
+
+    monkeypatch.setattr(utils, "_tracking_uri", utils._tracking_uri)
