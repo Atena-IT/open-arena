@@ -455,12 +455,12 @@ asyncio.run(run_sweep(
 | `ARENA_MLFLOW_TRACING` | on by default; `0`, `false`, `no` or `off` turns it off while keeping the URI |
 | `MLFLOW_EXPERIMENT_NAME` | the base of every experiment name |
 | `MLFLOW_HTTP_REQUEST_TIMEOUT`, `MLFLOW_HTTP_REQUEST_MAX_RETRIES` | the client's budget per request; 10 s and 2 retries unless you set them |
-| `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD) |
+| `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD); LangSmith, which reads no cost over OpenTelemetry and prices tokens with its own table, gets that cost as the `arena_cost_usd` metadata, and before a run each of its models gets a row `arena: <id>` in LangSmith's price table at the arena's list price (written when missing, rewritten when it moved), so LangSmith's own cost columns fill too |
 | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | LangSmith's key and API (`https://api.smith.langchain.com` by default) |
 | `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) and a thread of its own (`thread_id`, slashes and other URL-unsafe characters as colons), one per run in the agent's Threads tab |
 | `DD_API_KEY`, `DD_SITE` | Datadog's API key (not an application key) and site (`datadoghq.com` by default, e.g. `datadoghq.eu`) |
 | `ARENA_TRACE_SERVICE` | the service name the destinations see, Datadog's `ml_app`; `open-arena` by default |
-| `ARENA_TRACE_CONTENT` | `0`, `false`, `no` or `off` keeps prompts and answers out of those spans |
+| `ARENA_TRACE_CONTENT` | `0`, `false`, `no` or `off` keeps prompts and answers out of those spans: a model call's messages, a tool's arguments and result, a program's or agent's input and output (`input.value`, `output.value`) |
 
 What lands in the server:
 
