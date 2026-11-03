@@ -66,6 +66,7 @@ ROWS = {
     "opik-regressions": {"input": {"question": "How do I reset my password?"}, "expected_output": {"answer": "From the sign-in page."}, "metadata": {}},
     "phoenix-golden": {"input": {"question": "How do I reset my password?"}, "output": {"answer": "From the sign-in page."}, "metadata": {}},
     "bt-golden": {"input": {"question": "How do I reset my password?"}, "expected": {"answer": "From the sign-in page."}, "metadata": {}},
+    "dd-golden": {"input_data": {"question": "How do I reset my password?"}, "expected_output": {"answer": "From the sign-in page."}, "metadata": {}, "id": "r1"},
     "mlflow-golden": {"inputs": {"question": "How do I reset my password?"}, "expectations": {"answer": "From the sign-in page."}},
     "uc-questions": {"question": "How do I reset my password?", "reference_answer": "From the sign-in page."},
 }

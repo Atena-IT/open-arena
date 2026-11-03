@@ -354,7 +354,7 @@ flowchart TD
   A -->|files in the workspace| B{one file or one per row?}
   B -->|one table: jsonl, json, csv, parquet| L[local]
   B -->|one record per file| F[folder]
-  A -->|curated in an LLM-ops platform| P[langfuse, langsmith, opik,<br/>phoenix, braintrust, mlflow]
+  A -->|curated in an LLM-ops platform| P[langfuse, langsmith, opik,<br/>phoenix, braintrust, mlflow, datadog]
   A -->|a governed lakehouse table| U[unity_catalog]
   A -->|Harbor task folders| H[harbor_tasks]
 ```
@@ -370,6 +370,7 @@ flowchart TD
 | `phoenix` | examples in Phoenix, divided into splits | `version_id` | `phoenix` |
 | `braintrust` | records in a Braintrust project | `version` (a transaction id) | `braintrust` |
 | `mlflow` | an MLflow evaluation dataset | nothing | none |
+| `datadog` | a dataset in Datadog Agent Observability (LLM Observability) | `version` (an int) | none |
 | `unity_catalog` | a Delta or Parquet table governed by Unity Catalog | `version` or `as_of` | `unity-catalog` |
 | `harbor_tasks` | tasks an agent works in a sandbox, scored by their own tests | git | none |
 
@@ -615,6 +616,43 @@ loader. Keys and endpoints go in the workspace's `.env`
     Moving a tag (`prod`) moves every evaluation that names it, which suits
     "the current golden set" but not a published result: use a tag you
     never move for those.
+
+=== "datadog"
+
+    Reads the records of a Datadog Agent Observability (LLM Observability)
+    dataset, over Datadog's REST API: no SDK, nothing to install. The project
+    and the dataset are looked up by name and never created.
+
+    ```yaml
+    datasets:
+      dd-golden:
+        type: datadog
+        config:
+          dataset_name: support-golden
+          project_name: support          # else DD_LLMOBS_PROJECT_NAME, else default-project
+          version: 2
+          input_template: '{"question": {{ input_data.question | tojson }}}'
+          output_template: '{"answer": {{ expected_output.answer | tojson }}}'
+          input_schema: {type: object, properties: {question: {type: string}}, required: [question]}
+          output_schema: {type: object, properties: {answer: {type: string}}, required: [answer]}
+        reward: judge
+    ```
+
+    | field | values | default | effect |
+    |---|---|---|---|
+    | `dataset_name` | the dataset's name | required | which dataset |
+    | `project_name` | the project's name | `DD_LLMOBS_PROJECT_NAME`, else `default-project` | the project that holds it |
+    | `version` | integer | the current version | the records of that version |
+
+    **Row variables**: `input_data`, `expected_output`, `metadata`, `id`,
+    ddtrace's names.
+
+    **Environment**: `DD_API_KEY`, `DD_APP_KEY` (an application key: reads
+    need both), `DD_SITE` (`datadoghq.com` by default, e.g. `datadoghq.eu`),
+    `DD_LLMOBS_PROJECT_NAME`.
+
+    **Pinning**: set `version`; without it each run reads the current
+    version, which moves when records are edited.
 
 === "opik"
 
@@ -872,6 +910,7 @@ variable holds what:
 | `opik` | `input` | `expected_output` | `metadata`, `id`, custom fields |
 | `phoenix` | `input` | `output` | `metadata`, `id` |
 | `braintrust` | `input` | `expected` | `metadata`, `id` |
+| `datadog` | `input_data` | `expected_output` | `metadata`, `id` |
 | `mlflow` | `inputs` | `expectations` | `outputs`, `tags`, `record_id` |
 
 ### Installing a provider's SDK
@@ -913,6 +952,7 @@ every dataset you publish or compare over time:
 | `phoenix` | `version_id` | the version's id |
 | `braintrust` | `version` | a transaction id |
 | `unity_catalog` | `version` | `3` |
+| `datadog` | `version` | `2` |
 | `mlflow` | nothing | export it to a `local` file to freeze it |
 
 !!! tip "Change the key with the version"

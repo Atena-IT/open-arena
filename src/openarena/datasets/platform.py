@@ -2,9 +2,10 @@
 
 """Datasets read from an evaluation platform through its SDK.
 
-Langfuse, LangSmith, Braintrust, Opik, Phoenix and Unity Catalog share this
-base. Each names the SDK it reads with, imported only when a dataset of its
-kind is opened so openarena installs without it, and answers three
+Langfuse, LangSmith, Braintrust, Opik, Phoenix, Unity Catalog and Datadog
+share this base. Each names the SDK it reads with, imported only when a
+dataset of its kind is opened so openarena installs without it (Datadog
+reads its REST API and needs none), and answers three
 questions: how to reach the platform (`connect`, done once, when the dataset
 is built, so a wrong name fails the run before any trial), which records
 the dataset holds (`records`) and what row each one is to the templates

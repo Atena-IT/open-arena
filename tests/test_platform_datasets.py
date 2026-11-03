@@ -412,3 +412,92 @@ def test_unity_catalog_without_deltalake_names_its_extra(monkeypatch):
     monkeypatch.setitem(sys.modules, "deltalake", None)
     with pytest.raises(ImportError, match=r"openarena\[unity-catalog\]"):
         list(_uc(table="c.s.t", storage_path="s3://b/t")._iter_rows())
+
+
+# -- Datadog ---------------------------------------------------------------------
+
+
+def _datadog(monkeypatch, responses, seen):
+    """`httpx.get` answering each path from `responses`: a list of pages per path, handed out in turn."""
+    import httpx
+
+    monkeypatch.setenv("DD_API_KEY", "api")
+    monkeypatch.setenv("DD_APP_KEY", "app")
+    monkeypatch.setenv("DD_SITE", "datadoghq.eu")
+    monkeypatch.delenv("DD_LLMOBS_PROJECT_NAME", raising=False)
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        seen.append((url, params, headers))
+        payload = responses[url].pop(0)
+        return SimpleNamespace(json=lambda: payload, raise_for_status=lambda: None)
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+
+DD = "https://api.datadoghq.eu/api/v2/llm-obs/v1"
+
+
+def test_datadog_finds_the_project_and_dataset_by_name_and_pages_the_records(monkeypatch):
+    seen = []
+    _datadog(
+        monkeypatch,
+        {
+            f"{DD}/projects": [{"data": [{"id": "p1"}]}],
+            # A looser match than the name asked for is passed over.
+            f"{DD}/p1/datasets": [{"data": [{"id": "d0", "attributes": {"name": "bench-v2"}}, {"id": "d1", "attributes": {"name": "bench"}}]}],
+            f"{DD}/p1/datasets/d1/records": [
+                # The API reference puts a record's fields at the top level, ddtrace reads them under `attributes`.
+                {"data": [{"id": "r1", "input": {"q": "1"}, "expected_output": "a1", "metadata": {"n": 1}}], "meta": {"after": "c2"}},
+                {"data": [{"id": "r2", "attributes": {"input": "q2", "expected_output": None, "metadata": None}}], "meta": {}},
+            ],
+        },
+        seen,
+    )
+    ds = get("datadog")(dataset_name="bench", **TEMPLATES)
+    assert list(ds._iter_rows()) == [
+        {"input_data": {"q": "1"}, "expected_output": "a1", "metadata": {"n": 1}, "id": "r1"},
+        {"input_data": "q2", "expected_output": None, "metadata": {}, "id": "r2"},
+    ]
+    keys = {"DD-API-KEY": "api", "DD-APPLICATION-KEY": "app"}
+    assert seen == [
+        (f"{DD}/projects", {"filter[name]": "default-project"}, keys),
+        (f"{DD}/p1/datasets", {"filter[name]": "bench"}, keys),
+        (f"{DD}/p1/datasets/d1/records", {}, keys),
+        (f"{DD}/p1/datasets/d1/records", {"page[cursor]": "c2"}, keys),
+    ]
+    with pytest.raises(NotImplementedError, match="set `limit`"):
+        len(ds)
+
+
+def test_datadog_reads_the_project_from_the_environment_and_pins_a_version(monkeypatch):
+    seen = []
+    pages = {
+        f"{DD}/projects": [{"data": [{"id": "p1"}]}] * 2,
+        f"{DD}/p1/datasets": [{"data": [{"id": "d1"}]}] * 2,
+        f"{DD}/p1/datasets/d1/records": [{"data": []}],
+    }
+    _datadog(monkeypatch, pages, seen)
+    monkeypatch.setenv("DD_LLMOBS_PROJECT_NAME", "sky")
+    get("datadog")(dataset_name="bench", **TEMPLATES)
+    assert seen[0][1] == {"filter[name]": "sky"}
+    # An explicit project wins, and version 0 is a version, not "latest".
+    # A digit string (quoted YAML, the arena assistant's argument) is the version it spells.
+    list(get("datadog")(dataset_name="bench", project_name="other", version="0", **TEMPLATES)._iter_rows())
+    assert seen[2][1] == {"filter[name]": "other"}
+    assert seen[-1][1] == {"filter[version]": 0}
+
+
+def test_datadog_says_what_it_cannot_find_or_lacks(monkeypatch):
+    _datadog(monkeypatch, {f"{DD}/projects": [{"data": []}, {"data": [{"id": "p1"}]}], f"{DD}/p1/datasets": [{"data": []}]}, [])
+    with pytest.raises(ValueError, match="no Datadog project named 'default-project'"):
+        get("datadog")(dataset_name="bench", **TEMPLATES)
+    with pytest.raises(ValueError, match="no dataset named 'bench' in the Datadog project 'default-project'"):
+        get("datadog")(dataset_name="bench", **TEMPLATES)
+    monkeypatch.delenv("DD_APP_KEY")
+    with pytest.raises(EnvironmentError, match="DD_APP_KEY is not set"):
+        get("datadog")(dataset_name="bench", **TEMPLATES)
+    monkeypatch.delenv("DD_API_KEY")
+    with pytest.raises(EnvironmentError, match="DD_API_KEY is not set"):
+        get("datadog")(dataset_name="bench", **TEMPLATES)
+    with pytest.raises(TypeError, match="`version` must be an int"):
+        get("datadog")(dataset_name="bench", version="v3", **TEMPLATES)

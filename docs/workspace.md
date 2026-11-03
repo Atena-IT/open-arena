@@ -292,6 +292,7 @@ editing the file.
     | `PHOENIX_API_KEY`, `PHOENIX_COLLECTOR_ENDPOINT` (or `PHOENIX_HOST` and `PHOENIX_PORT`) | `phoenix` datasets |
     | `OPIK_API_KEY`, `OPIK_WORKSPACE`, `OPIK_URL_OVERRIDE` | `opik` datasets |
     | `BRAINTRUST_API_KEY`, `BRAINTRUST_APP_URL`, `BRAINTRUST_ORG_NAME` | `braintrust` datasets |
+    | `DD_API_KEY`, `DD_APP_KEY`, `DD_SITE`, `DD_LLMOBS_PROJECT_NAME` | `datadog` datasets |
     | `MLFLOW_SOURCE_TRACKING_URI` | `mlflow` datasets that set no `tracking_uri` of their own |
     | `UNITY_CATALOG_API_URL`, `UC_TOKEN`, and the S3 settings `S3_ENDPOINT`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` | `unity_catalog` datasets |
 

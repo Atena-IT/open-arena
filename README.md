@@ -34,7 +34,7 @@ in, files out.
 
 - **Any model litellm routes**: OpenAI, Anthropic, Gemini, Mistral, Ollama, vLLM, ...
 - **Any dataset source**: Hugging Face, local files, MLflow, Langfuse, LangSmith,
-  Opik, Phoenix, Braintrust, Unity Catalog, each row shaped by Jinja2 templates.
+  Opik, Phoenix, Braintrust, Datadog, Unity Catalog, each row shaped by Jinja2 templates.
 - **Scored your way**: exact match, judge models, rubrics, multi-judge panels,
   agent judges, tool-call accuracy, retrieval recall.
 - **Beyond one call**: models calling MCP tools, remote A2A agents, and agents
