@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from openarena.datasets.platform import PlatformDataset, utc
+from openarena.datasets.platform import PlatformDataset, listing, utc
 
 
 class LangSmithDataset(PlatformDataset):
@@ -74,3 +74,8 @@ class LangSmithDataset(PlatformDataset):
 
     def row(self, example):
         return {"inputs": example.inputs or {}, "outputs": example.outputs or {}, "metadata": example.metadata or {}, "id": str(example.id)}
+
+    @classmethod
+    def list_datasets(cls, query="", limit=100):
+        found = cls.load_sdk().Client().list_datasets(dataset_name_contains=query.strip() or None, limit=limit)
+        return listing(((d.name, d.description, d.example_count) for d in found), query, limit)

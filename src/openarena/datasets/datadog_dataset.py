@@ -2,7 +2,7 @@
 
 import os
 
-from openarena.datasets.platform import PlatformDataset
+from openarena.datasets.platform import PlatformDataset, listing
 
 DEFAULT_PROJECT = "default-project"
 
@@ -10,6 +10,49 @@ DEFAULT_PROJECT = "default-project"
 def _named(found: list[dict], name: str) -> list[dict]:
     """The hits of a `filter[name]` lookup that carry exactly `name`; one without a name is taken at its word."""
     return [f for f in found if (f.get("attributes") or {}).get("name", name) == name]
+
+
+def _get(client, path, params):
+    import httpx
+
+    response = httpx.get(f"{client['api']}/{path}", params=params, headers=client["headers"], timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def _paged(client, path, params):
+    """Every entry under `path`, page after page, following `meta.after` as the cursor."""
+    while True:
+        page = _get(client, path, params)
+        yield from page["data"]
+        cursor = (page.get("meta") or {}).get("after")
+        if not cursor:
+            return
+        params = {**params, "page[cursor]": cursor}
+
+
+def _reach() -> dict:
+    """The API's address on `DD_SITE` and the two keys' headers; `OSError` naming a key that is not set."""
+    for key in ("DD_API_KEY", "DD_APP_KEY"):
+        if not os.environ.get(key):
+            raise OSError(f"{key} is not set. A Datadog dataset is read with an API key and an application key.")
+    site = os.environ.get("DD_SITE") or "datadoghq.com"
+    return {
+        "api": f"https://api.{site}/api/v2/llm-obs/v1",
+        "headers": {"DD-API-KEY": os.environ["DD_API_KEY"], "DD-APPLICATION-KEY": os.environ["DD_APP_KEY"]},
+    }
+
+
+def _project(client, name) -> str:
+    """The id of the project called `name`. Looked up, never created: ddtrace's pull_dataset would create a missing one in the customer's org."""
+    projects = _named(_get(client, "projects", {"filter[name]": name})["data"], name)
+    if not projects:
+        raise ValueError(f"no Datadog project named {name!r}; set `project_name` or DD_LLMOBS_PROJECT_NAME.")
+    return projects[0]["id"]
+
+
+def _project_name(given=None) -> str:
+    return given or os.environ.get("DD_LLMOBS_PROJECT_NAME") or DEFAULT_PROJECT
 
 
 class DatadogDataset(PlatformDataset):
@@ -79,46 +122,14 @@ class DatadogDataset(PlatformDataset):
             limit=limit,
             repeat=repeat,
             dataset_name=dataset_name,
-            project_name=project_name
-            or os.environ.get("DD_LLMOBS_PROJECT_NAME")
-            or DEFAULT_PROJECT,
+            project_name=_project_name(project_name),
             version=version,
         )
 
-    def _get(self, path, params):
-        import httpx
-
-        response = httpx.get(
-            f"{self.client['api']}/{path}",
-            params=params,
-            headers=self.client["headers"],
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.json()
-
     def connect(self):
-        for key in ("DD_API_KEY", "DD_APP_KEY"):
-            if not os.environ.get(key):
-                raise OSError(
-                    f"{key} is not set. A Datadog dataset is read with an API key and an application key."
-                )
-        site = os.environ.get("DD_SITE") or "datadoghq.com"
-        self.client = {
-            "api": f"https://api.{site}/api/v2/llm-obs/v1",
-            "headers": {
-                "DD-API-KEY": os.environ["DD_API_KEY"],
-                "DD-APPLICATION-KEY": os.environ["DD_APP_KEY"],
-            },
-        }
-        # Looked up, never created: ddtrace's pull_dataset would create a missing project in the customer's org.
-        projects = _named(self._get("projects", {"filter[name]": self.project_name})["data"], self.project_name)
-        if not projects:
-            raise ValueError(
-                f"no Datadog project named {self.project_name!r}; set `project_name` or DD_LLMOBS_PROJECT_NAME."
-            )
-        project = projects[0]["id"]
-        datasets = _named(self._get(f"{project}/datasets", {"filter[name]": self.dataset_name})["data"], self.dataset_name)
+        self.client = _reach()
+        project = _project(self.client, self.project_name)
+        datasets = _named(_get(self.client, f"{project}/datasets", {"filter[name]": self.dataset_name})["data"], self.dataset_name)
         if not datasets:
             raise ValueError(
                 f"no dataset named {self.dataset_name!r} in the Datadog project {self.project_name!r}."
@@ -128,13 +139,14 @@ class DatadogDataset(PlatformDataset):
 
     def records(self):
         params = {} if self.version is None else {"filter[version]": self.version}
-        while True:
-            page = self._get(self.client["records"], params)
-            yield from page["data"]
-            cursor = (page.get("meta") or {}).get("after")
-            if not cursor:
-                return
-            params = {**params, "page[cursor]": cursor}
+        return _paged(self.client, self.client["records"], params)
+
+    @classmethod
+    def list_datasets(cls, query="", limit=100):
+        """The datasets of the configured project (`DD_LLMOBS_PROJECT_NAME`, else `default-project`); see `PlatformDataset`."""
+        client = _reach()
+        found = (d.get("attributes") or {} for d in _paged(client, f"{_project(client, _project_name())}/datasets", {}))
+        return listing(((a.get("name", ""), a.get("description"), None) for a in found), query, limit)
 
     def row(self, record):
         # The API reference has a record's fields at the top level, ddtrace reads them under `attributes`.
