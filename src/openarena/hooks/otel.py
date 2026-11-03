@@ -336,6 +336,18 @@ def _parts(message: dict) -> dict:
     return {"role": message.get("role"), "parts": parts}
 
 
+def _without_media(value):
+    """JSON with each image or clip part as its kind alone (`{"type": "image_url"}`), as `_parts` keeps a message's."""
+    if isinstance(value, dict):
+        kind = value.get("type")
+        if kind != "text" and isinstance(kind, str) and kind in value:
+            return {"type": kind}
+        return {k: _without_media(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_without_media(v) for v in value]
+    return value
+
+
 def _usage(module) -> dict | None:
     """The usage of the model call that just ran in this task, as synalinks keeps it."""
     if isinstance(module, synalinks.LanguageModel):
@@ -376,10 +388,12 @@ def _usage_attributes(usage: dict) -> dict:
 
 def _cost_attributes(cost) -> dict:
     # The arena's own price (litellm's, USD): Datadog shows it over its own estimate.
+    # LangSmith reads no cost attribute, it prices tokens itself: the exact one as metadata.
     if isinstance(cost, (int, float)) and cost > 0:
         return {
             "gen_ai.usage.cost.amount": float(cost),
             "gen_ai.usage.cost.currency": "USD",
+            "langsmith.metadata.arena_cost_usd": float(cost),
         }
     return {}
 
@@ -399,7 +413,10 @@ def _content_at_begin(op: str, inputs, kwargs) -> dict:
             )
         }
     if op != "chat":
-        return {}
+        # A workflow's or an agent's own input: LangSmith shows it as the turn's input.
+        return {
+            "input.value": json.dumps(_without_media(_json_leaves(inputs)), default=str)
+        }
     messages = _chat_messages_of(inputs) or []
     attributes = {
         "gen_ai.input.messages": json.dumps(
@@ -422,7 +439,11 @@ def _content_at_end(op: str, outputs, usage) -> dict:
             "gen_ai.tool.call.result": json.dumps(_json_leaves(outputs), default=str)
         }
     if op != "chat":
-        return {}
+        return {
+            "output.value": json.dumps(
+                _without_media(_json_leaves(outputs)), default=str
+            )
+        }
     choices = _chat_output_of(_json_leaves(outputs), usage) or []
     messages = [
         _parts(c["message"]) | {"finish_reason": c.get("finish_reason")}

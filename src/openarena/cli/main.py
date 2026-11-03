@@ -495,11 +495,16 @@ def evaluations_run(
 
     # Imported here: the engine's imports are heavy, and `init` does not need them.
     from openarena.evaluate import run_sweep
+    from openarena.hooks.langsmith_prices import price_models
     from openarena.hooks.otel import config_from_env, use_tracing
     from openarena.programs.observability import run_experiment_name
 
     # The trace destinations the environment names (ARENA_TRACE_DESTINATIONS), the run filed under its name.
-    with use_tracing(config_from_env(), run=run_experiment_name(name)):
+    trace = config_from_env()
+    # LangSmith prices tokens itself: each model the run calls gets its row there first.
+    # The ids the run calls, `${NAME}`s replaced: what its spans carry.
+    price_models(trace, (m.get("model", "") for m in (resolved.get("models") or {}).values()))
+    with use_tracing(trace, run=run_experiment_name(name)):
         result = asyncio.run(
             run_sweep(
                 str(config_path),

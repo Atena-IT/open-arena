@@ -273,9 +273,14 @@ def test_a_program_call_is_one_trace_with_a_chat_span(exported):
     assert a["gen_ai.usage.input_tokens"] > 0
     assert a["gen_ai.usage.cost.amount"] > 0
     assert a["gen_ai.usage.cost.currency"] == "USD"
+    # LangSmith reads no cost over OTLP: the arena's exact one rides as metadata.
+    assert a["langsmith.metadata.arena_cost_usd"] == a["gen_ai.usage.cost.amount"]
     assert "gen_ai.input.messages" in a
     assert json.loads(a["gen_ai.output.messages"])[0]["role"] == "assistant"
     assert all(s.attributes["langsmith.trace.session_name"] == RUN for s in spans)
+    # A workflow's own input and output, which LangSmith shows as a thread's turn.
+    assert "2 + 2?" in root.attributes["input.value"]
+    assert json.loads(root.attributes["output.value"])
 
 
 def test_outside_use_tracing_nothing_is_sent(exported):
@@ -555,3 +560,13 @@ def test_inline_images_and_audio_stay_out_of_the_span():
     assert parts[0] == {"type": "text", "content": "What is this?"}
     assert [p["type"] for p in parts[1:]] == ["image_url", "input_audio"]
     assert "AAAA" not in json.dumps(parts) and "BBBB" not in json.dumps(parts)
+
+
+def test_a_workflow_s_content_keeps_only_the_kind_of_an_image_or_a_clip():
+    """Inline media would make a span megabytes (Datadog caps a request at 15 MiB): as in a chat message, its kind."""
+    image = {"type": "image_url", "image_url": {"url": "data:image/png;base64," + "A" * 1000}}
+    audio = {"type": "input_audio", "input_audio": {"data": "B" * 1000, "format": "wav"}}
+    text = {"type": "text", "text": "What is in it?"}
+    assert otel._without_media([{"question": [text, image, audio], "n": 1}]) == [
+        {"question": [text, {"type": "image_url"}, {"type": "input_audio"}], "n": 1}
+    ]
