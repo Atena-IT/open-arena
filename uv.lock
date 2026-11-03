@@ -3586,7 +3586,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.5.0" },
     { name = "datasets", specifier = ">=5.0" },
     { name = "deltalake", marker = "extra == 'unity-catalog'" },
-    { name = "harbor", extras = ["e2b"], specifier = ">=0.23" },
+    { name = "harbor", extras = ["e2b"], specifier = ">=0.23,<0.25" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "keras-tuner", specifier = ">=1.4.8" },
     { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=3.10.1" },

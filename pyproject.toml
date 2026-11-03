@@ -17,7 +17,7 @@ dependencies = [
     "numpy>=2.5",
     "click>=8.5.0",
     "rich>=15.0.0",
-    "harbor[e2b]>=0.23",
+    "harbor[e2b]>=0.23,<0.25",
     # Spans to the trace destinations (hooks/otel.py).
     "opentelemetry-sdk>=1.30",
     "opentelemetry-exporter-otlp-proto-http>=1.30",

@@ -1,0 +1,178 @@
+# Builds the openarena package and publishes it with Trusted Publishing (OIDC),
+# so no token or secret is stored anywhere: PyPI and TestPyPI trust this file,
+# in this repository, deploying from the `pypi` or `testpypi` environment.
+#   - Run workflow (Actions → Release): pyproject's version plus .devN, N the run
+#     number, so every manual run is a new version; published to TestPyPI.
+#   - A published pre-release (vX.Y.ZrcN): TestPyPI.
+#   - A published release (vX.Y.Z): PyPI once the repository variable
+#     PUBLISH_PYPI is `true`, TestPyPI until then. The tag must match
+#     pyproject's version.
+# Whichever index it went to, `verify` then installs that exact version on a
+# fresh runner and runs it. Neither index ever takes the same version twice.
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time, and never cancel a publish halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+      # --frozen: pyproject only, uv.lock is not resolved again for a build.
+      - name: Dev version
+        if: github.event_name == 'workflow_dispatch'
+        run: uv version --frozen "$(uv version --short).dev${GITHUB_RUN_NUMBER}"
+      - name: Tag matches pyproject
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(uv version --short)
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "::error::Release tag $TAG does not match the version in pyproject.toml ($version)."
+            exit 1
+          fi
+      - name: Version
+        id: version
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+      - name: Build
+        run: uv build
+      - name: Check
+        run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+          retention-days: 30
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.event.release.prerelease ||
+      vars.PUBLISH_PYPI != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/openarena/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  # Off until the repository variable PUBLISH_PYPI is `true`, which wants a
+  # `pypi` environment that only tags v* may deploy to.
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    if: >-
+      github.event_name == 'release' && !github.event.release.prerelease &&
+      vars.PUBLISH_PYPI == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/openarena/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  verify:
+    name: Install and run
+    needs: [build, publish-testpypi, publish-pypi]
+    # One of the two publishes is always skipped: run after the one that succeeded.
+    if: >-
+      !cancelled() && needs.build.result == 'success' &&
+      (needs.publish-testpypi.result == 'success' || needs.publish-pypi.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      INDEX: ${{ needs.publish-pypi.result == 'success' && 'pypi' || 'testpypi' }}
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      MLFLOW_DISABLE_AGENT_HINT: "1"
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # An index serves a new upload a little after it takes it: try for 5 minutes.
+      # From TestPyPI, the openarena wheel alone: anyone can upload anything there,
+      # so its dependencies come from PyPI.
+      - name: Install
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          pip="$RUNNER_TEMP/venv/bin/pip"
+          for attempt in $(seq 30); do
+            if [ "$INDEX" = testpypi ]; then
+              "$pip" download --no-cache-dir --no-deps --only-binary :all: -d wheel \
+                -i https://test.pypi.org/simple/ "openarena==$VERSION" && break
+            else
+              "$pip" install --no-cache-dir "openarena==$VERSION" && break
+            fi
+            if [ "$attempt" = 30 ]; then
+              echo "::error::openarena $VERSION is not on $INDEX after 5 minutes."
+              exit 1
+            fi
+            sleep 10
+          done
+          if [ "$INDEX" = testpypi ]; then
+            "$pip" install wheel/openarena-*.whl
+          fi
+      - name: Run
+        run: |
+          openarena --help
+          python -c "import openarena"
+          installed=$(python -c "import importlib.metadata; print(importlib.metadata.version('openarena'))")
+          echo "installed openarena $installed"
+          test "$installed" = "$VERSION"
+      # What a new user runs first: the workspace `init` writes is clean, with the
+      # dependencies pip resolved today rather than the ones uv.lock pins.
+      - name: Init and check
+        working-directory: ${{ runner.temp }}
+        run: |
+          openarena init workspace
+          cd workspace
+          openarena check
+      - name: Summary
+        run: |
+          {
+            echo "### openarena $VERSION on $INDEX"
+            echo
+            echo '```shell'
+            if [ "$INDEX" = testpypi ]; then
+              echo "pip download --no-deps -d wheel -i https://test.pypi.org/simple/ openarena==$VERSION"
+              echo "pip install wheel/openarena-*.whl"
+            else
+              echo "pip install openarena==$VERSION"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
