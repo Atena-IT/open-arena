@@ -15,6 +15,8 @@ own; for now `config_from_env` reads the deployment's:
 
     ARENA_TRACE_DESTINATIONS  comma list, `langsmith`, `datadog` (empty: MLflow only)
     LANGSMITH_API_KEY         LangSmith's key, LANGSMITH_ENDPOINT its API
+    LANGSMITH_AGENT_ID        an agent-based LangSmith workspace's agent, with
+    LANGSMITH_AGENT_ENVIRONMENT  its environment (local, development, staging, production)
     DD_API_KEY                Datadog's API key (the intake refuses application keys)
     DD_SITE                   Datadog's site, e.g. datadoghq.eu (default datadoghq.com)
     ARENA_TRACE_SERVICE       `service.name`, Datadog's ml_app (default open-arena)
@@ -28,6 +30,7 @@ import contextvars
 import json
 import logging
 import os
+import re
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -52,6 +55,9 @@ from synalinks.src.hooks.monitor import (
 log = logging.getLogger("uvicorn.error")
 
 LANGSMITH_ENDPOINT = "https://api.smith.langchain.com"
+# What LangSmith accepts in its agent headers; anything else is a 400.
+LANGSMITH_AGENT_ID = re.compile(r"[a-z][a-z0-9-]{0,62}")
+LANGSMITH_ENVIRONMENTS = ("local", "development", "staging", "production")
 DATADOG_SITE = "datadoghq.com"
 DEFAULT_SERVICE = "open-arena"
 
@@ -76,16 +82,47 @@ class Destination:
 
 
 def _langsmith_run(run: str) -> dict:
-    # The project a span lands in: a run's spans in a project of their own.
-    return {"langsmith.trace.session_name": run}
+    # The project a span lands in: a run's spans in a project of their own; the
+    # run as metadata too.
+    return {"langsmith.trace.session_name": run, "langsmith.metadata.run": run}
 
 
-def langsmith(api_key: str, endpoint: str = LANGSMITH_ENDPOINT) -> Destination:
+def _langsmith_agent_run(run: str) -> dict:
+    # An agent-based workspace files spans by its agent headers, never a
+    # project (LangSmith refuses both at once): the run as metadata only.
+    return {"langsmith.metadata.run": run}
+
+
+def langsmith(
+    api_key: str,
+    endpoint: str = LANGSMITH_ENDPOINT,
+    agent_id: str | None = None,
+    environment: str | None = None,
+) -> Destination:
+    """LangSmith; an agent-based workspace also needs its agent and environment, sent as headers."""
+    headers = {"x_api_key": api_key}
+    if agent_id or environment:
+        if not (agent_id and environment):
+            raise ValueError(
+                "LangSmith needs both the agent id and its environment, or neither"
+            )
+        if not LANGSMITH_AGENT_ID.fullmatch(agent_id):
+            raise ValueError(
+                f"LangSmith agent id {agent_id!r}: 1 to 63 lowercase letters, digits or hyphens, starting with a letter"
+            )
+        if environment not in LANGSMITH_ENVIRONMENTS:
+            raise ValueError(
+                f"LangSmith environment {environment!r}: one of {', '.join(LANGSMITH_ENVIRONMENTS)}"
+            )
+        headers |= {
+            "Langsmith_Agent_Id": agent_id,
+            "Langsmith_Agent_Environment": environment,
+        }
     return Destination(
         "langsmith",
         f"{endpoint.rstrip('/')}/otel/v1/traces",
-        _headers(x_api_key=api_key),
-        _langsmith_run,
+        _headers(**headers),
+        _langsmith_agent_run if agent_id else _langsmith_run,
     )
 
 
@@ -122,11 +159,17 @@ def config_from_env() -> TraceConfig:
         if not name:
             continue
         if name == "langsmith" and (key := os.environ.get("LANGSMITH_API_KEY")):
-            destinations.append(
-                langsmith(
-                    key, os.environ.get("LANGSMITH_ENDPOINT") or LANGSMITH_ENDPOINT
+            try:
+                destinations.append(
+                    langsmith(
+                        key,
+                        os.environ.get("LANGSMITH_ENDPOINT") or LANGSMITH_ENDPOINT,
+                        os.environ.get("LANGSMITH_AGENT_ID") or None,
+                        os.environ.get("LANGSMITH_AGENT_ENVIRONMENT") or None,
+                    )
                 )
-            )
+            except ValueError as e:
+                log.warning("Trace destination langsmith is skipped: %s.", e)
         elif name == "datadog" and (key := os.environ.get("DD_API_KEY")):
             destinations.append(datadog(key, os.environ.get("DD_SITE") or DATADOG_SITE))
         elif name in ("langsmith", "datadog"):

@@ -45,6 +45,8 @@ TRACE_VARS = (
     "ARENA_TRACE_DESTINATIONS",
     "LANGSMITH_API_KEY",
     "LANGSMITH_ENDPOINT",
+    "LANGSMITH_AGENT_ID",
+    "LANGSMITH_AGENT_ENVIRONMENT",
     "DD_API_KEY",
     "DD_SITE",
     "ARENA_TRACE_SERVICE",
@@ -71,7 +73,8 @@ def test_langsmith_entry(monkeypatch):
     # As given: the exporter sends a dict of headers verbatim (only its env var is percent-decoded).
     assert entry.headers == (("x-api-key", "k/ey"),)
     assert entry.run_attributes("ws/eval-smoke/1") == {
-        "langsmith.trace.session_name": "ws/eval-smoke/1"
+        "langsmith.trace.session_name": "ws/eval-smoke/1",
+        "langsmith.metadata.run": "ws/eval-smoke/1",
     }
 
     monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
@@ -79,6 +82,50 @@ def test_langsmith_entry(monkeypatch):
     monkeypatch.setenv("LANGSMITH_ENDPOINT", "https://eu.api.smith.langchain.com/")
     (entry,) = config_from_env().destinations
     assert entry.endpoint == "https://eu.api.smith.langchain.com/otel/v1/traces"
+
+
+def test_langsmith_agent_headers(monkeypatch):
+    """An agent-based LangSmith workspace takes traces only for a registered agent, named by two headers.
+
+    Span attributes do not route them there, so the run rides along as metadata.
+    """
+    entry = langsmith("k", agent_id="open-arena", environment="staging")
+    sent = otel._exporter(entry)._client._headers  # what goes on the wire
+    assert sent["x-api-key"] == "k"
+    assert sent["langsmith-agent-id"] == "open-arena"
+    assert sent["langsmith-agent-environment"] == "staging"
+    # No project pick beside the agent: LangSmith refuses a project with agent headers.
+    assert entry.run_attributes("ws/eval-smoke/1") == {
+        "langsmith.metadata.run": "ws/eval-smoke/1"
+    }
+
+    monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
+    monkeypatch.setenv("LANGSMITH_API_KEY", "k")
+    monkeypatch.setenv("LANGSMITH_AGENT_ID", "open-arena")
+    monkeypatch.setenv("LANGSMITH_AGENT_ENVIRONMENT", "staging")
+    (entry,) = config_from_env().destinations
+    assert ("Langsmith-Agent-Id", "open-arena") in entry.headers
+
+
+def test_langsmith_agent_headers_go_in_pairs_and_follow_its_rules():
+    """LangSmith answers 400 to one header without the other, and to an id or environment it does not accept."""
+    with pytest.raises(ValueError, match="both"):
+        langsmith("k", agent_id="open-arena")
+    with pytest.raises(ValueError, match="both"):
+        langsmith("k", environment="staging")
+    with pytest.raises(ValueError, match="agent id"):
+        langsmith("k", agent_id="Open Arena", environment="staging")
+    with pytest.raises(ValueError, match="environment"):
+        langsmith("k", agent_id="open-arena", environment="prod")
+
+
+def test_a_half_set_langsmith_agent_skips_langsmith(monkeypatch, caplog):
+    monkeypatch.setenv("ARENA_TRACE_DESTINATIONS", "langsmith")
+    monkeypatch.setenv("LANGSMITH_API_KEY", "k")
+    monkeypatch.setenv("LANGSMITH_AGENT_ID", "open-arena")
+    with caplog.at_level(logging.WARNING):
+        assert config_from_env().destinations == ()
+    assert "both" in caplog.text
 
 
 def test_datadog_entry_per_site():
