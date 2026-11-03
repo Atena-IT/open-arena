@@ -307,7 +307,7 @@ editing the file.
     | `MLFLOW_EXPERIMENT_NAME` | the experiment traces go to when no run names one |
     | `ARENA_TRACE_DESTINATIONS` | `langsmith`, `datadog` or both, comma-separated: they get the spans too, beside MLflow, a run's filed under its name; empty by default |
     | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | LangSmith's key, and its API (`https://api.smith.langchain.com` by default) |
-    | `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither |
+    | `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) |
     | `DD_API_KEY`, `DD_SITE` | Datadog's API key, and its site (`datadoghq.com` by default) |
     | `ARENA_TRACE_SERVICE`, `ARENA_TRACE_CONTENT` | the service name the destinations see (`open-arena`); `0` keeps prompts and answers out |
 
