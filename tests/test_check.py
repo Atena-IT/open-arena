@@ -435,12 +435,15 @@ def test_provider_settings_the_provider_refuses_to_load_without(configs):
                 "bt-ok": {"type": "braintrust", "config": {**templates, "project_id": "p1", "dataset_name": "qa"}, **base},
                 "ml": {"type": "mlflow", "config": templates, **base},
                 "ml-ok": {"type": "mlflow", "config": {**templates, "dataset_id": "d-1"}, **base},
+                "dd": {"type": "datadog", "config": templates, **base},
+                "dd-ok": {"type": "datadog", "config": {**templates, "dataset_name": "qa", "project_name": "sky", "version": 2}, **base},
             },
         ))
     assert _problems(report) == {
         ("error", "datasets.bt.config.project"),
         ("error", "datasets.bt.config.dataset_name"),
         ("error", "datasets.ml.config.name"),
+        ("error", "datasets.dd.config.dataset_name"),
     }
     assert _message(report, "datasets.bt.config.project") == "the braintrust provider needs `project` or `project_id`"
     assert _fix(report, "datasets.bt.config.dataset_name") == "add `dataset_name: <dataset name>` under datasets.bt.config"

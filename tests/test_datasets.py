@@ -241,7 +241,7 @@ def test_hugging_face_images_and_audio_are_read_undecoded():
 
 def test_the_registry_names_every_provider_and_lists_them_on_a_miss():
     assert get("local") is LocalDataset and get("folder") is FolderDataset and get("huggingface") is HuggingFaceDataset
-    with pytest.raises(KeyError, match="Unknown dataset provider 'hugingface'. Known: braintrust, folder, harbor_tasks, huggingface, langfuse, langsmith, local, mlflow, opik, phoenix, unity_catalog"):
+    with pytest.raises(KeyError, match="Unknown dataset provider 'hugingface'. Known: braintrust, datadog, folder, harbor_tasks, huggingface, langfuse, langsmith, local, mlflow, opik, phoenix, unity_catalog"):
         get("hugingface")
 
 

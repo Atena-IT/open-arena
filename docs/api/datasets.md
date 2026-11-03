@@ -17,6 +17,8 @@ arguments, plus the templates and schemas every provider takes.
 
 ::: openarena.datasets.langsmith_dataset.LangSmithDataset
 
+::: openarena.datasets.datadog_dataset.DatadogDataset
+
 ::: openarena.datasets.opik_dataset.OpikDataset
 
 ::: openarena.datasets.phoenix_dataset.PhoenixDataset

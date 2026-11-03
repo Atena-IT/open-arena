@@ -14,6 +14,7 @@ from typing import Any
 
 from openarena.config.entries import KIND_BLOCKS
 from openarena.datasets.braintrust_dataset import BraintrustDataset
+from openarena.datasets.datadog_dataset import DatadogDataset
 from openarena.datasets.dataset import Dataset
 from openarena.datasets.folder_dataset import FolderDataset
 from openarena.datasets.harbor_tasks_dataset import HarborTasksDataset
@@ -28,6 +29,7 @@ from openarena.datasets.unity_catalog_dataset import UnityCatalogDataset
 
 PROVIDERS: dict[str, type[Dataset]] = {
     "braintrust": BraintrustDataset,
+    "datadog": DatadogDataset,
     "folder": FolderDataset,
     "harbor_tasks": HarborTasksDataset,  # task folders, one row each, scored by their own tests
     "huggingface": HuggingFaceDataset,

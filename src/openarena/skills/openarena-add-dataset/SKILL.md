@@ -158,6 +158,7 @@ datasets are the exception: their shapes are set for them.
 | `opik` | `dataset_name`, `version`, `filter_string` | `input`, `expected_output`, `metadata`, `id` |
 | `phoenix` | `dataset_name`, `version_id`, `splits` | `input`, `output`, `metadata`, `id` |
 | `braintrust` | `project` or `project_id`, `dataset_name`, `version` (a transaction id), `org_name`, `fetch_batch_size` | `input`, `expected`, `metadata`, `id` |
+| `datadog` | `dataset_name`, `project_name` (default `DD_LLMOBS_PROJECT_NAME`, else `default-project`), `version` (an int) | `input_data`, `expected_output`, `metadata`, `id` |
 | `mlflow` | `name` or `dataset_id`, `tracking_uri` | `inputs`, `expectations`, `outputs`, `tags`, `record_id` |
 | `unity_catalog` | `table` (`catalog.schema.table`), `version` (an int) or `as_of`, `storage_path`, `read_batch_size` | the columns |
 | `harbor_tasks` | `path` (folder of Harbor tasks), `tasks` (names); no templates — see openarena-create-harbor-task | fixed |
@@ -182,7 +183,7 @@ The platform providers (`langfuse`, `langsmith`, `opik`, `phoenix`,
 `braintrust`, `unity_catalog`) need their SDK: an extra of openarena named
 after the provider (`unity-catalog` for Unity Catalog, `all` for every one),
 e.g. `uv tool install "openarena[langfuse] @ git+https://github.com/Atena-IT/open-arena"`.
-`mlflow` needs none. Without it the run says which extra to install; `check`
+`mlflow` and `datadog` need none (`datadog` reads Datadog's REST API with `DD_API_KEY`, `DD_APP_KEY`, `DD_SITE`). Without it the run says which extra to install; `check`
 does not need it. Tell the user rather than installing packages yourself.
 
 ## What answers each row: one kind block at most
