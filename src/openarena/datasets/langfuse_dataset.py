@@ -2,7 +2,7 @@
 
 from urllib.parse import quote
 
-from openarena.datasets.platform import PlatformDataset, utc
+from openarena.datasets.platform import PlatformDataset, listing, pages, utc
 
 
 class LangfuseDataset(PlatformDataset):
@@ -88,12 +88,14 @@ class LangfuseDataset(PlatformDataset):
     def _pages(self):
         """The items page after page, under the dataset's URL-encoded name, at the pinned version."""
         name = quote(self.dataset_name, safe="")
-        page, pages = 1, 1
-        while page <= pages:
-            listing = self.client.api.dataset_items.list(dataset_name=name, page=page, limit=self.page_size, version=self.version)
-            yield from listing.data
-            pages = listing.meta.total_pages
-            page += 1
+        items = self.client.api.dataset_items.list
+        return pages(lambda page, size: items(dataset_name=name, page=page, limit=size, version=self.version), self.page_size)
+
+    @classmethod
+    def list_datasets(cls, query="", limit=100):
+        datasets = cls.load_sdk().get_client().api.datasets.list
+        found = pages(lambda page, size: datasets(page=page, limit=size))
+        return listing(((d.name, d.description, None) for d in found), query, limit)
 
     def row(self, item):
         return {"input": item.input, "expected_output": item.expected_output, "metadata": item.metadata, "id": item.id}

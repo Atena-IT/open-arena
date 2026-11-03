@@ -12,13 +12,14 @@ the dataset holds (`records`) and what row each one is to the templates
 (`row`), and how many there are when the platform can say without reading
 them all (`count`). The base turns those into the engine's `_iter_rows` and
 `__len__`, keeps the provider's settings as attributes, and says which extra
-installs a missing SDK.
+installs a missing SDK. A provider whose platform lists its datasets also
+answers `list_datasets`, so a form can offer them instead of asking for a name.
 """
 
 from __future__ import annotations
 
 import importlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -84,14 +85,25 @@ class PlatformDataset(Dataset):
         """How many records there are, when the platform can say without reading them all."""
         return None
 
+    @classmethod
+    def list_datasets(cls, query: str = "", limit: int = 100) -> list[dict] | None:
+        """The datasets the environment's keys reach, whose name holds `query` (any case), `limit` at most; None when the platform cannot list them.
+
+        Each is `{"name", "description", "rows", "settings"}`: a description and
+        a row count when the platform gives them (else None), and the settings
+        that open it as a dataset of this provider.
+        """
+        return None
+
     # -- the engine's side ---------------------------------------------------------
 
-    def load_sdk(self):
+    @classmethod
+    def load_sdk(cls):
         """The platform's SDK module, or the error saying which extra of openarena brings it."""
         try:
-            return importlib.import_module(self.sdk)
+            return importlib.import_module(cls.sdk)
         except ImportError as e:
-            raise missing(self.provider, self.package, self.extra) from e
+            raise missing(cls.provider, cls.package, cls.extra) from e
 
     def _iter_rows(self):
         for record in self.records():
@@ -104,6 +116,34 @@ class PlatformDataset(Dataset):
                 f"a {self.provider} dataset has an unknown length; set `limit` for a bounded epoch."
             )
         return self._total_batches(n)
+
+
+def listing(found: Iterable[tuple], query: str, limit: int, setting: str = "dataset_name") -> list[dict]:
+    """`(name, description, rows)` as `list_datasets` answers: the names holding `query` whatever their case, the first `limit`.
+
+    A fourth item, when given, is the settings that open the dataset; else `{setting: name}`.
+    `found` is read only as far as it must, so a lazy listing stops paging once `limit` match.
+    """
+    q = query.strip().lower()
+    out: list[dict] = []
+    if limit < 1:
+        return out
+    for name, description, rows, *opens in found:
+        if name and q in name.lower():
+            out.append({"name": name, "description": description or None, "rows": rows, "settings": opens[0] if opens else {setting: name}})
+            if len(out) >= limit:
+                break
+    return out
+
+
+def pages(fetch, size: int = 50) -> Iterator[Any]:
+    """Every entry of a listing paged by number (`fetch(page, size)` answering `.data` and `.meta.total_pages`), page after page."""
+    page, total = 1, 1
+    while page <= total:
+        answer = fetch(page, size)
+        yield from answer.data
+        total = answer.meta.total_pages
+        page += 1
 
 
 def utc(moment: str | datetime | None) -> datetime | None:

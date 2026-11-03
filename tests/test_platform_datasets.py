@@ -501,3 +501,144 @@ def test_datadog_says_what_it_cannot_find_or_lacks(monkeypatch):
         get("datadog")(dataset_name="bench", **TEMPLATES)
     with pytest.raises(TypeError, match="`version` must be an int"):
         get("datadog")(dataset_name="bench", version="v3", **TEMPLATES)
+
+
+# -- Listing the datasets a platform holds -----------------------------------------
+
+
+def _ds(name, description=None, **more):
+    return SimpleNamespace(name=name, description=description, **more)
+
+
+def test_listing_keeps_the_names_holding_the_query_and_stops_reading_at_the_limit():
+    from openarena.datasets.platform import listing
+
+    read = []
+
+    def found():
+        for entry in [("QA-bench", "", 3), ("other", "x", None), ("qa-two", "two", None), ("qa-three", None, None)]:
+            read.append(entry[0])
+            yield entry
+
+    assert listing(found(), " qa ", 2) == [
+        {"name": "QA-bench", "description": None, "rows": 3, "settings": {"dataset_name": "QA-bench"}},
+        {"name": "qa-two", "description": "two", "rows": None, "settings": {"dataset_name": "qa-two"}},
+    ]
+    assert read == ["QA-bench", "other", "qa-two"]  # a lazy listing is not paged past the limit
+    assert listing(iter([(None, None, None), ("qa", None, None)]), "", 5)[0]["name"] == "qa"  # a nameless entry is skipped
+    assert listing(found(), "", 0) == []
+
+
+def test_a_platform_without_a_listing_says_so():
+    assert get("braintrust").list_datasets() is None
+    assert get("unity_catalog").list_datasets() is None
+
+
+def test_langsmith_lists_by_name_with_the_example_count(monkeypatch):
+    seen = []
+
+    class Client:
+        def list_datasets(self, **kwargs):
+            seen.append(kwargs)
+            return iter([_ds("bench", "Q&A", example_count=12)])
+
+    _module(monkeypatch, "langsmith", Client=Client)
+    assert get("langsmith").list_datasets("ben", 5) == [{"name": "bench", "description": "Q&A", "rows": 12, "settings": {"dataset_name": "bench"}}]
+    assert seen == [{"dataset_name_contains": "ben", "limit": 5}]
+    get("langsmith").list_datasets()
+    assert seen[-1] == {"dataset_name_contains": None, "limit": 100}
+
+
+def test_langfuse_lists_page_after_page(monkeypatch):
+    seen = []
+    pages = [[_ds("alpha", "first")], [_ds("beta")]]
+
+    def list_datasets(page, limit):
+        seen.append((page, limit))
+        return SimpleNamespace(data=pages[page - 1], meta=SimpleNamespace(total_pages=len(pages)))
+
+    _module(monkeypatch, "langfuse", get_client=lambda: SimpleNamespace(api=SimpleNamespace(datasets=SimpleNamespace(list=list_datasets))))
+    assert [d["name"] for d in get("langfuse").list_datasets()] == ["alpha", "beta"]
+    assert seen == [(1, 50), (2, 50)]
+    assert get("langfuse").list_datasets("BET") == [{"name": "beta", "description": None, "rows": None, "settings": {"dataset_name": "beta"}}]
+
+
+def test_opik_and_phoenix_list_what_their_sdk_lists(monkeypatch):
+    seen = []
+
+    class Opik:
+        def get_datasets(self, **kwargs):
+            seen.append(kwargs)
+            return [_ds("bench", "o")]
+
+    _module(monkeypatch, "opik", Opik=Opik)
+    assert get("opik").list_datasets() == [{"name": "bench", "description": "o", "rows": None, "settings": {"dataset_name": "bench"}}]
+    assert seen == [{"max_results": sys.maxsize, "sync_items": False}]  # every dataset, not the first thousand
+
+    class Client:
+        datasets = SimpleNamespace(list=lambda **kwargs: [{"name": "px", "description": "p", "example_count": 4}] if not kwargs else [])
+
+    _module(monkeypatch, "phoenix")
+    _module(monkeypatch, "phoenix.client", Client=Client)
+    assert get("phoenix").list_datasets() == [{"name": "px", "description": "p", "rows": 4, "settings": {"dataset_name": "px"}}]
+
+
+def test_datadog_lists_the_configured_projects_datasets_page_after_page(monkeypatch):
+    seen = []
+    _datadog(
+        monkeypatch,
+        {
+            f"{DD}/projects": [{"data": [{"id": "p1", "attributes": {"name": "sky"}}]}],
+            f"{DD}/p1/datasets": [
+                {"data": [{"id": "d1", "attributes": {"name": "bench", "description": "Q&A"}}], "meta": {"after": "c2"}},
+                {"data": [{"id": "d2", "attributes": {"name": "other"}}]},
+            ],
+        },
+        seen,
+    )
+    monkeypatch.setenv("DD_LLMOBS_PROJECT_NAME", "sky")
+    assert get("datadog").list_datasets() == [
+        {"name": "bench", "description": "Q&A", "rows": None, "settings": {"dataset_name": "bench"}},
+        {"name": "other", "description": None, "rows": None, "settings": {"dataset_name": "other"}},
+    ]
+    keys = {"DD-API-KEY": "api", "DD-APPLICATION-KEY": "app"}
+    assert seen == [
+        (f"{DD}/projects", {"filter[name]": "sky"}, keys),
+        (f"{DD}/p1/datasets", {}, keys),  # no `filter[name]`: every dataset of the project
+        (f"{DD}/p1/datasets", {"page[cursor]": "c2"}, keys),
+    ]
+    monkeypatch.delenv("DD_APP_KEY")
+    with pytest.raises(EnvironmentError, match="DD_APP_KEY is not set"):
+        get("datadog").list_datasets()
+
+
+def test_mlflow_lists_every_name_on_the_source_server(monkeypatch):
+    import mlflow
+
+    seen = []
+
+    class Client:
+        def __init__(self, uri):
+            seen.append(("uri", uri))
+
+        def search_datasets(self, **kwargs):
+            seen.append(kwargs)
+            first = kwargs["page_token"] is None
+            return _Page([_ds("Bench", dataset_id="d1")] if first else [_ds("bench", dataset_id="d2")], "t2" if first else None)
+
+    monkeypatch.setattr(mlflow, "MlflowClient", Client)
+    monkeypatch.setenv("MLFLOW_SOURCE_TRACKING_URI", "http://source:5000")
+    # Two datasets of one name, each opened by its own id.
+    assert get("mlflow").list_datasets("bench") == [
+        {"name": "Bench", "description": None, "rows": None, "settings": {"dataset_id": "d1"}},
+        {"name": "bench", "description": None, "rows": None, "settings": {"dataset_id": "d2"}},
+    ]
+    assert seen[0] == ("uri", "http://source:5000")
+    assert [s["page_token"] for s in seen[1:]] == [None, "t2"]
+    assert seen[1]["filter_string"] == "name LIKE '%'"
+
+
+class _Page(list):
+    def __init__(self, items, token):
+        super().__init__(items)
+        self.token = token

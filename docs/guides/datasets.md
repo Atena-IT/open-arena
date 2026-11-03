@@ -937,6 +937,26 @@ Without it, the run stops when it loads the dataset and names the extra to
 install. `openarena check` does not need the SDK, so a config can check clean
 on a machine that cannot run it.
 
+### Finding a dataset's name
+
+`langsmith`, `langfuse`, `opik`, `phoenix`, `mlflow` and `datadog` also list
+the datasets their keys reach, so a tool built on the engine can offer them
+instead of asking for a name. `list_datasets` takes part of a name, in any
+case, and how many to return:
+
+```python
+from openarena.datasets import get
+
+for found in get("langsmith").list_datasets("qa", limit=20):
+    print(found["name"], found["rows"], found["settings"])
+```
+
+Each dataset comes with its `description` and its `rows` when the platform
+gives them, and the `settings` that open it as that provider's dataset
+(on `mlflow` its `dataset_id`, since two datasets may share a name).
+Datadog lists the project in `DD_LLMOBS_PROJECT_NAME` (else
+`default-project`). The other providers answer `None`.
+
 ## Reproducibility: pin the version
 
 A score means something only if the rows behind it can be read again. Pin
