@@ -40,6 +40,7 @@ from keras_tuner.src.engine import tuner_utils  # noqa: E402
 from synalinks.src.utils.naming import to_snake_case  # noqa: E402
 from synalinks.src.utils.keras_tuner_utils import _run_trial_async  # noqa: E402
 
+from openarena.callbacks.otel import OtelCallback  # noqa: E402
 from openarena.config import Config, MetricEntry  # noqa: E402
 from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
@@ -923,7 +924,8 @@ async def run_sweep(
         view = copy.copy(item["ds"])
         # The run's `batch_size` (else its evaluation's) overrides the dataset's own; with neither, one row.
         view.batch_size = batch_size or cfg.batch_size or view.batch_size or 1
-        callbacks = [_ProgressCallback(emit, item["name"], model_id, view)]
+        # The trace destinations' hook, on the program and its judges: idle outside `use_tracing`.
+        callbacks = [OtelCallback(), _ProgressCallback(emit, item["name"], model_id, view)]
         # A cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
         # A cell whose program could not be built has no program: its trial raises why.
         if (program := item["programs"].get(model_id)) is not None:

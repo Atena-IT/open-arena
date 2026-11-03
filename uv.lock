@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -221,9 +221,9 @@ name = "aiologic"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sniffio" },
-    { name = "typing-extensions" },
-    { name = "wrapt" },
+    { name = "sniffio", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "wrapt", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/7a/d51f2fde1e8ae8a83431f8e97b7a71e9358cdb1d4d2ce6be387fa44d68de/aiologic-0.17.1.tar.gz", hash = "sha256:2e1b93b9e88ced318c2a63ad7b382688f40cbfe40e3d42258d49dc9c5aea179d", size = 252354, upload-time = "2026-06-27T20:41:33.25Z" }
 wheels = [
@@ -957,8 +957,8 @@ name = "culsans"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiologic" },
-    { name = "typing-extensions" },
+    { name = "aiologic", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d28008ec6bcdf82a4072d1c7a41032b5b759b60814ca4b0/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33", size = 107546, upload-time = "2025-12-31T23:15:38.196Z" }
 wheels = [
@@ -2020,8 +2020,8 @@ name = "httpcore2"
 version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11" },
-    { name = "truststore" },
+    { name = "h11", marker = "sys_platform != 'emscripten'" },
+    { name = "truststore", marker = "sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/15/8c/e925b1c92018abb3a1863ce1549d76d2381e334d21d65d4ac8f65dabd78a/httpcore2-2.13.0.tar.gz", hash = "sha256:2adc8be4fb285fbcd6d894298db3b52c177e74b6674eda3a76bd36be3292a3db", size = 67740, upload-time = "2026-09-14T14:18:04.717Z" }
 wheels = [
@@ -3532,6 +3532,8 @@ dependencies = [
     { name = "jinja2" },
     { name = "keras-tuner" },
     { name = "numpy" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -3546,7 +3548,6 @@ all = [
     { name = "deltalake" },
     { name = "langfuse" },
     { name = "langsmith" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opik" },
 ]
 braintrust = [
@@ -3557,7 +3558,6 @@ langfuse = [
 ]
 langsmith = [
     { name = "langsmith" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
 ]
 opik = [
     { name = "opik" },
@@ -3593,7 +3593,8 @@ requires-dist = [
     { name = "langsmith", marker = "extra == 'langsmith'" },
     { name = "numpy", specifier = ">=2.5" },
     { name = "openarena", extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog"], marker = "extra == 'all'" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'langsmith'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.30" },
+    { name = "opentelemetry-sdk", specifier = ">=1.30" },
     { name = "opik", marker = "extra == 'opik'" },
     { name = "pydantic", specifier = ">=2.13" },
     { name = "python-dotenv", specifier = ">=1.0" },
@@ -5310,8 +5311,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography" },
-    { name = "jeepney" },
+    { name = "cryptography", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "jeepney", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [
