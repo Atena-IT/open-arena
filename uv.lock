@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -221,9 +221,9 @@ name = "aiologic"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sniffio", marker = "python_full_version < '3.13'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-    { name = "wrapt", marker = "python_full_version < '3.13'" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+    { name = "wrapt" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/7a/d51f2fde1e8ae8a83431f8e97b7a71e9358cdb1d4d2ce6be387fa44d68de/aiologic-0.17.1.tar.gz", hash = "sha256:2e1b93b9e88ced318c2a63ad7b382688f40cbfe40e3d42258d49dc9c5aea179d", size = 252354, upload-time = "2026-06-27T20:41:33.25Z" }
 wheels = [
@@ -957,8 +957,8 @@ name = "culsans"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiologic", marker = "python_full_version < '3.13'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "aiologic" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d28008ec6bcdf82a4072d1c7a41032b5b759b60814ca4b0/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33", size = 107546, upload-time = "2025-12-31T23:15:38.196Z" }
 wheels = [
@@ -2020,8 +2020,8 @@ name = "httpcore2"
 version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11", marker = "sys_platform != 'emscripten'" },
-    { name = "truststore", marker = "sys_platform != 'emscripten'" },
+    { name = "h11" },
+    { name = "truststore" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/15/8c/e925b1c92018abb3a1863ce1549d76d2381e334d21d65d4ac8f65dabd78a/httpcore2-2.13.0.tar.gz", hash = "sha256:2adc8be4fb285fbcd6d894298db3b52c177e74b6674eda3a76bd36be3292a3db", size = 67740, upload-time = "2026-09-14T14:18:04.717Z" }
 wheels = [
@@ -3600,7 +3600,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "synalinks", specifier = ">=0.10.18" },
+    { name = "synalinks", specifier = ">=0.10.23" },
 ]
 provides-extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog", "all"]
 
@@ -5311,8 +5311,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
-    { name = "jeepney", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "cryptography" },
+    { name = "jeepney" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [
@@ -5589,7 +5589,7 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.10.18"
+version = "0.10.23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -5628,9 +5628,9 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/28/3c813dbbde179769d22946bbfa74cea396d27b62d5e1d483931a52e5039e/synalinks-0.10.18.tar.gz", hash = "sha256:c79d1e3608198c3361f6cf6b7fb4a731e349e82fdb973bbc2091b01960fd331c", size = 1256714, upload-time = "2026-10-29T14:28:10.556Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/a2/5cb3153472b4206d5e41fa8f23eb51123da8f88e5a23737274aec9507747/synalinks-0.10.23.tar.gz", hash = "sha256:3ce6f163f5091cbb2ce930326b84992270abb78a1166565ffba560b2bbaaa1b9", size = 1278855, upload-time = "2026-11-05T12:21:31.345Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/ca/06d3b2d3e49a1486302e2d6d9f140ffb291a24ee0bd44a4bae69e34d3f12/synalinks-0.10.18-py3-none-any.whl", hash = "sha256:a5cf5ad34e3223fd25645f65dbd73216066f20577c95062dadf47a5dca0dfa40", size = 1588002, upload-time = "2026-10-29T14:28:08.797Z" },
+    { url = "https://files.pythonhosted.org/packages/04/57/145c967909936db3e2d419079efe5aacffb656927befefef5dfd0f71f96f/synalinks-0.10.23-py3-none-any.whl", hash = "sha256:cb44740e9dd543b65478e9ec3509f5a60605722157c76958b7fe51390b992477", size = 1610529, upload-time = "2026-11-05T12:21:29.051Z" },
 ]
 
 [[package]]
