@@ -3600,7 +3600,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "synalinks", specifier = ">=0.10.23" },
+    { name = "synalinks", url = "https://github.com/Atena-IT/synalinks/archive/17570bfff2d8b1825fdabb7bb3aba0f94f554573.tar.gz" },
 ]
 provides-extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog", "all"]
 
@@ -5590,7 +5590,7 @@ wheels = [
 [[package]]
 name = "synalinks"
 version = "0.10.23"
-source = { registry = "https://pypi.org/simple" }
+source = { url = "https://github.com/Atena-IT/synalinks/archive/17570bfff2d8b1825fdabb7bb3aba0f94f554573.tar.gz" }
 dependencies = [
     { name = "absl-py" },
     { name = "asyncio" },
@@ -5628,10 +5628,48 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/a2/5cb3153472b4206d5e41fa8f23eb51123da8f88e5a23737274aec9507747/synalinks-0.10.23.tar.gz", hash = "sha256:3ce6f163f5091cbb2ce930326b84992270abb78a1166565ffba560b2bbaaa1b9", size = 1278855, upload-time = "2026-11-05T12:21:31.345Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/57/145c967909936db3e2d419079efe5aacffb656927befefef5dfd0f71f96f/synalinks-0.10.23-py3-none-any.whl", hash = "sha256:cb44740e9dd543b65478e9ec3509f5a60605722157c76958b7fe51390b992477", size = 1610529, upload-time = "2026-11-05T12:21:29.051Z" },
+sdist = { hash = "sha256:c9fcac8440f194036732a3e573449cb514795071f29a4d9682f623df72719b91" }
+
+[package.metadata]
+requires-dist = [
+    { name = "absl-py" },
+    { name = "asyncio" },
+    { name = "click" },
+    { name = "datasets" },
+    { name = "dill" },
+    { name = "docstring-parser" },
+    { name = "duckdb", specifier = ">=2.0.0" },
+    { name = "e2b-charts", specifier = ">=1.0.0" },
+    { name = "fastmcp", specifier = ">=4" },
+    { name = "graphviz" },
+    { name = "greenlet" },
+    { name = "httpx2" },
+    { name = "inquirer" },
+    { name = "jinja2" },
+    { name = "jsonschema" },
+    { name = "ladybug", specifier = ">=0.19.1,<0.20" },
+    { name = "lancedb", specifier = ">=0.30.2" },
+    { name = "litellm", specifier = ">=1.106.0" },
+    { name = "markdown-it-py" },
+    { name = "matplotlib" },
+    { name = "mcp", specifier = ">=2" },
+    { name = "mirage-ai", extras = ["fuse"], specifier = ">=0.0.7" },
+    { name = "mlflow", specifier = ">=3.16.1" },
+    { name = "namex" },
+    { name = "numpy" },
+    { name = "openai-codex-cli-bin", marker = "extra == 'codex'", specifier = ">=0.162.0" },
+    { name = "optree" },
+    { name = "orjson" },
+    { name = "pillow" },
+    { name = "pydantic" },
+    { name = "pydotplus" },
+    { name = "rich" },
+    { name = "skills-ref", specifier = ">=0.1.1" },
+    { name = "soundfile", specifier = ">=0.12" },
+    { name = "synaops", specifier = ">=0.2.1" },
+    { name = "tenacity" },
 ]
+provides-extras = ["codex"]
 
 [[package]]
 name = "synaops"

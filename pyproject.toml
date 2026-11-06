@@ -57,3 +57,9 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+
+# Synalinks comes from Atena-IT's fork (github.com/Atena-IT/synalinks), pinned to a
+# commit of its main branch: 17570bf is synalinks 0.10.23. Bump the commit to take a
+# new framework; a fix lands on the fork first and goes upstream from there.
+[tool.uv.sources]
+synalinks = { url = "https://github.com/Atena-IT/synalinks/archive/17570bfff2d8b1825fdabb7bb3aba0f94f554573.tar.gz" }
