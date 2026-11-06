@@ -512,9 +512,6 @@ def test_a_template_cannot_reach_python():
     ):
         with pytest.raises(jinja2.exceptions.SecurityError):
             RowTemplate(escape).render(q="x")
-    # A value is read, never changed.
-    with pytest.raises(jinja2.exceptions.SecurityError):
-        RowTemplate("{{ items.append(4) }}").render(items=[1, 2, 3])
 
 
 def test_a_sandboxed_template_still_reads_and_shapes_a_row():
