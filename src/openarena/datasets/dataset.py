@@ -8,6 +8,7 @@ import os
 import re
 
 import jinja2
+import jinja2.sandbox
 import synalinks
 from synalinks.src.datasets.dataset import TOOLS_FIELD  # noqa: F401 — the request's `tools` field, re-exported for the tools program
 
@@ -70,7 +71,10 @@ def as_audio(context, value) -> dict:
 # The templates' Jinja environment: an unknown variable is an error, as in synalinks. `fromjson` reads a column
 # that holds JSON as text, the way many tool-calling datasets ship their tools and calls; `fromliteral` one
 # written as Python writes a list (`"['$6', '$7']"`); `as_image` and `as_audio` make a column a message's part.
-JINJA = jinja2.Environment(undefined=jinja2.StrictUndefined)
+# Sandboxed: a template is a member's text, and a plain environment lets one reach Python itself
+# (`cycler.__init__.__globals__.os`), so a dataset preview could run a command. The sandbox refuses
+# underscored attributes and calls that change a value; reading a row's columns works as before.
+JINJA = jinja2.sandbox.ImmutableSandboxedEnvironment(undefined=jinja2.StrictUndefined)
 JINJA.filters["fromjson"] = _json.loads
 JINJA.filters["fromliteral"] = ast.literal_eval
 JINJA.filters["as_image"] = as_image
