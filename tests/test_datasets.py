@@ -499,3 +499,25 @@ def test_a_task_with_a_wrong_clock_stops_the_dataset(tmp_path):
     with pytest.raises(Invalid, match="task 'bad'"):
         HarborTasksDataset(tmp_path)
     assert len(HarborTasksDataset(tmp_path, tasks=["good"])) == 1  # only the named tasks are read
+
+
+def test_a_template_cannot_reach_python():
+    from openarena.datasets.dataset import RowTemplate
+
+    # The classic escape: from a global the environment offers to `os`, and a command run.
+    for escape in (
+        "{{ cycler.__init__.__globals__.os.popen('id').read() }}",
+        "{{ ''.__class__.__mro__[1].__subclasses__() }}",
+        "{{ row.__class__ }}",
+    ):
+        with pytest.raises(jinja2.exceptions.SecurityError):
+            RowTemplate(escape).render(q="x")
+
+
+def test_a_sandboxed_template_still_reads_and_shapes_a_row():
+    from openarena.datasets.dataset import RowTemplate
+
+    rendered = RowTemplate('{"q": {{ q | tojson }}, "n": {{ row["Num Col"] | int + 1 }}, "t": {{ tools | fromjson | length }}}').render(
+        q="what?", **{"Num Col": "2"}, tools='[{"name": "a"}]'
+    )
+    assert json.loads(rendered) == {"q": "what?", "n": 3, "t": 1}
