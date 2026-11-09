@@ -18,6 +18,11 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     `!function_call:{...}`), which fails to parse on every retry.
     `require_parameters` restricts routing to hosts that honour every parameter
     sent, so either the tools are honoured or the call fails at once.
+
+    A model entry with `reasoning_effort: disable` also gets OpenRouter's
+    `reasoning: {"enabled": false}`, the only way to turn reasoning off there:
+    the framework acts on `disable` only for Ollama, vLLM, SGLang and codex,
+    and sends no level to OpenRouter for it. Any other level adds nothing.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -25,6 +30,8 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
         provider = dict(extra_body.get("provider") or {})
         provider.setdefault("require_parameters", True)
         extra_body["provider"] = provider
+        if kwargs.get("reasoning_effort") == "disable":
+            extra_body.setdefault("reasoning", {"enabled": False})
         kwargs["extra_body"] = extra_body
     return kwargs
 
@@ -55,7 +62,7 @@ def language_model(model_id: str, lm_kwargs: dict | None = None):
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
-    OpenRouter routing of `with_provider_routing`).
+    OpenRouter routing and reasoning switch of `with_provider_routing`).
     """
     lm_kwargs = with_provider_routing(model_id, lm_kwargs)
     if not lm_kwargs:

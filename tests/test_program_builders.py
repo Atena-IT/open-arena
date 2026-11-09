@@ -12,6 +12,8 @@ builder reads.
 import asyncio
 import json
 import os
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
@@ -26,8 +28,8 @@ from openarena.datasets.dataset import _close_objects
 from openarena.programs.agent_program import McpToolsUnavailable, _reason, build_agent
 from openarena.programs.generator_program import build_program
 from openarena.programs.tools_program import build_tools
-from openarena.programs.utils import answer_layout, safe_name, template_keys, with_model_effort
-from openarena.rewards import get
+from openarena.programs.utils import answer_layout, language_model, safe_name, template_keys, with_model_effort
+from openarena.rewards import build_models, get
 
 Q_SCHEMA = _close_objects({"type": "object", "properties": {"question": {"type": "string"}}, "required": ["question"]})
 A_SCHEMA = _close_objects({"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]})
@@ -277,6 +279,118 @@ def test_the_models_level_fills_a_block_that_leaves_it_unset_and_never_edits_the
     assert with_model_effort({"reasoning_effort": "low"}, {"reasoning_effort": "high"}) == {"reasoning_effort": "high"}
     plain = {"instructions": "Answer."}
     assert with_model_effort(None, plain) is plain and with_model_effort({"temperature": 0.0}, plain) is plain
+
+
+# -- `disable` on OpenRouter, read off the request body ------------------------------
+
+
+# litellm lists neither: the first is registered as a reasoning model by the test, the second is not.
+KNOWN, UNKNOWN = THINKER, "openrouter/acme/plain-1"
+
+
+@pytest.fixture
+def wire(monkeypatch):
+    """The JSON bodies posted to a local stand-in for the provider, whatever the provider: nothing leaves the machine."""
+    bodies = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["content-length"])))
+            bodies.append(body)
+            properties = body["response_format"]["json_schema"]["schema"]["properties"]
+            message = {"role": "assistant", "content": json.dumps({field: "x" for field in properties})}
+            reply = {
+                "id": "gen-1",
+                "object": "chat.completion",
+                "created": 0,
+                "model": body["model"],
+                "choices": [{"index": 0, "finish_reason": "stop", "message": message}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10},
+            }
+            data = json.dumps(reply).encode()
+            self.send_response(200)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    monkeypatch.setenv("OPENROUTER_API_BASE", f"{base}/api/v1")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENAI_API_BASE", f"{base}/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    yield bodies
+    server.shutdown()
+    server.server_close()
+
+
+def _posted(model, bodies, chain_of_thought, lm_kwargs):
+    """The body of the one request a program for `model` posts."""
+    program, _ = _generated(model, chain_of_thought, lm_kwargs)
+    asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+    [body] = bodies
+    bodies.clear()
+    return body
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+@pytest.mark.parametrize("known", [True, False])
+def test_off_turns_openrouter_reasoning_off_whether_or_not_litellm_knows_the_model(monkeypatch, wire, known, chain_of_thought):
+    if known:
+        _registered(monkeypatch)
+    body = _posted(KNOWN if known else UNKNOWN, wire, chain_of_thought, {"reasoning_effort": "disable"})
+    assert body["reasoning"] == {"enabled": False} and "reasoning_effort" not in body
+    assert body["provider"] == {"require_parameters": True}
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+@pytest.mark.parametrize("known", [True, False])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(monkeypatch, wire, effort, known, chain_of_thought):
+    if known:
+        _registered(monkeypatch)
+    body = _posted(KNOWN if known else UNKNOWN, wire, chain_of_thought, {"reasoning_effort": effort})
+    assert "reasoning" not in body and body.get("reasoning_effort") == (effort if known else None)
+    assert body["provider"] == {"require_parameters": True}
+
+
+def test_a_model_with_no_level_adds_no_reasoning_object(wire):
+    assert "reasoning" not in _posted(UNKNOWN, wire, False, None)
+    assert "reasoning" not in _posted(UNKNOWN, wire, True, {"temperature": 0.0})
+
+
+def test_a_provider_other_than_openrouter_gets_no_reasoning_object(wire):
+    body = _posted("openai/gpt-4o-mini", wire, False, {"reasoning_effort": "disable"})
+    assert "reasoning" not in body and "reasoning_effort" not in body and "provider" not in body
+    assert language_model("ollama/qwen3:8b", {"reasoning_effort": "disable"}).default_kwargs == {"reasoning_effort": "disable"}
+
+
+def test_the_reasoning_switch_keeps_the_routing_and_the_entrys_own_extra_body():
+    off = language_model(KNOWN, {"reasoning_effort": "disable", "extra_body": {"provider": {"order": ["a"]}, "seed": 1}})
+    assert off.default_kwargs["extra_body"] == {
+        "provider": {"order": ["a"], "require_parameters": True},
+        "seed": 1,
+        "reasoning": {"enabled": False},
+    }
+    assert "reasoning" not in language_model(KNOWN, {"reasoning_effort": "high"}).default_kwargs["extra_body"]
+
+
+def test_every_model_built_from_an_entry_carries_the_switch_the_builders_and_the_judges(monkeypatch):
+    _mcp(monkeypatch)
+    off = {"reasoning_effort": "disable"}
+    tools = {"tool_schemas": [{"type": "function", "function": {"name": "add", "parameters": {"type": "object", "properties": {}}}}]}
+    models = [
+        _generated(KNOWN, lm_kwargs=off)[1].language_model,
+        _modules(asyncio.run(build_tools(KNOWN, _dataset(), tools, get("exact_match"), lm_kwargs=off)), synalinks.Generator)[0].language_model,
+        _modules(asyncio.run(build_agent(KNOWN, _dataset(), {"mcp_servers": SERVERS}, get("exact_match"), lm_kwargs=off)), synalinks.FunctionCallingAgent)[0].language_model,
+        build_models({"language_model": {"model": KNOWN, **off}})["language_model"],
+    ]
+    assert [m.default_kwargs["extra_body"]["reasoning"] for m in models] == [{"enabled": False}] * 4
 
 
 # -- what a prediction holds -------------------------------------------------------

@@ -279,7 +279,7 @@ How much a model that can think does so before answering.
 
 | value | effect |
 |---|---|
-| `disable` | turns native thinking off, for local models that think by default (Ollama's `qwen3`, `deepseek-r1`) |
+| `disable` | turns native thinking off: for local models that think by default (Ollama's `qwen3`, `deepseek-r1`), and on OpenRouter ids, where the request carries `reasoning: {"enabled": false}` |
 | `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
@@ -295,13 +295,17 @@ applies to every model of the evaluation and wins over the model's own, so
 leave it out of the block to compare models on their levels. The level reaches
 the provider only for a model the framework knows can think (litellm lists it
 as a reasoning model, or a local Ollama, vLLM or SGLang server reports it); for
-any other model nothing about thinking is sent. `disable` is acted on only for
-local models (Ollama, vLLM, SGLang): to a hosted provider it sends nothing.
+any other model nothing about thinking is sent. `disable` is the exception: it
+turns thinking off on a local model (Ollama, vLLM, SGLang) and on an OpenRouter
+id, whether or not litellm knows the model. Other hosted providers get nothing
+for it. An Off entry on OpenRouter stops reasoning for real, so its cost,
+latency and score differ from what it gave before.
 
 `chain_of_thought: true` is not native thinking: it has the model write a
 `thinking` field beside its answer. A model with no level is asked for `low`
-with it on, and with it off no level is passed at all. To compare levels,
-leave it off.
+with it on, and with it off no level is passed at all. With `disable` and it
+on, the model writes `thinking` itself, with no native reasoning behind it. To
+compare levels, leave it off.
 
 ### `dimensions`
 
