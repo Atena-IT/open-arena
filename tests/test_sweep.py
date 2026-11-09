@@ -371,21 +371,28 @@ def test_a_plain_metric_leaves_out_what_the_program_returns_beside_the_answer_un
     def build(entry, **kwargs):
         return _instantiate_metrics([MetricEntry.model_validate(entry)], context="metrics", **kwargs)[0][1]
 
-    assert build("accuracy", beside=["thinking"]).out_mask == ["thinking"]
-    assert build({"class": "f1_score", "average": "macro"}, beside=["thinking"]).out_mask == ["thinking"]
-    assert build("accuracy").out_mask is None  # nothing is returned beside the answer
-    assert build({"class": "accuracy", "out_mask": ["x"]}, beside=["thinking"]).out_mask == ["x"]
-    assert build({"class": "accuracy", "in_mask": ["answer"]}, beside=["thinking"]).out_mask is None  # the user's mask wins
-    assert build("cost", beside=["thinking"]).out_mask is None  # takes no masks
-    assert getattr(build("exact_match", beside=["thinking"]), "out_mask", None) is None  # a reward is scoped to the target
+    def scoped(entry, **kwargs):
+        return hasattr(build(entry, **kwargs), "leave_out")
 
-    # What is left out is the extra field only: an answer that holds objects is still compared (an `in_mask` of
-    # the answer would empty it, and `accuracy` would have nothing to average).
-    nested = {"type": "object", "properties": {"answer": {"type": "object", "properties": {"value": {"type": "string"}}}}}
-    thought = {"type": "object", "properties": {"thinking": {"type": "string"}, **nested["properties"]}}
-    metric = build("accuracy", beside=["thinking"])
-    asyncio.run(metric.update_state(JsonDataModel(json={"answer": {"value": "5"}}, schema=nested), JsonDataModel(json={"thinking": "hm", "answer": {"value": "5"}}, schema=thought)))
-    assert metric.result() == pytest.approx(1.0, abs=1e-6)
+    assert scoped("accuracy", beside=["thinking"]) and scoped({"class": "f1_score", "average": "macro"}, beside=["thinking"])
+    assert not scoped("accuracy")  # nothing is returned beside the answer
+    for own in ({"out_mask": ["x"]}, {"out_mask": []}, {"in_mask": ["answer"]}, {"out_mask_pattern": "x"}):
+        assert not scoped({"class": "accuracy", **own}, beside=["thinking"])  # a mask of the user's, even an empty one, is left as written
+    assert not scoped("cost", beside=["thinking"])  # takes no masks
+    assert not scoped("exact_match", beside=["thinking"])  # a reward is scoped to the target
+
+    def score(true, pred, schema, **kwargs):
+        metric = build({"class": "accuracy", "average": "macro"}, **kwargs)
+        asyncio.run(metric.update_state(JsonDataModel(json=true, schema=schema), JsonDataModel(json=pred, schema=schema)))
+        return metric.result()
+
+    # Only the extra top-level field is left out: the answer is compared whole, nested objects included.
+    obj = {"type": "object", "properties": {"text": {"type": "string"}, "label": {"type": "string"}}}
+    schema = {"type": "object", "properties": {"thinking": {"type": "string"}, "text": {"type": "string"}, "answer": obj}}
+    assert score({"answer": {"text": "alpha", "label": "beta"}}, {"thinking": "hm", "answer": {"text": "alpha", "label": "beta"}}, schema, beside=["thinking"]) == pytest.approx(1.0, abs=1e-6)
+    # A returned input named like a field inside the answer does not take that field out of it.
+    wrong = {"text": "the question", "answer": {"text": "WRONG", "label": "beta"}}
+    assert score({"answer": {"text": "right", "label": "beta"}}, wrong, schema, beside=["text"]) == pytest.approx(0.5, abs=1e-3)  # text wrong, label right
 
 
 def test_an_unknown_reward_is_left_for_the_builder_to_refuse():

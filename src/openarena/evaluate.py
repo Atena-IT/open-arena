@@ -31,6 +31,7 @@ from typing import Callable
 
 import numpy as np
 import synalinks
+from synalinks.src import ops, tree
 
 synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
 
@@ -350,6 +351,36 @@ def _beside(entry: dict, base: Path) -> dict:
     return entry
 
 
+def _leaving_out(metric, fields: list[str]):
+    """`metric` rebuilt to compare both sides without the top-level `fields`, what is nested in the others kept whole.
+
+    As `rewards.AnswerFields` does for a reward. The metric's own `out_mask`
+    would drop the names at every nesting level, so a returned input named
+    `text` would also take the `text` out of an answer object, and a wrong
+    answer could score as right. A subclass that keeps `fields` in its config,
+    not a patched `update_state`: `compile` clones every metric through
+    `from_config(get_config())`.
+    """
+    base = type(metric)
+
+    class LeavingOut(base):
+        def __init__(self, *args, leave_out=(), **kwargs):
+            super().__init__(*args, **kwargs)
+            self.leave_out = list(leave_out)
+
+        async def update_state(self, y_true, y_pred):
+            def drop(data):
+                return None if data is None else ops.convert_to_json_data_model(data).out_mask(mask=list(self.leave_out), recursive=False)
+
+            await super().update_state(tree.map_structure(drop, y_true), tree.map_structure(drop, y_pred))
+
+        def get_config(self):
+            return {**super().get_config(), "leave_out": list(self.leave_out)}
+
+    LeavingOut.__name__ = base.__name__
+    return LeavingOut.from_config({**metric.get_config(), "leave_out": fields})
+
+
 def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
@@ -364,9 +395,8 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     scoped to the `target` fields. A plain metric that takes masks leaves out
     `beside`, what the program returns beside the answer (a chain of thought's
     `thinking`, an agent's `messages`): the target has no such field, so scored
-    against nothing it makes the metric a list, one score per field. Not an
-    `in_mask` of the target: a mask keeps names at every nesting level, which
-    would empty an answer that holds objects. A mask the entry sets is the user's.
+    against nothing it makes the metric a list, one score per field. A mask the
+    entry sets, even an empty one, is the user's and leaves the metric as written.
     """
     out = []
     for entry in entries:
@@ -396,7 +426,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             and not any(k in entry.kwargs for k in _MASK_KEYS)
             and "out_mask" in inspect.signature(type(instance).__init__).parameters
         ):
-            instance.out_mask = list(beside)  # read on every update; cost and latency take no masks
+            instance = _leaving_out(instance, list(beside))
         resolved_alias = (
             entry.alias or getattr(instance, "name", None) or entry.class_name
         )
