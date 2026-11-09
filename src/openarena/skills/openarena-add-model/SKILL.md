@@ -10,7 +10,7 @@ else refers to models by that name, never by id: an evaluation's
 `language_models`, a reward's `language_model` / `embedding_model`, a
 leaderboard's `models`. Results are stored under the name. Two entries may
 call the same id with different params: they are two models, each with its
-own row. Depth: `docs/guides/models.md`.
+own row. Depth: https://atena-it.github.io/open-arena/guides/models/.
 
 ## The entry
 
@@ -22,7 +22,7 @@ models:
     params:                          # optional; only what the type takes, below
       temperature: 0
       max_tokens: 2048
-    modalities: [text]               # optional, default [text]; a label only, the run never reads it
+    modalities: [text]               # optional: text, image, audio (default [text]); see below
     description: OpenAI's small model, the hosted baseline.
     tags: [openai, hosted]           # lower-case labels; never sent to the model
   qwen3-local:
@@ -43,6 +43,9 @@ models:
 
 No other field is accepted (`provider:`, or a param beside `model:`, is an
 error). The name: a letter or digit, then letters, digits, `_`, `.`, `-`.
+`modalities`: the engine's run does not read it, but an app may refuse to
+send images or audio to a model without them: add `image` for a vision
+model.
 
 ### `params` by type
 
@@ -50,7 +53,7 @@ error). The name: a letter or digit, then letters, digits, `_`, `.`, `-`.
 |---|---|---|
 | `llm` | `temperature` | number, 0 to 2 |
 | `llm` | `max_tokens` | integer, at least 1 |
-| `llm` | `reasoning_effort` | `disable`, `low`, `medium` or `high` |
+| `llm` | `reasoning_effort` | `disable`, `minimal`, `low`, `medium`, `high`, `xhigh` or `max` (a model takes the levels its provider lists) |
 | `embedding` | `dimensions` | integer, at least 1 |
 | `decision` | none | leave `params` out |
 
@@ -87,16 +90,21 @@ environment, never from `models.yaml`:
 | `sglang/` | `sglang/Qwen/Qwen3-4B` | `SGLANG_API_BASE`, the server's endpoint with `/v1` (default `http://localhost:30000/v1`) |
 
 Any provider litellm supports works the same way. Do not guess an id: use one
-the user gave, one the provider documents, or one already in the file. A base
+the user gave, one the provider documents, or one already in the file. If you
+have a tool that tries an id with one call, try it before writing the entry,
+and write only an id that answered. A base
 URL is per provider, so every `vllm/` entry hits the one server
 `HOSTED_VLLM_API_BASE` names, and every `sglang/` entry the one
 `SGLANG_API_BASE` names.
 
-Put variables in the workspace's `.env` (beside `configs/`; copy
-`.env.template`). Only `openarena evaluations run` loads it, and it never
-overrides a variable already set in the shell. A model entry has no field for
-a key or a base URL (`api_key:`, `api_base:` are refused): the provider reads
-its own variable.
+Keys and base URLs are set by the user where the run reads its environment
+(the CLI: the shell or the workspace's `.env`, beside `configs/`, from
+`.env.template`; an app: its settings). Never write a key's value into any
+file yourself; say which variable is missing. Only `openarena evaluations
+run` loads `.env` (`check` reads it only to warn about an unset `${NAME}`),
+and it never overrides a variable already set in the shell. A model entry
+has no field for a key or a base URL (`api_key:`, `api_base:` are refused):
+the provider reads its own variable.
 
 ### Type, cost, end of life
 
@@ -117,7 +125,7 @@ its own variable.
 
 ## Steps
 
-1. `openarena models list --configs <workspace>/configs` — what exists.
+1. Read `models.yaml` to see what exists (`openarena models list` prints it).
 2. Add the entry under `models:`; pick a short, stable name that says what is
    compared (`o4-mini-high`), not just the vendor id.
 3. Reference it by name where needed, e.g. in `evaluations.yaml`:
@@ -129,10 +137,11 @@ its own variable.
    ```
    or `language_model: <name>` in a judge reward's `config` (see
    `openarena-add-reward`).
-4. `openarena check <workspace>/configs`. It reads files only: a wrong id after
+4. `openarena check configs`. It reads files only: a wrong id after
    the prefix, a missing key, an unpulled Ollama model or a down server fail
    the cell at run time.
-5. Make sure the needed variable is in the shell or `.env`.
+5. Tell the user which variable the provider needs; they set it (shell,
+   `.env` or the app's settings), never you.
 
 Renaming a model splits its leaderboard history: past results keep the old
 name, new runs get the new one. `check` lists every config reference the

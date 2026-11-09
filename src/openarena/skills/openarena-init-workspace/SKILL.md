@@ -8,22 +8,15 @@ description: Use when an evaluation project has to be started from nothing with 
 `openarena` is the arena's evaluation engine as a command: it reads YAML
 registries, sweeps every model of an evaluation over every dataset of it, and
 ranks the results on leaderboards. No server, no web app: files in, files out.
-Depth: `docs/workspace.md` (the workspace), `docs/index.md` (quickstart),
-`docs/cli.md` (every option).
+Depth: [The workspace](https://atena-it.github.io/open-arena/workspace/),
+[Quickstart](https://atena-it.github.io/open-arena/),
+[CLI](https://atena-it.github.io/open-arena/cli/).
 
 ## Running the command
 
-Installed as a tool, `openarena` is on the PATH:
-
-```bash
-uv tool install "git+https://github.com/Atena-IT/open-arena"
-openarena --help
-```
-
-From a clone of open-arena instead, `uv sync` once, then activate its `.venv`
-(`source .venv/bin/activate`), or prefix each command with
-`uv run --project <path-to-open-arena> openarena ...`, which keeps the folder
-you are in. Run every command **from the workspace root** (see below).
+Where the engine is installed, `openarena` is on the PATH (`openarena --help`
+lists the commands). Run every command **from the workspace root** (see
+below).
 
 ## Make a workspace
 
@@ -91,15 +84,16 @@ sandbox), ranked by the leaderboards `overall` and `math`.
   `models.yaml`.
 - **Unknown fields are errors**, reported with the rename that fixes it. **A
   key written twice** in one mapping is an error too, with its line.
-- **`tags`** are lowercase labels matching `^[a-z0-9][a-z0-9:+./-]*$`, unique
-  per entry: `[math, reasoning]`. **`description`** is free text, shown in
+- **`tags`** are lowercase labels matching `^[a-z0-9][a-z0-9:+./-]*$`, up to
+  40 characters, at most 32 per entry (case and `_` are folded, duplicates
+  dropped): `[math, reasoning]`. **`description`** is free text, shown in
   listings.
 - **No keys in YAML**: provider keys come from the environment (below). A
   secret an entry must hold (an A2A or MCP `headers` token, an MCP server's
-  or an environment's `env`) goes in `.env` and is referenced as `${NAME}`:
-  any string value may hold one, replaced when a run reads its config; a run
-  refuses to start when it is set nowhere, and `$${NAME}` writes a literal
-  `${NAME}`.
+  or an environment's `env`) is referenced as `${NAME}`: any string value may
+  hold one, replaced when a run reads its config; a run refuses to start when
+  it is set nowhere, and `$${NAME}` writes a literal `${NAME}`. The user sets
+  the variable (below); never write its value into a file yourself.
 - Jinja templates are single-quoted YAML strings; a single quote inside one
   is doubled (`''####''`). A dataset's templates come with their
   `input_schema` / `output_schema`: without them a row is read as chat
@@ -125,17 +119,17 @@ everyone.
 
 ## The loop
 
-1. Read the file's header comment and the entries already there:
-   `openarena <registry> list` (`models`, `rewards`, `datasets`,
-   `mcp-servers`, `a2a-agents`, `environments`, `evaluations`,
-   `leaderboards`).
+1. Read the file's header comment and the entries already there: read
+   `<registry>.yaml` (`openarena <registry> list` prints it: `models`,
+   `rewards`, `datasets`, `mcp-servers`, `a2a-agents`, `environments`,
+   `evaluations`, `leaderboards`).
 2. Edit the YAML.
 3. `openarena check configs` until every file says no problems (it exits 1
    on an error; `openarena check configs/models.yaml` checks one file against
    its neighbours). See openarena-check-configs.
-4. `openarena evaluations run <name>` (openarena-run-evaluation), then
-   `openarena leaderboards run <name>` (openarena-rank-leaderboard); read the
-   scores with openarena-read-results.
+4. `openarena evaluations run <name>` (see openarena-run-evaluation), then
+   `openarena leaderboards run <name>` (see openarena-rank-leaderboard); read
+   the scores with openarena-read-results.
 
 Never invent a field, a reward type or a provider: the lists in these skills
 come from the engine, and `check` names the valid choices when you are wrong.
@@ -155,9 +149,11 @@ it: give rewards and metrics their `language_model` explicitly.
 ## Keys and services
 
 Only `evaluations run` loads `.env`, from beside `configs/`, and a variable
-already set in the shell always wins over it: `cp .env.template .env`, then
-uncomment what the models need (each variable there is commented with what
-uses it). `check` reads `.env` only to warn about a `${NAME}` set neither
+already set in the shell always wins over it. The user sets the variables a
+run needs where it reads its environment (the CLI: the shell, or a `.env`
+copied from `.env.template`, whose variables say what uses them; an app: its
+settings). Never write a key's value into a file yourself; say which variable
+is missing. `check` reads `.env` only to warn about a `${NAME}` set neither
 there nor in the shell; `check`, `list` and `leaderboards run` need no keys.
 Hosted models need their provider's key (`OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, ...); `ollama/...` ids need a local

@@ -8,7 +8,7 @@ description: Use when an openarena dataset needs something to score its answers 
 A reward scores one answer against its row, from 0 to 1. `configs/rewards.yaml`
 maps a **name** to a catalog reward (`type`) with its kwargs (`config`); a
 dataset names one with `reward: <name>`, and a dataset needs one to run.
-Depth: `docs/guides/rewards.md`.
+Depth: [Rewards](https://atena-it.github.io/open-arena/guides/rewards/).
 
 ## The entry
 
@@ -52,11 +52,13 @@ Every type also takes the masks `in_mask`, `out_mask`, `in_mask_pattern`,
 nesting level). Setting any mask turns off the automatic field choice: a
 deterministic reward otherwise sees only the top-level fields the
 `output_template` renders, each value compared whole (nested objects and
-lists included), and a judge sees everything the program returns.
+lists included), and a judge sees everything the program returns, except an
+MCP agent's `messages` (left out) and, on Harbor, everything but `answer`.
 
 ## Choosing a reward
 
-Deterministic (the dataset's `output_template` must give the expected answer):
+Deterministic (the dataset's `output_template` gives the expected answer,
+except for `harbor_verifier`):
 
 | type | kwargs | scores |
 |---|---|---|
@@ -101,10 +103,11 @@ Ready-made rubric judges, each taking only `language_model` (or
 `knowledge_retention`, `conversation_completeness`, `turn_faithfulness`,
 `turn_relevancy`, `bias`, `toxicity`, `pii_leakage`, `misuse`, `non_advice`.
 
-The engine's own list, if in doubt (run from the openarena project):
+The engine's own list, if in doubt: from a shell with the engine importable
+from the Python you run, it prints it:
 
 ```bash
-uv run python -c "from openarena import rewards as r; [print(n, sorted(r.accepted_kwargs(n) - set(r.MASK_KWARGS))) for n in sorted(r._REWARD_TYPES)]"
+python3 -c "from openarena import rewards as r; [print(n, sorted(r.accepted_kwargs(n) - set(r.MASK_KWARGS))) for n in sorted(r._REWARD_TYPES)]"
 ```
 
 Rule of thumb: a short, exact answer (a number, a letter) → `exact_match`;
@@ -158,9 +161,9 @@ It does not call the judge: a wrong `instructions` or an inverted
 
 ## Steps
 
-1. `uv run openarena rewards list --configs my-arena/configs`.
+1. Read rewards.yaml for what is saved (`openarena rewards list` prints it).
 2. Add the entry; for a judge, make sure its `language_model` is a
    `models.yaml` key (openarena-add-model).
 3. Point the dataset at it: `reward: judge` (openarena-add-dataset). Extra
    rewards go under the dataset's `metrics:` (`class:`, `alias:`).
-4. `uv run openarena check my-arena/configs` until it exits 0.
+4. `openarena check configs` from the workspace root until it exits 0.

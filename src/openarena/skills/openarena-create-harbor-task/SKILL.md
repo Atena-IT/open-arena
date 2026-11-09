@@ -22,8 +22,9 @@ tasks/<name>/                  the folder's name is the task's name
   solution/solve.sh            what a correct agent does
 ```
 
-`tasks/` sits beside `configs/`. `uv run openarena init` writes a working
-one, `tasks/hello-world/`: copy it and change it.
+`tasks/` sits beside `configs/`. If `tasks/hello-world/` exists (`openarena
+init` writes it), copy it and change it; otherwise write the five files
+below.
 
 ### task.toml
 
@@ -47,7 +48,7 @@ build_timeout_sec = 600.0
 cpus = 1
 memory_mb = 1024
 # storage_mb = 4096
-# network_mode = "no-network"        # "public" by default; then only terminus-2 works (see below)
+# network_mode = "no-network"        # "public" by default; with "no-network", only terminus-2 works (see below)
 # docker_image = "python:3.12-slim"  # a prebuilt image instead of environment/Dockerfile
 ```
 
@@ -56,7 +57,7 @@ with `start = "2026-03-02T08:00:00Z"` and `rate = 0`, and
 `[metadata.arena.clock.steps]` mapping step names to the time each begins.
 openarena arms the clock in the copy it runs, and jumps it at the top of each
 listed step's `workdir/setup.sh`. Step times need `rate = 0` and an agent
-that runs as root. See `docs/guides/harbor-tasks.md`, "A clock across steps".
+that runs as root. See https://atena-it.github.io/open-arena/guides/harbor-tasks/, "A clock across steps".
 
 ### instruction.md
 
@@ -129,8 +130,12 @@ rewards:
 ```bash
 #!/bin/bash
 mkdir -p /logs/verifier
-cp /app/summary.md /logs/verifier/answer.txt 2>/dev/null
-echo '{"answer_collected": 1}' > /logs/verifier/reward.json
+if [ -f /app/summary.md ]; then
+  cp /app/summary.md /logs/verifier/answer.txt
+  echo '{"answer_collected": 1}' > /logs/verifier/reward.json
+else
+  echo '{"answer_collected": 0}' > /logs/verifier/reward.json
+fi
 ```
 
 Each reward becomes one named score; the first is also `reward` (unless one
@@ -142,10 +147,12 @@ the trial's `error`.
 ### solution/solve.sh
 
 The commands a correct agent would run; running it, then the tests, must
-give 1, and doing nothing must give 0. openarena does not run it (its
-agents do not include Harbor's `oracle`): check it with Harbor itself.
+give 1, and doing nothing must give 0. The sweep never runs it (its agents
+do not include Harbor's `oracle`): prove the task with the oracle, using
+Harbor itself or a task check where your app offers one.
 
-Both scripts must be executable: `chmod +x tests/test.sh solution/solve.sh`.
+Both scripts must be executable: `chmod +x tests/test.sh solution/solve.sh`
+(skip it where your tools save scripts executable).
 
 ## Evaluate the tasks
 
@@ -174,8 +181,9 @@ rewards:
 ```
 
 No templates. Set only `agent` and `timeout_sec` in `harbor:`:
-`environment` is refused (each task brings its own), and so are
-`instructions` and `answer_file`, which are for environment datasets (what
+`environment` is refused (each task brings its own), and `check` refuses
+`instructions` and `answer_file` (a run would ignore them), which are for
+environment datasets (what
 the agent is told is each task's `instruction.md`; its tests read what it
 left in the sandbox). A name in
 `config.tasks` without a `task.toml` stops the run. A Harbor dataset needs
@@ -184,8 +192,8 @@ its own evaluation, naming the models that drive the agent
 
 - `claude-code` calls Anthropic models only, `codex` OpenAI, `gemini-cli`
   Google; the others take any provider.
-- `terminus-2` runs on this machine and can drive a local `ollama/` or
-  `vllm/` model; every other agent runs inside the sandbox, where a model
+- `terminus-2` runs on this machine and can drive a local model (`ollama/`,
+  `vllm/`, `sglang/`, ...); every other agent runs inside the sandbox, where a model
   on this machine's localhost is out of reach: give them hosted models.
 - A `network_mode = "no-network"` task works with `terminus-2` only: the
   others call their model from inside the sandbox. `check` does not read a
@@ -198,21 +206,25 @@ work, saying why.
 
 `ARENA_HARBOR_SANDBOX` names the sandbox provider (`e2b`, `docker`,
 `daytona`, `modal`, ...), `e2b` by default; E2B needs `E2B_API_KEY`, and
-without it trials fall back to this machine's Docker. With neither, the run
-refuses to start. On the local Docker, trials run one at a time unless
+without it trials fall back to this machine's Docker. With neither, every
+trial fails and the cell fails with `none of the N Harbor task(s) got an
+answer` (an app may refuse to launch instead). On the local Docker, trials run one at a time unless
 `ARENA_HARBOR_LOCAL_TRIALS` says otherwise.
-Each trial's logs land under the run's `harbor/trials/<trial>/`, one line per
+Each trial's logs land under the run's `harbor/trials/<trial>/` (under
+`ARENA_HARBOR_WORKDIR` when that is set), one line per
 trial in `harbor/trials.jsonl` (openarena-read-results). A failed trial is
 not retried: it scores 0 (a cell where no trial answered fails).
 
 ## Steps
 
-1. Copy `tasks/hello-world/` to `tasks/<name>/`; write the five files, with
+1. Copy `tasks/hello-world/` to `tasks/<name>/` if it exists; write the five files, with
    `cpus`, `memory_mb` and the timeouts in `task.toml`.
-2. `chmod +x tasks/<name>/tests/test.sh tasks/<name>/solution/solve.sh`.
+2. `chmod +x tasks/<name>/tests/test.sh tasks/<name>/solution/solve.sh`
+   (skip it where your tools save scripts executable).
 3. Add or reuse the `harbor_tasks` dataset and the `harbor_verifier` reward;
-   `uv run openarena check configs`.
-4. Run one task with one model (openarena-run-evaluation), read the trial,
-   then scale up. After editing a task, rerun with
-   `uv run openarena evaluations run <name> --no-cache`: finished cells are
-   otherwise reused.
+   `openarena check configs`.
+4. Run one task with one model (`openarena evaluations run <evaluation>`;
+   see openarena-run-evaluation), read the trial, then scale up. After
+   editing a task, rerun without the cache
+   (`openarena evaluations run <evaluation> --no-cache`): finished cells
+   are otherwise reused.

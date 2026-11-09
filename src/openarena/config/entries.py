@@ -492,7 +492,7 @@ class McpServerSpec(BaseModel):
     transport: McpTransport = Field(default="stdio", description="How to reach the server: spawn a `command`, or connect to a `url`.")
     command: str | None = Field(default=None, description="stdio: the executable to spawn, e.g. `npx` or `python`.")
     args: list[str] = Field(default_factory=list, description="stdio: arguments of `command`, one per item.")
-    env: dict[str, str] = Field(default_factory=dict, description="stdio: environment variables set for the process, on top of the backend's.")
+    env: dict[str, str] = Field(default_factory=dict, description="stdio: environment variables set for the process, over the few the MCP client passes on (`PATH`, `HOME`, `USER`, ...); no other variable of the run reaches it.")
     cwd: str | None = Field(default=None, description="stdio: working directory of the process.")
     url: str | None = Field(default=None, description="streamable_http / sse / websocket: the endpoint, e.g. `http://localhost:8080/mcp`.")
     headers: dict[str, str] = Field(
