@@ -29,18 +29,27 @@ ops = [
     (d["name"], "min" if d["direction"] == "lower" else "max", d["values"])
     for d in operational["dimensions"]
 ]
-rows, datasets, ranked, scores = [], {}, [], 0
+rows, datasets, ranked, scores, inferred = [], {}, [], 0, []
 for criterion in data["criteria"]:
     for task in criterion["tasks"]:
+        # Inferred, so reported: the language, from `_it` (or the criterion's name).
+        italian = task["name"].endswith(("_it", "_it_ll", "_it_node")) or criterion["name"].startswith("italian")
+        inferred.append(f"{task['name']}: {'italian' if italian else 'english'}")
         datasets[task["name"]] = {
             "group": criterion["name"],
-            # Read: the criterion's weight class and the data's license status. Inferred: the language, from `_it`.
+            # Read: the criterion's weight class and the data's license status.
             "tags": [
                 criterion["weight"],
                 task["license_status"].replace("_", "-"),
-                "italian" if task["name"].endswith(("_it", "_it_ll", "_it_node")) or criterion["name"].startswith("italian") else "english",
+                "italian" if italian else "english",
             ],
         }
+        # Read from the source when it states it; a score is otherwise higher-is-better, and reported as inferred.
+        if "direction" in task:
+            quality = "min" if task["direction"] == "lower" else "max"
+        else:
+            quality = "max"
+            inferred.append(f"{task['metric']} on {task['name']}: max")
         if criterion["weight"] != "diagnostic" and not criterion.get("not_measured"):
             ranked.append(task["name"])
         for model, cell in task["cells"].items():
@@ -56,7 +65,7 @@ for criterion in data["criteria"]:
                     **base,
                     "metric": "reward",
                     "value": cell["value"],
-                    "direction": "max",
+                    "direction": quality,
                     **extra,
                 }
             )
@@ -65,7 +74,7 @@ for criterion in data["criteria"]:
                     **base,
                     "metric": task["metric"],
                     "value": cell["value"],
-                    "direction": "max",
+                    "direction": quality,
                     **extra,
                 }
             )
@@ -83,7 +92,7 @@ for criterion in data["criteria"]:
 run, point = data["run"], operational["point"]
 doc = {
     "meta": {
-        "name": "bench",
+        "name": "clinical-qa",
         "title": "Clinical QA Suite",
         "description": (
             f"Run {run['id']}: {len(data['models'])} models on {len(datasets)} medical tasks in "
@@ -124,3 +133,4 @@ doc = {
 }
 json.dump(doc, sys.stdout, separators=(",", ":"))
 print(f"{scores} source scores -> {len(rows)} rows, 0 skipped", file=sys.stderr)
+print("inferred, to confirm with the user: " + "; ".join(inferred), file=sys.stderr)

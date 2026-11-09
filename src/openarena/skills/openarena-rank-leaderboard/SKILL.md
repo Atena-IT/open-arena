@@ -43,7 +43,8 @@ Any other key is an error. `group_shares` / `dataset_shares` weigh datasets
   `avg_latency`, a metric's `alias`), plus `eol_days`. Cost, tokens and
   latency exist only when listed there. The exact list of a run is
   `meta.metrics` in its `result.json`.
-- **Direction comes from the run**; a leaderboard never sets it. A metric
+- **Direction comes from the run**; a leaderboard never sets it. `reward`'s
+  is the reward entry's `direction:` in `rewards.yaml`. A metric
   under `metrics:` without `direction:` is `min` for a cost, tokens or latency
   measurement and `max` otherwise, so a bare `- cost` ranks the cheapest model
   best; an explicit `direction:` wins. Before ranking, read the directions a
@@ -78,7 +79,9 @@ Any other key is an error. `group_shares` / `dataset_shares` weigh datasets
   leave non-candidates out of `models`. Min-max normalization stretches any
   gap to the full `0.05`–`1` range, so a near-saturated dataset weighs as
   much as a discriminating one: keep only datasets that measure the same
-  thing for the same decision.
+  thing for the same decision. Magnitudes (cost, tokens, latency, all
+  positive) are normalized on a log scale, so half the cost counts the same
+  at any price; only `reward` and `eol_days` are linear.
 - **Names, silently.** A `datasets` / `models` name with no scored cell is
   dropped (all unknown datasets = nothing ranked); `openarena check` only
   warns about names missing from the registries. An empty `datasets` means
@@ -113,8 +116,8 @@ group's `group_shares`, split among the group's datasets by their
 
 Days to the model's end of life, looked up for the model id the newest run
 recorded: litellm's deprecation date, Azure's OpenAI retirement schedule (for
-`openai/`, `azure/`, `azure_ai/` ids; fetched, cached a day, shipped snapshot
-offline), OpenRouter's expiration date (for `openrouter/` ids). No date, or
+`openai/`, `azure/`, `azure_ai/` ids; fetched on each run, the shipped
+snapshot when offline), OpenRouter's expiration date (for `openrouter/` ids). No date, or
 one over five years out, counts as 1825; a past date is negative. It is off in
 the default preset; give it a share to penalize models near retirement.
 `--no-eol` skips the online lookups, and a share or budget on it then does
@@ -123,10 +126,13 @@ nothing.
 ## Ranking
 
 ```bash
-uv run openarena leaderboards list --configs my-arena/configs
-uv run openarena leaderboards run math-value --configs my-arena/configs
-uv run openarena leaderboards run math-value --configs my-arena/configs --state-dir my-arena/.open-arena --no-eol --json ranking.json
+openarena leaderboards run math-value
+openarena leaderboards run math-value --no-eol --json ranking.json
 ```
+
+From the workspace root, as for `evaluations run`; run elsewhere, pass both
+`--configs` and `--state-dir`. Read leaderboards.yaml for the names
+(`openarena leaderboards list` prints it).
 
 | option | does |
 |---|---|
@@ -149,11 +155,12 @@ broke. No finished run at all fails with `no finished runs under <dir>`.
 
 ## Steps
 
-1. Run the evaluations first (openarena-run-evaluation), with cost, tokens or
+1. Run the evaluations first (`openarena evaluations run`; see
+   openarena-run-evaluation), with cost, tokens or
    latency listed under `metrics:` if they will be ranked.
 2. Write the leaderboard; scope it to what those runs covered, and write
    `shares` explicitly for a board that drives a decision.
-3. `uv run openarena check my-arena/configs` (openarena-check-configs).
+3. `openarena check configs` (see openarena-check-configs).
 4. `leaderboards run`; check the `Datasets:` and `Shares:` lines against the
    entry, then explain the ranking from the printed table and the unranked
    lines, not from memory.

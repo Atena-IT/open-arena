@@ -61,7 +61,8 @@ you see `All retries failed for ...` warnings and a too-low reward.
 **`metrics`**: a bare name or `{class, alias, direction, objective, ...}`.
 `direction` is optional: unset, it is `min` for a cost, tokens or latency
 measurement (`cost`, `reward_cost`, `embedding_cost`, `input_tokens`,
-`output_tokens`, `total_tokens`, `avg_latency`) and `max` for anything else;
+`output_tokens`, `total_tokens`, `avg_latency`), and any error-rate,
+failed-calls or elapsed-time measurement, and `max` for anything else;
 an explicit `direction:` wins. Only listed columns are kept
 in `result.json`: list `cost` if a leaderboard should rank on it. A dataset's
 own metric of the same name wins over the evaluation's.
@@ -77,13 +78,15 @@ reward itself.
 
 ## Running it
 
-From the workspace folder (the one holding `configs/`):
+From the workspace root (the folder holding `configs/`; run elsewhere, pass
+both `--configs` and `--state-dir`):
 
 ```bash
 openarena check configs
-openarena evaluations list
 openarena evaluations run math-compare -v
 ```
+
+Read evaluations.yaml for the names (`openarena evaluations list` prints it).
 
 | option | does |
 |---|---|
@@ -98,10 +101,13 @@ The run reads the workspace's `.env` first (never over a variable already set
 in the shell), replaces each `${NAME}` in the config with that variable
 (`$${NAME}` stays a literal `${NAME}`), validates the whole config and refuses
 to start on a problem, a `${NAME}` set nowhere included
-(`not set in the environment: NAME (at <where>)`). Keep secrets in `.env` and
-reference them as `${NAME}`; `config.yaml` below keeps the references, not the
-values.
-It does not trace to MLflow (only the arena app does). It writes
+(`not set in the environment: NAME (at <where>)`). Reference a secret as
+`${NAME}`; the user sets the variable where the run reads its environment
+(the CLI: the shell or the workspace's `.env`; an app: its settings). Never
+write a key's value into a file yourself; say which variable is missing.
+`config.yaml` below keeps the references, not the values.
+It does not trace to MLflow (only the arena app does); it does send its spans
+to LangSmith or Datadog when `ARENA_TRACE_DESTINATIONS` names them. It writes
 `<state-dir>/<name>/`:
 
 ```
@@ -112,9 +118,10 @@ harbor/                Harbor trials, for harbor datasets
 environments/ tasks/   copies of the Harbor folders the run used
 ```
 
-**Exit code.** `0` when every cell scored; `1` on a config error, a crash, or
-when any cell failed (`N cell(s) failed: <model> × <dataset>, ...`, after the
-tables). `result.json` is written either way: read each cell's `status`
+**Exit code.** `0` when every cell scored; `1` on a config error or a crash
+(no new `result.json`; an older one stays), or when any cell is
+`FAILED`/`INVALID` (`N cell(s) failed: <model> × <dataset>, ...`, after the
+tables). In that case `result.json` is written: read each cell's `status`
 there.
 
 A cell fails alone and the run goes on to the next one. It fails when its
@@ -158,7 +165,8 @@ session in a sandbox. Before a full run:
 2. Before the real size, tell the user how many rows × models you are about
    to run when it is large or uses paid models.
 
-Hosted models need their key in `.env` or the shell (`OPENAI_API_KEY`, ...).
+Hosted models need their key (`OPENAI_API_KEY`, ...), set by the user as
+above.
 `openarena check` cannot see a missing key: it shows at run time as a failed
 cell (`no row got an answer: ...`, the provider's error naming the key). A
 `cost` of 0 on a hosted model means its price is unknown, not that it was
@@ -166,10 +174,11 @@ free.
 
 ## The output
 
-While it runs: `<model> running…` when a cell starts, `<model> done reward
-...` with its numbers when it ends, and after each dataset `<model> failed:
-<why>` for every failed cell. At the end, one table per dataset: a row per
+First a line per dataset as it is prepared. Then, model by model,
+`<model> running…` and `<model> done reward ...`. Once every cell has run,
+`<model> failed: <why>` per failed cell, grouped by dataset, then the tables:
+one per dataset, a row per
 model, a column per metric (`reward` first, then the `metrics` columns you
 listed, e.g. cost, tokens, latency), `—` where a cell has no value. The same
 is in `result.json`; read it as openarena-read-results says, and rank several
-runs with openarena-rank-leaderboard.
+runs (`openarena leaderboards run`; see openarena-rank-leaderboard).

@@ -223,7 +223,7 @@ def _validation_fix(err: dict, where: str) -> str | None:
         return f"write `{key}:` as true or false"
     message = str(err.get("msg", ""))
     if "mutually exclusive" in message:
-        return "keep one of those blocks: a dataset is answered one way (generator, agent, a2a, embedding or tools)"
+        return "keep one of those blocks: a dataset is answered one way (generator, agent, a2a, embedding, tools or harbor)"
     if "tool_schemas" in message:
         return (
             f"list the functions under `tools:`:\ntools:\n  tool_schemas:\n    - {TOOL_SHAPE}\n"

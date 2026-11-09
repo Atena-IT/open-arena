@@ -8,7 +8,7 @@ description: Use when a benchmark has to become an openarena dataset (datasets.y
 A dataset entry says where rows come from (`type` + `config`), how each row
 becomes a question and an expected answer (two Jinja2 templates in `config`),
 what answers it (at most one kind block), and which reward scores it.
-Full reference: `docs/guides/datasets.md`.
+Full reference: [Datasets](https://atena-it.github.io/open-arena/guides/datasets/).
 
 ## The entry, field by field
 
@@ -71,7 +71,7 @@ escapes them; never write `"{{ question }}"`.
   question-answering dataset.
 - `output_template`: the reference the reward compares with. Optional when a
   judge scores without one (the dataset is then inputs-only); required for
-  `exact_match` and the other deterministic rewards.
+  `exact_match` and the other deterministic rewards except `harbor_verifier`.
 - `tools_template` (a `tools:` dataset): the row's tools, a JSON **list** of
   `{"type": "function", "function": {...}}`, not an object. Only for rows
   that bring their own tools.
@@ -119,12 +119,16 @@ datasets:
     reward: exact-match
 ```
 
-Look at real rows before writing a template; never guess column names:
+Look at a few real rows before writing a template; never guess column names.
+If you have a tool that samples a source, use it; from a shell with the engine
+installed:
 
 ```bash
-uv run python -c "import datasets; print(next(iter(datasets.load_dataset('openai/gsm8k', 'main', split='test', streaming=True))))"
+python3 -c "import datasets; print(next(iter(datasets.load_dataset('openai/gsm8k', 'main', split='test', streaming=True))))"
 head -n 2 data/rows.jsonl
 ```
+
+Do not install anything to look.
 
 For a platform, the row variables are the provider's fields (table below),
 your data one level down (`{{ input.question | tojson }}`).
@@ -143,7 +147,7 @@ nearly always: without `input_schema` a row is read as a list of chat messages
 chat message (`{"role": ..., "content": ...}`), so `{"question": ...}` and
 `{"answer": ...}` fail when the run reads the rows. A free-text answer still
 gets a schema: one `string` field, no `enum`. An `output_schema` without an
-`output_template` is refused. Retrieval (`embedding`) and `harbor_tasks`
+`output_template` is refused when the rows are read; `check` does not catch it. Retrieval (`embedding`) and `harbor_tasks`
 datasets are the exception: their shapes are set for them.
 
 ## Providers (`type`) and their `config`
@@ -174,10 +178,12 @@ Pitfalls:
   the tracing server (`MLFLOW_TRACKING_URI`). It has no version to pin.
 - Braintrust needs `project` (or `project_id`) and `dataset_name`, MLflow
   `name` or `dataset_id`: `check` refuses the entry without them.
-- Keys and endpoints go in the workspace's `.env`, never written out in
-  `datasets.yaml` (the env vars per provider are in `docs/guides/datasets.md`).
-  A value the entry itself must hold can reference one as `${NAME}`, replaced
-  when the run reads its config.
+- Keys and endpoints are never written out in `datasets.yaml` (the variables
+  per provider are in the datasets guide). A value the entry itself must hold
+  references one as `${NAME}`, replaced when the run reads its config. The
+  variable is set by the user where the run reads its environment (the CLI:
+  the shell or the workspace's `.env`; an app: its settings). Never write a
+  key's value into any file yourself; say which variable is missing.
 
 The platform providers (`langfuse`, `langsmith`, `opik`, `phoenix`,
 `braintrust`, `unity_catalog`) need their SDK: an extra of openarena named
@@ -291,17 +297,19 @@ evaluation's `metrics`): `cost`, `reward_cost`, `embedding_cost`,
 `input_tokens`, `output_tokens`, `total_tokens`, `avg_latency`. Without
 `direction:`, a cost, tokens or latency measurement is better lower (`min`)
 and anything else higher (`max`); write `direction:` only to override that.
-See `docs/guides/evaluations.md`.
+See [Running evaluations](https://atena-it.github.io/open-arena/guides/evaluations/).
 
 ## Steps
 
 1. Look at a few real rows (above).
-2. Write the entry; start from `gsm8k-20` in the workspace's own
-   `configs/datasets.yaml` and change what differs. Pin a version
+2. Write the entry; start from an existing entry of datasets.yaml, or the
+   example above (a fresh `openarena init` workspace has `gsm8k-20`), and
+   change what differs. Pin a version
    (`revision`, `version`, `as_of` tag, ...) for anything you will compare
    over time.
 3. Make sure `reward:` names an entry of `rewards.yaml` (openarena-add-reward).
 4. Run `openarena check configs` from the workspace root (it reads no rows),
-   then a small first run with `limit: 5` (openarena-run-evaluation) before
+   then a small first run with `limit: 5` (`openarena evaluations run`; see
+   openarena-run-evaluation) before
    the full size. Keep the smoke and full entries under different keys: a
    resumed run reuses cells by dataset key.

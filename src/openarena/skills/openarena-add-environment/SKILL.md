@@ -11,12 +11,13 @@ row's question (after `instructions`) is the task's instruction, the model
 under test drives the agent, and the agent's answer is scored by the
 dataset's own reward, on the arena's side. Every row gets its own sandbox.
 Use task folders instead (openarena-create-harbor-task) when each task needs
-its own files and tests. Full reference: `docs/guides/environments.md`.
+its own files and tests. Full reference: https://atena-it.github.io/open-arena/guides/environments/.
 
 ## The environment
 
-`openarena init` already ships this `python` entry and the dataset below;
-copy them under new names rather than defining the same keys twice.
+`openarena init` ships a `python` entry and a `gsm8k-terminal` dataset like
+these; if the workspace has them, copy them under new names rather than
+defining the same keys twice.
 
 ```yaml
 environments:
@@ -71,10 +72,12 @@ environments:
   call their model from there: checking the evaluation refuses them with
   `no-network`, and with `allowlist` the model provider's host must be
   listed. `terminus-2` runs on your machine and works with any mode.
-- **`env` is not secret**: keep a key out of the file by putting it in the
-  workspace's `.env` and writing `env: {API_KEY: "${API_KEY}"}`; the run
-  replaces the reference when it reads its config, and the run's copy keeps
-  the reference. But the agent can still read every value in the sandbox
+- **`env` is not secret**: keep a key out of the file: write
+  `env: {API_KEY: "${API_KEY}"}`; the variable is set by the user where the
+  run reads its environment (the CLI: the shell or the workspace's `.env`; an
+  app: its settings). Never write its value yourself; say which variable is
+  missing. The run replaces the reference when it reads its config, and the
+  run's copy keeps the reference. But the agent can still read every value in the sandbox
   (and, with a network, send it anywhere): put in no key you would not hand
   to the model.
 - **MCP servers**: Harbor carries `stdio`, `sse` and `streamable_http` only,
@@ -102,11 +105,12 @@ datasets:
       instructions: Solve the problem; you may use Python. Write the bare number only.
       answer_file: /app/answer.txt     # an absolute path; the agent is told to write its answer there
       timeout_sec: 300                 # per row; blank keeps Harbor's
-    reward: exact-match                # scores `answer` against the output_template's reference
+    reward: exact-match                # a rewards.yaml key, here of type exact_match: scores `answer` against the reference
 ```
 
 The `input_template` must render `{"question": ...}`. The prediction is the
-agent's trajectory plus `answer`: the content of `answer_file`, else its last
+agent's trajectory plus `answer`: with `answer_file`, what the agent wrote
+there (empty, so 0, when it wrote nothing); without it, the agent's last
 message. The reward reads `answer` alone, so any reward of
 openarena-add-reward works; set `answer_file` for string rewards
 (`exact_match`), and have `instructions` ask for the bare answer. A Harbor
@@ -115,7 +119,8 @@ evaluation of its own (openarena-run-evaluation).
 
 ## Where it runs
 
-Set on the machine (shell or the workspace's `.env`), never in the YAML:
+Set by whoever runs the engine (shell, `.env`, or an app's settings), never
+in the YAML and never by you unasked:
 
 - `ARENA_HARBOR_SANDBOX`: `e2b` by default, or `docker`, `daytona`, `modal`,
   ... A name Harbor does not know is refused, with the known ones.
@@ -146,8 +151,10 @@ fail, and their rows score 0.
 3. `openarena check configs` from the workspace (openarena-check-configs).
    It starts nothing, so it cannot see a missing image, a failing build, a
    missing `workdir` or `tmux`, or a provider's limits.
-4. Build on one row first: `limit: 1`, `ARENA_HARBOR_SANDBOX=docker`, then
-   `openarena evaluations run <evaluation> -v`, and read the trial before the
-   full grid (openarena-read-results). Rows scoring 0, or a cell failing
+4. Try it on one row first (`limit: 1`), on the local Docker when you can
+   choose (`ARENA_HARBOR_SANDBOX=docker` for the CLI). If the app can check
+   an environment, have it checked and read the result first. Then run the
+   evaluation (`openarena evaluations run <evaluation> -v`) and read the
+   trial before the full grid (openarena-read-results). Rows scoring 0, or a cell failing
    because no row got an answer, point at the sandbox, the image or a key,
    not the model.
