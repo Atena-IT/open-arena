@@ -1157,6 +1157,14 @@ datasets:
       - {class: lm_as_judge, alias: judged, language_model: gpt-4o-mini}
 ```
 
+A plain metric that takes masks (`accuracy`, `f1_score`, ...) scores the
+answer alone, as a rule-based reward does: what the program returns beside it
+(a chain of thought's `thinking`, an agent's `messages`, returned inputs) is
+left out. Write an `in_mask` or an `out_mask` on the entry to choose the fields
+yourself, and the metric is left as written. A metric that still returns one
+score per field is averaged, and one that returns no number is left out, each
+with a warning in the run log; the cell keeps its other metrics either way.
+
 Cost, tokens and latency reach `result.json` only when listed here or on the
 evaluation, by their measurement names. Their direction is set for you: a
 metric written without `direction:` is `min` when it measures cost, tokens or

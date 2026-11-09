@@ -22,13 +22,14 @@ Run a sweep with:
 
 import copy
 import functools
+import inspect
 import sys
 import traceback
 import warnings
 from pathlib import Path
 from typing import Callable
 
-
+import numpy as np
 import synalinks
 
 synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
@@ -76,6 +77,36 @@ def _usage(logs) -> dict[str, float]:
     }
 
 
+def _number(value) -> float | None:
+    """A metric's value as a number: a list, one score per output field, is averaged. `None` when it is no number."""
+    try:
+        return float(np.mean(value)) if np.size(value) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalars(metrics: dict, where: str) -> dict[str, float]:
+    """`metrics` with a number each: a list is averaged and anything else left out, each with a warning.
+
+    keras-tuner stores a value with `float()`, which raises on a list and fails
+    the whole cell, every other metric with it. A value the cell cannot keep
+    must not cost it the rest, and must not go unseen: `where` names the cell.
+    """
+    out = {}
+    for name, value in metrics.items():
+        # `_evaluate_only` copies every metric under a `val_` name: one line for the pair.
+        quiet = name.startswith("val_") and name[4:] in metrics
+        number = _number(value)
+        if number is None:
+            if not quiet:
+                warnings.warn(f"{where}: metric {name!r} is {value!r}, not a number: left out.")
+            continue
+        if np.ndim(value) and not quiet:
+            warnings.warn(f"{where}: metric {name!r} gave {value!r}, a list: kept as its mean, {number}.")
+        out[name] = number
+    return out
+
+
 class _ProgressCallback(synalinks.callbacks.Callback):
     """Forward `program.evaluate` batch events to `on_event` for one cell."""
 
@@ -107,10 +138,7 @@ class _ProgressCallback(synalinks.callbacks.Callback):
         )
 
     def on_test_end(self, logs=None):
-        metrics = {
-            k: float(v) for k, v in (logs or {}).items() if isinstance(v, (int, float))
-        }
-        self._emit("cell_end", metrics=metrics)
+        self._emit("cell_end", metrics=_scalars(logs or {}, f"{self._ds_name} · {self._model}"))
 
 
 class _RunMonitor(synalinks.callbacks.Monitor):
@@ -322,7 +350,7 @@ def _beside(entry: dict, base: Path) -> dict:
     return entry
 
 
-def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None):
+def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
     Identifiers resolve in two registries: the project rewards (auto-wrapped
@@ -331,6 +359,14 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     metrics. `name=` on the wrapper flows to the wrapping metric (whose
     `.name` is the evaluate() result-dict key), not the inner reward —
     that's how the user's `alias:` survives into the matrix.
+
+    Both compare the answer alone, as the reward does. A rule-based reward is
+    scoped to the `target` fields. A plain metric that takes masks leaves out
+    `beside`, what the program returns beside the answer (a chain of thought's
+    `thinking`, an agent's `messages`): the target has no such field, so scored
+    against nothing it makes the metric a list, one score per field. Not an
+    `in_mask` of the target: a mask keeps names at every nesting level, which
+    would empty an answer that holds objects. A mask the entry sets is the user's.
     """
     out = []
     for entry in entries:
@@ -354,6 +390,13 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
                 f"{context}: identifier {entry.class_name!r} resolved to None — "
                 f"not a known metric or reward class."
             )
+        if (
+            beside
+            and key not in _REWARD_TYPES
+            and not any(k in entry.kwargs for k in _MASK_KEYS)
+            and "out_mask" in inspect.signature(type(instance).__init__).parameters
+        ):
+            instance.out_mask = list(beside)  # read on every update; cost and latency take no masks
         resolved_alias = (
             entry.alias or getattr(instance, "name", None) or entry.class_name
         )
@@ -492,8 +535,16 @@ async def _run_cell(tuner, trial, **fit_kwargs) -> None:
     the framework's own `_run_trial_async` instead keeps the sweep on its own
     event loop. Outcomes land
     on the trial the way kt records them: COMPLETED with its metrics, FAILED
-    for a `FailedTrialError`, INVALID for any other error, while a
-    `FatalError` (cancellation) propagates and ends the sweep, as before.
+    for a `FailedTrialError`, INVALID for any other error (which `end_trial`
+    turns into FAILED when no retry is left, as here: `max_retries_per_trial`
+    is 0), while a `FatalError` (cancellation) propagates and ends the sweep,
+    as before.
+
+    A metric kept as a list (one score per output field) is averaged first, and
+    one that is no number left out, each with a warning (`_scalars`): kt would
+    `float()` it, and the error would fail the cell with every other metric.
+    A list-valued *objective* is not covered: with several objectives the
+    framework adds them up inside `_run_trial_async`, ahead of this.
     """
     tuner.on_trial_begin(trial)
     try:
@@ -502,7 +553,10 @@ async def _run_cell(tuner, trial, **fit_kwargs) -> None:
         tuner_utils.validate_trial_results(results, objective, "Tuner.run_trial()")
         tuner.oracle.update_trial(
             trial.trial_id,
-            tuner_utils.convert_to_metrics_dict(results, objective),
+            _scalars(
+                tuner_utils.convert_to_metrics_dict(results, objective),
+                f"{tuner.project_name} · {trial.hyperparameters.values.get('language_model')}",
+            ),
             step=tuner_utils.get_best_step(results, objective),
         )
         trial.status = trial_module.TrialStatus.COMPLETED
@@ -711,13 +765,13 @@ async def run_sweep(
         block = {"model": gen_kwargs, "agent": agent_cfg}.get(kind)
         if kind == "tools":
             block = cfg.tools_kwargs(ds_name)
-        answer_layout(ds, kind, block)
+        _, beside = answer_layout(ds, kind, block)
         # A rule-based reward compares the fields the output template renders.
         target = template_keys(getattr(ds, "output_template", None))
         reward = get_reward(_scope_to_answer(cfg.reward_spec(ds_name), target))
         reward_direction = cfg.reward_direction(ds_name)
         ds_metrics = _first_by_alias(
-            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
+            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside),
             global_metrics,
         )
         # `ds_metrics` (and its instances) is used only for the aliases /
@@ -794,8 +848,8 @@ async def run_sweep(
             model_metrics = [
                 m
                 for _, m, _, _ in _first_by_alias(
-                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
-                    _instantiate_metrics(cfg.metrics, context="metrics", target=target),
+                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside),
+                    _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside),
                 )
             ]
             lm_kwargs = cfg.lm_kwargs(model_id)
