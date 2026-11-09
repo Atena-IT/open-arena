@@ -96,7 +96,7 @@ async def build_tools(model_id: str, dataset, tools_kwargs: dict, reward, metric
         kwargs["row_schema"] = dataset.row_schema
     generator = RowToolsGenerator if per_row else synalinks.Generator
     outputs = await generator(
-        language_model=_language_model(model_id, lm_kwargs),
+        language_model=_language_model(model_id, lm_kwargs, kwargs),
         tool_schemas=list(tool_schemas or []),
         **with_model_effort(lm_kwargs, kwargs),
     )(inputs)

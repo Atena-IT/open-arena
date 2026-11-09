@@ -114,7 +114,7 @@ async def build_agent(
         data_model=dataset.input_data_model if dataset.input_schema is None else None,
     )
     outputs = await synalinks.FunctionCallingAgent(
-        language_model=_language_model(model_id, lm_kwargs),
+        language_model=_language_model(model_id, lm_kwargs, cfg),
         tools=tools,
         **with_model_effort(lm_kwargs, cfg),
     )(inputs)

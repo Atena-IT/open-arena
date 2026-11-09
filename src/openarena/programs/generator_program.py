@@ -53,7 +53,7 @@ async def build_program(
         gen_kwargs["schema"] = dataset.output_schema
 
     outputs = await module(
-        language_model=_language_model(model_id, lm_kwargs),
+        language_model=_language_model(model_id, lm_kwargs, gen_kwargs),
         **with_model_effort(lm_kwargs, gen_kwargs),
     )(inputs)
 

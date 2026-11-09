@@ -324,6 +324,8 @@ def wire(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     monkeypatch.setenv("OPENAI_API_BASE", f"{base}/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    monkeypatch.setenv("no_proxy", "127.0.0.1")
     yield bodies
     server.shutdown()
     server.server_close()
@@ -362,6 +364,23 @@ def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(monke
 def test_a_model_with_no_level_adds_no_reasoning_object(wire):
     assert "reasoning" not in _posted(UNKNOWN, wire, False, None)
     assert "reasoning" not in _posted(UNKNOWN, wire, True, {"temperature": 0.0})
+
+
+def test_the_level_a_generator_block_sets_decides_the_reasoning_object_not_the_models(monkeypatch, wire):
+    _registered(monkeypatch)
+    # Model Off, block high: the block wins, nothing turns reasoning off.
+    program, _ = _generated(KNOWN, lm_kwargs={"reasoning_effort": "disable"}, reasoning_effort="high")
+    asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+    [body] = wire
+    wire.clear()
+    assert "reasoning" not in body and body["reasoning_effort"] == "high"
+    # Model high (or no level), block Off: the block's Off turns reasoning off.
+    for lm_kwargs in ({"reasoning_effort": "high"}, None):
+        program, _ = _generated(KNOWN, lm_kwargs=lm_kwargs, reasoning_effort="disable")
+        asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+        [body] = wire
+        wire.clear()
+        assert body["reasoning"] == {"enabled": False} and "reasoning_effort" not in body
 
 
 def test_a_provider_other_than_openrouter_gets_no_reasoning_object(wire):

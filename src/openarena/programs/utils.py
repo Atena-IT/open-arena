@@ -57,13 +57,20 @@ def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
     return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
 
 
-def language_model(model_id: str, lm_kwargs: dict | None = None):
+def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: dict | None = None):
     """What to pass as `language_model=`.
+
+    `module_kwargs` are those of the module the model is built for: a
+    `reasoning_effort` they set replaces the model's, as `with_model_effort`
+    makes it the module's, so the OpenRouter switch follows the level asked for.
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
     OpenRouter routing and reasoning switch of `with_provider_routing`).
     """
+    own = (module_kwargs or {}).get("reasoning_effort")
+    if own is not None:
+        lm_kwargs = {**(lm_kwargs or {}), "reasoning_effort": own}
     lm_kwargs = with_provider_routing(model_id, lm_kwargs)
     if not lm_kwargs:
         return model_id
