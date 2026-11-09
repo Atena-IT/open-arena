@@ -52,6 +52,7 @@ environments:
     healthcheck: {command: "test -f /app/ready", interval_sec: 5, retries: 3}
     mcp_servers: [fetch]               # mcp_servers.yaml keys handed to the agent
     clock: {start: "2026-01-05T09:00:00Z", rate: 0}   # one virtual time for every server in the sandbox; 0 is frozen
+    sandbox: docker                    # the Harbor provider its tasks run on; blank: ARENA_HARBOR_SANDBOX's
 ```
 
 - **Build context**: `environments/<name>/environment/` beside `configs/`
@@ -118,7 +119,8 @@ evaluation of its own (openarena-run-evaluation).
 Set on the machine (shell or the workspace's `.env`), never in the YAML:
 
 - `ARENA_HARBOR_SANDBOX`: `e2b` by default, or `docker`, `daytona`, `modal`,
-  ... A name Harbor does not know is refused, with the known ones.
+  ... A name Harbor does not know is refused, with the known ones. An
+  environment's own `sandbox:` overrides it for that environment's tasks.
 - `ARENA_HARBOR_SANDBOX_OPTIONS`: that provider's own settings, a JSON object
   Harbor hands its environment (`{"namespace": "sandboxes"}` for `ack`, the
   Kubernetes one). Not JSON, or not an object: refused.

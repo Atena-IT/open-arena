@@ -453,6 +453,10 @@ SANDBOX_OPTIONS = "ARENA_HARBOR_SANDBOX_OPTIONS"
 def sandbox_options() -> dict[str, Any]:
     """`ARENA_HARBOR_SANDBOX_OPTIONS`: the configured provider's settings, as Harbor's environment takes them; `{}` when unset.
 
+    Only trials on `ARENA_HARBOR_SANDBOX`'s provider get them
+    (`environment_config`); an environment's own `sandbox:`, when another
+    provider, runs with none.
+
     A JSON object of the keyword arguments Harbor passes the provider's
     environment class (what `harbor run --ek` sets): the namespace, registry
     and node selector of the Kubernetes environment (`ack`), for instance.
@@ -475,8 +479,10 @@ def sandbox_options() -> dict[str, Any]:
 def environment_config(sandbox: str):
     """Harbor's `EnvironmentConfig` for a trial on provider `sandbox`: with `sandbox_options()` when it is the configured one.
 
-    The local Docker a trial falls back to, when the configured provider
-    cannot start, gets none: they are that other provider's settings.
+    The options are the process-wide provider's (`ARENA_HARBOR_SANDBOX`'s)
+    settings. Any other provider gets none: the local Docker a trial falls
+    back to when the configured one cannot start, and a provider an
+    environment names with `sandbox:` that is not the configured one.
     """
     from harbor.models.trial.config import EnvironmentConfig
 

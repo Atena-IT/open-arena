@@ -19,8 +19,8 @@ from one of two places:
   dataset's reward, serialized beside it (`tests/rewards.yaml`), scores
   it on the arena's side, Mirage sandbox and all, with no second sandbox.
 
-Harbor runs one trial of each task: it starts the sandbox (E2B unless
-`ARENA_HARBOR_SANDBOX` says otherwise) and lets the block's agent work with
+Harbor runs one trial of each task: it starts the sandbox (the
+environment's `sandbox:`, else `ARENA_HARBOR_SANDBOX`, else E2B) and lets the block's agent work with
 the model the sweep's axis names. The prediction is Harbor's own ATIF
 trajectory, as a framework data model (`HarborTrajectory`), with the
 `answer` (what the agent wrote to `answer_file`, else its last message) and
@@ -64,7 +64,7 @@ from pydantic import Field
 from synalinks.src.backend import JsonDataModel, SymbolicDataModel
 from synalinks.src.modules.module import Module
 
-from openarena.config.entries import EnvironmentSpec
+from openarena.config.entries import EnvironmentSpec, sandbox_types
 from openarena.harbor import (
     LOCAL_SANDBOX,
     arm_task,
@@ -108,20 +108,21 @@ log = logging.getLogger("uvicorn.error")
 
 
 
-def configured_sandbox() -> str:
-    """The provider asked for: `ARENA_HARBOR_SANDBOX` (a Harbor environment type: e2b, docker, daytona, modal, ...), E2B by default.
+def configured_sandbox(name: str | None = None) -> str:
+    """The provider asked for: `name` (an environment's `sandbox:`), else `ARENA_HARBOR_SANDBOX`, else E2B.
 
-    A name Harbor does not know raises `ValueError` with the ones it does:
-    every trial would fail on it, and each failed row scores 0, so a typo
-    would pass for every model failing every task.
+    A Harbor environment type: e2b, docker, daytona, modal, ... A name Harbor
+    does not know raises `ValueError` with the ones it does: every trial
+    would fail on it, and each failed row scores 0, so a typo would pass for
+    every model failing every task.
     """
-    from harbor.models.environment_type import EnvironmentType
-
-    name = (os.environ.get("ARENA_HARBOR_SANDBOX") or DEFAULT_SANDBOX).strip().lower()
-    known = [t.value for t in EnvironmentType]
-    if name not in known:
-        raise ValueError(f"Harbor has no sandbox {name!r}; set ARENA_HARBOR_SANDBOX to one of: {', '.join(known)}")
-    return name
+    given = bool(name and name.strip())
+    chosen = (name if given else os.environ.get("ARENA_HARBOR_SANDBOX") or DEFAULT_SANDBOX).strip().lower()
+    known = sandbox_types()
+    if chosen not in known:
+        where = "use" if given else "set ARENA_HARBOR_SANDBOX to"
+        raise ValueError(f"Harbor has no sandbox {chosen!r}; {where} one of: {', '.join(known)}")
+    return chosen
 
 
 def ready(name: str) -> bool:
@@ -136,44 +137,51 @@ def ready(name: str) -> bool:
     return True
 
 
-def sandbox() -> str:
-    """Where trials run: the configured provider, or the local Docker when that one lacks its credentials.
+def sandbox(name: str | None = None) -> str:
+    """Where trials on provider `name` (the configured one when None) run: that provider, or the local Docker when it lacks its credentials.
 
     A cloud provider without its key (E2B with no `E2B_API_KEY`) is no reason
     to run nothing: the tasks run on this machine's Docker instead, which
     needs none. `sandbox_issue` says when neither can start.
     """
-    name = configured_sandbox()
+    name = configured_sandbox(name)
     if name != LOCAL_SANDBOX and not ready(name):
         return LOCAL_SANDBOX
     return name
 
 
-def sandbox_note() -> str | None:
-    """One sentence when the tasks do not run where configured (the provider's key is missing), else None."""
-    name = configured_sandbox()
-    used = sandbox()
+def sandbox_note(name: str | None = None) -> str | None:
+    """One sentence when tasks on provider `name` do not run there (its key is missing), else None."""
+    name = configured_sandbox(name)
+    used = sandbox(name)
     return f"{name} has no credentials set, so tasks run on the local Docker instead" if used != name else None
 
 
-def sandbox_issue() -> str | None:
-    """Why no task can start at all, as one sentence, or None: an unknown provider or its options, or none with credentials and no Docker.
+def sandbox_issue(name: str | None = None) -> str | None:
+    """Why no task on provider `name` (the configured one when None) can start, as one sentence, or None.
 
-    The options are checked whichever provider ends up running: a malformed
+    An unknown provider or malformed options, or a provider without
+    credentials and no Docker to fall back to. The options are checked
+    whichever provider ends up running: a malformed
     `ARENA_HARBOR_SANDBOX_OPTIONS` is a mistake to fix, not one the Docker
     fallback (which gets none) should hide.
     """
     try:
-        name = configured_sandbox()
+        name = configured_sandbox(name)
         sandbox_options()
     except ValueError as e:
         return str(e)
-    used = sandbox()
+    used = sandbox(name)
     if ready(used):
         return None
     if used != name:
         return f"{name} has no credentials set, and the local Docker it falls back to is not available to the backend either"
     return f"the {name} sandbox provider cannot start: Harbor's pre-flight check refused it"
+
+
+def spec_sandbox(spec: dict[str, Any]) -> str | None:
+    """The provider a Harbor run's environment names (`sandbox:`), or None: the configured one, as for `harbor_tasks`, which has no environment."""
+    return (spec.get("environment_entry") or {}).get("sandbox") or None
 
 
 def docker_is_snap() -> bool:
@@ -182,8 +190,8 @@ def docker_is_snap() -> bool:
     return bool(found) and (found.startswith("/snap/") or os.path.realpath(found).startswith("/snap/") or os.path.realpath(found).endswith("/usr/bin/snap"))
 
 
-def work_root(default: Path) -> Path:
-    """Where Harbor's task folders and trials go: `ARENA_HARBOR_WORKDIR`, else `default`, unless a snap Docker cannot reach it.
+def work_root(default: Path, name: str | None = None) -> Path:
+    """Where Harbor's task folders and trials go: `ARENA_HARBOR_WORKDIR`, else `default`, unless a snap Docker (trials on provider `name`) cannot reach it.
 
     A snap Docker cannot read the run's state (under a hidden `.arena`) nor
     Harbor's temporary files in /tmp, so its tasks, trials and temporary
@@ -192,7 +200,7 @@ def work_root(default: Path) -> Path:
     """
     if os.environ.get("ARENA_HARBOR_WORKDIR", "").strip():
         root = Path(os.environ["ARENA_HARBOR_WORKDIR"].strip()).expanduser()
-    elif sandbox() == LOCAL_SANDBOX and docker_is_snap() and any(part.startswith(".") for part in Path(default).resolve().parts):
+    elif sandbox(name) == LOCAL_SANDBOX and docker_is_snap() and any(part.startswith(".") for part in Path(default).resolve().parts):
         root = Path.home() / "arena-harbor"
     else:
         return Path(default)
@@ -264,7 +272,7 @@ def write_task(folder: Path, row: dict[str, Any], spec: dict[str, Any], contexts
     environment = EnvironmentSpec.model_validate(
         {k: v for k, v in spec["environment_entry"].items() if k in EnvironmentSpec.model_fields}
     )
-    (folder / "task.toml").write_text(task_toml(spec, sandbox()))
+    (folder / "task.toml").write_text(task_toml(spec, sandbox(spec_sandbox(spec))))
     (folder / "instruction.md").write_text(told + "\n")
     context = folder / "environment"
     source = contexts / spec["environment"] / "environment" if contexts else None
@@ -426,12 +434,18 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     return kwargs
 
 
-async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None, kwargs: dict[str, Any] | None = None):
-    """One Harbor trial of `task`, named `name` under `trials`, its verifier running the task's `tests/`; its `TrialResult`."""
+async def run_trial(
+    task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
+    kwargs: dict[str, Any] | None = None, provider: str | None = None,
+):
+    """One Harbor trial of `task`, named `name` under `trials`, on sandbox `provider` (the configured one when None); its `TrialResult`.
+
+    Its verifier runs the task's `tests/`.
+    """
     from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
-    provider = sandbox()
+    provider = sandbox(provider)
     config = TrialConfig(
         task=TaskConfig(path=task),
         trial_name=name,
@@ -538,7 +552,7 @@ class HarborTask(Module):
             return None
         work = Path(self.work_dir)
         # Tasks and trials where the sandbox can reach them; the trials' log stays in the run's state.
-        space = work_root(work)
+        space = work_root(work, spec_sandbox(self.spec))
         row = inputs.get_json()
         # A task folder's row names it: its name says which task in the trial's name too.
         label = row.get("task") if self.spec.get("tasks") else self.spec.get("dataset")
@@ -562,7 +576,8 @@ class HarborTask(Module):
             else:
                 write_task(task, row, self.spec, Path(self.contexts) if self.contexts else None)
             result = await run_trial(
-                task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs
+                task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs,
+                spec_sandbox(self.spec),
             )
             _book(self.language_model, result, space / "trials" / name)
             predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"))
@@ -631,7 +646,7 @@ def no_answer_guard(program) -> NoAnswerGuard | None:
 
 async def build_harbor(model_id: str, dataset, spec: dict, reward, metrics=None, contexts=None, work_dir="harbor", lm_kwargs=None, model_name=None):
     """Build (and compile) a program that asks each row of a Harbor agent driven by `model_id` with its entry's `lm_kwargs`."""
-    sandbox()  # an unknown sandbox fails the cell, not each of its rows
+    sandbox(spec_sandbox(spec))  # an unknown sandbox fails the cell, not each of its rows
     sandbox_options()  # and so do malformed options, whichever provider the rows run on
     inputs = synalinks.Input(
         schema=dataset.input_schema,

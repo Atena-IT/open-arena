@@ -63,6 +63,13 @@ def _clean_args(args: list[str]) -> list[str]:
     return [a for a in (x.strip() for x in args) if a]
 
 
+def sandbox_types() -> list[str]:
+    """The sandbox providers Harbor knows (its `EnvironmentType`s: docker, e2b, daytona, modal, ...), read off Harbor when asked."""
+    from harbor.models.environment_type import EnvironmentType
+
+    return [t.value for t in EnvironmentType]
+
+
 def _clean_mapping(mapping: dict[str, str], what: str) -> dict[str, str]:
     cleaned = {k.strip(): v for k, v in mapping.items() if k.strip()}
     for key in cleaned:
@@ -691,7 +698,8 @@ class EnvironmentSpec(BaseModel):
 
     Either a prebuilt `docker_image` or a `dockerfile` to build, never both.
     `mcp_servers` are keys of the MCP servers registry, written into the
-    task as `[[environment.mcp_servers]]`.
+    task as `[[environment.mcp_servers]]`. `sandbox` is the Harbor provider
+    its tasks run on, the process-wide `ARENA_HARBOR_SANDBOX` when unset.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -712,11 +720,27 @@ class EnvironmentSpec(BaseModel):
     healthcheck: HealthcheckSpec | None = None
     mcp_servers: list[Name] = Field(default_factory=list, description="MCP servers the agent is given, by their key in the MCP servers registry.")
     clock: ClockSpec | None = Field(default=None, description="A virtual clock every process in the sandbox reads; none keeps real time.")
+    sandbox: str | None = Field(
+        default=None,
+        description="The Harbor sandbox provider its tasks run on (`docker`, `e2b`, `daytona`, `modal`, ...); none keeps `ARENA_HARBOR_SANDBOX`'s, E2B by default.",
+    )
 
     @field_validator("docker_image", "dockerfile", "workdir")
     @classmethod
     def _blank(cls, value: str | None) -> str | None:
         return _blank_is_none(value)
+
+    @field_validator("sandbox")
+    @classmethod
+    def _known_sandbox(cls, value: str | None) -> str | None:
+        name = _blank_is_none(value)
+        if name is None:
+            return None
+        name = name.lower()
+        known = sandbox_types()
+        if name not in known:
+            raise Invalid(f"Harbor has no sandbox {name!r}", f"set `sandbox:` to one of: {', '.join(known)}; or remove it for ARENA_HARBOR_SANDBOX's")
+        return name
 
     @field_validator("gpu_types", "allowed_hosts")
     @classmethod

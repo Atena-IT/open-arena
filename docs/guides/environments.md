@@ -122,6 +122,7 @@ linger. A `docker_image` environment needs no folder.
 | `healthcheck` | mapping | none | a command that says when the sandbox is ready |
 | `clock` | mapping | none | a virtual start time and rate, read in the sandbox from `/run/arena/clock.json` |
 | `mcp_servers` | list of names | `[]` | MCP servers the agent is given, by their `mcp_servers` key |
+| `sandbox` | a Harbor provider name | `ARENA_HARBOR_SANDBOX`'s | the provider this environment's tasks run on ([Where it runs](#where-it-runs-the-sandbox-provider)) |
 | `description` | string | none | a line shown when browsing |
 | `tags` | list of strings | `[]` | labels for browsing, e.g. `python`, `gpu`, `offline` |
 
@@ -484,9 +485,10 @@ it an evaluation of its own ([Running evaluations](evaluations.md)).
 
 ## Where it runs: the sandbox provider
 
-The environment says **what** the sandbox is. **Where** it runs is a setting
-of your machine, not of the YAML: the same entry runs on any provider that
-can give what it asks for.
+The environment says **what** the sandbox is. **Where** it runs is, by
+default, a setting of your machine, not of the YAML: the same entry runs on
+any provider that can give what it asks for. An entry that must run on one
+provider names it with `sandbox:` (below).
 
 === "E2B (default)"
 
@@ -534,10 +536,32 @@ can give what it asks for.
     but it also changes the defaults: local resource limits, one trial at a
     time. When neither can start, the run is refused.
 
+### One environment on its own provider: `sandbox`
+
+```yaml
+environments:
+  gpu-box:
+    docker_image: python:3.12-slim
+    gpus: 1
+    sandbox: modal                # its tasks run on Modal, whatever ARENA_HARBOR_SANDBOX says
+```
+
+`sandbox:` takes the same names as `ARENA_HARBOR_SANDBOX`; `openarena check`
+refuses one Harbor does not know, with the list of those it does. Left out,
+the environment runs on `ARENA_HARBOR_SANDBOX`'s provider. Two evaluations
+running side by side in one process each use their own environments'
+providers. The fallback above applies per provider: a `sandbox: daytona`
+without Daytona's credentials runs on the local Docker.
+
+`ARENA_HARBOR_SANDBOX_OPTIONS` belongs to `ARENA_HARBOR_SANDBOX`'s provider
+only: an environment whose `sandbox:` names another provider runs with no
+options. A `harbor_tasks` dataset has no environment, so it always runs on
+`ARENA_HARBOR_SANDBOX`'s provider.
+
 | setting | default | what it does |
 |---|---|---|
-| `ARENA_HARBOR_SANDBOX` | `e2b` | the sandbox provider |
-| `ARENA_HARBOR_SANDBOX_OPTIONS` | none | the provider's own settings, a JSON object Harbor hands its environment |
+| `ARENA_HARBOR_SANDBOX` | `e2b` | the sandbox provider, for environments that name none |
+| `ARENA_HARBOR_SANDBOX_OPTIONS` | none | that provider's own settings, a JSON object Harbor hands its environment; not given to another provider an environment names |
 | `E2B_API_KEY` | none | E2B's key; without it, trials fall back to the local Docker |
 | `ARENA_HARBOR_LOCAL_CPUS` | `2` | CPUs a local Docker sandbox gets when the entry leaves `cpus` blank (no more than the machine has) |
 | `ARENA_HARBOR_LOCAL_MEMORY_MB` | `2048` | memory a local Docker sandbox gets when the entry leaves `memory_mb` blank |
