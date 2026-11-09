@@ -30,6 +30,7 @@ from openarena.evaluate import (
     _hand_out,
     _num_batches,
     _ProgressCallback,
+    _scalars,
     _usage,
     run_sweep,
 )
@@ -40,20 +41,23 @@ A_SCHEMA = {"type": "object", "properties": {"answer": {"type": "string"}}, "req
 ROWS = [{"question": "2 + 2?", "answer": "4"}, {"question": "3 + 3?", "answer": "6"}, {"question": "5 + 5?", "answer": "10"}]
 
 
-def _fake_model(monkeypatch, calls):
-    """The model's call replaced: `openai/gpt-4o-mini` answers right, every other model answers "0"."""
+def _fake_model(monkeypatch, calls, *, thinking=False):
+    """The model's call replaced: `openai/gpt-4o-mini` answers right, every other model answers "0".
+
+    `thinking` adds the field a chain of thought answers with beside the answer.
+    """
 
     async def fake_call(self, messages, schema=None, **kwargs):
         calls.append(self.model)
         question = messages.get_json()["messages"][-1]["content"]
         right = next(r["answer"] for r in ROWS if r["question"] in question)
         answer = right if self.model == "openai/gpt-4o-mini" else "0"
-        return JsonDataModel(json={"answer": answer}, schema=schema)
+        return JsonDataModel(json={"thinking": "Let me think.", "answer": answer} if thinking else {"answer": answer}, schema=schema)
 
     monkeypatch.setattr(synalinks.LanguageModel, "__call__", fake_call)
 
 
-def _config(tmp_path):
+def _config(tmp_path, *, generator=None, metrics=None):
     rows = tmp_path / "rows.jsonl"
     rows.write_text("\n".join(__import__("json").dumps(r) for r in ROWS) + "\n")
     config = {
@@ -70,7 +74,8 @@ def _config(tmp_path):
                     "output_schema": A_SCHEMA,
                 },
                 "reward": "exact",
-                "metrics": [{"class": "answer_accuracy", "alias": "acc"}],
+                "metrics": metrics or [{"class": "answer_accuracy", "alias": "acc"}],
+                **({"generator": generator} if generator else {}),
             }
         },
         "evaluation": {"name": "e", "language_models": ["right", "wrong"], "datasets": ["qa"], "batch_size": 2},
@@ -135,6 +140,35 @@ def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_
     assert not any(e["event"] == "cell_start" for e in events)
     fresh = asyncio.run(run_sweep(config, state_dir=state, no_cache=True))
     assert len(calls) == 12 and fresh["rows"] == first["rows"]
+
+
+def test_a_plain_metric_scores_the_answer_alone_when_the_model_thinks_first(tmp_path, monkeypatch):
+    """`chain_of_thought` returns `thinking` beside the answer. `accuracy` once scored it too, against no target field:
+    a list, which keras-tuner could not store, so the whole cell failed, its reward with it."""
+    _fake_model(monkeypatch, [], thinking=True)
+    result = asyncio.run(
+        run_sweep(str(_config(tmp_path, generator={"chain_of_thought": True}, metrics=["accuracy"])), state_dir=tmp_path / "state")
+    )
+    cells = _cells(result)
+    assert {status for _, status, _ in cells.values()} == {"COMPLETED"}
+    assert {key: value for key, (value, _, _) in cells.items()} == pytest.approx(
+        {("right", "reward"): 1.0, ("right", "accuracy"): 1.0, ("wrong", "reward"): 0.0, ("wrong", "accuracy"): 0.0}, abs=1e-6
+    )
+
+
+def test_a_metric_that_still_returns_a_list_is_averaged_with_a_warning_and_the_cell_keeps_its_metrics(tmp_path, monkeypatch):
+    """A mask of the metric's own is left alone, so here `thinking` is scored against nothing: `[answer, 0.0]`."""
+    _fake_model(monkeypatch, [], thinking=True)
+    metrics = [{"class": "accuracy", "out_mask": ["unused"]}]
+    with pytest.warns(UserWarning, match=r"qa · right: metric 'accuracy' gave \[1\.0, 0\.0\]"):
+        result = asyncio.run(
+            run_sweep(str(_config(tmp_path, generator={"chain_of_thought": True}, metrics=metrics)), state_dir=tmp_path / "state")
+        )
+    cells = _cells(result)
+    assert {status for _, status, _ in cells.values()} == {"COMPLETED"}
+    assert {key: value for key, (value, _, _) in cells.items()} == pytest.approx(
+        {("right", "reward"): 1.0, ("right", "accuracy"): 0.5, ("wrong", "reward"): 0.0, ("wrong", "accuracy"): 0.0}, abs=1e-6
+    )
 
 
 def test_an_event_callback_can_cancel_the_sweep(tmp_path, monkeypatch):
@@ -254,13 +288,28 @@ def test_the_progress_callback_reports_each_batch_with_its_usage_and_the_cell_wi
     callback.on_test_begin()
     callback.on_test_batch_end(0, {"reward": 0.5, "cost": 0.01, "input_tokens": 12, "note": "text"})
     callback.on_test_batch_end(1, {})
-    callback.on_test_end({"reward": 0.75, "acc": 1, "name": "x"})
+    with pytest.warns(UserWarning, match="d · m: metric 'name' is 'x', not a number: left out"):
+        callback.on_test_end({"reward": 0.75, "acc": 1, "name": "x"})
     assert events == [
         {"event": "batch", "dataset": "d", "model": "m", "batch": 1, "batches_total": 3, "reward": 0.5, "usage": {"cost": 0.01, "input_tokens": 12.0}},
         {"event": "batch", "dataset": "d", "model": "m", "batch": 2, "batches_total": 3, "reward": None, "usage": {}},
         {"event": "cell_end", "dataset": "d", "model": "m", "metrics": {"reward": 0.75, "acc": 1.0}},
     ]
     assert _usage({"cost": "1", "reward_cost": 2, "other": 3}) == {"reward_cost": 2.0}
+
+
+def test_a_metric_value_is_a_number_a_list_is_averaged_and_anything_else_left_out_with_a_warning():
+    import numpy as np
+
+    assert _scalars({"a": 1, "b": 0.5, "c": np.float32(0.25), "d": True}, "d · m") == {"a": 1.0, "b": 0.5, "c": 0.25, "d": 1.0}
+    with pytest.warns(UserWarning, match=r"d · m: metric 'acc' gave \[1\.0, 0\.0\], a list: kept as its mean, 0\.5"):
+        assert _scalars({"acc": [1.0, 0.0], "reward": 1.0}, "d · m") == {"acc": 0.5, "reward": 1.0}
+    with pytest.warns(UserWarning) as caught:  # the `val_` copy of a metric is not warned about twice
+        assert _scalars({"acc": [1.0, 0.0], "val_acc": [1.0, 0.0]}, "d · m") == {"acc": 0.5, "val_acc": 0.5}
+    assert len(caught) == 1
+    for bad in ([], "text", None, [1, "a"], [[1], [1, 2]]):
+        with pytest.warns(UserWarning, match="metric 'm' is .*, not a number: left out"):
+            assert _scalars({"m": bad, "reward": 1.0}, "d · m") == {"reward": 1.0}
 
 
 def test_a_symbolic_batch_has_no_json():
@@ -313,6 +362,30 @@ def test_metrics_are_built_from_the_rewards_or_the_frameworks_and_a_bad_one_fail
         _instantiate_metrics([MetricEntry.model_validate("nope")], context="metrics")
     with pytest.raises(ValueError, match="metrics: metric alias 'reward' collides with the primary metric"):
         _instantiate_metrics([MetricEntry.model_validate({"class": "exact_match", "alias": "reward"})], context="metrics")
+
+
+def test_a_plain_metric_leaves_out_what_the_program_returns_beside_the_answer_unless_it_has_a_mask_of_its_own():
+    from openarena.config import MetricEntry
+    from openarena.evaluate import _instantiate_metrics
+
+    def build(entry, **kwargs):
+        return _instantiate_metrics([MetricEntry.model_validate(entry)], context="metrics", **kwargs)[0][1]
+
+    assert build("accuracy", beside=["thinking"]).out_mask == ["thinking"]
+    assert build({"class": "f1_score", "average": "macro"}, beside=["thinking"]).out_mask == ["thinking"]
+    assert build("accuracy").out_mask is None  # nothing is returned beside the answer
+    assert build({"class": "accuracy", "out_mask": ["x"]}, beside=["thinking"]).out_mask == ["x"]
+    assert build({"class": "accuracy", "in_mask": ["answer"]}, beside=["thinking"]).out_mask is None  # the user's mask wins
+    assert build("cost", beside=["thinking"]).out_mask is None  # takes no masks
+    assert getattr(build("exact_match", beside=["thinking"]), "out_mask", None) is None  # a reward is scoped to the target
+
+    # What is left out is the extra field only: an answer that holds objects is still compared (an `in_mask` of
+    # the answer would empty it, and `accuracy` would have nothing to average).
+    nested = {"type": "object", "properties": {"answer": {"type": "object", "properties": {"value": {"type": "string"}}}}}
+    thought = {"type": "object", "properties": {"thinking": {"type": "string"}, **nested["properties"]}}
+    metric = build("accuracy", beside=["thinking"])
+    asyncio.run(metric.update_state(JsonDataModel(json={"answer": {"value": "5"}}, schema=nested), JsonDataModel(json={"thinking": "hm", "answer": {"value": "5"}}, schema=thought)))
+    assert metric.result() == pytest.approx(1.0, abs=1e-6)
 
 
 def test_an_unknown_reward_is_left_for_the_builder_to_refuse():

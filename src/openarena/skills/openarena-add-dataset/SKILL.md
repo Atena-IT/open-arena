@@ -270,7 +270,9 @@ datasets:
 
 `metrics:` adds columns to every cell of the dataset, beside `reward`. Each is
 a catalog reward type, averaged over the rows (no extra call for a
-deterministic one), or a plain metric (`accuracy`, `f1_score`, ...); a bare name or a mapping with
+deterministic one), or a plain metric (`accuracy`, `f1_score`, ...), which
+scores the answer alone (not a chain of thought's `thinking` or an agent's
+`messages`) unless the entry sets an `in_mask` or `out_mask`; a bare name or a mapping with
 `class`, an `alias` (the column's name, never `reward`), `direction`
 (optional, see below) and the type's settings:
 
