@@ -11,7 +11,7 @@ as an opaque `Program`.
 
 import synalinks
 
-from openarena.programs.utils import language_model as _language_model, safe_name
+from openarena.programs.utils import language_model as _language_model, safe_name, with_model_effort
 
 
 async def build_program(
@@ -30,7 +30,8 @@ async def build_program(
 
     `lm_kwargs` are per-model options for `LanguageModel` (a
     `reasoning_effort`, say). Without them, the bare id is handed to
-    the framework exactly as before.
+    the framework exactly as before. The model's `reasoning_effort` is also
+    the module's own, unless the `generator:` block sets one (`with_model_effort`).
 
     `chain_of_thought: true` in the generator block builds the framework's
     `ChainOfThought` instead of a plain `Generator`: it puts a `thinking`
@@ -53,7 +54,7 @@ async def build_program(
 
     outputs = await module(
         language_model=_language_model(model_id, lm_kwargs),
-        **gen_kwargs,
+        **with_model_effort(lm_kwargs, gen_kwargs),
     )(inputs)
 
     program = synalinks.Program(

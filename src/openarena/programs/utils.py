@@ -29,6 +29,27 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     return kwargs
 
 
+# The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`
+# refuses: its top level is `xhigh`.
+_GENERATOR_EFFORT = {"max": "xhigh"}
+
+
+def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
+    """`module_kwargs` for a Generator-based module, with the model's `reasoning_effort` as the module's own.
+
+    `synalinks.Generator` passes its own `reasoning_effort` on every call (`None`,
+    or `"low"` for a `ChainOfThought`), and a value passed per call replaces the
+    `LanguageModel`'s default. The level set on the model entry therefore counts
+    only if the module is given it too. A value the module's block sets wins,
+    and a model with no level adds nothing, so the module keeps its own default.
+    The arena's `max` is passed as `xhigh`, the top level a Generator accepts.
+    """
+    effort = (lm_kwargs or {}).get("reasoning_effort")
+    if effort is None or module_kwargs.get("reasoning_effort") is not None:
+        return module_kwargs
+    return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
+
+
 def language_model(model_id: str, lm_kwargs: dict | None = None):
     """What to pass as `language_model=`.
 

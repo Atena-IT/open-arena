@@ -10,19 +10,23 @@ builder reads.
 """
 
 import asyncio
+import json
 import os
 from types import SimpleNamespace
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
+import litellm
 import pytest
 import synalinks
 
 from openarena.config import Config, dataset_kind, flatten_dataset
+from openarena.config.model_types import REASONING_EFFORTS
 from openarena.datasets.dataset import _close_objects
 from openarena.programs.agent_program import McpToolsUnavailable, _reason, build_agent
 from openarena.programs.generator_program import build_program
-from openarena.programs.utils import answer_layout, safe_name, template_keys
+from openarena.programs.tools_program import build_tools
+from openarena.programs.utils import answer_layout, safe_name, template_keys, with_model_effort
 from openarena.rewards import get
 
 Q_SCHEMA = _close_objects({"type": "object", "properties": {"question": {"type": "string"}}, "required": ["question"]})
@@ -159,6 +163,120 @@ def test_servers_that_give_no_tools_fail_the_cell_with_why(monkeypatch):
         asyncio.run(build_agent("m", _dataset(), {"mcp_servers": SERVERS}, None))
     nested = ExceptionGroup("outer", [ExceptionGroup("inner", [RuntimeError("down\n  for  good")]), ValueError("second")])
     assert _reason(nested) == "RuntimeError: down for good" and _reason(ValueError("x")) == "ValueError: x"
+
+
+# -- the model's reasoning effort -------------------------------------------------
+
+
+# litellm lists no such model: a test registers it where it needs a reasoning one.
+THINKER = "openrouter/acme/thinker-1"
+
+
+@pytest.fixture
+def litellm_calls(monkeypatch):
+    """What reaches `litellm.acompletion`, stubbed so that nothing leaves the machine."""
+    calls = []
+
+    async def acompletion(**kwargs):
+        calls.append(kwargs)
+        properties = kwargs["response_format"]["json_schema"]["schema"]["properties"]
+        message = {"role": "assistant", "content": json.dumps({field: "x" for field in properties})}
+        return litellm.ModelResponse(
+            choices=[{"index": 0, "finish_reason": "stop", "message": message}],
+            usage={"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10},
+        )
+
+    monkeypatch.setattr(litellm, "acompletion", acompletion)
+    return calls
+
+
+def _registered(monkeypatch):
+    monkeypatch.setitem(litellm.model_cost, THINKER, {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": True})
+
+
+def _sent(program, calls, key="reasoning_effort"):
+    """The `key` the program's one call sent to litellm; `"<absent>"` when it sent none."""
+    asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+    [call] = calls
+    calls.clear()
+    return call.get(key, "<absent>")
+
+
+def _generated(model, chain_of_thought=False, lm_kwargs=None, **block):
+    program = asyncio.run(build_program(model, _dataset(), {"chain_of_thought": chain_of_thought, **block}, get("exact_match"), lm_kwargs=lm_kwargs))
+    [module] = _modules(program, synalinks.ChainOfThought if chain_of_thought else synalinks.Generator)
+    return program, module
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_the_level_set_on_a_model_is_the_one_its_generator_sends(monkeypatch, litellm_calls, effort, chain_of_thought):
+    _registered(monkeypatch)
+    program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": effort})
+    assert module.reasoning_effort == effort and _sent(program, litellm_calls) == effort
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+def test_off_on_a_model_turns_a_local_models_thinking_off(litellm_calls, chain_of_thought):
+    program, module = _generated("ollama/qwen3:8b", chain_of_thought, {"reasoning_effort": "disable"})
+    assert module.reasoning_effort == "disable" and _sent(program, litellm_calls, "think") is False
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+def test_a_level_the_generator_block_sets_wins_over_the_models(monkeypatch, litellm_calls, chain_of_thought):
+    _registered(monkeypatch)
+    program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": "high"}, reasoning_effort="medium")
+    assert module.reasoning_effort == "medium" and _sent(program, litellm_calls) == "medium"
+
+
+def test_a_model_with_no_level_keeps_the_generators_own_default(monkeypatch, litellm_calls):
+    _registered(monkeypatch)
+    for lm_kwargs in (None, {}, {"temperature": 0.0}):
+        program, generator = _generated(THINKER, lm_kwargs=lm_kwargs)
+        assert generator.reasoning_effort is None and _sent(program, litellm_calls) is None
+        program, thinker = _generated(THINKER, True, lm_kwargs)
+        assert thinker.reasoning_effort == "low" and _sent(program, litellm_calls) == "low"
+
+
+def test_a_model_the_framework_does_not_know_as_a_reasoner_still_sends_no_level(litellm_calls):
+    for chain_of_thought in (False, True):
+        program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": "high"})
+        assert module.reasoning_effort == "high" and _sent(program, litellm_calls) == "<absent>"
+
+
+def test_max_is_sent_as_the_highest_level_a_generator_takes(monkeypatch, litellm_calls):
+    _registered(monkeypatch)
+    program, module = _generated(THINKER, lm_kwargs={"reasoning_effort": "max"})
+    assert module.reasoning_effort == "xhigh" and _sent(program, litellm_calls) == "xhigh"
+
+
+@pytest.mark.parametrize("effort", REASONING_EFFORTS)
+def test_every_level_a_model_may_carry_builds_a_program(effort):
+    # `synalinks.Generator` raises on a level it does not know: a level added to the arena is caught here, not in a run.
+    for chain_of_thought in (False, True):
+        _generated("openai/gpt-4o-mini", chain_of_thought, {"reasoning_effort": effort})
+
+
+def test_a_tools_program_and_an_agent_take_the_models_level_too(monkeypatch):
+    _mcp(monkeypatch)
+    tools = {"tool_schemas": [{"type": "function", "function": {"name": "add", "parameters": {"type": "object", "properties": {}}}}]}
+    for block, expected in (({}, "high"), ({"reasoning_effort": "low"}, "low")):
+        program = asyncio.run(build_tools("openai/gpt-4o-mini", _dataset(), {**tools, **block}, get("exact_match"), lm_kwargs={"reasoning_effort": "high"}))
+        assert _modules(program, synalinks.Generator)[0].reasoning_effort == expected
+        program = asyncio.run(build_agent("openai/gpt-4o-mini", _dataset(), {"mcp_servers": SERVERS, **block}, get("exact_match"), lm_kwargs={"reasoning_effort": "high"}))
+        [agent] = _modules(program, synalinks.FunctionCallingAgent)
+        assert [agent.reasoning_effort, agent.tool_calls_generator.reasoning_effort, agent.final_generator.reasoning_effort] == [expected] * 3
+    program = asyncio.run(build_tools("openai/gpt-4o-mini", _dataset(), tools, get("exact_match"), lm_kwargs={"temperature": 0.0}))
+    assert _modules(program, synalinks.Generator)[0].reasoning_effort is None
+
+
+def test_the_models_level_fills_a_block_that_leaves_it_unset_and_never_edits_the_block():
+    block = {"instructions": "Answer.", "reasoning_effort": None}
+    assert with_model_effort({"reasoning_effort": "low"}, block) == {"instructions": "Answer.", "reasoning_effort": "low"}
+    assert block["reasoning_effort"] is None
+    assert with_model_effort({"reasoning_effort": "low"}, {"reasoning_effort": "high"}) == {"reasoning_effort": "high"}
+    plain = {"instructions": "Answer."}
+    assert with_model_effort(None, plain) is plain and with_model_effort({"temperature": 0.0}, plain) is plain
 
 
 # -- what a prediction holds -------------------------------------------------------
