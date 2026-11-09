@@ -393,7 +393,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
         if (
             beside
             and key not in _REWARD_TYPES
-            and not any(entry.kwargs.get(k) for k in _MASK_KEYS)
+            and not any(k in entry.kwargs for k in _MASK_KEYS)
             and "out_mask" in inspect.signature(type(instance).__init__).parameters
         ):
             instance.out_mask = list(beside)  # read on every update; cost and latency take no masks
