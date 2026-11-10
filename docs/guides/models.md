@@ -279,7 +279,7 @@ How much a model that can think does so before answering.
 
 | value | effect |
 |---|---|
-| `disable` | turns native thinking off: for local models that think by default (Ollama's `qwen3`, `deepseek-r1`), and on OpenRouter ids, where the request carries `reasoning: {"enabled": false}` |
+| `disable` | turns native thinking off: for local models that think by default (Ollama's `qwen3`, `deepseek-r1`), and on OpenRouter ids, where the request carries `reasoning: {"enabled": false}` (not for a model litellm lists as not reasoning) |
 | `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
@@ -297,9 +297,12 @@ the provider only for a model the framework knows can think (litellm lists it
 as a reasoning model, or a local Ollama, vLLM or SGLang server reports it); for
 any other model nothing about thinking is sent. `disable` is the exception: it
 turns thinking off on a local model (Ollama, vLLM, SGLang) and on an OpenRouter
-id, whether or not litellm knows the model. Other hosted providers get nothing
+id, whether or not litellm knows the model, except one litellm lists as not
+reasoning: it has nothing to turn off, and OpenRouter refuses the switch on an
+endpoint with no `reasoning` parameter. Other hosted providers get nothing
 for it. An Off entry on OpenRouter stops reasoning for real, so its cost,
-latency and score differ from what it gave before.
+latency and score differ from what it gave before. A model that must reason
+(`openai/gpt-oss-20b`) fails its cells with OpenRouter's own message.
 
 `chain_of_thought: true` is not native thinking: it has the model write a
 `thinking` field beside its answer. A model with no level is asked for `low`

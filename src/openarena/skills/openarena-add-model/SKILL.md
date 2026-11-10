@@ -62,7 +62,8 @@ out to keep the provider's default. Where params actually apply:
   block sets its own, which wins for every model of the evaluation (`max` is
   sent as `xhigh`); `disable` turns thinking off on local models (Ollama,
   vLLM, SGLang) and on OpenRouter ids (the request carries
-  `reasoning: {"enabled": false}`), and sends nothing to other hosted
+  `reasoning: {"enabled": false}`, except for a model litellm lists as not
+  reasoning), and sends nothing to other hosted
   providers. `chain_of_thought` is not native thinking, only a written
   `thinking` field (with `disable` the model writes it itself): leave it off
   to compare levels.

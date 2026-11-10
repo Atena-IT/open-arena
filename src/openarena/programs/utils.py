@@ -22,7 +22,10 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     A model entry with `reasoning_effort: disable` also gets OpenRouter's
     `reasoning: {"enabled": false}`, the only way to turn reasoning off there:
     the framework acts on `disable` only for Ollama, vLLM, SGLang and codex,
-    and sends no level to OpenRouter for it. Any other level adds nothing.
+    and sends no level to OpenRouter for it. Any other level adds nothing. A
+    model litellm lists as one that does not reason gets nothing either: it has
+    nothing to turn off, and under `require_parameters` OpenRouter finds no
+    endpoint that takes the `reasoning` parameter and refuses every call.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -30,10 +33,24 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
         provider = dict(extra_body.get("provider") or {})
         provider.setdefault("require_parameters", True)
         extra_body["provider"] = provider
-        if kwargs.get("reasoning_effort") == "disable":
+        if kwargs.get("reasoning_effort") == "disable" and not _listed_as_not_reasoning(model_id):
             extra_body.setdefault("reasoning", {"enabled": False})
         kwargs["extra_body"] = extra_body
     return kwargs
+
+
+def _listed_as_not_reasoning(model_id: str) -> bool:
+    """Whether litellm's table lists the model and does not list it as a reasoning model.
+
+    The table is the signal the framework reads before it forwards a level. A
+    model the table does not list is not caught here: its `disable` is sent. An
+    OpenRouter variant (`...:free`, `...:nitro`) the table does not list is read
+    off its base model.
+    """
+    import litellm
+
+    entry = litellm.model_cost.get(model_id) or litellm.model_cost.get(model_id.partition(":")[0])
+    return entry is not None and not entry.get("supports_reasoning")
 
 
 # The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`

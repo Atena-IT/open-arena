@@ -351,6 +351,30 @@ def test_off_turns_openrouter_reasoning_off_whether_or_not_litellm_knows_the_mod
 
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
+@pytest.mark.parametrize("entry", [{"supports_reasoning": False}, {}], ids=["flag false", "no flag"])
+def test_off_adds_no_reasoning_object_for_a_model_litellm_lists_as_not_reasoning(monkeypatch, wire, entry, chain_of_thought):
+    # OpenRouter refuses `reasoning` on an endpoint that has no such parameter (404 under require_parameters),
+    # so a model with nothing to turn off must not be sent the switch, from its own level or from the block's.
+    monkeypatch.setitem(litellm.model_cost, UNKNOWN, {"litellm_provider": "openrouter", "mode": "chat", **entry})
+    body = _posted(UNKNOWN, wire, chain_of_thought, {"reasoning_effort": "disable"})
+    assert "reasoning" not in body and "reasoning_effort" not in body
+    assert body["provider"] == {"require_parameters": True}
+    program, _ = _generated(UNKNOWN, chain_of_thought, lm_kwargs=None, reasoning_effort="disable")
+    asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+    [body] = wire
+    wire.clear()
+    assert "reasoning" not in body and "reasoning_effort" not in body
+
+
+def test_off_reads_a_variant_id_off_its_base_model(monkeypatch, wire):
+    monkeypatch.setitem(litellm.model_cost, UNKNOWN, {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": False})
+    assert "reasoning" not in _posted(UNKNOWN + ":free", wire, False, {"reasoning_effort": "disable"})
+    # A variant the table lists itself is read as listed, not off its base.
+    monkeypatch.setitem(litellm.model_cost, UNKNOWN + ":think", {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": True})
+    assert _posted(UNKNOWN + ":think", wire, False, {"reasoning_effort": "disable"})["reasoning"] == {"enabled": False}
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
 @pytest.mark.parametrize("known", [True, False])
 @pytest.mark.parametrize("effort", ["low", "medium", "high"])
 def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(monkeypatch, wire, effort, known, chain_of_thought):
