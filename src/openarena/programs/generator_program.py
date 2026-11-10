@@ -55,6 +55,8 @@ async def build_program(
     thinking = gen_kwargs.pop("chain_of_thought", False) or (
         keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and "thinking" not in answer_layout(dataset, "model", gen_kwargs)[0]
     )
+    if thinking:
+        answer_layout(dataset, "model", {**gen_kwargs, "chain_of_thought": True})
     module = synalinks.ChainOfThought if thinking else synalinks.Generator
     if dataset.output_schema is not None and "schema" not in gen_kwargs:
         gen_kwargs["schema"] = dataset.output_schema
