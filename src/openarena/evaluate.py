@@ -344,6 +344,15 @@ def _scope_to_answer(spec: dict, target: list[str]) -> dict:
     return {**spec, ANSWER_FIELDS: list(target)}
 
 
+def _leaving_out_trace(spec: dict) -> dict:
+    """`spec`, a reward's, with `thinking` masked out of what it reads, unless it is scoped to fields or masked already."""
+    from openarena.rewards import ANSWER_FIELDS, SELF_SCORED
+
+    if spec.get("name") in SELF_SCORED or ANSWER_FIELDS in spec or any(k in spec for k in _MASK_KEYS):
+        return spec
+    return {**spec, "out_mask": ["thinking"]}
+
+
 def _beside(entry: dict, base: Path) -> dict:
     """A Harbor task folders dataset's `path` read against the run's config: the run copies the tasks beside it (`tasks/`)."""
     if entry.get("type") == "harbor_tasks" and entry.get("path") and not Path(entry["path"]).is_absolute():
@@ -381,7 +390,7 @@ def _leaving_out(metric, fields: list[str]):
     return LeavingOut.from_config({**metric.get_config(), "leave_out": fields})
 
 
-def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None):
+def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
     Identifiers resolve in two registries: the project rewards (auto-wrapped
@@ -397,13 +406,16 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     `thinking`, an agent's `messages`): the target has no such field, so scored
     against nothing it makes the metric a list, one score per field. A mask the
     entry sets, even an empty one, is the user's and leaves the metric as written.
+    `trace` is a model's native reasoning trace the dataset did not ask for: a reward
+    named as a metric leaves `thinking` out too, as the dataset's reward does.
     """
     out = []
     for entry in entries:
         key = to_snake_case(entry.class_name)
         if key in _REWARD_TYPES:
             spec = {"name": key, **entry.kwargs}
-            reward = get_reward(_scope_to_answer(spec, target) if target else spec)
+            scoped = _scope_to_answer(spec, target) if target else spec
+            reward = get_reward(_leaving_out_trace(scoped) if trace else scoped)
             instance = synalinks.metrics.MeanMetricWrapper(
                 reward,
                 name=entry.alias or key,
@@ -795,13 +807,20 @@ async def run_sweep(
         block = {"model": gen_kwargs, "agent": agent_cfg}.get(kind)
         if kind == "tools":
             block = cfg.tools_kwargs(ds_name)
-        _, beside = answer_layout(ds, kind, block)
+        answer, beside = answer_layout(ds, kind, block)
+        # A model that reasons natively at a level keeps its trace in `thinking` whether or not the
+        # dataset asks for a chain of thought (`build_program`): it is left out of what the metrics
+        # compare and the rewards read, as a chain of thought is, so a judge sees what it always saw.
+        trace = kind == "model" and "thinking" not in answer + beside
+        if trace:
+            beside = [*beside, "thinking"]
         # A rule-based reward compares the fields the output template renders.
         target = template_keys(getattr(ds, "output_template", None))
-        reward = get_reward(_scope_to_answer(cfg.reward_spec(ds_name), target))
+        reward_spec = _scope_to_answer(cfg.reward_spec(ds_name), target)
+        reward = get_reward(_leaving_out_trace(reward_spec) if trace else reward_spec)
         reward_direction = cfg.reward_direction(ds_name)
         ds_metrics = _first_by_alias(
-            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside),
+            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
             global_metrics,
         )
         # `ds_metrics` (and its instances) is used only for the aliases /
@@ -878,8 +897,8 @@ async def run_sweep(
             model_metrics = [
                 m
                 for _, m, _, _ in _first_by_alias(
-                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside),
-                    _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside),
+                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
+                    _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace),
                 )
             ]
             lm_kwargs = cfg.lm_kwargs(model_id)

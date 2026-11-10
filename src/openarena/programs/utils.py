@@ -74,6 +74,25 @@ def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
     return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
 
 
+def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwargs: dict | None) -> bool:
+    """Whether the model reasons natively at a level the program asks for, so its trace can fill `thinking`.
+
+    The framework forwards a level only for a model litellm lists as reasoning. It then leaves `thinking`
+    out of the schema it sends and fills it from the reasoning trace the provider returns, or with an empty
+    string when it returns none: the request is the same, and the trace is kept. The module's level wins over
+    the model's, as in `with_model_effort`. A model that is not in litellm's table is not covered, nor is a
+    local server the framework would have to ask.
+    """
+    level = (module_kwargs or {}).get("reasoning_effort")
+    if level is None:
+        level = (lm_kwargs or {}).get("reasoning_effort")
+    if level in (None, "disable"):
+        return False
+    import litellm
+
+    return bool(litellm.supports_reasoning(model=model_id))
+
+
 def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: dict | None = None):
     """What to pass as `language_model=`.
 

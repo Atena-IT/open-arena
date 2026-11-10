@@ -66,7 +66,8 @@ out to keep the provider's default. Where params actually apply:
   reasoning), and sends nothing to other hosted
   providers. `chain_of_thought` is not native thinking, only a written
   `thinking` field (with `disable` the model writes it itself): leave it off
-  to compare levels.
+  to compare levels. A model that reasons natively at a level (litellm lists
+  it) keeps its trace in `thinking` whether or not it is on.
 - Model under test on a Harbor dataset: passed to the agent where it takes them.
 - A judge, a reward's or metric's model, a `default_*_model`: built with its
   entry's params too (an embedding model's `dimensions` included). Give a

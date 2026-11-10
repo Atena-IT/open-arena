@@ -1159,7 +1159,8 @@ datasets:
 
 A plain metric that takes masks (`accuracy`, `f1_score`, ...) scores the
 answer alone, as a rule-based reward does: what the program returns beside it
-(a chain of thought's `thinking`, an agent's `messages`, returned inputs) is
+(`thinking`, a chain of thought's or a reasoning model's trace, an agent's
+`messages`, returned inputs) is
 left out. Write an `in_mask` or an `out_mask` on the entry to choose the fields
 yourself, and the metric is left as written. A metric that still returns one
 score per field is averaged, and one that returns no number is left out, each

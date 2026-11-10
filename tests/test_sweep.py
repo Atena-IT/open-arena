@@ -17,6 +17,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
+import litellm
 import pytest
 import synalinks
 import yaml
@@ -57,11 +58,14 @@ def _fake_model(monkeypatch, calls, *, thinking=False):
     monkeypatch.setattr(synalinks.LanguageModel, "__call__", fake_call)
 
 
-def _config(tmp_path, *, generator=None, metrics=None):
+def _config(tmp_path, *, generator=None, metrics=None, reasoning=None):
     rows = tmp_path / "rows.jsonl"
     rows.write_text("\n".join(__import__("json").dumps(r) for r in ROWS) + "\n")
     config = {
-        "models": {"right": {"model": "openai/gpt-4o-mini"}, "wrong": {"model": "openai/gpt-4o", "params": {"temperature": 0.0}}},
+        "models": {
+            "right": {"model": "openai/gpt-4o-mini", **({"params": {"reasoning_effort": reasoning}} if reasoning else {})},
+            "wrong": {"model": "openai/gpt-4o", "params": {"temperature": 0.0, **({"reasoning_effort": reasoning} if reasoning else {})}},
+        },
         "rewards": {"exact": {"type": "exact_match"}},
         "datasets": {
             "qa": {
@@ -154,6 +158,25 @@ def test_a_plain_metric_scores_the_answer_alone_when_the_model_thinks_first(tmp_
     assert {key: value for key, (value, _, _) in cells.items()} == pytest.approx(
         {("right", "reward"): 1.0, ("right", "accuracy"): 1.0, ("wrong", "reward"): 0.0, ("wrong", "accuracy"): 0.0}, abs=1e-6
     )
+
+
+def test_a_plain_metric_scores_the_answer_alone_when_a_model_keeps_its_native_trace_without_the_toggle(tmp_path, monkeypatch):
+    """A model that reasons natively at a level returns `thinking` beside the answer whether or not the dataset asks for it."""
+    for model in ("openai/gpt-4o-mini", "openai/gpt-4o"):
+        monkeypatch.setitem(litellm.model_cost, model, {"litellm_provider": "openai", "mode": "chat", "supports_reasoning": True})
+    _fake_model(monkeypatch, [], thinking=True)
+    result = asyncio.run(run_sweep(str(_config(tmp_path, metrics=["accuracy"], reasoning="low")), state_dir=tmp_path / "state"))
+    cells = _cells(result)
+    assert {status for _, status, _ in cells.values()} == {"COMPLETED"}
+    assert {key: value for key, (value, _, _) in cells.items()} == pytest.approx(
+        {("right", "reward"): 1.0, ("right", "accuracy"): 1.0, ("wrong", "reward"): 0.0, ("wrong", "accuracy"): 0.0}, abs=1e-6
+    )
+
+
+def test_a_reward_leaves_a_kept_trace_out_unless_it_is_scoped_masked_or_self_scored():
+    assert evaluate._leaving_out_trace({"name": "lm_as_judge"}) == {"name": "lm_as_judge", "out_mask": ["thinking"]}
+    for spec in ({"name": "harbor_verifier"}, {"name": "exact_match", "answer_fields": ["answer"]}, {"name": "lm_as_judge", "out_mask": ["x"]}, {"name": "lm_as_judge", "out_mask": []}):
+        assert evaluate._leaving_out_trace(spec) == spec
 
 
 def test_a_metric_that_still_returns_a_list_is_averaged_with_a_warning_and_the_cell_keeps_its_metrics(tmp_path, monkeypatch):

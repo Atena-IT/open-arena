@@ -307,8 +307,18 @@ latency and score differ from what it gave before. A model that must reason
 `chain_of_thought: true` is not native thinking: it has the model write a
 `thinking` field beside its answer. A model with no level is asked for `low`
 with it on, and with it off no level is passed at all. With `disable` and it
-on, the model writes `thinking` itself, with no native reasoning behind it. To
-compare levels, leave it off.
+on, the model writes `thinking` itself, with no native reasoning behind it.
+
+A model that reasons natively at a level (litellm lists it as a reasoning
+model) needs no flag to keep its reasoning. The request is the same either
+way: `thinking` is left out of what the model is asked for (the default
+instructions of a dataset that sets none still list it), and it holds
+the provider's reasoning trace, in the samples and in the traces, with the flag
+on or off (empty when the provider returns none). Any other model writes
+`thinking` only with the flag on. Metrics and rewards leave `thinking` out as
+for a chain of thought, and a judge sees it only when the flag is on. A local
+model the framework has to ask (Ollama, vLLM, SGLang) is not covered: with the
+flag off its trace is not kept. To compare levels, leave the flag off.
 
 ### `dimensions`
 
