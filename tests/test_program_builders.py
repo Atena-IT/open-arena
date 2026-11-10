@@ -291,6 +291,15 @@ def test_a_dataset_whose_output_has_its_own_thinking_field_is_left_as_it_is(monk
     assert not _modules(program, synalinks.ChainOfThought) and _output_fields(program) == ["thinking", "answer"]
 
 
+def test_a_dataset_that_returns_an_input_named_thinking_is_left_as_it_is_unless_the_flag_asks_for_it(monkeypatch):
+    _registered(monkeypatch)
+    named = _dataset(input_schema=_close_objects({"type": "object", "properties": {"thinking": {"type": "string"}}, "required": ["thinking"]}))
+    program = asyncio.run(build_program(THINKER, named, {"return_inputs": True}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
+    assert not _modules(program, synalinks.ChainOfThought)  # no trace kept, no error
+    with pytest.raises(ValueError, match="return inputs"):
+        asyncio.run(build_program(THINKER, named, {"return_inputs": True, "chain_of_thought": True}, get("exact_match")))
+
+
 def test_max_is_sent_as_the_highest_level_a_generator_takes(monkeypatch, litellm_calls):
     _registered(monkeypatch)
     program, module = _generated(THINKER, lm_kwargs={"reasoning_effort": "max"})

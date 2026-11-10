@@ -14,6 +14,18 @@ import synalinks
 from openarena.programs.utils import answer_layout, keeps_native_trace, language_model as _language_model, safe_name, with_model_effort
 
 
+def _fits_thinking(dataset, block: dict) -> bool:
+    """Whether the dataset can hold a `thinking` field beside its answer, by the sweep's own rule (`answer_layout`).
+
+    It cannot when the answer already has one, or when a returned input has that name.
+    """
+    try:
+        answer_layout(dataset, "model", {**block, "chain_of_thought": True})
+    except ValueError:
+        return False
+    return True
+
+
 async def build_program(
     model_id: str,
     dataset,
@@ -44,7 +56,8 @@ async def build_program(
     (`keeps_native_trace`): its request is the same, the framework fills `thinking`
     from the reasoning trace instead of asking the model to write it, and the
     trace is kept with the row. The flag stays what makes any other model write it.
-    A dataset whose own output has a `thinking` field is left as it is.
+    A dataset that cannot hold a `thinking` field (its answer has one, or a returned
+    input is named so) is left as it is.
     """
     inputs = synalinks.Input(
         schema=dataset.input_schema,
@@ -53,9 +66,10 @@ async def build_program(
 
     gen_kwargs = dict(generator_kwargs)
     thinking = gen_kwargs.pop("chain_of_thought", False) or (
-        keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and "thinking" not in answer_layout(dataset, "model", gen_kwargs)[0]
+        keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and _fits_thinking(dataset, gen_kwargs)
     )
     if thinking:
+        # An explicit chain of thought is refused here as the sweep refuses it, before any trial.
         answer_layout(dataset, "model", {**gen_kwargs, "chain_of_thought": True})
     module = synalinks.ChainOfThought if thinking else synalinks.Generator
     if dataset.output_schema is not None and "schema" not in gen_kwargs:

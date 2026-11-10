@@ -175,7 +175,7 @@ def test_a_plain_metric_scores_the_answer_alone_when_a_model_keeps_its_native_tr
 
 def test_a_reward_leaves_a_kept_trace_out_unless_it_is_scoped_masked_or_self_scored():
     assert evaluate._leaving_out_trace({"name": "lm_as_judge"}) == {"name": "lm_as_judge", "out_mask": ["thinking"]}
-    for spec in ({"name": "harbor_verifier"}, {"name": "exact_match", "answer_fields": ["answer"]}, {"name": "lm_as_judge", "out_mask": ["x"]}):
+    for spec in ({"name": "harbor_verifier"}, {"name": "exact_match", "answer_fields": ["answer"]}, {"name": "lm_as_judge", "out_mask": ["x"]}, {"name": "lm_as_judge", "out_mask": []}):
         assert evaluate._leaving_out_trace(spec) == spec
 
 
