@@ -348,7 +348,7 @@ def _leaving_out_trace(spec: dict) -> dict:
     """`spec`, a reward's, with `thinking` masked out of what it reads, unless it is scoped to fields or masked already."""
     from openarena.rewards import ANSWER_FIELDS, SELF_SCORED
 
-    if spec.get("name") in SELF_SCORED or ANSWER_FIELDS in spec or any(spec.get(k) for k in _MASK_KEYS):
+    if spec.get("name") in SELF_SCORED or ANSWER_FIELDS in spec or any(k in spec for k in _MASK_KEYS):
         return spec
     return {**spec, "out_mask": ["thinking"]}
 
