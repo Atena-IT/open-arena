@@ -182,7 +182,7 @@ def litellm_calls(monkeypatch):
     async def acompletion(**kwargs):
         calls.append(kwargs)
         properties = kwargs["response_format"]["json_schema"]["schema"]["properties"]
-        message = {"role": "assistant", "content": json.dumps({field: "x" for field in properties})}
+        message = {"role": "assistant", "content": json.dumps({field: "x" for field in properties}), "reasoning_content": "the trace"}
         return litellm.ModelResponse(
             choices=[{"index": 0, "finish_reason": "stop", "message": message}],
             usage={"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10},
@@ -244,6 +244,51 @@ def test_a_model_the_framework_does_not_know_as_a_reasoner_still_sends_no_level(
     for chain_of_thought in (False, True):
         program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": "high"})
         assert module.reasoning_effort == "high" and _sent(program, litellm_calls) == "<absent>"
+
+
+def _answered(program, calls):
+    """What the program's one call answered, as json, and the fields that call's schema asked for."""
+    answered = asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
+    [call] = calls
+    calls.clear()
+    return answered.get_json(), list(call["response_format"]["json_schema"]["schema"]["properties"])
+
+
+def test_a_model_that_reasons_at_a_level_keeps_its_trace_in_thinking_without_the_toggle(monkeypatch, litellm_calls):
+    _registered(monkeypatch)
+    program = asyncio.run(build_program(THINKER, _dataset(), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
+    assert _modules(program, synalinks.ChainOfThought) and _output_fields(program) == ["thinking", "answer"]
+    answered, asked = _answered(program, litellm_calls)
+    # The request is the plain generator's, `thinking` left out of it; the trace fills it after.
+    assert asked == ["answer"] and answered == {"thinking": "the trace", "answer": "x"}
+
+
+PLAIN = "openrouter/acme/plain-1"  # litellm lists no such model
+
+
+@pytest.mark.parametrize(
+    "model, lm_kwargs, block, kept",
+    [
+        (THINKER, {"reasoning_effort": "low"}, {}, True),
+        (THINKER, {"reasoning_effort": "disable"}, {"reasoning_effort": "high"}, True),  # the block's level wins
+        (THINKER, {"reasoning_effort": "disable"}, {}, False),
+        (THINKER, {"reasoning_effort": "high"}, {"reasoning_effort": "disable"}, False),
+        (THINKER, None, {}, False),
+        (PLAIN, {"reasoning_effort": "high"}, {}, False),  # the framework sends it no level, so no trace comes back
+    ],
+)
+def test_only_a_model_that_reasons_at_a_level_keeps_its_trace(monkeypatch, model, lm_kwargs, block, kept):
+    _registered(monkeypatch)
+    program = asyncio.run(build_program(model, _dataset(), dict(block), get("exact_match"), lm_kwargs=lm_kwargs))
+    assert bool(_modules(program, synalinks.ChainOfThought)) is kept
+    assert _output_fields(program) == (["thinking", "answer"] if kept else ["answer"])
+
+
+def test_a_dataset_whose_output_has_its_own_thinking_field_is_left_as_it_is(monkeypatch):
+    _registered(monkeypatch)
+    own = _close_objects({"type": "object", "properties": {"thinking": {"type": "string"}, "answer": {"type": "string"}}, "required": ["thinking", "answer"]})
+    program = asyncio.run(build_program(THINKER, _dataset(output_schema=own), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
+    assert not _modules(program, synalinks.ChainOfThought) and _output_fields(program) == ["thinking", "answer"]
 
 
 def test_max_is_sent_as_the_highest_level_a_generator_takes(monkeypatch, litellm_calls):

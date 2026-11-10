@@ -11,7 +11,7 @@ as an opaque `Program`.
 
 import synalinks
 
-from openarena.programs.utils import language_model as _language_model, safe_name, with_model_effort
+from openarena.programs.utils import answer_layout, keeps_native_trace, language_model as _language_model, safe_name, with_model_effort
 
 
 async def build_program(
@@ -39,6 +39,12 @@ async def build_program(
     model reasons before it answers — without the dataset's schema having to
     make room for it. `answer_layout` counts `thinking` beside the answer, so
     a rule-based reward still scores the answer alone.
+
+    A model that reasons natively at a level gets it with or without the flag
+    (`keeps_native_trace`): its request is the same, the framework fills `thinking`
+    from the reasoning trace instead of asking the model to write it, and the
+    trace is kept with the row. The flag stays what makes any other model write it.
+    A dataset whose own output has a `thinking` field is left as it is.
     """
     inputs = synalinks.Input(
         schema=dataset.input_schema,
@@ -46,9 +52,10 @@ async def build_program(
     )
 
     gen_kwargs = dict(generator_kwargs)
-    module = (
-        synalinks.ChainOfThought if gen_kwargs.pop("chain_of_thought", False) else synalinks.Generator
+    thinking = gen_kwargs.pop("chain_of_thought", False) or (
+        keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and "thinking" not in answer_layout(dataset, "model", gen_kwargs)[0]
     )
+    module = synalinks.ChainOfThought if thinking else synalinks.Generator
     if dataset.output_schema is not None and "schema" not in gen_kwargs:
         gen_kwargs["schema"] = dataset.output_schema
 
