@@ -18,6 +18,11 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     `!function_call:{...}`), which fails to parse on every retry.
     `require_parameters` restricts routing to hosts that honour every parameter
     sent, so either the tools are honoured or the call fails at once.
+
+    A model entry with `reasoning_effort: disable` also gets OpenRouter's
+    `reasoning: {"enabled": false}`, the only way to turn reasoning off there:
+    the framework acts on `disable` only for Ollama, vLLM, SGLang and codex,
+    and sends no level to OpenRouter for it. Any other level adds nothing.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -25,17 +30,47 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
         provider = dict(extra_body.get("provider") or {})
         provider.setdefault("require_parameters", True)
         extra_body["provider"] = provider
+        if kwargs.get("reasoning_effort") == "disable":
+            extra_body.setdefault("reasoning", {"enabled": False})
         kwargs["extra_body"] = extra_body
     return kwargs
 
 
-def language_model(model_id: str, lm_kwargs: dict | None = None):
+# The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`
+# refuses: its top level is `xhigh`.
+_GENERATOR_EFFORT = {"max": "xhigh"}
+
+
+def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
+    """`module_kwargs` for a Generator-based module, with the model's `reasoning_effort` as the module's own.
+
+    `synalinks.Generator` passes its own `reasoning_effort` on every call (`None`,
+    or `"low"` for a `ChainOfThought`), and a value passed per call replaces the
+    `LanguageModel`'s default. The level set on the model entry therefore counts
+    only if the module is given it too. A value the module's block sets wins,
+    and a model with no level adds nothing, so the module keeps its own default.
+    The arena's `max` is passed as `xhigh`, the top level a Generator accepts.
+    """
+    effort = (lm_kwargs or {}).get("reasoning_effort")
+    if effort is None or module_kwargs.get("reasoning_effort") is not None:
+        return module_kwargs
+    return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
+
+
+def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: dict | None = None):
     """What to pass as `language_model=`.
+
+    `module_kwargs` are those of the module the model is built for: a
+    `reasoning_effort` they set replaces the model's, as `with_model_effort`
+    makes it the module's, so the OpenRouter switch follows the level asked for.
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
-    OpenRouter routing of `with_provider_routing`).
+    OpenRouter routing and reasoning switch of `with_provider_routing`).
     """
+    own = (module_kwargs or {}).get("reasoning_effort")
+    if own is not None:
+        lm_kwargs = {**(lm_kwargs or {}), "reasoning_effort": own}
     lm_kwargs = with_provider_routing(model_id, lm_kwargs)
     if not lm_kwargs:
         return model_id

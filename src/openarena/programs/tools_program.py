@@ -20,7 +20,7 @@ from __future__ import annotations
 import synalinks
 
 from openarena.datasets.dataset import TOOLS_FIELD
-from openarena.programs.utils import language_model as _language_model, safe_name
+from openarena.programs.utils import language_model as _language_model, safe_name, with_model_effort
 
 
 class RowToolsGenerator(synalinks.Generator):
@@ -96,9 +96,9 @@ async def build_tools(model_id: str, dataset, tools_kwargs: dict, reward, metric
         kwargs["row_schema"] = dataset.row_schema
     generator = RowToolsGenerator if per_row else synalinks.Generator
     outputs = await generator(
-        language_model=_language_model(model_id, lm_kwargs),
+        language_model=_language_model(model_id, lm_kwargs, kwargs),
         tool_schemas=list(tool_schemas or []),
-        **kwargs,
+        **with_model_effort(lm_kwargs, kwargs),
     )(inputs)
     program = synalinks.Program(inputs=inputs, outputs=outputs, name=f"tools_{safe_name(model_id)}")
     program.compile(reward=reward, metrics=metrics or None)

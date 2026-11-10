@@ -12,7 +12,7 @@ as an opaque `Program`.
 
 import synalinks
 
-from openarena.programs.utils import language_model as _language_model, safe_name
+from openarena.programs.utils import language_model as _language_model, safe_name, with_model_effort
 
 
 class McpToolsUnavailable(RuntimeError):
@@ -55,7 +55,8 @@ async def build_agent(
     the answer alone. Without an output schema the trajectory *is* the answer.
     All other keys are forwarded to `FunctionCallingAgent`,
     except `language_model` / `tools` / `data_model` / `schema` which are
-    set from the model and dataset.
+    set from the model and dataset. The model's `reasoning_effort` is the
+    agent's own, unless the block sets one (`with_model_effort`).
     """
     cfg = dict(agent_config)
 
@@ -113,9 +114,9 @@ async def build_agent(
         data_model=dataset.input_data_model if dataset.input_schema is None else None,
     )
     outputs = await synalinks.FunctionCallingAgent(
-        language_model=_language_model(model_id, lm_kwargs),
+        language_model=_language_model(model_id, lm_kwargs, cfg),
         tools=tools,
-        **cfg,
+        **with_model_effort(lm_kwargs, cfg),
     )(inputs)
     if return_inputs:
         outputs = await synalinks.ops.concat(inputs, outputs, name="inputs_and_answer")

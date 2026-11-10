@@ -259,7 +259,7 @@ passes `check` and stops the run when the program is built.
     and `prompt_template` to the agent. Set here, they apply to every model of
     the evaluation alike. A model's own sampling params belong in
     `models.yaml` ([Models](models.md#params)); set a param in one
-    place, not both. Leave `autonomous` at its default: the run needs the
+    place, not both. A `reasoning_effort` set here wins over a model's own. Leave `autonomous` at its default: the run needs the
     agent to execute the tools itself.
 
 ### How a row runs

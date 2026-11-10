@@ -279,7 +279,7 @@ How much a model that can think does so before answering.
 
 | value | effect |
 |---|---|
-| `disable` | turns native thinking off, for local models that think by default (Ollama's `qwen3`, `deepseek-r1`) |
+| `disable` | turns native thinking off: for local models that think by default (Ollama's `qwen3`, `deepseek-r1`), and on OpenRouter ids, where the request carries `reasoning: {"enabled": false}` |
 | `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
@@ -287,6 +287,25 @@ More effort usually means better answers on hard rows, at the price of more
 output tokens, more cost and more latency. That trade-off is what a
 leaderboard with shares on `cost` and latency weighs. A model that does not
 support the param may ignore it or refuse it.
+
+On a generator, agent or tools dataset the model is asked at its level on every
+call. `max` is sent as `xhigh`, the top level the engine's generator takes. A
+`reasoning_effort` in the dataset's block (`generator:`, `agent:`, `tools:`)
+applies to every model of the evaluation and wins over the model's own, so
+leave it out of the block to compare models on their levels. The level reaches
+the provider only for a model the framework knows can think (litellm lists it
+as a reasoning model, or a local Ollama, vLLM or SGLang server reports it); for
+any other model nothing about thinking is sent. `disable` is the exception: it
+turns thinking off on a local model (Ollama, vLLM, SGLang) and on an OpenRouter
+id, whether or not litellm knows the model. Other hosted providers get nothing
+for it. An Off entry on OpenRouter stops reasoning for real, so its cost,
+latency and score differ from what it gave before.
+
+`chain_of_thought: true` is not native thinking: it has the model write a
+`thinking` field beside its answer. A model with no level is asked for `low`
+with it on, and with it off no level is passed at all. With `disable` and it
+on, the model writes `thinking` itself, with no native reasoning behind it. To
+compare levels, leave it off.
 
 ### `dimensions`
 
@@ -534,7 +553,7 @@ What it reports for a model, and the fix:
 | an option the type does not take, under `params:` (`top_p`, `temperature` on an embedding model) | `Chat models take reasoning_effort, temperature, max_tokens, not top_p` | remove it |
 | a server address or key (`api_base`, `base_url`, `api_key`) | `not a field of a models entry`, fix: `` remove `api_base:`; a base URL is not a model setting: set it in the environment instead (`.env`) `` | set the provider's variable in `.env` (`OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`) |
 | `provider: openai` | `not a field of a models entry` | remove it: the provider is read off the id's prefix |
-| `reasoning_effort: max` | `reasoning_effort: one of disable, low, medium, high` | use one of those |
+| `reasoning_effort: extreme` | `reasoning_effort: one of disable, minimal, low, medium, high, xhigh, max` | use one of those |
 | `temperature: 3` | `temperature: between 0 and 2` | a value in range |
 | `modalities: [video]` | `Input should be 'text', 'image' or 'audio'` | one of those |
 | `tags: OpenAI` | `` `tags:` is a list `` | `tags: [openai]` |
