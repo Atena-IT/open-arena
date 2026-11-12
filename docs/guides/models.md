@@ -294,7 +294,8 @@ call. `max` is sent as `xhigh`, the top level the engine's generator takes. A
 applies to every model of the evaluation and wins over the model's own, so
 leave it out of the block to compare models on their levels. The level reaches
 the provider only for a model the framework knows can think (litellm lists it
-as a reasoning model, or a local Ollama, vLLM or SGLang server reports it); for
+as a reasoning model, OpenRouter lists a `reasoning` parameter for an
+`openrouter/...` id, or a local Ollama, vLLM or SGLang server reports it); for
 any other model nothing about thinking is sent. `disable` is the exception: it
 turns thinking off on a local model (Ollama, vLLM, SGLang) and on an OpenRouter
 id, whether or not litellm knows the model, except one litellm lists as not
@@ -310,7 +311,8 @@ with it on, and with it off no level is passed at all. With `disable` and it
 on, the model writes `thinking` itself, with no native reasoning behind it.
 
 A model that reasons natively at a level (litellm lists it as a reasoning
-model) needs no flag to keep its reasoning. The request is the same either
+model, and for an OpenRouter id OpenRouter lists a `reasoning` parameter for it)
+needs no flag to keep its reasoning. The request is the same either
 way: `thinking` is left out of what the model is asked for (the default
 instructions of a dataset that sets none still list it), and it holds
 the provider's reasoning trace, in the samples and in the traces, with the flag
