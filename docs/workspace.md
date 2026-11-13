@@ -272,8 +272,8 @@ editing the file.
 
     | variable | what it does | default |
     |---|---|---|
-    | `ARENA_HARBOR_SANDBOX` | where trials run: a Harbor environment type (`e2b`, `docker`, `daytona`, `modal`, ...) | `e2b` |
-    | `ARENA_HARBOR_SANDBOX_OPTIONS` | that provider's own settings, a JSON object Harbor hands its environment (`{"namespace": "sandboxes"}` for the Kubernetes one, `ack`) | none |
+    | `ARENA_HARBOR_SANDBOX` | where trials run: a Harbor environment type (`e2b`, `docker`, `daytona`, `modal`, ...); an environment's own `sandbox:` overrides it | `e2b` |
+    | `ARENA_HARBOR_SANDBOX_OPTIONS` | that provider's own settings, a JSON object Harbor hands its environment (`{"namespace": "sandboxes"}` for the Kubernetes one, `ack`); not given to another provider an environment's `sandbox:` names | none |
     | `E2B_API_KEY` | E2B's key. Without it, the `e2b` setting falls back to the local Docker | none |
     | `ARENA_HARBOR_LOCAL_CPUS`, `ARENA_HARBOR_LOCAL_MEMORY_MB` | CPUs and memory a local Docker task gets when its environment sets none | 2, 2048 |
     | `ARENA_HARBOR_LOCAL_TRIALS` | trials at once on the local Docker | 1 |

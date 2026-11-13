@@ -321,7 +321,7 @@ def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
         return Ran()
 
     monkeypatch.setattr(Trial, "create", staticmethod(create))
-    monkeypatch.setattr(harbor_program, "sandbox", lambda: "ack")
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: "ack")
     monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
     monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
     (tmp_path / "task").mkdir()
@@ -536,3 +536,127 @@ def test_a_task_clock_needs_linux_and_whole_seconds(tmp_path, change, says):
     with pytest.raises(Invalid, match=says) as refused:
         task_clock(folder)
     assert str(refused.value).startswith("task 'week': ")
+
+
+# -- a sandbox provider per environment ----------------------------------------
+
+
+def test_an_environment_names_its_sandbox_or_keeps_the_configured_one():
+    assert EnvironmentSpec(docker_image="x").sandbox is None
+    assert EnvironmentSpec(docker_image="x", sandbox=" Docker ").sandbox == "docker"
+    assert EnvironmentSpec(docker_image="x", sandbox="  ").sandbox is None
+    with pytest.raises(ValidationError, match="Harbor has no sandbox 'dokcer'"):
+        EnvironmentSpec(docker_image="x", sandbox="dokcer")
+
+
+def test_check_refuses_an_unknown_sandbox_with_the_known_ones(tmp_path):
+    report = check_file(_write(tmp_path, "environments", {"ok": {"docker_image": "x", "sandbox": "kata"}, "typo": {"docker_image": "x", "sandbox": "dokcer"}}))
+    [problem] = report.problems
+    assert (problem.level, problem.where) == ("error", "environments.typo.sandbox")
+    assert problem.message == "Harbor has no sandbox 'dokcer'"
+    assert "docker" in problem.fix and "e2b" in problem.fix and "kata" in problem.fix
+
+
+def test_a_named_provider_wins_over_the_configured_one(monkeypatch):
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "modal")
+    assert harbor_program.configured_sandbox() == "modal"
+    assert harbor_program.configured_sandbox("Daytona") == "daytona"
+    assert harbor_program.configured_sandbox("") == "modal"
+    monkeypatch.delenv("ARENA_HARBOR_SANDBOX")
+    assert harbor_program.configured_sandbox() == "e2b"
+    with pytest.raises(ValueError, match="no sandbox 'nope'; use one of: .*docker"):
+        harbor_program.configured_sandbox("nope")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "nope")
+    with pytest.raises(ValueError, match="set ARENA_HARBOR_SANDBOX to one of"):
+        harbor_program.configured_sandbox()
+
+
+def test_a_named_provider_falls_back_to_docker_on_its_own(monkeypatch):
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name in ("e2b", "docker"))
+    assert harbor_program.sandbox() == "e2b" and harbor_program.sandbox_note() is None
+    # Daytona has no key here: its tasks run on the local Docker, whatever the configured provider does.
+    assert harbor_program.sandbox("daytona") == "docker"
+    assert harbor_program.sandbox_note("daytona") == "daytona has no credentials set, so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue("daytona") is None
+    assert "no sandbox 'nope'" in harbor_program.sandbox_issue("nope")
+    monkeypatch.setattr(harbor_program, "ready", lambda name: False)
+    assert "daytona has no credentials set" in harbor_program.sandbox_issue("daytona")
+    assert "the docker sandbox provider cannot start" in harbor_program.sandbox_issue("docker")
+
+
+def test_options_go_only_to_the_configured_provider(monkeypatch):
+    from openarena.harbor import environment_config
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
+    # An environment naming the configured provider gets its options; one naming another provider gets none.
+    assert environment_config("ack").kwargs == {"namespace": "arena-sandboxes"}
+    assert environment_config("daytona").kwargs == {}
+
+
+def _ran_trials(monkeypatch, tmp_path, spec):
+    """Run one row of `spec` through `HarborTask`, the trial faked: what each trial was configured with."""
+    import asyncio
+
+    from harbor.trial.trial import Trial
+    from openarena.programs import harbor_program
+    from synalinks.src.backend import JsonDataModel
+
+    seen = []
+
+    class Ran:
+        async def run(self):
+            raise RuntimeError("no sandbox in tests")
+
+    async def create(config):
+        seen.append({"config": config, "task_toml": (Path(config.task.path) / "task.toml").read_text()})
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    task = harbor_program.HarborTask(model="openai/gpt-4o", spec=spec, work_dir=str(tmp_path / "work"))
+    row = JsonDataModel(json={"question": "What is 2+2?", "path": str(tmp_path / "source")}, schema={"type": "object", "properties": {}})
+    assert asyncio.run(task.call(row)) is None  # the faked trial fails: the row is unanswered
+    return seen
+
+
+def test_a_run_uses_its_environments_sandbox_everywhere(monkeypatch, tmp_path):
+    import asyncio
+
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"template": "arena"}')
+    entry = EnvironmentSpec(docker_image="python:3.12-slim", sandbox="docker").model_dump(mode="json")
+    spec = {"agent": "terminus-2", "dataset": "d", "environment": "py", "environment_entry": entry, "mcp_servers": {}}
+    asked = []
+    real = harbor_program.sandbox
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: asked.append(name) or real(name))
+    [trial] = _ran_trials(monkeypatch, tmp_path, spec)
+    assert trial["config"].environment.type == "docker"
+    assert trial["config"].environment.kwargs == {}  # the options are E2B's, the configured provider
+    # The task was written for the local Docker: the CPUs and memory the entry leaves blank get its defaults.
+    assert {"cpus", "memory_mb"} <= set(tomllib.loads(trial["task_toml"])["environment"])
+    assert asked and set(asked) == {"docker"}
+    # And the cell's pre-check asks the environment's provider too.
+    asked.clear()
+    with pytest.raises(ValueError, match="no sandbox 'nope'"):
+        asyncio.run(harbor_program.build_harbor("openai/gpt-4o", None, {"environment_entry": {**entry, "sandbox": "nope"}}, None))
+    assert asked == ["nope"]
+
+
+def test_harbor_tasks_keep_the_configured_sandbox(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"template": "arena"}')
+    source = tmp_path / "source"
+    (source / "environment").mkdir(parents=True)
+    (source / "task.toml").write_text('[environment]\ndocker_image = "python:3.12-slim"\n')
+    (source / "instruction.md").write_text("Say hi.\n")
+    [trial] = _ran_trials(monkeypatch, tmp_path, {"agent": "terminus-2", "dataset": "d", "tasks": True})
+    assert trial["config"].environment.type == "e2b"
+    assert trial["config"].environment.kwargs == {"template": "arena"}
