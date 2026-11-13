@@ -279,7 +279,7 @@ How much a model that can think does so before answering.
 
 | value | effect |
 |---|---|
-| `disable` | turns native thinking off: for local models that think by default (Ollama's `qwen3`, `deepseek-r1`), and on OpenRouter ids, where the request carries `reasoning: {"enabled": false}` (not for a model litellm lists as not reasoning) |
+| `disable` | turns native thinking off, with each provider's own switch (OpenRouter's `reasoning: {"enabled": false}`, Ollama's `think: false`, ...), for a model that reasons; a model that cannot stop reasoning gets its lowest level |
 | `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
@@ -293,16 +293,16 @@ call. `max` is sent as `xhigh`, the top level the engine's generator takes. A
 `reasoning_effort` in the dataset's block (`generator:`, `agent:`, `tools:`)
 applies to every model of the evaluation and wins over the model's own, so
 leave it out of the block to compare models on their levels. The level reaches
-the provider only for a model the framework knows can think (litellm lists it
-as a reasoning model, OpenRouter lists a `reasoning` parameter for an
-`openrouter/...` id, or a local Ollama, vLLM or SGLang server reports it); for
-any other model nothing about thinking is sent. `disable` is the exception: it
-turns thinking off on a local model (Ollama, vLLM, SGLang) and on an OpenRouter
-id, whether or not litellm knows the model, except one litellm lists as not
-reasoning: it has nothing to turn off, and OpenRouter refuses the switch on an
-endpoint with no `reasoning` parameter. Other hosted providers get nothing
-for it. An Off entry on OpenRouter stops reasoning for real, so its cost,
-latency and score differ from what it gave before. A model that must reason
+the provider only for a model the framework knows can think: OpenRouter lists a
+`reasoning` parameter for an `openrouter/...` id, a local Ollama, vLLM or SGLang
+server reports it, or, for another hosted provider, litellm lists it as a
+reasoning model. litellm's table does not decide for an OpenRouter id: it lists
+some as reasoning that OpenRouter serves without it, and the other way round.
+For any other model nothing about thinking is sent, `disable` included: it has
+nothing to turn off, and OpenRouter refuses the switch on an endpoint with no
+`reasoning` parameter. A model that cannot stop reasoning gets its lowest level
+for `disable`. An Off entry stops reasoning for real, so its cost, latency and
+score differ from what it gave before. A model that must reason
 (`openai/gpt-oss-20b`) fails its cells with OpenRouter's own message.
 
 `chain_of_thought: true` is not native thinking: it has the model write a
@@ -310,17 +310,15 @@ latency and score differ from what it gave before. A model that must reason
 with it on, and with it off no level is passed at all. With `disable` and it
 on, the model writes `thinking` itself, with no native reasoning behind it.
 
-A model that reasons natively at a level (litellm lists it as a reasoning
-model, and for an OpenRouter id OpenRouter lists a `reasoning` parameter for it)
-needs no flag to keep its reasoning. The request is the same either
+A model that reasons natively at a level (the framework knows it can think,
+as above) needs no flag to keep its reasoning. The request is the same either
 way: `thinking` is left out of what the model is asked for (the default
 instructions of a dataset that sets none still list it), and it holds
 the provider's reasoning trace, in the samples and in the traces, with the flag
 on or off (empty when the provider returns none). Any other model writes
 `thinking` only with the flag on. Metrics and rewards leave `thinking` out as
-for a chain of thought, and a judge sees it only when the flag is on. A local
-model the framework has to ask (Ollama, vLLM, SGLang) is not covered: with the
-flag off its trace is not kept. To compare levels, leave the flag off.
+for a chain of thought, and a judge sees it only when the flag is on. To
+compare levels, leave the flag off.
 
 ### `dimensions`
 

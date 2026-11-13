@@ -170,7 +170,7 @@ def test_servers_that_give_no_tools_fail_the_cell_with_why(monkeypatch):
 # -- the model's reasoning effort -------------------------------------------------
 
 
-# litellm lists no such model: a test registers it where it needs a reasoning one.
+# OpenRouter lists no such model: a test lists it as a reasoning one where it needs one.
 THINKER = "openrouter/acme/thinker-1"
 
 
@@ -192,8 +192,9 @@ def litellm_calls(monkeypatch):
     return calls
 
 
-def _registered(monkeypatch):
-    monkeypatch.setitem(litellm.model_cost, THINKER, {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": True})
+def _registered(openrouter_models, model=THINKER):
+    """`model` on OpenRouter's list as one that reasons."""
+    openrouter_models[model] = ["reasoning", "response_format"]
 
 
 def _sent(program, calls, key="reasoning_effort"):
@@ -212,8 +213,8 @@ def _generated(model, chain_of_thought=False, lm_kwargs=None, **block):
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
 @pytest.mark.parametrize("effort", ["low", "medium", "high"])
-def test_the_level_set_on_a_model_is_the_one_its_generator_sends(monkeypatch, litellm_calls, effort, chain_of_thought):
-    _registered(monkeypatch)
+def test_the_level_set_on_a_model_is_the_one_its_generator_sends(openrouter_models, monkeypatch, litellm_calls, effort, chain_of_thought):
+    _registered(openrouter_models)
     program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": effort})
     assert module.reasoning_effort == effort and _sent(program, litellm_calls) == effort
 
@@ -225,14 +226,14 @@ def test_off_on_a_model_turns_a_local_models_thinking_off(litellm_calls, chain_o
 
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
-def test_a_level_the_generator_block_sets_wins_over_the_models(monkeypatch, litellm_calls, chain_of_thought):
-    _registered(monkeypatch)
+def test_a_level_the_generator_block_sets_wins_over_the_models(openrouter_models, monkeypatch, litellm_calls, chain_of_thought):
+    _registered(openrouter_models)
     program, module = _generated(THINKER, chain_of_thought, {"reasoning_effort": "high"}, reasoning_effort="medium")
     assert module.reasoning_effort == "medium" and _sent(program, litellm_calls) == "medium"
 
 
-def test_a_model_with_no_level_keeps_the_generators_own_default(monkeypatch, litellm_calls):
-    _registered(monkeypatch)
+def test_a_model_with_no_level_keeps_the_generators_own_default(openrouter_models, monkeypatch, litellm_calls):
+    _registered(openrouter_models)
     for lm_kwargs in (None, {}, {"temperature": 0.0}):
         program, generator = _generated(THINKER, lm_kwargs=lm_kwargs)
         assert generator.reasoning_effort is None and _sent(program, litellm_calls) is None
@@ -254,8 +255,8 @@ def _answered(program, calls):
     return answered.get_json(), list(call["response_format"]["json_schema"]["schema"]["properties"])
 
 
-def test_a_model_that_reasons_at_a_level_keeps_its_trace_in_thinking_without_the_toggle(monkeypatch, litellm_calls):
-    _registered(monkeypatch)
+def test_a_model_that_reasons_at_a_level_keeps_its_trace_in_thinking_without_the_toggle(openrouter_models, monkeypatch, litellm_calls):
+    _registered(openrouter_models)
     program = asyncio.run(build_program(THINKER, _dataset(), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
     assert _modules(program, synalinks.ChainOfThought) and _output_fields(program) == ["thinking", "answer"]
     answered, asked = _answered(program, litellm_calls)
@@ -263,7 +264,7 @@ def test_a_model_that_reasons_at_a_level_keeps_its_trace_in_thinking_without_the
     assert asked == ["answer"] and answered == {"thinking": "the trace", "answer": "x"}
 
 
-PLAIN = "openrouter/acme/plain-1"  # litellm lists no such model
+PLAIN = "openrouter/acme/plain-1"  # OpenRouter lists no such model
 
 
 @pytest.mark.parametrize(
@@ -277,22 +278,22 @@ PLAIN = "openrouter/acme/plain-1"  # litellm lists no such model
         (PLAIN, {"reasoning_effort": "high"}, {}, False),  # the framework sends it no level, so no trace comes back
     ],
 )
-def test_only_a_model_that_reasons_at_a_level_keeps_its_trace(monkeypatch, model, lm_kwargs, block, kept):
-    _registered(monkeypatch)
+def test_only_a_model_that_reasons_at_a_level_keeps_its_trace(openrouter_models, monkeypatch, model, lm_kwargs, block, kept):
+    _registered(openrouter_models)
     program = asyncio.run(build_program(model, _dataset(), dict(block), get("exact_match"), lm_kwargs=lm_kwargs))
     assert bool(_modules(program, synalinks.ChainOfThought)) is kept
     assert _output_fields(program) == (["thinking", "answer"] if kept else ["answer"])
 
 
-def test_a_dataset_whose_output_has_its_own_thinking_field_is_left_as_it_is(monkeypatch):
-    _registered(monkeypatch)
+def test_a_dataset_whose_output_has_its_own_thinking_field_is_left_as_it_is(openrouter_models, monkeypatch):
+    _registered(openrouter_models)
     own = _close_objects({"type": "object", "properties": {"thinking": {"type": "string"}, "answer": {"type": "string"}}, "required": ["thinking", "answer"]})
     program = asyncio.run(build_program(THINKER, _dataset(output_schema=own), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
     assert not _modules(program, synalinks.ChainOfThought) and _output_fields(program) == ["thinking", "answer"]
 
 
-def test_a_dataset_that_returns_an_input_named_thinking_is_left_as_it_is_unless_the_flag_asks_for_it(monkeypatch):
-    _registered(monkeypatch)
+def test_a_dataset_that_returns_an_input_named_thinking_is_left_as_it_is_unless_the_flag_asks_for_it(openrouter_models, monkeypatch):
+    _registered(openrouter_models)
     named = _dataset(input_schema=_close_objects({"type": "object", "properties": {"thinking": {"type": "string"}}, "required": ["thinking"]}))
     program = asyncio.run(build_program(THINKER, named, {"return_inputs": True}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
     assert not _modules(program, synalinks.ChainOfThought)  # no trace kept, no error
@@ -300,8 +301,8 @@ def test_a_dataset_that_returns_an_input_named_thinking_is_left_as_it_is_unless_
         asyncio.run(build_program(THINKER, named, {"return_inputs": True, "chain_of_thought": True}, get("exact_match")))
 
 
-def test_max_is_sent_as_the_highest_level_a_generator_takes(monkeypatch, litellm_calls):
-    _registered(monkeypatch)
+def test_max_is_sent_as_the_highest_level_a_generator_takes(openrouter_models, monkeypatch, litellm_calls):
+    _registered(openrouter_models)
     program, module = _generated(THINKER, lm_kwargs={"reasoning_effort": "max"})
     assert module.reasoning_effort == "xhigh" and _sent(program, litellm_calls) == "xhigh"
 
@@ -338,7 +339,7 @@ def test_the_models_level_fills_a_block_that_leaves_it_unset_and_never_edits_the
 # -- `disable` on OpenRouter, read off the request body ------------------------------
 
 
-# litellm lists neither: the first is registered as a reasoning model by the test, the second is not.
+# OpenRouter lists neither: the first is listed as a reasoning model by the test, the second is not.
 KNOWN, UNKNOWN = THINKER, "openrouter/acme/plain-1"
 
 
@@ -394,25 +395,35 @@ def _posted(model, bodies, chain_of_thought, lm_kwargs):
     return body
 
 
+# litellm's table says otherwise than OpenRouter for many OpenRouter ids: what it says must not count.
+LITELLM_ENTRIES = [None, {"supports_reasoning": True}, {"supports_reasoning": False}]
+
+
+def _in_litellm(monkeypatch, model, entry):
+    if entry is not None:
+        monkeypatch.setitem(litellm.model_cost, model, {"litellm_provider": "openrouter", "mode": "chat", **entry})
+
+
 @pytest.mark.parametrize("chain_of_thought", [False, True])
-@pytest.mark.parametrize("known", [True, False])
-def test_off_turns_openrouter_reasoning_off_whether_or_not_litellm_knows_the_model(monkeypatch, wire, known, chain_of_thought):
-    if known:
-        _registered(monkeypatch)
-    body = _posted(KNOWN if known else UNKNOWN, wire, chain_of_thought, {"reasoning_effort": "disable"})
+@pytest.mark.parametrize("entry", LITELLM_ENTRIES, ids=["unlisted", "reasoning", "not reasoning"])
+def test_off_turns_reasoning_off_for_a_model_openrouter_lists_as_reasoning_whatever_litellm_says(openrouter_models, monkeypatch, wire, entry, chain_of_thought):
+    _registered(openrouter_models)
+    _in_litellm(monkeypatch, KNOWN, entry)
+    body = _posted(KNOWN, wire, chain_of_thought, {"reasoning_effort": "disable"})
     assert body["reasoning"] == {"enabled": False} and "reasoning_effort" not in body
-    assert body["provider"] == {"require_parameters": True}
+    assert body["provider"]["require_parameters"] is True
 
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
-@pytest.mark.parametrize("entry", [{"supports_reasoning": False}, {}], ids=["flag false", "no flag"])
-def test_off_adds_no_reasoning_object_for_a_model_litellm_lists_as_not_reasoning(monkeypatch, wire, entry, chain_of_thought):
+@pytest.mark.parametrize("entry", LITELLM_ENTRIES, ids=["unlisted", "reasoning", "not reasoning"])
+def test_off_adds_no_reasoning_object_for_a_model_openrouter_does_not_list_as_reasoning_whatever_litellm_says(openrouter_models, monkeypatch, wire, entry, chain_of_thought):
     # OpenRouter refuses `reasoning` on an endpoint that has no such parameter (404 under require_parameters),
     # so a model with nothing to turn off must not be sent the switch, from its own level or from the block's.
-    monkeypatch.setitem(litellm.model_cost, UNKNOWN, {"litellm_provider": "openrouter", "mode": "chat", **entry})
+    openrouter_models[UNKNOWN] = ["response_format"]
+    _in_litellm(monkeypatch, UNKNOWN, entry)
     body = _posted(UNKNOWN, wire, chain_of_thought, {"reasoning_effort": "disable"})
     assert "reasoning" not in body and "reasoning_effort" not in body
-    assert body["provider"] == {"require_parameters": True}
+    assert body["provider"]["require_parameters"] is True
     program, _ = _generated(UNKNOWN, chain_of_thought, lm_kwargs=None, reasoning_effort="disable")
     asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
     [body] = wire
@@ -420,23 +431,35 @@ def test_off_adds_no_reasoning_object_for_a_model_litellm_lists_as_not_reasoning
     assert "reasoning" not in body and "reasoning_effort" not in body
 
 
-def test_off_reads_a_variant_id_off_its_base_model(monkeypatch, wire):
-    monkeypatch.setitem(litellm.model_cost, UNKNOWN, {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": False})
-    assert "reasoning" not in _posted(UNKNOWN + ":free", wire, False, {"reasoning_effort": "disable"})
-    # A variant the table lists itself is read as listed, not off its base.
-    monkeypatch.setitem(litellm.model_cost, UNKNOWN + ":think", {"litellm_provider": "openrouter", "mode": "chat", "supports_reasoning": True})
+def test_a_variant_id_is_read_as_openrouter_lists_it(openrouter_models, wire):
+    _registered(openrouter_models, UNKNOWN + ":think")
     assert _posted(UNKNOWN + ":think", wire, False, {"reasoning_effort": "disable"})["reasoning"] == {"enabled": False}
+    _registered(openrouter_models, UNKNOWN)
+    assert "reasoning" not in _posted(UNKNOWN + ":free", wire, False, {"reasoning_effort": "disable"})
+
+
+@pytest.mark.parametrize("chain_of_thought", [False, True])
+@pytest.mark.parametrize("entry", LITELLM_ENTRIES, ids=["unlisted", "reasoning", "not reasoning"])
+def test_a_level_is_forwarded_and_the_trace_kept_as_openrouter_lists_the_model_whatever_litellm_says(openrouter_models, monkeypatch, wire, entry, chain_of_thought):
+    _registered(openrouter_models)
+    _in_litellm(monkeypatch, KNOWN, entry)
+    _in_litellm(monkeypatch, UNKNOWN, entry)
+    assert _posted(KNOWN, wire, chain_of_thought, {"reasoning_effort": "high"})["reasoning_effort"] == "high"
+    assert "reasoning_effort" not in _posted(UNKNOWN, wire, chain_of_thought, {"reasoning_effort": "high"})
+    kept = asyncio.run(build_program(KNOWN, _dataset(), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
+    plain = asyncio.run(build_program(UNKNOWN, _dataset(), {}, get("exact_match"), lm_kwargs={"reasoning_effort": "low"}))
+    assert _output_fields(kept) == ["thinking", "answer"] and _output_fields(plain) == ["answer"]
 
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
 @pytest.mark.parametrize("known", [True, False])
 @pytest.mark.parametrize("effort", ["low", "medium", "high"])
-def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(monkeypatch, wire, effort, known, chain_of_thought):
+def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(openrouter_models, monkeypatch, wire, effort, known, chain_of_thought):
     if known:
-        _registered(monkeypatch)
+        _registered(openrouter_models)
     body = _posted(KNOWN if known else UNKNOWN, wire, chain_of_thought, {"reasoning_effort": effort})
     assert "reasoning" not in body and body.get("reasoning_effort") == (effort if known else None)
-    assert body["provider"] == {"require_parameters": True}
+    assert body["provider"]["require_parameters"] is True
 
 
 def test_a_model_with_no_level_adds_no_reasoning_object(wire):
@@ -444,8 +467,8 @@ def test_a_model_with_no_level_adds_no_reasoning_object(wire):
     assert "reasoning" not in _posted(UNKNOWN, wire, True, {"temperature": 0.0})
 
 
-def test_the_level_a_generator_block_sets_decides_the_reasoning_object_not_the_models(monkeypatch, wire):
-    _registered(monkeypatch)
+def test_the_level_a_generator_block_sets_decides_the_reasoning_object_not_the_models(openrouter_models, monkeypatch, wire):
+    _registered(openrouter_models)
     # Model Off, block high: the block wins, nothing turns reasoning off.
     program, _ = _generated(KNOWN, lm_kwargs={"reasoning_effort": "disable"}, reasoning_effort="high")
     asyncio.run(program(synalinks.JsonDataModel(json={"question": "q"}, schema=Q_SCHEMA)))
@@ -467,18 +490,15 @@ def test_a_provider_other_than_openrouter_gets_no_reasoning_object(wire):
     assert language_model("ollama/qwen3:8b", {"reasoning_effort": "disable"}).default_kwargs == {"reasoning_effort": "disable"}
 
 
-def test_the_reasoning_switch_keeps_the_routing_and_the_entrys_own_extra_body():
-    off = language_model(KNOWN, {"reasoning_effort": "disable", "extra_body": {"provider": {"order": ["a"]}, "seed": 1}})
-    assert off.default_kwargs["extra_body"] == {
-        "provider": {"order": ["a"], "require_parameters": True},
-        "seed": 1,
-        "reasoning": {"enabled": False},
-    }
-    assert "reasoning" not in language_model(KNOWN, {"reasoning_effort": "high"}).default_kwargs["extra_body"]
+def test_the_routing_keeps_the_entrys_own_extra_body_and_adds_no_reasoning_object():
+    for effort in ("disable", "high"):
+        lm = language_model(KNOWN, {"reasoning_effort": effort, "extra_body": {"provider": {"order": ["a"]}, "seed": 1}})
+        assert lm.default_kwargs["extra_body"] == {"provider": {"order": ["a"], "require_parameters": True}, "seed": 1}
 
 
-def test_every_model_built_from_an_entry_carries_the_switch_the_builders_and_the_judges(monkeypatch):
+def test_every_model_built_from_an_entry_is_turned_off_the_builders_and_the_judges(openrouter_models, monkeypatch, wire):
     _mcp(monkeypatch)
+    _registered(openrouter_models)
     off = {"reasoning_effort": "disable"}
     tools = {"tool_schemas": [{"type": "function", "function": {"name": "add", "parameters": {"type": "object", "properties": {}}}}]}
     models = [
@@ -487,7 +507,10 @@ def test_every_model_built_from_an_entry_carries_the_switch_the_builders_and_the
         _modules(asyncio.run(build_agent(KNOWN, _dataset(), {"mcp_servers": SERVERS}, get("exact_match"), lm_kwargs=off)), synalinks.FunctionCallingAgent)[0].language_model,
         build_models({"language_model": {"model": KNOWN, **off}})["language_model"],
     ]
-    assert [m.default_kwargs["extra_body"]["reasoning"] for m in models] == [{"enabled": False}] * 4
+    messages = synalinks.ChatMessages(messages=[synalinks.ChatMessage(role="user", content="q")])
+    for model in models:
+        asyncio.run(model(messages, schema=A_SCHEMA))
+    assert [body["reasoning"] for body in wire] == [{"enabled": False}] * 4
 
 
 # -- what a prediction holds -------------------------------------------------------

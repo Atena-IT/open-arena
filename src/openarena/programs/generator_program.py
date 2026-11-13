@@ -66,7 +66,7 @@ async def build_program(
 
     gen_kwargs = dict(generator_kwargs)
     thinking = gen_kwargs.pop("chain_of_thought", False) or (
-        keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and _fits_thinking(dataset, gen_kwargs)
+        await keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and _fits_thinking(dataset, gen_kwargs)
     )
     if thinking:
         # An explicit chain of thought is refused here as the sweep refuses it, before any trial.

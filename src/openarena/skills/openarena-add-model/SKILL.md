@@ -60,14 +60,13 @@ out to keep the provider's default. Where params actually apply:
 - Model under test on a generator, agent or tools dataset: sent with every call.
   Its `reasoning_effort` is the level it is asked at, unless the dataset's
   block sets its own, which wins for every model of the evaluation (`max` is
-  sent as `xhigh`); `disable` turns thinking off on local models (Ollama,
-  vLLM, SGLang) and on OpenRouter ids (the request carries
-  `reasoning: {"enabled": false}`, except for a model litellm lists as not
-  reasoning), and sends nothing to other hosted
-  providers. `chain_of_thought` is not native thinking, only a written
+  sent as `xhigh`); `disable` turns thinking off with each provider's own
+  switch (OpenRouter's `reasoning: {"enabled": false}`), for a model the
+  framework knows can think: on OpenRouter, one OpenRouter lists with a
+  `reasoning` parameter, whatever litellm says. `chain_of_thought` is not native thinking, only a written
   `thinking` field (with `disable` the model writes it itself): leave it off
-  to compare levels. A model that reasons natively at a level (litellm lists
-  it) keeps its trace in `thinking` whether or not it is on.
+  to compare levels. A model that reasons natively at a level keeps its trace
+  in `thinking` whether or not it is on.
 - Model under test on a Harbor dataset: passed to the agent where it takes them.
 - A judge, a reward's or metric's model, a `default_*_model`: built with its
   entry's params too (an embedding model's `dimensions` included). Give a
