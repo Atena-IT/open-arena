@@ -33,23 +33,22 @@ def _mlflow_tracking_uri(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _openrouter_reports_what_litellm_lists(monkeypatch):
-    """No test asks OpenRouter's model list whether a model reasons: it reports what litellm's table says.
+def openrouter_models(monkeypatch):
+    """OpenRouter's model list as the tests set it: `{model id: supported parameters}`, empty to start.
 
-    For an `openrouter/...` id synalinks reads that list, once per model (`LanguageModel.model_metadata`), and the
-    tests register their own ids in litellm's table, which OpenRouter does not know.
+    For an `openrouter/...` id synalinks asks that list whether the model reasons, once per model
+    (`LanguageModel.model_metadata`); no test reaches OpenRouter. A test that needs a reasoning model adds it
+    with `"reasoning"` among its parameters. litellm's table is not asked for such an id.
     """
-    import litellm
     import synalinks
 
-    if not hasattr(synalinks.LanguageModel, "model_metadata"):
-        return  # an older synalinks reads litellm's table itself
+    listed: dict[str, list[str]] = {}
     asked = synalinks.LanguageModel.model_metadata
 
     async def model_metadata(self):
         if not self.model.startswith("openrouter/"):
             return await asked(self)
-        row = litellm.model_cost.get(self.model) or {}
-        return {"supported_parameters": ["reasoning"] if row.get("supports_reasoning") else []}
+        return {"supported_parameters": listed[self.model]} if self.model in listed else {}
 
     monkeypatch.setattr(synalinks.LanguageModel, "model_metadata", model_metadata)
+    return listed

@@ -19,13 +19,8 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     `require_parameters` restricts routing to hosts that honour every parameter
     sent, so either the tools are honoured or the call fails at once.
 
-    A model entry with `reasoning_effort: disable` also gets OpenRouter's
-    `reasoning: {"enabled": false}`, the only way to turn reasoning off there:
-    the framework acts on `disable` only for Ollama, vLLM, SGLang and codex,
-    and sends no level to OpenRouter for it. Any other level adds nothing. A
-    model litellm lists as one that does not reason gets nothing either: it has
-    nothing to turn off, and under `require_parameters` OpenRouter finds no
-    endpoint that takes the `reasoning` parameter and refuses every call.
+    `reasoning_effort: disable` adds nothing here: the framework sends OpenRouter's
+    `reasoning: {"enabled": false}` itself, to a model OpenRouter lists as reasoning.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -33,24 +28,8 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
         provider = dict(extra_body.get("provider") or {})
         provider.setdefault("require_parameters", True)
         extra_body["provider"] = provider
-        if kwargs.get("reasoning_effort") == "disable" and not _listed_as_not_reasoning(model_id):
-            extra_body.setdefault("reasoning", {"enabled": False})
         kwargs["extra_body"] = extra_body
     return kwargs
-
-
-def _listed_as_not_reasoning(model_id: str) -> bool:
-    """Whether litellm's table lists the model and does not list it as a reasoning model.
-
-    The table is the signal the framework reads before it forwards a level. A
-    model the table does not list is not caught here: its `disable` is sent. An
-    OpenRouter variant (`...:free`, `...:nitro`) the table does not list is read
-    off its base model.
-    """
-    import litellm
-
-    entry = litellm.model_cost.get(model_id) or litellm.model_cost.get(model_id.partition(":")[0])
-    return entry is not None and not entry.get("supports_reasoning")
 
 
 # The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`
@@ -74,23 +53,34 @@ def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
     return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
 
 
-def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwargs: dict | None) -> bool:
+async def supports_reasoning(model_id: str, lm_kwargs: dict | None = None) -> bool:
+    """Whether the framework takes the model for one that reasons natively, the signal it forwards a level on.
+
+    `LanguageModel.supports_reasoning()` asks the provider where it can: OpenRouter's model list for an
+    `openrouter/...` id, the server for Ollama, vLLM and SGLang, litellm's table for the hosted providers.
+    litellm's table is not read here: it lists OpenRouter ids it does not serve as OpenRouter does. The
+    answer is cached per model and process, and the model's own `api_base` is the server asked.
+    """
+    import synalinks
+
+    api_base = (lm_kwargs or {}).get("api_base")
+    return bool(await synalinks.LanguageModel(model=model_id, api_base=api_base).supports_reasoning())
+
+
+async def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwargs: dict | None) -> bool:
     """Whether the model reasons natively at a level the program asks for, so its trace can fill `thinking`.
 
-    The framework forwards a level only for a model litellm lists as reasoning. It then leaves `thinking`
-    out of the schema it sends and fills it from the reasoning trace the provider returns, or with an empty
-    string when it returns none: the request is the same, and the trace is kept. The module's level wins over
-    the model's, as in `with_model_effort`. A model that is not in litellm's table is not covered, nor is a
-    local server the framework would have to ask.
+    The framework forwards a level only for a model it takes for a reasoning one (`supports_reasoning`). It
+    then leaves `thinking` out of the schema it sends and fills it from the reasoning trace the provider
+    returns, or with an empty string when it returns none: the request is the same, and the trace is kept.
+    The module's level wins over the model's, as in `with_model_effort`.
     """
     level = (module_kwargs or {}).get("reasoning_effort")
     if level is None:
         level = (lm_kwargs or {}).get("reasoning_effort")
     if level in (None, "disable"):
         return False
-    import litellm
-
-    return bool(litellm.supports_reasoning(model=model_id))
+    return await supports_reasoning(model_id, lm_kwargs)
 
 
 def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: dict | None = None):
@@ -98,11 +88,11 @@ def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: 
 
     `module_kwargs` are those of the module the model is built for: a
     `reasoning_effort` they set replaces the model's, as `with_model_effort`
-    makes it the module's, so the OpenRouter switch follows the level asked for.
+    makes it the module's, so the model's default is the level asked for.
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
-    OpenRouter routing and reasoning switch of `with_provider_routing`).
+    OpenRouter routing of `with_provider_routing`).
     """
     own = (module_kwargs or {}).get("reasoning_effort")
     if own is not None:
