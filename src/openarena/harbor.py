@@ -491,25 +491,39 @@ def environment_config(sandbox: str):
     return EnvironmentConfig(type=sandbox, kwargs=sandbox_options() if sandbox == configured_sandbox() else {})
 
 
+# Harbor loads most providers' modules without their SDK and records the import as a `_HAS_<SDK>` flag of the
+# module; cua-cloud's alone imports its SDK only as a sandbox starts, with no flag, so it is named here.
+_LAZY_SDKS = {"cua-cloud": "cua_train"}
+
+
 def sandbox_capabilities(name: str) -> dict[str, Any]:
     """What sandbox provider `name` can give: `{installed, gpus, no_network, allowlist}`.
 
-    `installed` is False when Harbor lacks the provider's extra; each other
-    flag is True, False, or None when the provider decides per sandbox (Docker's
-    GPUs depend on the host).
+    `installed` is True when the provider's vendor SDK can be imported here
+    (always, for one that needs none, such as Docker); False when it cannot,
+    or Harbor has no such provider. Whether the provider's credentials are
+    set is `harbor_program.ready`'s to say. Each other flag is True, False,
+    or None when the provider decides per sandbox (Docker's GPUs depend on
+    the host).
     """
+    import importlib.util
+    import sys
+
     from harbor.environments.factory import _load_environment_class
     from harbor.models.environment_type import EnvironmentType
 
     try:
         cls = _load_environment_class(EnvironmentType(name))
-    except ImportError:
+    except (ImportError, ValueError):  # a module that imports its SDK as it loads, or a name Harbor does not have
         return {"installed": False, "gpus": None, "no_network": None, "allowlist": None}
+    sdk = _LAZY_SDKS.get(name)
+    flags = [value for key, value in vars(sys.modules[cls.__module__]).items() if key.startswith("_HAS_")]
+    installed = all(flags) and (sdk is None or importlib.util.find_spec(sdk) is not None)
     try:
         caps = object.__new__(cls).capabilities  # a class constant for most providers
     except Exception:  # noqa: BLE001 - one that reads its instance decides per sandbox
-        return {"installed": True, "gpus": None, "no_network": None, "allowlist": None}
-    return {"installed": True, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
+        return {"installed": installed, "gpus": None, "no_network": None, "allowlist": None}
+    return {"installed": installed, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
 
 
 def environment_problems(spec: EnvironmentSpec, sandbox: str) -> list[str]:
@@ -517,7 +531,7 @@ def environment_problems(spec: EnvironmentSpec, sandbox: str) -> list[str]:
     caps = sandbox_capabilities(sandbox)
     problems = []
     if not caps["installed"]:
-        problems.append(f"Harbor is installed without the {sandbox!r} sandbox provider")
+        problems.append(f"Harbor cannot load the {sandbox!r} sandbox provider: its SDK is not installed")
     if spec.gpus and caps["gpus"] is False:
         problems.append(f"{sandbox} sandboxes have no GPUs, and the environment asks for {spec.gpus}")
     if spec.network_mode == "no-network" and caps["no_network"] is False:

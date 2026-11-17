@@ -264,6 +264,29 @@ def test_a_sandbox_provider_refuses_what_it_cannot_give():
     assert environment_problems(EnvironmentSpec(docker_image="x", gpus=1), "docker") == []
 
 
+def test_a_provider_is_installed_only_when_its_sdk_imports(monkeypatch):
+    import sys
+
+    import harbor.environments.e2b
+    from openarena.harbor import environment_problems, sandbox_capabilities
+
+    # E2B's SDK comes with the engine; Docker needs none.
+    assert sandbox_capabilities("e2b")["installed"] and sandbox_capabilities("docker")["installed"]
+    # Harbor loads its E2B module without the SDK and records the failed import as `_HAS_E2B`.
+    monkeypatch.setattr(harbor.environments.e2b, "_HAS_E2B", False)
+    assert sandbox_capabilities("e2b")["installed"] is False
+    assert environment_problems(EnvironmentSpec(docker_image="x"), "e2b") == ["Harbor cannot load the 'e2b' sandbox provider: its SDK is not installed"]
+    # Harbor's Kubernetes module imports its SDK as it loads: without it, the module itself fails.
+    monkeypatch.delitem(sys.modules, "harbor.environments.ack", raising=False)
+    monkeypatch.setitem(sys.modules, "kubernetes", None)
+    assert sandbox_capabilities("ack")["installed"] is False
+    # cua-cloud imports its SDK only once a sandbox starts.
+    monkeypatch.setitem(sys.modules, "cua_train", None)
+    assert sandbox_capabilities("cua-cloud")["installed"] is False
+    # A provider Harbor does not have.
+    assert sandbox_capabilities("nope")["installed"] is False
+
+
 def test_the_configured_provider_runs_with_its_options_and_the_fallback_without(monkeypatch):
     from openarena.harbor import environment_config
 

@@ -515,6 +515,11 @@ provider names it with `sandbox:` (below).
     credentials, which Harbor checks before a trial. A name Harbor does not
     know is refused, with the list of those it does.
 
+    A cloud provider also needs its SDK, which Harbor's extra for it
+    installs (`pip install 'harbor[daytona]'` for Daytona; `ack` needs the
+    `kubernetes` package): the engine comes with E2B's only. Without it, the
+    provider counts as not installed, and an environment check on it says so.
+
     A provider's own settings go in `ARENA_HARBOR_SANDBOX_OPTIONS`, a JSON
     object Harbor hands its environment as it is (what `harbor run --ek`
     sets). The Kubernetes provider, `ack`, runs each trial as a pod of the
