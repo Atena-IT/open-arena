@@ -121,6 +121,9 @@ Set on the machine (shell or the workspace's `.env`), never in the YAML:
 - `ARENA_HARBOR_SANDBOX`: `e2b` by default, or `docker`, `daytona`, `modal`,
   ... A name Harbor does not know is refused, with the known ones. An
   environment's own `sandbox:` overrides it for that environment's tasks.
+  A cloud provider also needs its SDK, Harbor's extra for it
+  (`pip install 'harbor[daytona]'`; `ack` needs `kubernetes`): without it,
+  trials run on the local Docker, as they do without a key.
 - `ARENA_HARBOR_SANDBOX_OPTIONS`: that provider's own settings, a JSON object
   Harbor hands its environment (`{"namespace": "sandboxes"}` for `ack`, the
   Kubernetes one). Not JSON, or not an object: refused.

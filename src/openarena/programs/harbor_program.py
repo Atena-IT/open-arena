@@ -74,6 +74,7 @@ from openarena.harbor import (
     find_trajectory,
     local_limits,
     local_slot,
+    sandbox_not_installed,
     sandbox_options,
     trajectory_messages,
 )
@@ -138,30 +139,32 @@ def ready(name: str) -> bool:
 
 
 def sandbox(name: str | None = None) -> str:
-    """Where trials on provider `name` (the configured one when None) run: that provider, or the local Docker when it lacks its credentials.
+    """Where trials on provider `name` (the configured one when None) run: that provider, or the local Docker when it is not installed or lacks its credentials.
 
-    A cloud provider without its key (E2B with no `E2B_API_KEY`) is no reason
-    to run nothing: the tasks run on this machine's Docker instead, which
-    needs none. `sandbox_issue` says when neither can start.
+    A cloud provider without its SDK or its key (E2B with no `E2B_API_KEY`)
+    is no reason to run nothing: the tasks run on this machine's Docker
+    instead, which needs neither. `sandbox_issue` says when neither can start.
     """
     name = configured_sandbox(name)
-    if name != LOCAL_SANDBOX and not ready(name):
+    if name != LOCAL_SANDBOX and (sandbox_not_installed(name) or not ready(name)):
         return LOCAL_SANDBOX
     return name
 
 
 def sandbox_note(name: str | None = None) -> str | None:
-    """One sentence when tasks on provider `name` do not run there (its key is missing), else None."""
+    """One sentence when tasks on provider `name` do not run there (its SDK or its key is missing), else None."""
     name = configured_sandbox(name)
-    used = sandbox(name)
-    return f"{name} has no credentials set, so tasks run on the local Docker instead" if used != name else None
+    if sandbox(name) == name:
+        return None
+    why = sandbox_not_installed(name) or f"{name} has no credentials set"
+    return f"{why}, so tasks run on the local Docker instead"
 
 
 def sandbox_issue(name: str | None = None) -> str | None:
     """Why no task on provider `name` (the configured one when None) can start, as one sentence, or None.
 
-    An unknown provider or malformed options, or a provider without
-    credentials and no Docker to fall back to. The options are checked
+    An unknown provider or malformed options, or a provider without its SDK
+    or credentials and no Docker to fall back to. The options are checked
     whichever provider ends up running: a malformed
     `ARENA_HARBOR_SANDBOX_OPTIONS` is a mistake to fix, not one the Docker
     fallback (which gets none) should hide.
@@ -175,7 +178,8 @@ def sandbox_issue(name: str | None = None) -> str | None:
     if ready(used):
         return None
     if used != name:
-        return f"{name} has no credentials set, and the local Docker it falls back to is not available to the backend either"
+        why = sandbox_not_installed(name) or f"{name} has no credentials set"
+        return f"{why}, and the local Docker it falls back to is not available to the backend either"
     return f"the {name} sandbox provider cannot start: Harbor's pre-flight check refused it"
 
 
