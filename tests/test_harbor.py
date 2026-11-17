@@ -318,6 +318,23 @@ def test_an_environment_on_a_provider_without_its_sdk_says_so(monkeypatch):
     assert harbor_program.sandbox_issue(spec.sandbox) == f"{missing}, and the local Docker it falls back to is not available to the backend either"
 
 
+def test_a_provider_whose_sdk_breaks_on_import_falls_back_with_the_reason(monkeypatch, tmp_path):
+    from harbor.environments import factory
+    from harbor.models.environment_type import EnvironmentType
+    from openarena.harbor import sandbox_capabilities
+    from openarena.programs import harbor_program
+
+    # An SDK installed but broken: the provider's module raises something other than ImportError as it loads.
+    (tmp_path / "broken_modal_env.py").write_text('raise TypeError("protobuf clash")\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(factory._ENVIRONMENT_REGISTRY, EnvironmentType.MODAL, factory._EnvEntry("broken_modal_env", "ModalEnvironment", "modal"))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name == "docker")
+    assert sandbox_capabilities("modal")["installed"] is False
+    assert harbor_program.sandbox("modal") == "docker"
+    assert harbor_program.sandbox_note("modal") == "modal cannot be loaded: protobuf clash (pip install 'harbor[modal]'), so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue("modal") is None
+
+
 def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():
     import sys
 

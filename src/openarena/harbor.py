@@ -512,7 +512,7 @@ def sandbox_not_installed(name: str) -> str | None:
     hint = f" (pip install 'harbor[{extra}]')" if extra else ""
     try:
         cls = _load_environment_class(EnvironmentType(name))
-    except (ImportError, ValueError) as e:  # a module that imports its SDK as it loads, or a name Harbor does not have
+    except Exception as e:  # noqa: BLE001 - an SDK the module imports as it loads, missing or broken, or a name Harbor does not have
         return f"{name} cannot be loaded: {e.__cause__ or e}{hint}"
     sdk = _LAZY_SDKS.get(name)
     try:
@@ -539,7 +539,7 @@ def sandbox_capabilities(name: str) -> dict[str, Any]:
     installed = sandbox_not_installed(name) is None
     try:
         cls = _load_environment_class(EnvironmentType(name))
-    except (ImportError, ValueError):
+    except Exception:  # noqa: BLE001 - not installed: `sandbox_not_installed` says why
         return {"installed": False, "gpus": None, "no_network": None, "allowlist": None}
     try:
         caps = object.__new__(cls).capabilities  # a class constant for most providers
@@ -551,9 +551,8 @@ def sandbox_capabilities(name: str) -> dict[str, Any]:
 def environment_problems(spec: EnvironmentSpec, sandbox: str) -> list[str]:
     """What of `spec` sandbox provider `sandbox` cannot give, one sentence each: every trial would fail on it."""
     caps = sandbox_capabilities(sandbox)
-    problems = []
-    if not caps["installed"]:
-        problems.append(sandbox_not_installed(sandbox))
+    missing = sandbox_not_installed(sandbox)
+    problems = [missing] if missing else []
     if spec.gpus and caps["gpus"] is False:
         problems.append(f"{sandbox} sandboxes have no GPUs, and the environment asks for {spec.gpus}")
     if spec.network_mode == "no-network" and caps["no_network"] is False:
