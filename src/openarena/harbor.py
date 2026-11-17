@@ -492,7 +492,8 @@ def environment_config(sandbox: str):
 
 
 # Harbor loads most providers' modules without their SDK and records the import as a `_HAS_<SDK>` flag of the
-# module; cua-cloud's alone imports its SDK only as a sandbox starts, with no flag, so it is named here.
+# module (or its base class's: wandb also needs cwsandbox's); cua-cloud's alone imports its SDK only as a sandbox
+# starts, with no flag, so it is named here.
 _LAZY_SDKS = {"cua-cloud": "cua_train"}
 
 
@@ -519,7 +520,8 @@ def sandbox_not_installed(name: str) -> str | None:
         found = sdk is None or importlib.util.find_spec(sdk) is not None
     except (ImportError, ValueError):  # a broken module, or a stub without a spec, under that name
         found = False
-    flags = [value for key, value in vars(sys.modules[cls.__module__]).items() if key.startswith("_HAS_")]
+    modules = {sys.modules[base.__module__] for base in cls.__mro__}
+    flags = [value for module in modules for key, value in vars(module).items() if key.startswith("_HAS_")]
     return None if all(flags) and found else f"{name}'s SDK is not installed{hint}"
 
 

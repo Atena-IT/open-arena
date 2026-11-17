@@ -335,6 +335,18 @@ def test_a_provider_whose_sdk_breaks_on_import_falls_back_with_the_reason(monkey
     assert harbor_program.sandbox_issue("modal") is None
 
 
+def test_a_provider_needs_the_sdk_of_its_base_class_too(monkeypatch):
+    import harbor.environments.cwsandbox
+    import harbor.environments.wandb
+    from openarena.harbor import sandbox_not_installed
+
+    monkeypatch.setattr(harbor.environments.wandb, "_HAS_WANDB_SANDBOX", True)
+    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", False)
+    assert sandbox_not_installed("wandb") == "wandb's SDK is not installed (pip install 'harbor[wandb]')"
+    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", True)
+    assert sandbox_not_installed("wandb") is None
+
+
 def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():
     import sys
 
@@ -343,10 +355,11 @@ def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():
 
     # A module found with no `_HAS_*` flag counts as installed: a Harbor that renames a flag must fail here, not
     # call that provider installed again. A provider with no extra needs no SDK; a module that imports its SDK as it
-    # loads fails without it, and is skipped. shortcut: such a module whose SDK is installed here would be flagged.
+    # loads fails without it, and is skipped, or loads with it and is named here.
+    eager = {"islo", "tensorlake", "runta", "prime", "smol"}
     unflagged = []
     for kind, entry in _ENVIRONMENT_REGISTRY.items():
-        if entry.pip_extra is None or kind.value in _LAZY_SDKS:
+        if entry.pip_extra is None or kind.value in _LAZY_SDKS or kind.value in eager:
             continue
         try:
             cls = _load_environment_class(kind)
