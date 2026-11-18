@@ -27,7 +27,7 @@ import sys
 import traceback
 import warnings
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Mapping
 
 import numpy as np
 import synalinks
@@ -46,7 +46,8 @@ from openarena.callbacks.otel import OtelCallback  # noqa: E402
 from openarena.config import Config, MetricEntry  # noqa: E402
 from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
-from openarena.lookups.prices import ensure_priced  # noqa: E402
+from openarena.list_cost import list_usage, models_of, snapshot  # noqa: E402
+from openarena.lookups.prices import ensure_priced, is_priced_at  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent  # noqa: E402
@@ -63,6 +64,18 @@ class SweepCancelled(keras_tuner.errors.FatalError):
     Subclasses keras-tuner's `FatalError` so the tuner re-raises it instead
     of recording a failed trial and moving on to the next model.
     """
+
+
+class PriceFactorLost(keras_tuner.errors.FatalError):
+    """A model of the run is no longer charged at the price factor the run was given.
+
+    litellm can replace its price table under a run; from then on the model's
+    calls are charged at its list price. The sweep stops, as on a
+    cancellation, rather than go on at a price its host did not ask for.
+    """
+
+    def __init__(self, model: str):
+        super().__init__(f"{model} is no longer charged at the price factor this run was given; the run was stopped")
 
 
 # What a cell has spent so far, forwarded with every batch so a run page can
@@ -112,35 +125,56 @@ def _scalars(metrics: dict, where: str) -> dict[str, float]:
 class _ProgressCallback(synalinks.callbacks.Callback):
     """Forward `program.evaluate` batch events to `on_event` for one cell."""
 
-    def __init__(self, on_event, ds_name, model, ds):
+    def __init__(self, on_event, ds_name, model, ds, program=None, price_factors=None):
         super().__init__()
         self._on_event = on_event
         self._ds_name = ds_name
         self._model = model
         self._ds = ds
         self._batches_total = None
+        # A run given price factors also says what the cell's calls cost at list price (`list_cost`).
+        self._price_factors = dict(price_factors or {})
+        self._cell_program = program
+        self._models: list = []
+        self._baseline: list = []
 
     def _emit(self, event, **fields):
         self._on_event(
             {"event": event, "dataset": self._ds_name, "model": self._model, **fields}
         )
 
+    def _list_usage(self) -> dict:
+        """`{"list_usage": ...}` for a run given price factors, else nothing; `PriceFactorLost` when one no longer holds."""
+        if not self._price_factors:
+            return {}
+        # Asked first: a cost charged at list price must not be divided by the factor and reported.
+        for model, factor in self._price_factors.items():
+            if not is_priced_at(model, factor):
+                raise PriceFactorLost(model)
+        return {"list_usage": list_usage(self._models, self._baseline, self._price_factors)}
+
     def on_test_begin(self, logs=None):
         self._batches_total = _num_batches(self._ds)
+        if self._price_factors and self._cell_program is not None:
+            self._models = models_of(self._cell_program)
+            self._baseline = snapshot(self._models)
 
     def on_test_batch_end(self, batch, logs=None):
         logs = logs or {}
         reward = logs.get("reward")
+        listed = self._list_usage()
         self._emit(
             "batch",
             batch=int(batch) + 1,
             batches_total=self._batches_total,
             reward=float(reward) if isinstance(reward, (int, float)) else None,
             usage=_usage(logs),
+            **listed,
         )
 
     def on_test_end(self, logs=None):
-        self._emit("cell_end", metrics=_scalars(logs or {}, f"{self._ds_name} · {self._model}"))
+        listed = self._list_usage()
+        self._emit("cell_end", metrics=_scalars(logs or {}, f"{self._ds_name} · {self._model}"), **listed)
 
 
 class _RunMonitor(synalinks.callbacks.Monitor):
@@ -724,6 +758,7 @@ async def run_sweep(
     mlflow_experiment: str | None = None,
     mlflow_tracking_uri: str | None = None,
     mlflow_tags: dict | None = None,
+    price_factors: Mapping[str, float] | None = None,
 ) -> dict:
     """Run the full sweep and return the JSON-serializable result dict.
 
@@ -734,6 +769,21 @@ async def run_sweep(
     (model), `batch` (batch, batches_total, running reward), `cell_end`
     (metrics), `dataset_end` (statuses per model) and `sweep_end`. Raising
     `SweepCancelled` from it aborts the sweep.
+
+    `price_factors`, when given, has the calls to some of the run's models
+    charged at their list price times a factor: `{model id: factor}`, the ids
+    as the run's config spells them. Every figure of the run (cost metrics,
+    spans, traces) is then the charged one, and `batch` and `cell_end` also
+    carry `list_usage`: what the cell's calls cost at list price so far,
+    `{model id: {cost name: USD}}`, for every model the cell called. The cost
+    names are the framework's (`cost`, `reward_cost`, `embedding_cost`,
+    `reward_embedding_cost`); the model id is the one on the model object,
+    which the framework rewrites for a few providers of local servers. The
+    run is never charged at list price without a word: a factor for a model
+    the run does not call, or one that cannot be applied, raises `ValueError`
+    before the first cell; a model that stops being charged at its factor
+    while the run goes raises `PriceFactorLost` at the end of that batch,
+    which is not reported.
 
     `on_sample`, with `samples_per_cell > 0`, receives the first rows of each
     `(model, dataset)` cell as `{dataset, model, index, input, target,
@@ -789,8 +839,15 @@ async def run_sweep(
     # The run's spend is litellm's price of each call: every model it may call
     # (the ones under test, the judges) is priced from the first source that
     # knows it, not only litellm's live table (lookups/prices.py).
+    # A host may have some of them charged at a factor; a factor that would not be applied stops the run here.
+    factors = dict(price_factors or {})
+    if unknown := sorted(set(factors) - {entry.model for entry in cfg.models.values()}):
+        raise ValueError(f"price factors given for models this run does not call: {', '.join(unknown)}")
     for entry in cfg.models.values():
-        ensure_priced(entry.model, MODEL_TYPES[entry.type].litellm_mode)
+        factor = factors.get(entry.model)
+        ensure_priced(entry.model, MODEL_TYPES[entry.type].litellm_mode, factor)
+        if factor is not None and not is_priced_at(entry.model, factor):
+            raise ValueError(f"the price factor of {entry.model} could not be applied: its calls would be charged at list price")
 
     # Optional process-wide reproducibility seed. `set_seed`
     # seeds both `numpy.random` and `random` — LM sampling temperature is
@@ -1100,13 +1157,14 @@ async def run_sweep(
             # The run's `batch_size` (else its evaluation's) overrides the dataset's own; with neither, one row.
             view.batch_size = batch_size or cfg.batch_size or view.batch_size or 1
             # The trace destinations' hook, on the program and its judges: idle outside `use_tracing`.
-            callbacks = [OtelCallback(), _ProgressCallback(emit, item["name"], model_id, view)]
             # Built as the cell starts, not with the grid: a program and what it opens live for one cell.
             if model_id not in item["programs"] and model_id not in item["broken"]:
                 await item["build"](model_id)
+            program = item["programs"].get(model_id)
+            callbacks = [OtelCallback(), _ProgressCallback(emit, item["name"], model_id, view, program, factors)]
             # A cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
             # A cell whose program could not be built has no program: its trial raises why.
-            if (program := item["programs"].get(model_id)) is not None:
+            if program is not None:
                 callbacks.insert(0, no_answer_guard(program) or _NoAnswerGuard(program))
             if mlflow_experiment and synalinks.is_observability_enabled():
                 callbacks.append(

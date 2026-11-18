@@ -10,7 +10,9 @@ models gets a row of the arena's own, `arena: <id>`, at the arena's price
 (`lookups.prices.model_price`): written when missing, rewritten when the price
 moved. That is the model's list price; OpenRouter bills each call at the provider
 it picked, so the exact cost rides on each call too, as metadata (`arena_cost_usd`,
-`otel._cost_attributes`).
+`otel._cost_attributes`). A model whose calls the run charges at a price factor
+(`price_models(..., price_factors=)`) gets its row at the list price times that
+factor: the row then shows what the run is charged.
 """
 
 from __future__ import annotations
@@ -21,7 +23,8 @@ import math
 import re
 import urllib.parse
 import urllib.request
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from types import SimpleNamespace
 
 from openarena.hooks.otel import TraceConfig
 from openarena.lookups.prices import model_price
@@ -59,11 +62,13 @@ def _table(endpoint: str) -> str:
     return f"{base}/api/v1/model-price-map"
 
 
-def _price(api: str, key: str, model: str) -> None:
-    price = model_price(model)
+def _price(api: str, key: str, model: str, factor: float = 1.0) -> None:
+    listed = model_price(model)
     # Unknown is not free, and a local server has no bill: no row for either.
-    if price is None or not price.complete or price.source == "local":
+    if listed is None or not listed.complete or listed.source == "local":
         return
+    # What the run is charged: the list price, times the model's factor when it has one.
+    price = SimpleNamespace(input=listed.input * factor, output=listed.output * factor)
     cache = (api, key, model)
     known = _written.get(cache)
     if known and known[0] == (price.input, price.output):
@@ -90,9 +95,15 @@ def _price(api: str, key: str, model: str) -> None:
     _written[cache] = ((price.input, price.output), row_id)
 
 
-def price_models(config: TraceConfig, models: Iterable[str]) -> None:
-    """Give each model a row of LangSmith's price table, for every LangSmith destination in `config`; never fails."""
+def price_models(
+    config: TraceConfig, models: Iterable[str], price_factors: Mapping[str, float] | None = None
+) -> None:
+    """Give each model a row of LangSmith's price table, for every LangSmith destination in `config`; never fails.
+
+    `price_factors` are the ones the run is given (`evaluate.run_sweep`): a model in it gets its row at the charged price.
+    """
     models = sorted({m for m in models if m})
+    factors = price_factors or {}
     for destination in config.destinations:
         if destination.name != "langsmith":
             continue
@@ -100,7 +111,7 @@ def price_models(config: TraceConfig, models: Iterable[str]) -> None:
         key = dict(destination.headers).get("x-api-key", "")
         for model in models:
             try:
-                _price(api, key, model)
+                _price(api, key, model, factors.get(model, 1.0))
             # A price LangSmith did not take never stops the run: its calls show no cost there.
             # The first failure ends this destination's turn, so a LangSmith that does not
             # answer delays the run by one timeout, not one per model.
