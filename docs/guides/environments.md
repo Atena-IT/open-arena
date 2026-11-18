@@ -515,6 +515,13 @@ provider names it with `sandbox:` (below).
     credentials, which Harbor checks before a trial. A name Harbor does not
     know is refused, with the list of those it does.
 
+    A cloud provider also needs its SDK, which Harbor's extra for it
+    installs (`pip install 'harbor[daytona]'` for Daytona; `ack` needs the
+    `kubernetes` package). The engine depends on E2B's; a few others come
+    with its other dependencies (boto3, for `ec2`). A provider whose SDK is
+    missing counts as not installed, and its tasks run on the local Docker,
+    as they do when its credentials are missing.
+
     A provider's own settings go in `ARENA_HARBOR_SANDBOX_OPTIONS`, a JSON
     object Harbor hands its environment as it is (what `harbor run --ek`
     sets). The Kubernetes provider, `ack`, runs each trial as a pod of the
@@ -531,7 +538,8 @@ provider names it with `sandbox:` (below).
     run on. The local Docker a trial falls back to gets none of them.
 
 !!! warning "The silent fallback"
-    When the configured provider cannot start (E2B with no `E2B_API_KEY`),
+    When the configured provider cannot start (E2B with no `E2B_API_KEY`, or
+    a provider whose SDK is not installed),
     trials run on the local Docker instead. That keeps a first run working,
     but it also changes the defaults: local resource limits, one trial at a
     time. When neither can start, the run is refused.

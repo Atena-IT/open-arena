@@ -433,8 +433,8 @@ warning in the run's log. See [Models](models.md).
 ## Where it runs
 
 `ARENA_HARBOR_SANDBOX` names the sandbox provider (`e2b`, `docker`,
-`daytona`, `modal`, ...), `e2b` by default. Without `E2B_API_KEY`, trials
-fall back to the local Docker. With neither, the run refuses to start. A
+`daytona`, `modal`, ...), `e2b` by default. Without the provider's key
+(`E2B_API_KEY`) or its SDK, trials fall back to the local Docker. With neither, the run refuses to start. A
 provider name Harbor does not know fails the run with the list of known ones.
 Task folders bring their own environment, so they always run on this
 provider; an environments.yaml entry's `sandbox:` applies to datasets over

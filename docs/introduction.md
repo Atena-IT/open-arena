@@ -385,7 +385,7 @@ An evaluation is a grid: every model on every dataset. A few rules of thumb:
   your machine.
 - **Harbor trials run in a sandbox**: the provider named by
   `ARENA_HARBOR_SANDBOX`, E2B by default (with an `E2B_API_KEY`), and the
-  local Docker when that provider has no credentials.
+  local Docker when that provider has no credentials or no SDK.
 
 ## The arena
 

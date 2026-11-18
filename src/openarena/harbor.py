@@ -491,33 +491,70 @@ def environment_config(sandbox: str):
     return EnvironmentConfig(type=sandbox, kwargs=sandbox_options() if sandbox == configured_sandbox() else {})
 
 
+# Harbor loads most providers' modules without their SDK and records the import as a `_HAS_<SDK>` flag of the
+# module (or its base class's: wandb also needs cwsandbox's); cua-cloud's alone imports its SDK only as a sandbox
+# starts, with no flag, so it is named here.
+_LAZY_SDKS = {"cua-cloud": "cua_train"}
+
+
+def sandbox_not_installed(name: str) -> str | None:
+    """Why sandbox provider `name` is not installed here, its vendor SDK not importable, as one sentence; None when it is.
+
+    A provider that needs no SDK (Docker) is always installed. The sentence
+    names Harbor's extra for the provider when it has one.
+    """
+    import importlib.util
+    import sys
+
+    from harbor.environments.factory import _ENVIRONMENT_REGISTRY, _load_environment_class
+    from harbor.models.environment_type import EnvironmentType
+
+    extra = next((e.pip_extra for t, e in _ENVIRONMENT_REGISTRY.items() if t.value == name), None)
+    hint = f" (pip install 'harbor[{extra}]')" if extra else ""
+    try:
+        cls = _load_environment_class(EnvironmentType(name))
+    except Exception as e:  # noqa: BLE001 - an SDK the module imports as it loads, missing or broken, or a name Harbor does not have
+        return f"{name} cannot be loaded: {e.__cause__ or e}{hint}"
+    sdk = _LAZY_SDKS.get(name)
+    try:
+        found = sdk is None or importlib.util.find_spec(sdk) is not None
+    except (ImportError, ValueError):  # a broken module, or a stub without a spec, under that name
+        found = False
+    modules = {sys.modules[base.__module__] for base in cls.__mro__}
+    flags = [value for module in modules for key, value in vars(module).items() if key.startswith("_HAS_")]
+    return None if all(flags) and found else f"{name}'s SDK is not installed{hint}"
+
+
 def sandbox_capabilities(name: str) -> dict[str, Any]:
     """What sandbox provider `name` can give: `{installed, gpus, no_network, allowlist}`.
 
-    `installed` is False when Harbor lacks the provider's extra; each other
-    flag is True, False, or None when the provider decides per sandbox (Docker's
-    GPUs depend on the host).
+    `installed` is True when the provider's vendor SDK can be imported here
+    (always, for one that needs none, such as Docker); False when it cannot,
+    or Harbor has no such provider (`sandbox_not_installed` says why).
+    Whether the provider's credentials are set is `harbor_program.ready`'s
+    to say. Each other flag is True, False, or None when the provider
+    decides per sandbox (Docker's GPUs depend on the host).
     """
     from harbor.environments.factory import _load_environment_class
     from harbor.models.environment_type import EnvironmentType
 
+    installed = sandbox_not_installed(name) is None
     try:
         cls = _load_environment_class(EnvironmentType(name))
-    except ImportError:
+    except Exception:  # noqa: BLE001 - not installed: `sandbox_not_installed` says why
         return {"installed": False, "gpus": None, "no_network": None, "allowlist": None}
     try:
         caps = object.__new__(cls).capabilities  # a class constant for most providers
     except Exception:  # noqa: BLE001 - one that reads its instance decides per sandbox
-        return {"installed": True, "gpus": None, "no_network": None, "allowlist": None}
-    return {"installed": True, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
+        return {"installed": installed, "gpus": None, "no_network": None, "allowlist": None}
+    return {"installed": installed, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
 
 
 def environment_problems(spec: EnvironmentSpec, sandbox: str) -> list[str]:
     """What of `spec` sandbox provider `sandbox` cannot give, one sentence each: every trial would fail on it."""
     caps = sandbox_capabilities(sandbox)
-    problems = []
-    if not caps["installed"]:
-        problems.append(f"Harbor is installed without the {sandbox!r} sandbox provider")
+    missing = sandbox_not_installed(sandbox)
+    problems = [missing] if missing else []
     if spec.gpus and caps["gpus"] is False:
         problems.append(f"{sandbox} sandboxes have no GPUs, and the environment asks for {spec.gpus}")
     if spec.network_mode == "no-network" and caps["no_network"] is False:

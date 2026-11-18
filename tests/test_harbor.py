@@ -264,6 +264,112 @@ def test_a_sandbox_provider_refuses_what_it_cannot_give():
     assert environment_problems(EnvironmentSpec(docker_image="x", gpus=1), "docker") == []
 
 
+def test_a_provider_is_installed_only_when_its_sdk_imports(monkeypatch):
+    import importlib.machinery
+    import sys
+    import types
+
+    import harbor.environments.e2b
+    from openarena.harbor import environment_problems, sandbox_capabilities, sandbox_not_installed
+
+    # E2B's SDK comes with the engine; Docker needs none.
+    assert sandbox_capabilities("e2b")["installed"] and sandbox_capabilities("docker")["installed"]
+    # Harbor loads its E2B module without the SDK and records the failed import as `_HAS_E2B`.
+    monkeypatch.setattr(harbor.environments.e2b, "_HAS_E2B", False)
+    assert sandbox_capabilities("e2b")["installed"] is False
+    assert environment_problems(EnvironmentSpec(docker_image="x"), "e2b") == ["e2b's SDK is not installed (pip install 'harbor[e2b]')"]
+    # Harbor's Kubernetes module imports its SDK as it loads: without it, the module itself fails, and the reason is kept.
+    monkeypatch.delitem(sys.modules, "harbor.environments.ack", raising=False)
+    monkeypatch.setitem(sys.modules, "kubernetes", None)
+    assert sandbox_capabilities("ack")["installed"] is False
+    assert sandbox_not_installed("ack").startswith("ack cannot be loaded: ") and "kubernetes" in sandbox_not_installed("ack")
+    # cua-cloud imports its SDK only once a sandbox starts: there, missing, or a stub with no spec to tell.
+    sdk = types.ModuleType("cua_train")
+    sdk.__spec__ = importlib.machinery.ModuleSpec("cua_train", None)
+    monkeypatch.setitem(sys.modules, "cua_train", sdk)
+    assert sandbox_capabilities("cua-cloud")["installed"] is True
+    monkeypatch.setitem(sys.modules, "cua_train", None)
+    assert sandbox_not_installed("cua-cloud") == "cua-cloud's SDK is not installed (pip install 'harbor[cua]')"
+    monkeypatch.setitem(sys.modules, "cua_train", types.ModuleType("cua_train"))
+    assert sandbox_capabilities("cua-cloud")["installed"] is False
+    # A provider Harbor does not have.
+    assert sandbox_capabilities("nope")["installed"] is False
+    assert "'nope' is not a valid EnvironmentType" in sandbox_not_installed("nope")
+
+
+def test_an_environment_on_a_provider_without_its_sdk_says_so(monkeypatch):
+    import harbor.environments.e2b
+    from openarena.harbor import environment_problems
+    from openarena.programs import harbor_program
+
+    # The environment names E2B, whose key is set but whose SDK is missing.
+    spec = EnvironmentSpec(docker_image="x", sandbox="e2b")
+    monkeypatch.setattr(harbor.environments.e2b, "_HAS_E2B", False)
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    missing = "e2b's SDK is not installed (pip install 'harbor[e2b]')"
+    # Its tasks run on the local Docker, and the note gives that reason, not missing credentials.
+    assert harbor_program.sandbox(spec.sandbox) == "docker"
+    assert harbor_program.sandbox_note(spec.sandbox) == f"{missing}, so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue(spec.sandbox) is None
+    # Asked of E2B itself, the environment check refuses it for the same reason.
+    assert environment_problems(spec, spec.sandbox) == [missing]
+    # With no Docker to fall back to either, no task can start, and the reason is the same.
+    monkeypatch.setattr(harbor_program, "ready", lambda name: False)
+    assert harbor_program.sandbox_issue(spec.sandbox) == f"{missing}, and the local Docker it falls back to is not available to the backend either"
+
+
+def test_a_provider_whose_sdk_breaks_on_import_falls_back_with_the_reason(monkeypatch, tmp_path):
+    from harbor.environments import factory
+    from harbor.models.environment_type import EnvironmentType
+    from openarena.harbor import sandbox_capabilities
+    from openarena.programs import harbor_program
+
+    # An SDK installed but broken: the provider's module raises something other than ImportError as it loads.
+    (tmp_path / "broken_modal_env.py").write_text('raise TypeError("protobuf clash")\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(factory._ENVIRONMENT_REGISTRY, EnvironmentType.MODAL, factory._EnvEntry("broken_modal_env", "ModalEnvironment", "modal"))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name == "docker")
+    assert sandbox_capabilities("modal")["installed"] is False
+    assert harbor_program.sandbox("modal") == "docker"
+    assert harbor_program.sandbox_note("modal") == "modal cannot be loaded: protobuf clash (pip install 'harbor[modal]'), so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue("modal") is None
+
+
+def test_a_provider_needs_the_sdk_of_its_base_class_too(monkeypatch):
+    import harbor.environments.cwsandbox
+    import harbor.environments.wandb
+    from openarena.harbor import sandbox_not_installed
+
+    monkeypatch.setattr(harbor.environments.wandb, "_HAS_WANDB_SANDBOX", True)
+    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", False)
+    assert sandbox_not_installed("wandb") == "wandb's SDK is not installed (pip install 'harbor[wandb]')"
+    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", True)
+    assert sandbox_not_installed("wandb") is None
+
+
+def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():
+    import sys
+
+    from harbor.environments.factory import _ENVIRONMENT_REGISTRY, _load_environment_class
+    from openarena.harbor import _LAZY_SDKS
+
+    # A module found with no `_HAS_*` flag counts as installed: a Harbor that renames a flag must fail here, not
+    # call that provider installed again. A provider with no extra needs no SDK; a module that imports its SDK as it
+    # loads fails without it, and is skipped, or loads with it and is named here.
+    eager = {"islo", "tensorlake", "runta", "prime", "smol"}
+    unflagged = []
+    for kind, entry in _ENVIRONMENT_REGISTRY.items():
+        if entry.pip_extra is None or kind.value in _LAZY_SDKS or kind.value in eager:
+            continue
+        try:
+            cls = _load_environment_class(kind)
+        except ImportError:
+            continue
+        if not any(key.startswith("_HAS_") for key in vars(sys.modules[cls.__module__])):
+            unflagged.append(kind.value)
+    assert unflagged == []
+
+
 def test_the_configured_provider_runs_with_its_options_and_the_fallback_without(monkeypatch):
     from openarena.harbor import environment_config
 
@@ -578,6 +684,7 @@ def test_a_named_provider_falls_back_to_docker_on_its_own(monkeypatch):
 
     monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
     monkeypatch.setattr(harbor_program, "ready", lambda name: name in ("e2b", "docker"))
+    monkeypatch.setattr(harbor_program, "sandbox_not_installed", lambda name: None)  # every SDK here: this is about keys
     assert harbor_program.sandbox() == "e2b" and harbor_program.sandbox_note() is None
     # Daytona has no key here: its tasks run on the local Docker, whatever the configured provider does.
     assert harbor_program.sandbox("daytona") == "docker"

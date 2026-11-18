@@ -198,7 +198,7 @@ work, saying why.
 
 `ARENA_HARBOR_SANDBOX` names the sandbox provider (`e2b`, `docker`,
 `daytona`, `modal`, ...), `e2b` by default; E2B needs `E2B_API_KEY`, and
-without it trials fall back to this machine's Docker. With neither, the run
+without a provider's key or its SDK, trials fall back to this machine's Docker. With neither, the run
 refuses to start. On the local Docker, trials run one at a time unless
 `ARENA_HARBOR_LOCAL_TRIALS` says otherwise.
 Each trial's logs land under the run's `harbor/trials/<trial>/`, one line per
