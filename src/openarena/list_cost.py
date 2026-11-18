@@ -8,6 +8,9 @@ what its calls cost, phase by phase, every attempt of a retried call included;
 its cost metrics read those counters. Read the same way and divided by each
 model's factor, the counters say what the same calls cost at list price. Both
 figures come from one place, so they cannot count different calls.
+
+That holds while every call to such a model is charged from the model's own
+row, which `price_as_asked` sees to.
 """
 
 from __future__ import annotations
@@ -37,6 +40,27 @@ def models_of(program) -> list:
         for model in (*_collect_language_models(part), *_collect_embedding_models(part)):
             found.setdefault(id(model), model)
     return list(found.values())
+
+
+def price_as_asked(models: Sequence, price_factors: Mapping[str, float]) -> None:
+    """Have litellm price every call to a model given a factor by the id it was asked for.
+
+    litellm prices an answer by the model the answer names, when its table
+    knows that name: a provider that answers under another name would have
+    the call charged at that model's list price, without a word.
+    `base_model` is litellm's own parameter for the model to price a call
+    by; it rides on each call of the model object and is not sent to the
+    provider. A model whose calls take no parameter cannot be held to its
+    factor: `ValueError`.
+    """
+    for model in models:
+        if model.model not in price_factors:
+            continue
+        if not isinstance(getattr(model, "default_kwargs", None), dict):
+            raise ValueError(
+                f"the price factor of {model.model} cannot be held: its calls take no parameter to price them by"
+            )
+        model.default_kwargs["base_model"] = model.model
 
 
 def snapshot(models: Sequence) -> list[dict[str, float]]:

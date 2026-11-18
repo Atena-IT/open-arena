@@ -353,8 +353,7 @@ def test_a_row_is_priced_at_a_factor_only_while_its_prices_say_so(sources):
     assert not is_priced_at("openai/not-a-model-anyone-sells", 1.25)
     # The row's prices put back at list value, whatever else the row still says: no longer charged at the factor.
     reverted = {**litellm.model_cost[SONNET], "input_cost_per_token": 3e-6}
-    monkeypatch_table = {**litellm.model_cost, SONNET: reverted}
-    eol_module.replace_table(monkeypatch_table)
+    eol_module.replace_table({**litellm.model_cost, SONNET: reverted})
     assert not is_priced_at(SONNET, 1.25)
 
 
@@ -378,7 +377,7 @@ def test_a_call_with_no_factor_keeps_the_factor_of_a_price_from_openrouter(sourc
 
 def test_a_row_whose_prices_are_a_table_of_their_own_gets_no_factor(sources):
     live, _, _ = sources
-    # A factor on the two flat prices alone would leave the tiers charged at list price.
+    # A factor on the two flat prices alone would leave the prices of that table charged at list value.
     live[SONNET] = {**ROW, "tiered_pricing": [{"range": [0, 200_000], "input_cost_per_token": 3e-6}]}
     assert ensure_priced(SONNET, factor=1.25) is None
     assert litellm.model_cost is live

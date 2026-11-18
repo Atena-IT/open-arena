@@ -233,6 +233,27 @@ evaluations:
     0 usually means no price source knows its id: check its price before you
     compare costs.
 
+### A run charged at a price factor
+
+A host that calls `run_sweep` itself may have some of the run's models charged
+at their list price times a factor: `price_factors={model id: factor}`, the
+ids as the run's config spells them. Every cost of the run is then the charged
+one: the metrics above and the spans, and LangSmith's rows when the host
+passes the same factors to `price_models`. The `batch` and `cell_end` events
+also carry `list_usage`: what the cell's calls cost at list price so far, by
+model id and by cost name (`cost`, `reward_cost`, `embedding_cost`,
+`reward_embedding_cost`).
+
+A run given factors is never charged at list price without a word. A factor
+for an id that is no model of the run, or one that cannot be applied (a model
+nobody prices in full, a local or `openrouter/...` id, a row that holds a
+table of prices), stops the run before its first cell. A model that stops
+being charged at its factor while the run goes stops it at the end of that
+batch, which is not reported. A call is priced by the id asked for, whatever
+model the provider names in its answer.
+
+The `arena` command gives a run no factors, and such a run is unchanged.
+
 ### Harbor cells
 
 The agent calls the model itself, inside the sandbox, so a Harbor cell's usage
@@ -455,7 +476,7 @@ asyncio.run(run_sweep(
 | `ARENA_MLFLOW_TRACING` | on by default; `0`, `false`, `no` or `off` turns it off while keeping the URI |
 | `MLFLOW_EXPERIMENT_NAME` | the base of every experiment name |
 | `MLFLOW_HTTP_REQUEST_TIMEOUT`, `MLFLOW_HTTP_REQUEST_MAX_RETRIES` | the client's budget per request; 10 s and 2 retries unless you set them |
-| `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD); LangSmith, which reads no cost over OpenTelemetry and prices tokens with its own table, gets that cost as the `arena_cost_usd` metadata, and before a run each of its models gets a row `arena: <id>` in LangSmith's price table at the arena's list price (written when missing, rewritten when it moved), so LangSmith's own cost columns fill too |
+| `ARENA_TRACE_DESTINATIONS` | other backends that get the spans too, in OpenTelemetry's GenAI conventions, beside MLflow: `langsmith`, `datadog`, or both (`langsmith,datadog`); empty by default. A run's spans are filed under its experiment's name: LangSmith puts them in a project of that name, Datadog tags them `arena.run`. Each model call carries its model, tokens and cost (USD); LangSmith, which reads no cost over OpenTelemetry and prices tokens with its own table, gets that cost as the `arena_cost_usd` metadata, and before a run each of its models gets a row `arena: <id>` in LangSmith's price table at the arena's list price, times the model's price factor when the run's host passes one (written when missing, rewritten when it moved), so LangSmith's own cost columns fill too |
 | `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` | LangSmith's key and API (`https://api.smith.langchain.com` by default) |
 | `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) and a thread of its own (`thread_id`, slashes and other URL-unsafe characters as colons), one per run in the agent's Threads tab |
 | `DD_API_KEY`, `DD_SITE` | Datadog's API key (not an application key) and site (`datadoghq.com` by default, e.g. `datadoghq.eu`) |

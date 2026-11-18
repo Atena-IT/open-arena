@@ -24,10 +24,9 @@ import re
 import urllib.parse
 import urllib.request
 from collections.abc import Iterable, Mapping
-from types import SimpleNamespace
 
 from openarena.hooks.otel import TraceConfig
-from openarena.lookups.prices import model_price
+from openarena.lookups.prices import Price, model_price
 
 log = logging.getLogger("uvicorn.error")
 
@@ -63,12 +62,12 @@ def _table(endpoint: str) -> str:
 
 
 def _price(api: str, key: str, model: str, factor: float = 1.0) -> None:
-    listed = model_price(model)
+    at_list = model_price(model)
     # Unknown is not free, and a local server has no bill: no row for either.
-    if listed is None or not listed.complete or listed.source == "local":
+    if at_list is None or not at_list.complete or at_list.source == "local":
         return
     # What the run is charged: the list price, times the model's factor when it has one.
-    price = SimpleNamespace(input=listed.input * factor, output=listed.output * factor)
+    price = Price(at_list.input * factor, at_list.output * factor, at_list.source)
     cache = (api, key, model)
     known = _written.get(cache)
     if known and known[0] == (price.input, price.output):

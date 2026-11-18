@@ -30,6 +30,8 @@ from openarena.lookups.prices import is_priced_at
 MODEL = "mistral/A-Model-Of-This-Test"
 # Its row in litellm's table for these tests, USD per token: two prices and nothing a factor cannot scale.
 LIST_INPUT, LIST_OUTPUT = 1e-06, 2e-06
+# Other models litellm prices, each at a price of its own.
+OTHER, JUDGE, EMBEDDER = "mistral/Another-Model-Of-This-Test", "mistral/A-Judge-Of-This-Test", "mistral/An-Embedder-Of-This-Test"
 Q_SCHEMA = {"type": "object", "properties": {"question": {"type": "string"}}, "required": ["question"]}
 A_SCHEMA = {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]}
 ROWS = [{"question": "2 + 2?", "answer": "4"}, {"question": "3 + 3?", "answer": "6"}, {"question": "5 + 5?", "answer": "10"}]
@@ -39,17 +41,21 @@ ROWS = [{"question": "2 + 2?", "answer": "4"}, {"question": "3 + 3?", "answer": 
 def litellms_table():
     """litellm's table with the test's model in it at its list price; the table found is put back afterwards."""
     table = litellm.model_cost
-    row = {"input_cost_per_token": LIST_INPUT, "output_cost_per_token": LIST_OUTPUT, "litellm_provider": "mistral", "mode": "chat"}
-    eol.replace_table({**table, MODEL: row})
+
+    def row(input_price, output_price, mode="chat"):
+        return {"input_cost_per_token": input_price, "output_cost_per_token": output_price, "litellm_provider": "mistral", "mode": mode}
+
+    rows = {MODEL: row(LIST_INPUT, LIST_OUTPUT), OTHER: row(5e-06, 5e-06), JUDGE: row(3e-06, 3e-06), EMBEDDER: row(1e-07, 0.0, "embedding")}
+    eol.replace_table({**table, **rows})
     yield
     eol.replace_table(table)
 
 
-def _config(tmp_path, model=MODEL):
+def _config(tmp_path, model=MODEL, others=None):
     rows = tmp_path / "rows.jsonl"
     rows.write_text("\n".join(json.dumps(r) for r in ROWS) + "\n")
     config = {
-        "models": {"tested": {"model": model}},
+        "models": {"tested": {"model": model}, **(others or {})},
         "rewards": {"exact": {"type": "exact_match"}},
         "datasets": {
             "qa": {
@@ -72,11 +78,12 @@ def _config(tmp_path, model=MODEL):
     return path
 
 
-def _answered_by_litellm(monkeypatch, *, garbled_first=False, on_call=None):
+def _answered_by_litellm(monkeypatch, *, garbled_first=False, on_call=None, named=None):
     """Replace the provider, not litellm. Returns the answers litellm gave, each with the tokens and the cost it counted.
 
     `garbled_first` makes the first answer to each question one the framework cannot read, which it retries.
-    `on_call` runs before each answer.
+    `on_call` runs before each answer. `named` is the model name the provider puts in its answers,
+    when that is not the one it was asked for.
     """
     answers, asked = [], set()
 
@@ -88,7 +95,14 @@ def _answered_by_litellm(monkeypatch, *, garbled_first=False, on_call=None):
         if garbled_first and question["question"] not in asked:
             asked.add(question["question"])
             text = "no JSON here"
-        response = await litellm.acompletion(model=self.model, messages=formatted_messages, mock_response=text)
+        if named:
+            text = litellm.ModelResponse(
+                model=named,
+                choices=[{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": text}}],
+                usage=litellm.Usage(prompt_tokens=40, completion_tokens=8, total_tokens=48),
+            )
+        # Everything the framework sends with a call reaches litellm, as it does with a real provider.
+        response = await litellm.acompletion(model=self.model, messages=formatted_messages, mock_response=text, **kwargs)
         answers.append(
             {
                 "input_tokens": response.usage.prompt_tokens,
@@ -136,6 +150,9 @@ def test_a_run_given_no_factor_tells_nothing_new_and_leaves_the_prices_alone(tmp
     for answer in answers:
         assert answer["cost"] == pytest.approx(answer["input_tokens"] * LIST_INPUT + answer["output_tokens"] * LIST_OUTPUT)
     assert len(_of(events, "batch")) == 2 and len(_of(events, "cell_end")) == 1
+    # The events are the ones a run had before it could be given factors, field for field.
+    assert all(set(batch) == {"event", "dataset", "model", "batch", "batches_total", "reward", "usage"} for batch in _of(events, "batch"))
+    assert set(_of(events, "cell_end")[0]) == {"event", "dataset", "model", "metrics"}
     assert not any("list_usage" in event for event in events)
 
 
@@ -148,6 +165,31 @@ def test_every_attempt_of_a_retried_call_is_in_both_figures(tmp_path, monkeypatc
     (end,) = _of(events, "cell_end")
     assert end["metrics"]["cost"] == pytest.approx(charged)
     assert end["list_usage"] == {MODEL: {"cost": pytest.approx(charged / 2.0)}}
+
+
+def test_an_answer_that_names_another_model_is_charged_at_the_factor_of_the_model_asked_for(tmp_path, monkeypatch):
+    # litellm prices an answer by the model the answer names, when its table knows that name:
+    # left alone, these calls would be charged at the other model's list price without a word.
+    answers, events = _answered_by_litellm(monkeypatch, named=OTHER.partition("/")[2]), []
+    _run(tmp_path, events, price_factors={MODEL: 2.0})
+    assert len(answers) == 3
+    for answer in answers:
+        assert answer["cost"] == pytest.approx(2.0 * (answer["input_tokens"] * LIST_INPUT + answer["output_tokens"] * LIST_OUTPUT))
+    charged = sum(a["cost"] for a in answers)
+    (end,) = _of(events, "cell_end")
+    assert end["list_usage"] == {MODEL: {"cost": pytest.approx(charged / 2.0)}}
+
+
+def test_a_factor_given_for_a_judge_and_for_an_embedding_model_is_applied(tmp_path, monkeypatch):
+    answers, events = _answered_by_litellm(monkeypatch), []
+    others = {"judge": {"model": JUDGE}, "embedder": {"model": EMBEDDER, "type": "embedding"}}
+    _run(tmp_path, events, price_factors={JUDGE: 1.5, EMBEDDER: 3.0}, config={"others": others})
+    assert is_priced_at(JUDGE, 1.5) and is_priced_at(EMBEDDER, 3.0)
+    # The model under test was given no factor: charged at list price, and counted as charged.
+    charged = sum(a["cost"] for a in answers)
+    assert charged == pytest.approx(sum(a["input_tokens"] * LIST_INPUT + a["output_tokens"] * LIST_OUTPUT for a in answers))
+    (end,) = _of(events, "cell_end")
+    assert end["list_usage"] == {MODEL: {"cost": pytest.approx(charged)}}
 
 
 def test_a_factor_for_a_model_the_run_does_not_call_stops_it_before_its_first_cell(tmp_path, monkeypatch):

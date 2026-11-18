@@ -140,30 +140,31 @@ def model_price(model_id: str) -> Price | None:
     return next((p for p in found if p.complete), found[0] if found else None)
 
 
+def _is_number(value: object) -> bool:
+    """Whether `value` can be a price or a factor: an int or a float, and no bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def _price_fields(row: dict) -> dict[str, float]:
     """The price fields of a litellm row, each with the price it holds: every numeric field whose name says `cost`."""
     return {
         key: float(value)
         for key, value in row.items()
-        if "cost" in key and isinstance(value, (int, float)) and not isinstance(value, bool)
+        if "cost" in key and _is_number(value)
     }
 
 
 def _flat_prices(row: dict) -> bool:
-    """Whether every price of a row is a number of its own: a table of prices inside it (tiers) takes no factor."""
+    """Whether every price of a row is a number of its own: a row that holds a table of prices takes no factor."""
     return not any(
         isinstance(value, (dict, list)) and ("cost" in key or "pricing" in key)
         for key, value in row.items()
     )
 
 
-def _is_factor(factor) -> bool:
-    return (
-        isinstance(factor, (int, float))
-        and not isinstance(factor, bool)
-        and math.isfinite(factor)
-        and factor > 0
-    )
+def _is_factor(factor: object) -> bool:
+    """Whether a price can be multiplied by `factor`: a finite number above zero."""
+    return _is_number(factor) and math.isfinite(factor) and factor > 0
 
 
 def ensure_priced(
@@ -220,11 +221,10 @@ def ensure_priced(
             live = litellm.model_cost
             entry = table_entry(model_id, live)
             key, row = entry if entry else (table_key(model_id), {})
-            if factor is None:
-                # A row another run charges at a factor stays charged at it.
-                factor = row.get(_PRICE_FACTOR)
-            elif not _flat_prices(row):
+            if factor is not None and not _flat_prices(row):
                 return None
+            # Asked for no factor, a row another run charges at one stays charged at it.
+            applied = factor if factor is not None else row.get(_PRICE_FACTOR)
             listed = dict(row.get(_LIST_PRICE) or _price_fields(row))
             priced = dict(row)
             if from_openrouter:
@@ -239,11 +239,11 @@ def ensure_priced(
                         "mode": mode,
                         ARENA_ONLY_PRICE: True,
                     }
-            if factor is None:
+            if applied is None:
                 priced |= listed
             else:
-                priced |= {field: value * factor for field, value in listed.items()}
-                priced |= {_LIST_PRICE: listed, _PRICE_FACTOR: factor}
+                priced |= {field: value * applied for field, value in listed.items()}
+                priced |= {_LIST_PRICE: listed, _PRICE_FACTOR: applied}
             replace_table({**live, key: priced})
         return price
     except Exception as e:  # noqa: BLE001 (an unpriced run still runs, its spend reads 0)
@@ -271,7 +271,7 @@ def is_priced_at(model_id: str, factor: float) -> bool:
         return False
     row = entry[1]
     return all(
-        isinstance(row.get(field), (int, float))
+        _is_number(row.get(field))
         and math.isclose(row[field], value * factor, rel_tol=1e-9, abs_tol=0.0)
         for field, value in listed.items()
     )
