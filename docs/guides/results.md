@@ -237,14 +237,15 @@ evaluations:
 
 A host that calls `run_sweep` itself may have some of the run's models charged
 at their list price times a factor: `price_factors={model id: factor}`, the
-ids as the run's config spells them. Every cost of the run is then the charged
-one: the metrics above and the spans, and LangSmith's rows when the host
+ids as the run's config spells them. The costs of the run are then the charged
+ones: the metrics above and the spans, and LangSmith's rows when the host
 passes the same factors to `price_models`. The `batch` and `cell_end` events
 also carry `list_usage`: what the cell's calls cost at list price so far, by
 model id and by cost name (`cost`, `reward_cost`, `embedding_cost`,
 `reward_embedding_cost`).
 
-A run given factors is never charged at list price without a word. A factor
+The calls the framework makes to a model given a factor are never charged at
+list price without a word. A factor
 for an id that is no model of the run, or one that cannot be applied (a model
 nobody prices in full, a local or `openrouter/...` id, a row that holds a
 table of prices), stops the run before its first cell. A model that stops
@@ -252,7 +253,20 @@ being charged at its factor while the run goes stops it at the end of that
 batch, which is not reported. A call is priced by the id asked for, whatever
 model the provider names in its answer.
 
-The `arena` command gives a run no factors, and such a run is unchanged.
+Three things a factor does not cover:
+
+- A [Harbor cell](#harbor-cells): its agent counts its own cost, and
+  `list_usage` divides that figure by the factor whatever price the agent
+  used. Give no factor to a model a Harbor dataset runs.
+- An endpoint that states the cost of each of its answers, as a LiteLLM proxy
+  does: litellm charges the cost stated.
+- A model given no factor whose provider answers under the name of a model
+  that was given one: that call is charged at the other model's price, its
+  factor included.
+
+The `openarena` command gives a run no factors, and a run given none is
+unchanged. In a process where an earlier run gave a model a factor, that
+model stays charged at it.
 
 ### Harbor cells
 

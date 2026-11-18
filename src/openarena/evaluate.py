@@ -790,12 +790,15 @@ async def run_sweep(
     `reward_embedding_cost`); the model id is the one on the model object,
     which the framework rewrites for a few providers of local servers. A call
     to a model given a factor is priced by the id asked for, whatever model
-    the answer names. The
-    run is never charged at list price without a word: a factor for a model
-    the run does not call, or one that cannot be applied, raises `ValueError`
-    before the first cell; a model that stops being charged at its factor
-    while the run goes raises `PriceFactorLost` at the end of that batch,
-    which is not reported.
+    the answer names. The calls the framework makes are never charged at
+    list price without a word: a factor for a model the run does not call,
+    or one that cannot be applied, raises `ValueError` before the first
+    cell; a model object whose calls take no parameter to price them by
+    fails its cell before any call (`list_cost.price_as_asked`); a model
+    that stops being charged at its factor while the run goes raises
+    `PriceFactorLost` at the end of that batch, which is not reported. A
+    factor does not cover a Harbor cell, whose agent counts its own cost,
+    nor an endpoint that states the cost of its own answers.
 
     `on_sample`, with `samples_per_cell > 0`, receives the first rows of each
     `(model, dataset)` cell as `{dataset, model, index, input, target,
