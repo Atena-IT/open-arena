@@ -86,7 +86,7 @@ def _fake_model(monkeypatch):
     monkeypatch.setattr(synalinks.LanguageModel, "__call__", fake_call)
 
 
-def _config(tmp_path, models=MODELS):
+def _config(tmp_path, models=MODELS, metrics=None, evaluation_metrics=None, agent=False):
     tmp_path.mkdir(parents=True, exist_ok=True)
     rows = tmp_path / "rows.jsonl"
     rows.write_text("\n".join(json.dumps(r) for r in ROWS) + "\n")
@@ -105,9 +105,16 @@ def _config(tmp_path, models=MODELS):
                     "output_schema": A_SCHEMA,
                 },
                 "reward": "judged",
+                **({"metrics": metrics} if metrics else {}),
+                # An agent whose MCP server cannot start: its program cannot be built, and the cell fails.
+                **({"agent": {"mcp_servers": ["gone"]}} if agent else {}),
             }
         },
-        "evaluation": {"name": "e", "language_models": list(models), "datasets": ["qa"], "batch_size": 3},
+        "evaluation": {
+            "name": "e", "language_models": list(models), "datasets": ["qa"], "batch_size": 3,
+            **({"metrics": evaluation_metrics} if evaluation_metrics else {}),
+        },
+        **({"mcp_servers": {"gone": {"transport": "stdio", "command": "no-such-mcp-server"}}} if agent else {}),
     }
     path = tmp_path / "config.yaml"
     path.write_text(yaml.safe_dump(config))
@@ -166,3 +173,40 @@ def test_a_cancelled_sweep_leaves_nothing_open(tmp_path, monkeypatch):
         asyncio.run(run_sweep(_config(tmp_path), state_dir=tmp_path / "state", on_event=cancel))
     # The cancelled cell's program, built and never run, is closed with the rest.
     _left_nothing_behind(baseline)
+
+
+JUDGE_METRIC = {"class": "deep_agent_as_judge", "alias": "judged", "language_model": "judge"}
+
+
+def test_a_judge_named_as_a_metric_is_closed_on_a_run_and_on_a_cached_one(tmp_path, monkeypatch):
+    # The dataset's metric overrides the evaluation's of the same alias: both are built, one is kept.
+    _fake_model(monkeypatch)
+    baseline = _baseline(tmp_path)
+    open_at_start = []
+
+    def watch(event):
+        if event["event"] == "cell_start":
+            open_at_start.append(len(set(Sandbox.live_sandboxes) - baseline[0]))
+
+    config = _config(tmp_path / "run", models=4, metrics=[JUDGE_METRIC], evaluation_metrics=[JUDGE_METRIC])
+    state = tmp_path / "run" / "state"
+    result = asyncio.run(run_sweep(config, state_dir=state, on_event=watch))
+    assert {r["status"] for r in result["rows"]} == {"COMPLETED"}
+    # The cell's reward and the metric it kept: its own two judges, nothing more.
+    assert max(open_at_start) <= 2, open_at_start
+    _left_nothing_behind(baseline)
+    # Every cell scored: nothing runs, and reading the metrics' layout opens nothing that stays.
+    again = asyncio.run(run_sweep(config, state_dir=state))
+    assert {r["status"] for r in again["rows"]} == {"COMPLETED"}
+    _left_nothing_behind(baseline)
+
+
+def test_a_cell_whose_program_cannot_be_built_closes_its_judge(tmp_path, monkeypatch):
+    _fake_model(monkeypatch)
+    baseline = _baseline(tmp_path)
+    result = asyncio.run(
+        run_sweep(_config(tmp_path / "run", models=3, agent=True), state_dir=tmp_path / "run" / "state")
+    )
+    assert {r["status"] for r in result["rows"]} == {"FAILED"}
+    _left_nothing_behind(baseline)
+
