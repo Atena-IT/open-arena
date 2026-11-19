@@ -374,6 +374,27 @@ def test_an_a2a_sweep_names_a2a_agents_on_its_axis(configs):
     assert _problems(report) == {("error", "evaluations.e.language_models[1]")}
 
 
+def test_a_level_on_a_model_that_does_not_say_whether_it_reasons_is_warned(tmp_path):
+    """A level is sent only to a declared reasoner: an entry that sets one and says neither is warned, not refused."""
+    report = check_file(
+        _write(
+            tmp_path,
+            "models",
+            {
+                "silent": {"model": "openai/o4-mini", "params": {"reasoning_effort": "high"}},
+                "off": {"model": "openrouter/acme/r1", "params": {"reasoning_effort": "disable"}},
+                "declared": {"model": "openai/o4-mini", "params": {"reasoning_effort": "high", "supports_reasoning": True}},
+                "plain": {"model": "openai/gpt-4o", "params": {"reasoning_effort": "low", "supports_reasoning": False}},
+                "no-level": {"model": "openai/gpt-4o", "params": {"temperature": 0}},
+            },
+        ))
+    assert [(p.level, p.where) for p in report.problems] == [
+        ("warning", "models.silent.params.reasoning_effort"),
+        ("warning", "models.off.params.reasoning_effort"),
+    ]
+    assert "supports_reasoning: true" in _fix(report, "models.silent.params.reasoning_effort")
+
+
 def test_a_call_option_is_moved_under_params_only_when_params_takes_it(tmp_path):
     """The fix suggests only what then passes: an option the model's type does not take is said to be unsupported."""
     report = check_file(
@@ -390,7 +411,7 @@ def test_a_call_option_is_moved_under_params_only_when_params_takes_it(tmp_path)
             },
         ))
     assert _fix(report, "models.top-p.top_p") == (
-        "remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, temperature, max_tokens under `params:`"
+        "remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, supports_reasoning, temperature, max_tokens under `params:`"
     )
     assert _fix(report, "models.seed.seed").startswith("remove `seed:`; it is not supported")
     assert _fix(report, "models.base.api_base").startswith("remove `api_base:`; a base URL is not a model setting: set it in the environment")

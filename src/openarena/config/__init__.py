@@ -350,12 +350,20 @@ class Config(BaseModel):
         """Keyword arguments for `LanguageModel(model=self.model_id(name), ...)`, or `EmbeddingModel(...)` for an embedding model.
 
         Empty for a model with no params, in which case the program builders
-        hand the framework the bare id.
+        hand the framework the bare id. A chat model's `modalities` add
+        `supports_vision` / `supports_audio`: the framework is told what the
+        model takes in, it does not find it out.
         """
         entry = self.models.get(name)
         if entry is None:
             return {}
-        return {k: v for k, v in entry.params.items() if v is not None}
+        kwargs = {k: v for k, v in entry.params.items() if v is not None}
+        if entry.type == "llm":
+            if "image" in entry.modalities:
+                kwargs["supports_vision"] = True
+            if "audio" in entry.modalities:
+                kwargs["supports_audio"] = True
+        return kwargs
 
     def dataset_entry(self, ds_name: str) -> dict[str, Any]:
         """The flat mapping the dataset providers read (`datasets.load_dataset_from_config`)."""

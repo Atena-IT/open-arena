@@ -22,7 +22,7 @@ models:
     params:                          # optional; only what the type takes, below
       temperature: 0
       max_tokens: 2048
-    modalities: [text]               # optional, default [text]; a label only, the run never reads it
+    modalities: [text]               # optional, default [text]; add image or audio for a chat model that takes them
     description: OpenAI's small model, the hosted baseline.
     tags: [openai, hosted]           # lower-case labels; never sent to the model
   qwen3-local:
@@ -30,6 +30,7 @@ models:
     params:
       temperature: 0
       reasoning_effort: disable
+      supports_reasoning: true       # it thinks natively; without this no level, Off included, is sent
     tags: [local]
   minilm:
     model: ollama/all-minilm
@@ -51,6 +52,7 @@ error). The name: a letter or digit, then letters, digits, `_`, `.`, `-`.
 | `llm` | `temperature` | number, 0 to 2 |
 | `llm` | `max_tokens` | integer, at least 1 |
 | `llm` | `reasoning_effort` | `disable`, `minimal`, `low`, `medium`, `high`, `xhigh` or `max` |
+| `llm` | `supports_reasoning` | `true` or `false` |
 | `embedding` | `dimensions` | integer, at least 1 |
 | `decision` | none | leave `params` out |
 
@@ -61,9 +63,10 @@ out to keep the provider's default. Where params actually apply:
   Its `reasoning_effort` is the level it is asked at, unless the dataset's
   block sets its own, which wins for every model of the evaluation (`max` is
   sent as `xhigh`); `disable` turns thinking off with each provider's own
-  switch (OpenRouter's `reasoning: {"enabled": false}`), for a model the
-  framework knows can think: on OpenRouter, one OpenRouter lists with a
-  `reasoning` parameter, whatever litellm says. `chain_of_thought` is not native thinking, only a written
+  switch (OpenRouter's `reasoning: {"enabled": false}`), for a model whose
+  entry sets `supports_reasoning: true`: the arena does not find it out, so
+  set it for every model that thinks natively (OpenRouter lists a `reasoning`
+  parameter for those), or its level is never sent. `chain_of_thought` is not native thinking, only a written
   `thinking` field (with `disable` the model writes it itself): leave it off
   to compare levels. A model that reasons natively at a level keeps its trace
   in `thinking` whether or not it is on.

@@ -413,7 +413,14 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     from harbor.agents.factory import AgentFactory
     from harbor.models.agent.name import AgentName
 
-    params = {k: _EFFORTS.get(v, v) if k == "reasoning_effort" else v for k, v in (params or {}).items() if v is not None}
+    from openarena.config.model_types import CAPABILITY_FLAGS
+
+    # What the framework is told about the model is not a call option: the agent calls the model itself.
+    params = {
+        k: _EFFORTS.get(v, v) if k == "reasoning_effort" else v
+        for k, v in (params or {}).items()
+        if v is not None and k not in CAPABILITY_FLAGS
+    }
     if not params:
         return {}
     options = AgentFactory.get_agent_class(AgentName(agent)).options_model
