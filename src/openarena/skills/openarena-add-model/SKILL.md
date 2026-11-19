@@ -30,6 +30,7 @@ models:
     params:
       temperature: 0
       reasoning_effort: disable
+      supports_reasoning: true       # it thinks natively; without this no level, Off included, is sent
     tags: [local]
   minilm:
     model: ollama/all-minilm

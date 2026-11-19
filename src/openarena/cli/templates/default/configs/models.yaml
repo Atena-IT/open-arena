@@ -17,6 +17,7 @@ models:
     description: Qwen 3.8 27B (MLX) served by a local Ollama, no API key needed.
     params:
       temperature: 0
+      supports_reasoning: true         # it thinks natively: a level is sent, and its trace kept
     tags: [local]
   gpt-4o-mini:
     model: openai/gpt-4o-mini          # needs OPENAI_API_KEY

@@ -507,7 +507,17 @@ def _validate(ctx: _Context, section: str, entry: dict, where: str):
 
 
 def _models(ctx: _Context, name: str, entry: dict, where: str) -> None:
-    _validate(ctx, "models", entry, where)
+    model = _validate(ctx, "models", entry, where)
+    if model is None or model.type != "llm":
+        return
+    # A level is sent only to a model declared as one that reasons: an entry that sets one and says nothing either
+    # way was written when the engine found it out, and its level (an Off included) is now dropped without a word.
+    if "reasoning_effort" in model.params and "supports_reasoning" not in model.params:
+        ctx.report.warning(
+            f"{where}.params.reasoning_effort",
+            "is sent only to a model declared as one that reasons; this entry does not say, so no level reaches it",
+            "add `supports_reasoning: true` under `params:` if the model thinks natively, or `false` to keep it as it is",
+        )
 
 
 def _mcp_servers(ctx: _Context, name: str, entry: dict, where: str) -> None:

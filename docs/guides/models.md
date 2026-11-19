@@ -326,7 +326,8 @@ arena does not find it out: it asks no provider and reads no model table, so a
 reasoning model whose entry leaves it out is asked at no level, its `disable`
 turns nothing off, and its trace is not kept. Check the provider's page for the
 model (OpenRouter lists a `reasoning` parameter for the ones that think). It is
-not sent to the provider: it decides what is.
+not sent to the provider: it decides what is. `openarena check` warns on an
+entry that sets `reasoning_effort` and says neither `true` nor `false`.
 
 Set it only for a model that does return a trace on the endpoint you call. On
 OpenRouter, `disable` sends `reasoning: {"enabled": false}`, which an endpoint
@@ -398,12 +399,14 @@ models:
     model: openai/o4-mini
     params:
       reasoning_effort: low
+      supports_reasoning: true
     description: o4-mini, light thinking.
     tags: [openai, reasoning]
   o4-mini-high:
     model: openai/o4-mini
     params:
       reasoning_effort: high
+      supports_reasoning: true
     description: o4-mini, deep thinking.
     tags: [openai, reasoning]
 ```
