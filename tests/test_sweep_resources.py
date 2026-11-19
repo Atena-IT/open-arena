@@ -25,10 +25,17 @@ import synalinks
 import yaml
 from synalinks.src.backend import JsonDataModel
 from synalinks.src.sandboxes.sandbox import Sandbox
+from synalinks.src.utils.confinement_utils import confinement_available
 
 from openarena.evaluate import SweepCancelled, run_sweep
 
-pytestmark = pytest.mark.skipif(not sys.platform.startswith("linux"), reason="reads /proc/self")
+_CONFINES, _WHY_NOT = confinement_available()
+pytestmark = [
+    pytest.mark.skipif(not sys.platform.startswith("linux"), reason="reads /proc/self"),
+    # The judge's sandbox confines its code, and refuses to start where it cannot (a container, a runner
+    # with user namespaces restricted): the CI workflow enables them, so these run there.
+    pytest.mark.skipif(not _CONFINES, reason=f"sandbox confinement unavailable: {_WHY_NOT}"),
+]
 
 MODELS = 12
 # Resident memory the sweep may add from its first cell's end to its last.
