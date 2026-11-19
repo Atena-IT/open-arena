@@ -210,3 +210,28 @@ def test_a_cell_whose_program_cannot_be_built_closes_its_judge(tmp_path, monkeyp
     assert {r["status"] for r in result["rows"]} == {"FAILED"}
     _left_nothing_behind(baseline)
 
+
+def test_metrics_that_fail_partway_leave_nothing_open(tmp_path, monkeypatch):
+    # A judge is built, then the next entry fails its alias check: what was built is closed, for the
+    # layout read and for a cell's own metrics alike.
+    from openarena.config import MetricEntry
+    from openarena.evaluate import _instantiate_metrics, _metric_layout, _release
+
+    baseline = _baseline(tmp_path)
+    judge = {"class": "deep_agent_as_judge", "language_model": {"model": "openai/gpt-4o"}}
+    entries = [MetricEntry.model_validate({**judge, "alias": "judged"}), MetricEntry.model_validate({**judge, "alias": "reward"})]
+
+    with pytest.raises(ValueError, match="collides") as failed:
+        asyncio.run(_metric_layout(entries, context="metrics"))
+    # Checked while the error is held, as a caller handling it holds it: no collector to stand in.
+    assert failed.value is not None and set(Sandbox.live_sandboxes) - baseline[0] == set()
+    _left_nothing_behind(baseline)
+
+    owned = []
+    with pytest.raises(ValueError, match="collides"):
+        _instantiate_metrics(entries, context="metrics", owned=owned)
+    # Both judges were registered as they were built, the one whose alias failed included.
+    assert len(owned) == 4
+    asyncio.run(_release(owned))
+    _left_nothing_behind(baseline)
+

@@ -391,7 +391,7 @@ def _leaving_out(metric, fields: list[str]):
     return LeavingOut.from_config({**metric.get_config(), "leave_out": fields})
 
 
-def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False):
+def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False, owned=None):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
     Identifiers resolve in two registries: the project rewards (auto-wrapped
@@ -409,7 +409,12 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     entry sets, even an empty one, is the user's and leaves the metric as written.
     `trace` is a model's native reasoning trace the dataset did not ask for: a reward
     named as a metric leaves `thinking` out too, as the dataset's reward does.
+
+    `owned`, when given, receives each reward and metric as it is built, before
+    anything about it is checked: an agent judge holds a sandbox, so the caller
+    can close what was built even when a later entry, or this one's alias, fails.
     """
+    owned = [] if owned is None else owned
     out = []
     for entry in entries:
         key = to_snake_case(entry.class_name)
@@ -417,6 +422,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             spec = {"name": key, **entry.kwargs}
             scoped = _scope_to_answer(spec, target) if target else spec
             reward = get_reward(_leaving_out_trace(scoped) if trace else scoped)
+            owned.append(reward)
             instance = synalinks.metrics.MeanMetricWrapper(
                 reward,
                 name=entry.alias or key,
@@ -428,6 +434,8 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             )
         else:
             instance = synalinks.metrics.get(entry.class_name)
+        if instance is not None:
+            owned.append(instance)
         if instance is None:
             raise ValueError(
                 f"{context}: identifier {entry.class_name!r} resolved to None — "
@@ -440,6 +448,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             and "out_mask" in inspect.signature(type(instance).__init__).parameters
         ):
             instance = _leaving_out(instance, list(beside))
+            owned.append(instance)
         resolved_alias = (
             entry.alias or getattr(instance, "name", None) or entry.class_name
         )
@@ -465,7 +474,8 @@ def _not_held(built: list, reward, program) -> list:
     shared.discard(id(None))
     return [
         m for m in built
-        if program is None or (m is not reward and id(getattr(m, "_fn", None)) not in shared)
+        # A metric clone that wraps its original's callable holds it: that callable stays open.
+        if program is None or (m is not reward and id(m) not in shared and id(getattr(m, "_fn", None)) not in shared)
     ]
 
 
@@ -476,9 +486,12 @@ async def _metric_layout(entries: list[MetricEntry], **kwargs):
     it holds (an agent judge's sandbox): the instances are closed at once, and
     the tuples keep `None` in their place. A cell's program builds its own.
     """
-    layout = _instantiate_metrics(entries, **kwargs)
-    for _, metric, _, _ in layout:
-        await release_resource(metric)
+    built: list = []
+    try:
+        layout = _instantiate_metrics(entries, owned=built, **kwargs)
+    finally:
+        # Closed whatever happens: an entry that fails leaves those built before it open otherwise.
+        await _release(built)
     return [(alias, None, direction, is_objective) for alias, _, direction, is_objective in layout]
 
 
@@ -944,9 +957,9 @@ async def run_sweep(
                 try:
                     # Fresh, per-model metric instances (see note above): each program's
                     # operational metrics must bind to that program's own LanguageModel.
-                    ours = _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace)
-                    theirs = _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace)
-                    owned.extend(m for _, m, _, _ in ours + theirs)
+                    # Registered as each is built, so a later one that fails still lets these be closed.
+                    ours = _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace, owned=owned)
+                    theirs = _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace, owned=owned)
                     model_metrics = [m for _, m, _, _ in _first_by_alias(ours, theirs)]
                     reward = get_reward(reward_spec)
                     owned.append(reward)
