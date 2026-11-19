@@ -21,7 +21,6 @@ from openarena.programs.a2a_program import (
     A2aAgent,
     answer_text,
     build_a2a,
-    close_program,
     describe_card,
 )
 from openarena.rewards import get
@@ -129,9 +128,9 @@ def test_the_module_keeps_its_connection_and_closes_it():
     assert spec.get_schema() == A_SCHEMA
     client = _Client([])
     agent = _agent(client)
-    asyncio.run(agent.aclose())
+    asyncio.run(agent.close())
     assert client.closed and agent.http_closed and agent._client is None and agent._http is None
-    asyncio.run(agent.aclose())  # closing twice is fine
+    asyncio.run(agent.close())  # closing twice is fine
 
 
 def test_a_card_is_kept_as_who_the_agent_is_and_how_it_is_reached():
@@ -147,7 +146,7 @@ def test_a_card_is_kept_as_who_the_agent_is_and_how_it_is_reached():
     }
 
 
-def test_the_program_is_built_for_one_agent_and_closed_after_the_grid():
+def test_the_program_is_built_for_one_agent_and_closing_it_closes_the_client():
     dataset = SimpleNamespace(input_schema=Q_SCHEMA, input_data_model=None, output_schema=A_SCHEMA, output_data_model=None)
     connection = {"url": "http://agent.example", "headers": {"X": "1"}, "card_path": None, "timeout_sec": None}
     program = asyncio.run(build_a2a("my/bot", dataset, connection, get("exact_match")))
@@ -160,6 +159,5 @@ def test_the_program_is_built_for_one_agent_and_closed_after_the_grid():
     assert asyncio.run(build_a2a("bot", chat, connection, get("exact_match")))._arena_a2a_module.schema == synalinks.ChatMessage.get_schema()
     client = _Client([])
     module._client, module._http = client, SimpleNamespace(aclose=_closed(module))
-    asyncio.run(close_program(program))
+    asyncio.run(program.close())  # as the tuner does when the cell ends
     assert client.closed and module._client is None
-    asyncio.run(close_program(SimpleNamespace()))  # any other program: nothing to close

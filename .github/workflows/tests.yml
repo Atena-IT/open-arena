@@ -30,6 +30,16 @@ jobs:
           cache-dependency-glob: uv.lock
       - name: Install
         run: uv sync --frozen
+      # A sandbox-holding judge (tests/test_sweep_resources.py) mounts a FUSE filesystem and
+      # confines its code in a user namespace, as synalinks' own CI sets up: install libfuse, and
+      # lift ubuntu-24.04's AppArmor restriction that otherwise denies the namespace its setgroups
+      # write. Without both, those tests skip rather than run.
+      - name: Install libfuse (sandbox filesystem)
+        run: sudo apt-get update && sudo apt-get install -y fuse3
+      - name: Enable unprivileged user namespaces (sandbox confinement)
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo sysctl -w kernel.unprivileged_userns_clone=1 || true
       - name: Lint
         run: uvx ruff@0.15.18 check .
       - name: Test
