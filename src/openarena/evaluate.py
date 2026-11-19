@@ -50,6 +50,7 @@ from openarena.lookups.prices import ensure_priced  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent  # noqa: E402
+from synalinks.src.modules.module import release_resource  # noqa: E402
 from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
 from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
 from openarena.results import SweepResults  # noqa: E402
@@ -390,7 +391,7 @@ def _leaving_out(metric, fields: list[str]):
     return LeavingOut.from_config({**metric.get_config(), "leave_out": fields})
 
 
-def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False):
+def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False, owned=None):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
     Identifiers resolve in two registries: the project rewards (auto-wrapped
@@ -408,7 +409,12 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     entry sets, even an empty one, is the user's and leaves the metric as written.
     `trace` is a model's native reasoning trace the dataset did not ask for: a reward
     named as a metric leaves `thinking` out too, as the dataset's reward does.
+
+    `owned`, when given, receives each reward and metric as it is built, before
+    anything about it is checked: an agent judge holds a sandbox, so the caller
+    can close what was built even when a later entry, or this one's alias, fails.
     """
+    owned = [] if owned is None else owned
     out = []
     for entry in entries:
         key = to_snake_case(entry.class_name)
@@ -416,6 +422,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             spec = {"name": key, **entry.kwargs}
             scoped = _scope_to_answer(spec, target) if target else spec
             reward = get_reward(_leaving_out_trace(scoped) if trace else scoped)
+            owned.append(reward)
             instance = synalinks.metrics.MeanMetricWrapper(
                 reward,
                 name=entry.alias or key,
@@ -427,6 +434,8 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             )
         else:
             instance = synalinks.metrics.get(entry.class_name)
+        if instance is not None:
+            owned.append(instance)
         if instance is None:
             raise ValueError(
                 f"{context}: identifier {entry.class_name!r} resolved to None — "
@@ -439,6 +448,7 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             and "out_mask" in inspect.signature(type(instance).__init__).parameters
         ):
             instance = _leaving_out(instance, list(beside))
+            owned.append(instance)
         resolved_alias = (
             entry.alias or getattr(instance, "name", None) or entry.class_name
         )
@@ -449,6 +459,40 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             )
         out.append((resolved_alias, instance, entry.direction, entry.objective))
     return out
+
+
+async def _release(resources) -> None:
+    """Close each of `resources` (a reward, a metric), never raising: teardown must not replace the error it follows."""
+    for resource in resources:
+        await release_resource(resource)
+
+
+def _not_held(built: list, reward, program) -> list:
+    """What of `built` (a cell's reward and metrics) its compiled `program` does not hold, to close."""
+    compiled = getattr(program, "_compile_metrics", None)
+    shared = {id(getattr(m, "_fn", None)) for m in tree.flatten(getattr(compiled, "_user_metrics", None) or [])}
+    shared.discard(id(None))
+    return [
+        m for m in built
+        # A metric clone that wraps its original's callable holds it: that callable stays open.
+        if program is None or (m is not reward and id(m) not in shared and id(getattr(m, "_fn", None)) not in shared)
+    ]
+
+
+async def _metric_layout(entries: list[MetricEntry], **kwargs):
+    """`_instantiate_metrics`' aliases, directions and objective flags, without the instances.
+
+    Reading them builds each metric, and a judge named as a metric opens what
+    it holds (an agent judge's sandbox): the instances are closed at once, and
+    the tuples keep `None` in their place. A cell's program builds its own.
+    """
+    built: list = []
+    try:
+        layout = _instantiate_metrics(entries, owned=built, **kwargs)
+    finally:
+        # Closed whatever happens: an entry that fails leaves those built before it open otherwise.
+        await _release(built)
+    return [(alias, None, direction, is_objective) for alias, _, direction, is_objective in layout]
 
 
 def _first_by_alias(*lists):
@@ -787,7 +831,7 @@ async def run_sweep(
 
     # Pre-resolve the global metric list so unknown identifiers fail fast,
     # before the first trial.
-    global_metrics = _instantiate_metrics(cfg.metrics, context="metrics")
+    global_metrics = await _metric_layout(cfg.metrics, context="metrics")
 
     # One `GridSearch` tuner per dataset — model is the only HP
     # axis, dataset is a fixed search context. Per-dataset `project_name`
@@ -830,7 +874,7 @@ async def run_sweep(
             reward_spec = _leaving_out_trace(reward_spec) if trace else reward_spec
             reward_direction = cfg.reward_direction(ds_name)
             ds_metrics = _first_by_alias(
-                _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
+                await _metric_layout(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
                 global_metrics,
             )
             # `ds_metrics` (and its instances) is used only for the aliases /
@@ -906,89 +950,100 @@ async def run_sweep(
                 reward_spec=reward_spec, target=target, beside=beside, trace=trace, programs=programs, broken=broken,
             ):
                 """Build the cell's program, as the cell starts: one cell's program (and its judge's sandbox) is open at a time."""
-                # Fresh, per-model metric instances (see note above): each program's
-                # operational metrics must bind to that program's own LanguageModel.
-                model_metrics = [
-                    m
-                    for _, m, _, _ in _first_by_alias(
-                        _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
-                        _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace),
-                    )
-                ]
-                reward = get_reward(reward_spec)
-                lm_kwargs = cfg.lm_kwargs(model_id)
-                # The axis names the model (a registry entry); the program calls its id.
-                calls = cfg.model_id(model_id)
-                if kind == "a2a":
-                    # The axis names the agent itself; there is no model id to call.
-                    programs[model_id] = await build_a2a(
-                        model_id, ds, cfg.a2a_connection(model_id), reward,
-                        metrics=model_metrics or None,
-                    )
-                elif kind == "harbor":
-                    # Each row asked of a Harbor agent in a sandbox; the environments' folders were copied beside the run's config.
-                    # The reward goes along, serialized into a generated task's default tests/ (it scores here, on the arena's side).
-                    spec = {**cfg.harbor_spec(ds_name), "dataset": ds_name, "reward": cfg.reward_spec(ds_name), "reward_name": cfg.datasets[ds_name].reward}
-                    if spec.get("tasks"):
-                        # Each task scored by the arena's reward system lists its rewards in tests/rewards.yaml: read and resolved once.
-                        from openarena.datasets.harbor_tasks_dataset import task_folders
-                        from openarena.programs.harbor_program import task_reward
+                # What this builds is its to close until a program holds it: a build that fails or is
+                # cancelled, or a metric an alias of the dataset's overrides, would otherwise leave an
+                # agent judge's sandbox open.
+                owned: list = []
+                try:
+                    # Fresh, per-model metric instances (see note above): each program's
+                    # operational metrics must bind to that program's own LanguageModel.
+                    # Registered as each is built, so a later one that fails still lets these be closed.
+                    ours = _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace, owned=owned)
+                    theirs = _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace, owned=owned)
+                    model_metrics = [m for _, m, _, _ in _first_by_alias(ours, theirs)]
+                    reward = get_reward(reward_spec)
+                    owned.append(reward)
+                    lm_kwargs = cfg.lm_kwargs(model_id)
+                    # The axis names the model (a registry entry); the program calls its id.
+                    calls = cfg.model_id(model_id)
+                    if kind == "a2a":
+                        # The axis names the agent itself; there is no model id to call.
+                        programs[model_id] = await build_a2a(
+                            model_id, ds, cfg.a2a_connection(model_id), reward,
+                            metrics=model_metrics or None,
+                        )
+                    elif kind == "harbor":
+                        # Each row asked of a Harbor agent in a sandbox; the environments' folders were copied beside the run's config.
+                        # The reward goes along, serialized into a generated task's default tests/ (it scores here, on the arena's side).
+                        spec = {**cfg.harbor_spec(ds_name), "dataset": ds_name, "reward": cfg.reward_spec(ds_name), "reward_name": cfg.datasets[ds_name].reward}
+                        if spec.get("tasks"):
+                            # Each task scored by the arena's reward system lists its rewards in tests/rewards.yaml: read and resolved once.
+                            from openarena.datasets.harbor_tasks_dataset import task_folders
+                            from openarena.programs.harbor_program import task_reward
 
-                        entry = _beside(cfg.dataset_entry(ds_name), Path(config_path).parent)
-                        spec["task_rewards"] = {
-                            folder.name: scoring
-                            for folder in task_folders(entry["path"], entry.get("tasks"))
-                            if (scoring := task_reward(folder, cfg._resolve)) is not None
-                        }
-                    programs[model_id] = await build_harbor(
-                        calls, ds, spec, reward,
-                        metrics=model_metrics or None,
-                        contexts=Path(config_path).parent / "environments",
-                        work_dir=Path(state_dir) / "harbor",
-                        lm_kwargs=lm_kwargs,
-                        model_name=model_id,
-                    )
-                elif kind == "embedding":
-                    programs[model_id] = await build_embedding(
-                        calls, ds, cfg.embedding_kwargs(ds_name), reward,
-                        metrics=model_metrics or None, lm_kwargs=lm_kwargs,
-                    )
-                elif kind == "tools":
-                    programs[model_id] = await build_tools(
-                        calls, ds, cfg.tools_kwargs(ds_name), reward,
-                        metrics=model_metrics or None, lm_kwargs=lm_kwargs,
-                    )
-                elif agent_cfg is not None:
-                    # A server that is down fails this cell, not the run: the trial raises it.
-                    try:
-                        programs[model_id] = await build_agent(
+                            entry = _beside(cfg.dataset_entry(ds_name), Path(config_path).parent)
+                            spec["task_rewards"] = {
+                                folder.name: scoring
+                                for folder in task_folders(entry["path"], entry.get("tasks"))
+                                if (scoring := task_reward(folder, cfg._resolve)) is not None
+                            }
+                        programs[model_id] = await build_harbor(
+                            calls, ds, spec, reward,
+                            metrics=model_metrics or None,
+                            contexts=Path(config_path).parent / "environments",
+                            work_dir=Path(state_dir) / "harbor",
+                            lm_kwargs=lm_kwargs,
+                            model_name=model_id,
+                        )
+                    elif kind == "embedding":
+                        programs[model_id] = await build_embedding(
+                            calls, ds, cfg.embedding_kwargs(ds_name), reward,
+                            metrics=model_metrics or None, lm_kwargs=lm_kwargs,
+                        )
+                    elif kind == "tools":
+                        programs[model_id] = await build_tools(
+                            calls, ds, cfg.tools_kwargs(ds_name), reward,
+                            metrics=model_metrics or None, lm_kwargs=lm_kwargs,
+                        )
+                    elif agent_cfg is not None:
+                        # A server that is down fails this cell, not the run: the trial raises it.
+                        try:
+                            programs[model_id] = await build_agent(
+                                calls,
+                                ds,
+                                agent_cfg,
+                                reward,
+                                metrics=model_metrics or None,
+                                lm_kwargs=lm_kwargs,
+                            )
+                        except McpToolsUnavailable as e:
+                            broken[model_id] = e
+                            await _release(owned)
+                            return
+                    else:
+                        programs[model_id] = await build_program(
                             calls,
                             ds,
-                            agent_cfg,
+                            gen_kwargs,
                             reward,
                             metrics=model_metrics or None,
                             lm_kwargs=lm_kwargs,
                         )
-                    except McpToolsUnavailable as e:
-                        broken[model_id] = e
-                        return
-                else:
-                    programs[model_id] = await build_program(
-                        calls,
-                        ds,
-                        gen_kwargs,
-                        reward,
-                        metrics=model_metrics or None,
-                        lm_kwargs=lm_kwargs,
-                    )
-                if on_sample is not None and samples_per_cell > 0:
-                    _tee_samples(
-                        programs[model_id],
-                        lambda row, d=ds_name, m=model_id: on_sample(
-                            {**row, "dataset": d, "model": m}
-                        ),
-                        limit=samples_per_cell,
-                    )
+                    if on_sample is not None and samples_per_cell > 0:
+                        _tee_samples(
+                            programs[model_id],
+                            lambda row, d=ds_name, m=model_id: on_sample(
+                                {**row, "dataset": d, "model": m}
+                            ),
+                            limit=samples_per_cell,
+                        )
+                except BaseException:
+                    await _release(owned)
+                    raise
+                # `compile` keeps the reward and clones each metric: the program holds the reward and the
+                # clones, so the metrics built here are closed now (one an alias overrode included). A
+                # clone that shares its original's wrapped callable keeps it open.
+                await _release(_not_held(owned, reward, programs.get(model_id)))
 
             batches_total = _num_batches(ds)
             emit(

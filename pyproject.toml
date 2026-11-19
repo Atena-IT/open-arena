@@ -6,7 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
-    "synalinks>=0.10.31",
+    "synalinks>=0.10.32",
     "keras-tuner>=1.4.8",
     "a2a-sdk>=1.2.1",
     "datasets>=5.0",
@@ -59,7 +59,7 @@ testpaths = ["tests"]
 
 
 # Synalinks comes from Atena-IT's fork (github.com/Atena-IT/synalinks), pinned to a
-# commit of its main branch: 1322299 is synalinks 0.10.31. Bump the commit to take a
+# commit of its main branch: f6796e7 is synalinks 0.10.32. Bump the commit to take a
 # new framework; a fix lands on the fork first and goes upstream from there.
 [tool.uv.sources]
-synalinks = { url = "https://github.com/Atena-IT/synalinks/archive/1322299a4ec639054cd00566ea82f019aa4a2b61.tar.gz" }
+synalinks = { url = "https://github.com/Atena-IT/synalinks/archive/f6796e7fcda83c3b9acc0e091d8f013d0248bf88.tar.gz" }

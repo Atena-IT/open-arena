@@ -3576,7 +3576,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "synalinks", url = "https://github.com/Atena-IT/synalinks/archive/1322299a4ec639054cd00566ea82f019aa4a2b61.tar.gz" },
+    { name = "synalinks", url = "https://github.com/Atena-IT/synalinks/archive/f6796e7fcda83c3b9acc0e091d8f013d0248bf88.tar.gz" },
 ]
 provides-extras = ["langfuse", "langsmith", "opik", "phoenix", "braintrust", "unity-catalog", "all"]
 
@@ -5565,8 +5565,8 @@ wheels = [
 
 [[package]]
 name = "synalinks"
-version = "0.10.31"
-source = { url = "https://github.com/Atena-IT/synalinks/archive/1322299a4ec639054cd00566ea82f019aa4a2b61.tar.gz" }
+version = "0.10.32"
+source = { url = "https://github.com/Atena-IT/synalinks/archive/f6796e7fcda83c3b9acc0e091d8f013d0248bf88.tar.gz" }
 dependencies = [
     { name = "absl-py" },
     { name = "asyncio" },
@@ -5604,7 +5604,7 @@ dependencies = [
     { name = "synaops" },
     { name = "tenacity" },
 ]
-sdist = { hash = "sha256:ec46ef40316bebbd2153e954b6054dd7576512d7537f488025b19b514d5b6efa" }
+sdist = { hash = "sha256:8df9709764277d1cc07a0183760b56f559c02b04c665676506bdc689acbbaf6c" }
 
 [package.metadata]
 requires-dist = [
