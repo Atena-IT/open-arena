@@ -20,7 +20,7 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     sent, so either the tools are honoured or the call fails at once.
 
     `reasoning_effort: disable` adds nothing here: the framework sends OpenRouter's
-    `reasoning: {"enabled": false}` itself, to a model OpenRouter lists as reasoning.
+    `reasoning: {"enabled": false}` itself, to a model declared as reasoning.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -54,17 +54,12 @@ def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
 
 
 async def supports_reasoning(model_id: str, lm_kwargs: dict | None = None) -> bool:
-    """Whether the framework takes the model for one that reasons natively, the signal it forwards a level on.
+    """Whether the model is declared as one that reasons natively, the signal the framework forwards a level on.
 
-    `LanguageModel.supports_reasoning()` asks the provider where it can: OpenRouter's model list for an
-    `openrouter/...` id, the server for Ollama, vLLM and SGLang, litellm's table for the hosted providers.
-    litellm's table is not read here: it lists OpenRouter ids it does not serve as OpenRouter does. The
-    answer is cached per model and process, and the model's own `api_base` is the server asked.
+    The framework does not find it out: `LanguageModel(supports_reasoning=True)` says so, and the model entry's
+    `supports_reasoning` param is what the arena passes. Nothing is asked of the provider or of litellm's table.
     """
-    import synalinks
-
-    api_base = (lm_kwargs or {}).get("api_base")
-    return bool(await synalinks.LanguageModel(model=model_id, api_base=api_base).supports_reasoning())
+    return bool((lm_kwargs or {}).get("supports_reasoning"))
 
 
 async def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwargs: dict | None) -> bool:

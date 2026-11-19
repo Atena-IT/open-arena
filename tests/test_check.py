@@ -390,7 +390,7 @@ def test_a_call_option_is_moved_under_params_only_when_params_takes_it(tmp_path)
             },
         ))
     assert _fix(report, "models.top-p.top_p") == (
-        "remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, temperature, max_tokens under `params:`"
+        "remove `top_p:`; it is not supported: a chat model takes only reasoning_effort, supports_reasoning, temperature, max_tokens under `params:`"
     )
     assert _fix(report, "models.seed.seed").startswith("remove `seed:`; it is not supported")
     assert _fix(report, "models.base.api_base").startswith("remove `api_base:`; a base URL is not a model setting: set it in the environment")

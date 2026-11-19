@@ -338,6 +338,7 @@ _MODEL_PARAMS = {
     "top_p",
     "top_k",
     "reasoning_effort",
+    "supports_reasoning",
     "seed",
     "stop",
     "frequency_penalty",

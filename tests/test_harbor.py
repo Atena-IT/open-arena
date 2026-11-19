@@ -29,7 +29,7 @@ from openarena.harbor import (
     task_files,
     virtual_now,
 )
-from openarena.programs.harbor_program import copy_task
+from openarena.programs.harbor_program import agent_kwargs, copy_task
 from pydantic import ValidationError
 
 
@@ -767,3 +767,8 @@ def test_harbor_tasks_keep_the_configured_sandbox(monkeypatch, tmp_path):
     [trial] = _ran_trials(monkeypatch, tmp_path, {"agent": "terminus-2", "dataset": "d", "tasks": True})
     assert trial["config"].environment.type == "e2b"
     assert trial["config"].environment.kwargs == {"template": "arena"}
+
+
+def test_what_the_framework_is_told_about_a_model_is_never_passed_to_a_harbor_agent():
+    params = {"temperature": 0.0, "reasoning_effort": "high", "supports_reasoning": True, "supports_vision": True, "supports_audio": True}
+    assert agent_kwargs("terminus-2", params) == {"temperature": 0.0, "reasoning_effort": "high"}
