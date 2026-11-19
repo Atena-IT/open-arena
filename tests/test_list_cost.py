@@ -72,3 +72,13 @@ def test_a_model_whose_calls_take_no_parameter_cannot_be_held_to_its_factor():
         price_as_asked([grader], {"sglang/a-grader": 1.25})
     # A model given no factor is left as it is.
     price_as_asked([grader], {SONNET: 1.25})
+
+
+def test_the_framework_helpers_list_cost_reads_are_still_there():
+    # Not public: a framework release that renames one fails here, at the pin bump.
+    from synalinks.src.metrics.em_metrics import _collect_embedding_models
+    from synalinks.src.metrics.lm_metrics import _collect_language_models
+
+    from openarena.callbacks.otel import _judges
+
+    assert all(map(callable, (_collect_language_models, _collect_embedding_models, _judges)))

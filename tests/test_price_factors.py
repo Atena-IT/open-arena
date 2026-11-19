@@ -223,3 +223,19 @@ def test_a_model_that_stops_being_charged_at_its_factor_stops_the_run_and_the_ba
     assert not is_priced_at(MODEL, 2.0)
     # The calls of that batch were charged at list price: no figure of the run counts them.
     assert answers and _of(events, "batch") == [] and _of(events, "cell_end") == []
+
+
+def test_a_cells_list_figures_are_read_before_its_program_is_closed(tmp_path, monkeypatch):
+    # A cell's program is closed when its trial ends: `cell_end` reads the models' counters ahead of that.
+    _answered_by_litellm(monkeypatch)
+    events, close = [], synalinks.Program.close
+
+    async def recorded_close(self):
+        events.append({"event": "program_closed"})
+        await close(self)
+
+    monkeypatch.setattr(synalinks.Program, "close", recorded_close)
+    _run(tmp_path, events, price_factors={MODEL: 2.0})
+    order = [e["event"] for e in events if e["event"] in ("cell_end", "program_closed")]
+    assert order[0] == "cell_end" and "program_closed" in order
+    assert _of(events, "cell_end")[0]["list_usage"][MODEL]["cost"] > 0
