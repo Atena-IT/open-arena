@@ -542,8 +542,13 @@ well it scores. The date comes from the first source that has one:
 | Azure's OpenAI retirement schedule | `openai/`, `azure/`, `azure_ai/` ids the provider has not dated; fetched once a day, a shipped snapshot answers offline |
 | OpenRouter's expiration date | `openrouter/` ids; it wins when it is earlier than the vendor's |
 
-An `openrouter/<vendor>/<model>` id is also looked up under the vendor's own id:
-it is the same model, and it stops on the same day.
+An `openrouter/<vendor>/<model>` id is looked up under the vendor's own id: it
+is the same model, and it stops on the same day. litellm's row for the
+OpenRouter id itself, whose date is copied from one of the vendor's endpoints,
+is read only when OpenRouter's list does not have the model (offline, or no
+longer listed); otherwise OpenRouter's expiration date says when OpenRouter
+stops. A row litellm's live table dropped, kept from the copy shipped with
+litellm for its prices, carries no date.
 
 | case | `eol_days` |
 |---|---|

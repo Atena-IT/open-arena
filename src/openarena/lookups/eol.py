@@ -15,7 +15,13 @@
    OpenRouter stops routing the model, which it often sets for models no
    vendor has dated (previews, smaller labs). It answers only for its own
    ids, and wins when it comes before the vendor's date: that is the day
-   the id stops working.
+   the id stops working. An `openrouter/...` id is dated by the vendor's own
+   id and by OpenRouter; litellm's row for the OpenRouter id, whose date is
+   copied from one of the vendor's endpoints, answers only for a model
+   OpenRouter's list does not have (offline, or no longer listed).
+
+A row litellm's live table dropped, filled back from the copy shipped with
+litellm, comes without its date (`fill_from_bundled`).
 
 The schedule is fetched from the docs' GitHub source and cached for a day; a
 snapshot shipped next to this module answers when the network does not.
@@ -272,9 +278,12 @@ def fill_from_bundled() -> frozenset[str]:
     Filling the live table from the copy serves every reader at once: the
     prices, the end-of-life dates, the add form's facts and catalogue, and
     litellm's own price of each call in a run. The live row wins where both
-    have one. The table is replaced, never changed in place, so a request
-    reading it meanwhile is not disturbed; a table litellm reloads is filled
-    again on the next call.
+    have one. A filled row comes without its `deprecation_date`: the live table
+    dropped the row, so the date is no longer anyone's announcement (the copy
+    kept Vertex's day on `openrouter/google/...` rows OpenRouter still serves).
+    The table is replaced, never changed in place, so a request reading it
+    meanwhile is not disturbed; a table litellm reloads is filled again on the
+    next call.
     """
     global _filled_table, _from_bundled
     try:
@@ -285,12 +294,21 @@ def fill_from_bundled() -> frozenset[str]:
         if litellm.model_cost is _filled_table:
             return _from_bundled
         live = litellm.model_cost
-        missing = {k: v for k, v in bundled_table().items() if k not in live}
+        missing = {
+            k: _undated(v) for k, v in bundled_table().items() if k not in live
+        }
         if missing:
             replace_table({**live, **missing})
         _from_bundled = _from_bundled | frozenset(missing)
         _filled_table = litellm.model_cost
         return _from_bundled
+
+
+def _undated(row: object) -> object:
+    """A shipped row without its `deprecation_date` (see `fill_from_bundled`)."""
+    if isinstance(row, dict) and "deprecation_date" in row:
+        return {k: v for k, v in row.items() if k != "deprecation_date"}
+    return row
 
 
 def replace_table(table: dict) -> None:
@@ -383,10 +401,24 @@ def model_eol(model_id: str) -> tuple[str, Source] | None:
 
 
 def _vendor_eol(model_id: str) -> tuple[str, Source] | None:
-    """The date the vendor announced, or Azure's schedule for an OpenAI model."""
-    # An aggregator's id is asked about under the vendor's own spelling too,
-    # which is the only one the sources are keyed by.
-    for candidate in (model_id, direct_id(model_id)):
+    """The date the vendor announced, or Azure's schedule for an OpenAI model.
+
+    An `openrouter/...` id is asked about under the vendor's own spelling,
+    which is the one the sources are keyed by. litellm's row for the
+    OpenRouter id itself is read only when OpenRouter's list does not have the
+    model (offline, or no longer listed): its `deprecation_date` is copied
+    from one of the vendor's endpoints (Vertex's day for
+    `openrouter/google/...`) and stays after OpenRouter moves the model to
+    another one, while a model OpenRouter lists has its own say on when it
+    stops (`model_eol`).
+    """
+    prefix, _, rest = model_id.partition("/")
+    candidates = (
+        (direct_id(model_id), None if openrouter_model(rest) else model_id)
+        if prefix == "openrouter"
+        else (model_id,)
+    )
+    for candidate in candidates:
         if not candidate:
             continue
         date = provider_eol(candidate)

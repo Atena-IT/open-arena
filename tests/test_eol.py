@@ -83,6 +83,53 @@ def test_a_date_announced_for_a_model_is_found_through_openrouter_too():
     assert model_eol("openrouter/anthropic/claude-sonnet-5") == direct
 
 
+def test_litellms_row_for_an_openrouter_id_does_not_date_it(monkeypatch, openrouter_lists):
+    # litellm's shipped copy kept an `openrouter/google/...` row carrying Vertex's shutdown day, while
+    # OpenRouter itself lists the model with no expiration and Google's own API id has no date.
+    monkeypatch.setitem(LITELLM_DATES, "openrouter/google/gemini-2.5-flash-lite", "2026-10-20")
+    openrouter_lists["data"] = [{"id": "google/gemini-2.5-flash-lite", "expiration_date": None}]
+    assert model_eol("openrouter/google/gemini-2.5-flash-lite") is None
+    assert eol_days("openrouter/google/gemini-2.5-flash-lite", date(2026, 11, 20)) == EOL_HORIZON_DAYS
+
+
+def test_litellms_row_for_an_openrouter_id_answers_only_when_openrouter_cannot(monkeypatch, openrouter_lists):
+    monkeypatch.setitem(LITELLM_DATES, "openrouter/mancer/weaver", "2026-01-01")
+    # Offline, or no longer listed: litellm's row is all there is.
+    assert model_eol("openrouter/mancer/weaver") == ("2026-01-01", "provider")
+    # Listed: OpenRouter says when it stops, or that it does not.
+    openrouter_lists["data"] = [{"id": "mancer/weaver", "expiration_date": "2027-06-30"}]
+    eol_module._openrouter_cache = None
+    assert model_eol("openrouter/mancer/weaver") == ("2027-06-30", "openrouter")
+    openrouter_lists["data"] = [{"id": "mancer/weaver", "expiration_date": None}]
+    eol_module._openrouter_cache = None
+    assert model_eol("openrouter/mancer/weaver") is None
+
+
+def test_a_row_only_the_shipped_copy_has_is_filled_in_without_its_date(monkeypatch):
+    import litellm
+
+    original = litellm.model_cost
+    monkeypatch.setattr(eol_module, "_filled_table", None)
+    monkeypatch.setattr(eol_module, "_from_bundled", frozenset())
+    monkeypatch.setattr(litellm, "model_cost", {"gemini/kept": {"input_cost_per_token": 1e-6, "deprecation_date": "2027-01-01"}})
+    monkeypatch.setattr(
+        eol_module,
+        "bundled_table",
+        lambda: {
+            "gemini/kept": {"input_cost_per_token": 9e-6},
+            "openrouter/google/dropped": {"input_cost_per_token": 2e-6, "deprecation_date": "2026-10-20"},
+        },
+    )
+    try:
+        assert eol_module.fill_from_bundled() == frozenset({"openrouter/google/dropped"})
+        # The price is filled in, the date the live table no longer carries is not.
+        assert litellm.model_cost["openrouter/google/dropped"] == {"input_cost_per_token": 2e-6}
+        # A live row is left as it is, date and all.
+        assert litellm.model_cost["gemini/kept"] == {"input_cost_per_token": 1e-6, "deprecation_date": "2027-01-01"}
+    finally:
+        eol_module.replace_table(original)
+
+
 def test_azures_schedule_is_reached_through_openrouter_too():
     direct = model_eol("openai/gpt-4.1-mini")
     assert direct is not None and direct[1] == "azure"

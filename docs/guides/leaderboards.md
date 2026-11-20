@@ -311,8 +311,10 @@ newest run that scored the model. It tries these sources:
    schedule. It is fetched online and cached for a day. When the fetch fails,
    a copy shipped with the package is used;
 3. for `openrouter/` ids, OpenRouter's expiration date, when it comes before
-   the vendor's date. OpenRouter ids are also looked up under the vendor's
-   own id.
+   the vendor's date. OpenRouter ids are looked up under the vendor's own id;
+   litellm's row for the OpenRouter id, whose date is copied from one of the
+   vendor's endpoints, counts only when OpenRouter's list does not have the
+   model.
 
 | situation | `eol_days` |
 |---|---|
