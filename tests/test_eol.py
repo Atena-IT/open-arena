@@ -127,6 +127,18 @@ def test_openrouters_date_is_found_whatever_the_ids_punctuation(openrouter_lists
     assert model_eol("openrouter/anthropic/claude-opus-5-5") == ("2026-12-31", "openrouter")
 
 
+@pytest.mark.parametrize("order", [1, -1])
+def test_an_exactly_spelled_id_keeps_its_own_date_beside_a_look_alike(openrouter_lists, order):
+    # Two listed ids that differ only in punctuation share a `same_name`; each keeps its own date, in either order.
+    rows = [
+        {"id": "mancer/weaver:beta", "expiration_date": "2026-12-01"},
+        {"id": "mancer/weaver-beta", "expiration_date": None},
+    ]
+    openrouter_lists["data"] = rows[::order]
+    assert model_eol("openrouter/mancer/weaver-beta") is None
+    assert model_eol("openrouter/mancer/weaver:beta") == ("2026-12-01", "openrouter")
+
+
 def test_the_live_table_counts_as_fetched_only_when_litellm_downloaded_it(monkeypatch):
     from litellm.litellm_core_utils import get_model_cost_map as source
 
@@ -134,6 +146,15 @@ def test_the_live_table_counts_as_fetched_only_when_litellm_downloaded_it(monkey
     assert LIVE_TABLE_FETCHED() is False
     monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": "remote"})
     assert LIVE_TABLE_FETCHED() is True
+
+
+def test_an_answer_litellm_changed_counts_as_its_shipped_copy(monkeypatch, caplog):
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: object())
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert "did not say where its pricing table came from" in caplog.text
 
 
 def test_a_row_only_the_shipped_copy_has_is_filled_in_without_its_date(monkeypatch):

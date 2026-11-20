@@ -88,7 +88,7 @@ _OPENROUTER_VENDORS = {
 
 _lock = threading.Lock()
 _cache: tuple[float, dict[str, str], dict[tuple[str, str], str]] | None = None
-_openrouter_cache: tuple[float, float, dict[str, dict], dict[str, str]] | None = None  # (at, ttl, rows by same_name, dates)
+_openrouter_cache: tuple[float, float, dict[str, dict], dict[str, dict]] | None = None  # (at, ttl, rows by same_name, rows by id)
 _openrouter_fetch_lock = threading.Lock()
 _openrouter_refreshing = False
 
@@ -170,10 +170,17 @@ def parse_openrouter_models(payload: dict) -> dict[str, str]:
     """`{openrouter id: YYYY-MM-DD}` for the models of `/api/v1/models` that carry an `expiration_date`."""
     out: dict[str, str] = {}
     for row in payload.get("data") or []:
-        date_ = row.get("expiration_date") if isinstance(row, dict) else None
-        if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
-            out[str(row.get("id"))] = date_[:10]
+        if date_ := _expiration(row):
+            out[str(row.get("id"))] = date_
     return out
+
+
+def _expiration(row: object) -> str | None:
+    """A row's `expiration_date` as YYYY-MM-DD, when it carries a well-formed one."""
+    date_ = row.get("expiration_date") if isinstance(row, dict) else None
+    if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
+        return date_[:10]
+    return None
 
 
 def _fetch_openrouter() -> dict | None:
@@ -194,7 +201,7 @@ def same_name(model_id: str) -> str:
     return re.sub(r"[._:]", "-", model_id.lower())
 
 
-def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
+def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, dict]]:
     """Fetch OpenRouter's list (outside `_lock`, one fetch at a time) and keep it indexed."""
     global _openrouter_cache, _openrouter_refreshing
     with _openrouter_fetch_lock:
@@ -203,14 +210,14 @@ def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
             data = payload.get("data") if isinstance(payload, dict) else None
             rows = [r for r in data or [] if isinstance(r, dict)]
             by_name = {same_name(str(r.get("id", ""))): r for r in rows}
-            dates = parse_openrouter_models({"data": rows})
+            by_id = {str(r.get("id", "")): r for r in rows}
             with _lock:
                 if rows or _openrouter_cache is None:
                     _openrouter_cache = (
                         time.monotonic(),
                         _TTL_S if rows else _RETRY_S,
                         by_name,
-                        dates,
+                        by_id,
                     )
                 else:
                     # Offline this time: keep what was known, ask again sooner.
@@ -224,8 +231,8 @@ def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
             _openrouter_refreshing = False
 
 
-def _openrouter() -> tuple[dict[str, dict], dict[str, str]]:
-    """OpenRouter's rows by `same_name` of their id, and their expiration dates.
+def _openrouter() -> tuple[dict[str, dict], dict[str, dict]]:
+    """OpenRouter's rows by `same_name` of their id, and by the id itself.
 
     Fetched once and then refreshed at most once a day, behind the caller: a
     stale list answers while a thread fetches the next one, so no request
@@ -243,8 +250,14 @@ def _openrouter() -> tuple[dict[str, dict], dict[str, str]]:
 
 
 def openrouter_model(model_id: str) -> dict | None:
-    """OpenRouter's row for one of its ids (`vendor/model`, any spelling); None offline or unknown."""
-    return _openrouter()[0].get(same_name(model_id))
+    """OpenRouter's row for one of its ids (`vendor/model`); None offline or unknown.
+
+    The id as OpenRouter spells it first, else any spelling (`same_name`): two
+    listed ids that differ only in punctuation (`x:beta`, `x-beta`) share a
+    `same_name`, and only the exact one says which is meant.
+    """
+    by_name, by_id = _openrouter()
+    return by_id.get(model_id) or by_name.get(same_name(model_id))
 
 
 def openrouter_catalog() -> dict[str, dict]:
@@ -254,7 +267,7 @@ def openrouter_catalog() -> dict[str, dict]:
 
 def openrouter_expirations() -> dict[str, str]:
     """OpenRouter's expiration dates by its own id (`vendor/model`)."""
-    return _openrouter()[1]
+    return parse_openrouter_models({"data": list(_openrouter()[1].values())})
 
 
 @functools.cache
@@ -401,12 +414,8 @@ def model_eol(model_id: str) -> tuple[str, Source] | None:
 
 
 def _openrouter_date(model_id: str) -> str | None:
-    """OpenRouter's expiration date (YYYY-MM-DD) for one of its ids, any spelling (`same_name`)."""
-    row = openrouter_model(model_id)
-    date_ = row.get("expiration_date") if row else None
-    if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
-        return date_[:10]
-    return None
+    """OpenRouter's expiration date (YYYY-MM-DD) for one of its ids: the row `openrouter_model` finds."""
+    return _expiration(openrouter_model(model_id))
 
 
 def _vendor_eol(model_id: str) -> tuple[str, Source] | None:
@@ -449,16 +458,27 @@ def _live_table_fetched() -> bool:
     """Whether litellm's live table was downloaded, rather than loaded from its shipped copy.
 
     litellm loads the copy when told to (`LITELLM_LOCAL_MODEL_COST_MAP`) or when
-    the download fails. A litellm that does not say is taken as fetched.
+    the download fails. A litellm too old to have the call is taken as fetched,
+    as before it existed; an answer that cannot be read is taken as the copy,
+    so the copy's stale rows are not read on a guess, and is logged.
     """
     try:
         from litellm.litellm_core_utils.get_model_cost_map import (
             get_model_cost_map_source_info,
         )
-
-        return get_model_cost_map_source_info().get("source") != "local"
-    except Exception:  # noqa: BLE001 (an older litellm without the call)
+    except ImportError:
         return True
+    try:
+        source = get_model_cost_map_source_info()["source"]
+    except Exception as e:  # noqa: BLE001 (litellm changed its answer)
+        log.warning(
+            "litellm did not say where its pricing table came from (%s: %s); "
+            "treating it as its shipped copy",
+            type(e).__name__,
+            e,
+        )
+        return False
+    return source != "local"
 
 
 def eol_days(model_id: str, today: date) -> float:
