@@ -162,28 +162,3 @@ def test_only_langsmith_is_priced_and_a_failure_never_stops_the_run(
     # The first failure ends the turn: one timeout and one line, however many models.
     assert len(calls) == 1
     assert caplog.text.count("LangSmith prices") == 1
-
-
-def test_a_model_charged_at_a_factor_gets_its_row_at_the_charged_price(langsmith):
-    langsmith_prices.price_models(
-        _config(otel.langsmith("k", "https://eu.api.smith.langchain.com")),
-        [MODEL],
-        price_factors={MODEL: 2.0},
-    )
-    (post,) = [c for c in langsmith.calls if c[0] == "POST"]
-    # LangSmith prices the run's tokens with this row: it must show what the run is charged.
-    assert post[3]["prompt_cost"] == pytest.approx(2e-07)
-    assert post[3]["completion_cost"] == pytest.approx(1e-06)
-
-
-def test_a_factor_that_changes_rewrites_the_row_and_one_that_does_not_asks_nothing(langsmith):
-    config = _config(otel.langsmith("k", "https://eu.api.smith.langchain.com"))
-    langsmith_prices.price_models(config, [MODEL], price_factors={MODEL: 2.0})
-    langsmith_prices.price_models(config, [MODEL], price_factors={MODEL: 2.0})
-    assert [c[0] for c in langsmith.calls] == ["GET", "POST"]
-    langsmith_prices.price_models(config, [MODEL], price_factors={MODEL: 3.0})
-    assert langsmith.calls[-1][:2] == ("PUT", "/row-1")
-    assert langsmith.calls[-1][3]["prompt_cost"] == pytest.approx(3e-07)
-    # A factor for another model changes nothing for this one.
-    langsmith_prices.price_models(config, [MODEL], price_factors={"x/y": 5.0})
-    assert langsmith.calls[-1][3]["prompt_cost"] == pytest.approx(1e-07)
