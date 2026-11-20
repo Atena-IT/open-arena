@@ -314,7 +314,7 @@ newest run that scored the model. It tries these sources:
    the vendor's date. OpenRouter ids are looked up under the vendor's own id;
    litellm's row for the OpenRouter id, whose date is copied from one of the
    vendor's endpoints, counts only when OpenRouter's list does not have the
-   model.
+   model and litellm's table was downloaded, not its shipped copy.
 
 | situation | `eol_days` |
 |---|---|

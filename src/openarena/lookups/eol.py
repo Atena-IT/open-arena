@@ -18,7 +18,9 @@
    the id stops working. An `openrouter/...` id is dated by the vendor's own
    id and by OpenRouter; litellm's row for the OpenRouter id, whose date is
    copied from one of the vendor's endpoints, answers only for a model
-   OpenRouter's list does not have (offline, or no longer listed).
+   OpenRouter's list does not have (offline, or no longer listed), and only
+   when litellm fetched its table rather than loading its shipped copy.
+   OpenRouter's ids are matched in any spelling (`same_name`).
 
 A row litellm's live table dropped, filled back from the copy shipped with
 litellm, comes without its date (`fill_from_bundled`).
@@ -392,12 +394,19 @@ def model_eol(model_id: str) -> tuple[str, Source] | None:
     """
     vendor = _vendor_eol(model_id)
     prefix, _, rest = model_id.partition("/")
-    routed = (
-        openrouter_expirations().get(rest) if prefix == "openrouter" and rest else None
-    )
+    routed = _openrouter_date(rest) if prefix == "openrouter" and rest else None
     if routed and (vendor is None or routed < vendor[0]):
         return routed, "openrouter"
     return vendor
+
+
+def _openrouter_date(model_id: str) -> str | None:
+    """OpenRouter's expiration date (YYYY-MM-DD) for one of its ids, any spelling (`same_name`)."""
+    row = openrouter_model(model_id)
+    date_ = row.get("expiration_date") if row else None
+    if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
+        return date_[:10]
+    return None
 
 
 def _vendor_eol(model_id: str) -> tuple[str, Source] | None:
@@ -405,31 +414,51 @@ def _vendor_eol(model_id: str) -> tuple[str, Source] | None:
 
     An `openrouter/...` id is asked about under the vendor's own spelling,
     which is the one the sources are keyed by. litellm's row for the
-    OpenRouter id itself is read only when OpenRouter's list does not have the
-    model (offline, or no longer listed): its `deprecation_date` is copied
+    OpenRouter id itself is a last resort: its `deprecation_date` is copied
     from one of the vendor's endpoints (Vertex's day for
     `openrouter/google/...`) and stays after OpenRouter moves the model to
-    another one, while a model OpenRouter lists has its own say on when it
-    stops (`model_eol`).
+    another one. It is read only when OpenRouter's list does not have the
+    model (offline, or no longer listed), and only from a table litellm
+    fetched: its shipped copy is where the stale dates are.
     """
     prefix, _, rest = model_id.partition("/")
-    candidates = (
-        (direct_id(model_id), None if openrouter_model(rest) else model_id)
-        if prefix == "openrouter"
-        else (model_id,)
-    )
-    for candidate in candidates:
-        if not candidate:
-            continue
-        date = provider_eol(candidate)
-        if date:
-            return date, "provider"
-        prefix, _, name = candidate.partition("/")
-        if name and prefix in _OPENAI_PREFIXES:
-            date = _azure_eol(name)
-            if date:
-                return date, "azure"
+    if prefix != "openrouter":
+        return _dated(model_id)
+    direct = direct_id(model_id)
+    if direct and (found := _dated(direct)):
+        return found
+    if openrouter_model(rest) is None and _live_table_fetched():
+        return _dated(model_id)
     return None
+
+
+def _dated(model_id: str) -> tuple[str, Source] | None:
+    """litellm's date for an id, else Azure's schedule for an OpenAI one."""
+    date_ = provider_eol(model_id)
+    if date_:
+        return date_, "provider"
+    prefix, _, name = model_id.partition("/")
+    if name and prefix in _OPENAI_PREFIXES:
+        date_ = _azure_eol(name)
+        if date_:
+            return date_, "azure"
+    return None
+
+
+def _live_table_fetched() -> bool:
+    """Whether litellm's live table was downloaded, rather than loaded from its shipped copy.
+
+    litellm loads the copy when told to (`LITELLM_LOCAL_MODEL_COST_MAP`) or when
+    the download fails. A litellm that does not say is taken as fetched.
+    """
+    try:
+        from litellm.litellm_core_utils.get_model_cost_map import (
+            get_model_cost_map_source_info,
+        )
+
+        return get_model_cost_map_source_info().get("source") != "local"
+    except Exception:  # noqa: BLE001 (an older litellm without the call)
+        return True
 
 
 def eol_days(model_id: str, today: date) -> float:

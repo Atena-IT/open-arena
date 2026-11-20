@@ -546,8 +546,10 @@ An `openrouter/<vendor>/<model>` id is looked up under the vendor's own id: it
 is the same model, and it stops on the same day. litellm's row for the
 OpenRouter id itself, whose date is copied from one of the vendor's endpoints,
 is read only when OpenRouter's list does not have the model (offline, or no
-longer listed); otherwise OpenRouter's expiration date says when OpenRouter
-stops. A row litellm's live table dropped, kept from the copy shipped with
+longer listed) and litellm downloaded its table rather than loading the copy
+it ships with; otherwise OpenRouter's expiration date says when OpenRouter
+stops, matched to the id whatever its punctuation (`claude-opus-5-5` and
+`claude-opus-5.5` are one model). A row litellm's live table dropped, kept from the copy shipped with
 litellm for its prices, carries no date.
 
 | case | `eol_days` |
