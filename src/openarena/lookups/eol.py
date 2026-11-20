@@ -15,7 +15,15 @@
    OpenRouter stops routing the model, which it often sets for models no
    vendor has dated (previews, smaller labs). It answers only for its own
    ids, and wins when it comes before the vendor's date: that is the day
-   the id stops working.
+   the id stops working. An `openrouter/...` id is dated by the vendor's own
+   id and by OpenRouter; litellm's row for the OpenRouter id, whose date is
+   copied from one of the vendor's endpoints, answers only for a model
+   OpenRouter's list does not have (offline, or no longer listed), and only
+   when litellm fetched its table rather than loading its shipped copy.
+   OpenRouter's ids are matched in any spelling (`same_name`).
+
+A row litellm's live table dropped, filled back from the copy shipped with
+litellm, comes without its date (`fill_from_bundled`).
 
 The schedule is fetched from the docs' GitHub source and cached for a day; a
 snapshot shipped next to this module answers when the network does not.
@@ -80,7 +88,7 @@ _OPENROUTER_VENDORS = {
 
 _lock = threading.Lock()
 _cache: tuple[float, dict[str, str], dict[tuple[str, str], str]] | None = None
-_openrouter_cache: tuple[float, float, dict[str, dict], dict[str, str]] | None = None  # (at, ttl, rows by same_name, dates)
+_openrouter_cache: tuple[float, float, dict[str, dict], dict[str, dict]] | None = None  # (at, ttl, rows by same_name, rows by id)
 _openrouter_fetch_lock = threading.Lock()
 _openrouter_refreshing = False
 
@@ -162,10 +170,17 @@ def parse_openrouter_models(payload: dict) -> dict[str, str]:
     """`{openrouter id: YYYY-MM-DD}` for the models of `/api/v1/models` that carry an `expiration_date`."""
     out: dict[str, str] = {}
     for row in payload.get("data") or []:
-        date_ = row.get("expiration_date") if isinstance(row, dict) else None
-        if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
-            out[str(row.get("id"))] = date_[:10]
+        if date_ := _expiration(row):
+            out[str(row.get("id"))] = date_
     return out
+
+
+def _expiration(row: object) -> str | None:
+    """A row's `expiration_date` as YYYY-MM-DD, when it carries a well-formed one."""
+    date_ = row.get("expiration_date") if isinstance(row, dict) else None
+    if isinstance(date_, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_[:10]):
+        return date_[:10]
+    return None
 
 
 def _fetch_openrouter() -> dict | None:
@@ -186,7 +201,7 @@ def same_name(model_id: str) -> str:
     return re.sub(r"[._:]", "-", model_id.lower())
 
 
-def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
+def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, dict]]:
     """Fetch OpenRouter's list (outside `_lock`, one fetch at a time) and keep it indexed."""
     global _openrouter_cache, _openrouter_refreshing
     with _openrouter_fetch_lock:
@@ -195,14 +210,14 @@ def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
             data = payload.get("data") if isinstance(payload, dict) else None
             rows = [r for r in data or [] if isinstance(r, dict)]
             by_name = {same_name(str(r.get("id", ""))): r for r in rows}
-            dates = parse_openrouter_models({"data": rows})
+            by_id = {str(r.get("id", "")): r for r in rows}
             with _lock:
                 if rows or _openrouter_cache is None:
                     _openrouter_cache = (
                         time.monotonic(),
                         _TTL_S if rows else _RETRY_S,
                         by_name,
-                        dates,
+                        by_id,
                     )
                 else:
                     # Offline this time: keep what was known, ask again sooner.
@@ -216,8 +231,8 @@ def _refresh_openrouter() -> tuple[dict[str, dict], dict[str, str]]:
             _openrouter_refreshing = False
 
 
-def _openrouter() -> tuple[dict[str, dict], dict[str, str]]:
-    """OpenRouter's rows by `same_name` of their id, and their expiration dates.
+def _openrouter() -> tuple[dict[str, dict], dict[str, dict]]:
+    """OpenRouter's rows by `same_name` of their id, and by the id itself.
 
     Fetched once and then refreshed at most once a day, behind the caller: a
     stale list answers while a thread fetches the next one, so no request
@@ -235,8 +250,14 @@ def _openrouter() -> tuple[dict[str, dict], dict[str, str]]:
 
 
 def openrouter_model(model_id: str) -> dict | None:
-    """OpenRouter's row for one of its ids (`vendor/model`, any spelling); None offline or unknown."""
-    return _openrouter()[0].get(same_name(model_id))
+    """OpenRouter's row for one of its ids (`vendor/model`); None offline or unknown.
+
+    The id as OpenRouter spells it first, else any spelling (`same_name`): two
+    listed ids that differ only in punctuation (`x:beta`, `x-beta`) share a
+    `same_name`, and only the exact one says which is meant.
+    """
+    by_name, by_id = _openrouter()
+    return by_id.get(model_id) or by_name.get(same_name(model_id))
 
 
 def openrouter_catalog() -> dict[str, dict]:
@@ -246,7 +267,7 @@ def openrouter_catalog() -> dict[str, dict]:
 
 def openrouter_expirations() -> dict[str, str]:
     """OpenRouter's expiration dates by its own id (`vendor/model`)."""
-    return _openrouter()[1]
+    return parse_openrouter_models({"data": list(_openrouter()[1].values())})
 
 
 @functools.cache
@@ -272,9 +293,12 @@ def fill_from_bundled() -> frozenset[str]:
     Filling the live table from the copy serves every reader at once: the
     prices, the end-of-life dates, the add form's facts and catalogue, and
     litellm's own price of each call in a run. The live row wins where both
-    have one. The table is replaced, never changed in place, so a request
-    reading it meanwhile is not disturbed; a table litellm reloads is filled
-    again on the next call.
+    have one. A filled row comes without its `deprecation_date`: the live table
+    dropped the row, so the date is no longer anyone's announcement (the copy
+    kept Vertex's day on `openrouter/google/...` rows OpenRouter still serves).
+    The table is replaced, never changed in place, so a request reading it
+    meanwhile is not disturbed; a table litellm reloads is filled again on the
+    next call.
     """
     global _filled_table, _from_bundled
     try:
@@ -285,12 +309,21 @@ def fill_from_bundled() -> frozenset[str]:
         if litellm.model_cost is _filled_table:
             return _from_bundled
         live = litellm.model_cost
-        missing = {k: v for k, v in bundled_table().items() if k not in live}
+        missing = {
+            k: _undated(v) for k, v in bundled_table().items() if k not in live
+        }
         if missing:
             replace_table({**live, **missing})
         _from_bundled = _from_bundled | frozenset(missing)
         _filled_table = litellm.model_cost
         return _from_bundled
+
+
+def _undated(row: object) -> object:
+    """A shipped row without its `deprecation_date` (see `fill_from_bundled`)."""
+    if isinstance(row, dict) and "deprecation_date" in row:
+        return {k: v for k, v in row.items() if k != "deprecation_date"}
+    return row
 
 
 def replace_table(table: dict) -> None:
@@ -374,30 +407,78 @@ def model_eol(model_id: str) -> tuple[str, Source] | None:
     """
     vendor = _vendor_eol(model_id)
     prefix, _, rest = model_id.partition("/")
-    routed = (
-        openrouter_expirations().get(rest) if prefix == "openrouter" and rest else None
-    )
+    routed = _openrouter_date(rest) if prefix == "openrouter" and rest else None
     if routed and (vendor is None or routed < vendor[0]):
         return routed, "openrouter"
     return vendor
 
 
+def _openrouter_date(model_id: str) -> str | None:
+    """OpenRouter's expiration date (YYYY-MM-DD) for one of its ids: the row `openrouter_model` finds."""
+    return _expiration(openrouter_model(model_id))
+
+
 def _vendor_eol(model_id: str) -> tuple[str, Source] | None:
-    """The date the vendor announced, or Azure's schedule for an OpenAI model."""
-    # An aggregator's id is asked about under the vendor's own spelling too,
-    # which is the only one the sources are keyed by.
-    for candidate in (model_id, direct_id(model_id)):
-        if not candidate:
-            continue
-        date = provider_eol(candidate)
-        if date:
-            return date, "provider"
-        prefix, _, name = candidate.partition("/")
-        if name and prefix in _OPENAI_PREFIXES:
-            date = _azure_eol(name)
-            if date:
-                return date, "azure"
+    """The date the vendor announced, or Azure's schedule for an OpenAI model.
+
+    An `openrouter/...` id is asked about under the vendor's own spelling,
+    which is the one the sources are keyed by. litellm's row for the
+    OpenRouter id itself is a last resort: its `deprecation_date` is copied
+    from one of the vendor's endpoints (Vertex's day for
+    `openrouter/google/...`) and stays after OpenRouter moves the model to
+    another one. It is read only when OpenRouter's list does not have the
+    model (offline, or no longer listed), and only from a table litellm
+    fetched: its shipped copy is where the stale dates are.
+    """
+    prefix, _, rest = model_id.partition("/")
+    if prefix != "openrouter":
+        return _dated(model_id)
+    direct = direct_id(model_id)
+    if direct and (found := _dated(direct)):
+        return found
+    if openrouter_model(rest) is None and _live_table_fetched():
+        return _dated(model_id)
     return None
+
+
+def _dated(model_id: str) -> tuple[str, Source] | None:
+    """litellm's date for an id, else Azure's schedule for an OpenAI one."""
+    date_ = provider_eol(model_id)
+    if date_:
+        return date_, "provider"
+    prefix, _, name = model_id.partition("/")
+    if name and prefix in _OPENAI_PREFIXES:
+        date_ = _azure_eol(name)
+        if date_:
+            return date_, "azure"
+    return None
+
+
+def _live_table_fetched() -> bool:
+    """Whether litellm's live table was downloaded, rather than loaded from its shipped copy.
+
+    litellm loads the copy when told to (`LITELLM_LOCAL_MODEL_COST_MAP`) or when
+    the download fails. A litellm too old to have the call is taken as fetched,
+    as before it existed; an answer that cannot be read is taken as the copy,
+    so the copy's stale rows are not read on a guess, and is logged.
+    """
+    try:
+        from litellm.litellm_core_utils.get_model_cost_map import (
+            get_model_cost_map_source_info,
+        )
+    except ImportError:
+        return True
+    try:
+        source = get_model_cost_map_source_info()["source"]
+    except Exception as e:  # noqa: BLE001 (litellm changed its answer)
+        log.warning(
+            "litellm did not say where its pricing table came from (%s: %s); "
+            "treating it as its shipped copy",
+            type(e).__name__,
+            e,
+        )
+        return False
+    return source != "local"
 
 
 def eol_days(model_id: str, today: date) -> float:
