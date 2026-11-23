@@ -445,7 +445,9 @@ def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(wire,
 
 
 def test_a_structured_openrouter_call_carries_the_frameworks_excluded_providers(wire):
-    from synalinks.src.modules.language_models.language_model import OPENROUTER_IGNORED_PROVIDERS
+    from synalinks.src.modules.language_models.language_model import (
+        OPENROUTER_IGNORED_PROVIDERS,
+    )
 
     body = _posted(UNKNOWN, wire, False, None)
     assert body["provider"]["require_parameters"] is True
