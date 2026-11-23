@@ -458,9 +458,11 @@ def _live_table_fetched() -> bool:
     """Whether litellm's live table was downloaded, rather than loaded from its shipped copy.
 
     litellm loads the copy when told to (`LITELLM_LOCAL_MODEL_COST_MAP`) or when
-    the download fails. A litellm too old to have the call is taken as fetched,
-    as before it existed; an answer that cannot be read is taken as the copy,
-    so the copy's stale rows are not read on a guess, and is logged.
+    the download fails. Only an explicit `"remote"` source counts as downloaded.
+    `"local"` is the copy. Any other answer (none, an unknown source, a shape
+    that cannot be read) is taken as the copy too and logged, so the copy's
+    stale rows are not read on a guess. A litellm too old to have the call is
+    taken as downloaded, as before the call existed.
     """
     try:
         from litellm.litellm_core_utils.get_model_cost_map import (
@@ -478,7 +480,14 @@ def _live_table_fetched() -> bool:
             e,
         )
         return False
-    return source != "local"
+    if source == "remote":
+        return True
+    if source != "local":
+        log.warning(
+            "litellm said its pricing table came from %r; treating it as its shipped copy",
+            source,
+        )
+    return False
 
 
 def eol_days(model_id: str, today: date) -> float:

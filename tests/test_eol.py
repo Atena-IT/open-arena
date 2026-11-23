@@ -157,6 +157,26 @@ def test_an_answer_litellm_changed_counts_as_its_shipped_copy(monkeypatch, caplo
     assert "did not say where its pricing table came from" in caplog.text
 
 
+@pytest.mark.parametrize("answer", [None, "unknown", "", "REMOTE"])
+def test_only_a_remote_source_counts_as_downloaded(monkeypatch, caplog, answer):
+    # Anything but "remote" or "local" is a source litellm did not have when this was written: not taken on trust.
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": answer})
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert "treating it as its shipped copy" in caplog.text
+
+
+def test_a_local_source_is_the_copy_without_a_warning(monkeypatch, caplog):
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": "local"})
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert caplog.text == ""
+
+
 def test_a_row_only_the_shipped_copy_has_is_filled_in_without_its_date(monkeypatch):
     import litellm
 
