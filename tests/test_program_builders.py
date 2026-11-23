@@ -456,6 +456,7 @@ def test_a_structured_openrouter_call_carries_the_frameworks_excluded_providers(
     chosen = OPENROUTER_IGNORED_PROVIDERS[0]
     routed = _posted(UNKNOWN, wire, False, {"extra_body": {"provider": {"order": [chosen]}}})
     assert routed["provider"]["order"] == [chosen] and chosen not in routed["provider"].get("ignore", [])
+    assert set(OPENROUTER_IGNORED_PROVIDERS) - {chosen} <= set(routed["provider"]["ignore"])
     assert routed["provider"]["require_parameters"] is True
 
 
