@@ -34,15 +34,22 @@ from openarena.lookups.eol import (
 # model. The real table changes with every litellm release; the logic under test does not.
 LITELLM_DATES = {"anthropic/claude-sonnet-5": "2027-03-01"}
 
+# The real check, kept before the fixture below replaces it in every test.
+LIVE_TABLE_FETCHED = eol_module._live_table_fetched
+
 
 @pytest.fixture(autouse=True)
 def litellm_dates(monkeypatch):
-    """litellm's table, reduced to `LITELLM_DATES`: no other model has a provider date."""
+    """litellm's table, reduced to `LITELLM_DATES`: no other model has a provider date.
+
+    It stands for a table litellm fetched, whatever `LITELLM_LOCAL_MODEL_COST_MAP` makes the real one.
+    """
     monkeypatch.setattr(
         eol_module,
         "litellm_model_info",
         lambda model_id: {"deprecation_date": LITELLM_DATES[model_id]} if model_id in LITELLM_DATES else None,
     )
+    monkeypatch.setattr(eol_module, "_live_table_fetched", lambda: True)
 
 
 @pytest.fixture(autouse=True)
@@ -81,6 +88,118 @@ def test_a_date_announced_for_a_model_is_found_through_openrouter_too():
     direct = model_eol("anthropic/claude-sonnet-5")
     assert direct == ("2027-03-01", "provider")
     assert model_eol("openrouter/anthropic/claude-sonnet-5") == direct
+
+
+def test_litellms_row_for_an_openrouter_id_does_not_date_it(monkeypatch, openrouter_lists):
+    # litellm's shipped copy kept an `openrouter/google/...` row carrying Vertex's shutdown day, while
+    # OpenRouter itself lists the model with no expiration and Google's own API id has no date.
+    monkeypatch.setitem(LITELLM_DATES, "openrouter/google/gemini-2.5-flash-lite", "2026-10-20")
+    openrouter_lists["data"] = [{"id": "google/gemini-2.5-flash-lite", "expiration_date": None}]
+    assert model_eol("openrouter/google/gemini-2.5-flash-lite") is None
+    assert eol_days("openrouter/google/gemini-2.5-flash-lite", date(2026, 11, 20)) == EOL_HORIZON_DAYS
+
+
+def test_litellms_row_for_an_openrouter_id_answers_only_when_openrouter_cannot(monkeypatch, openrouter_lists):
+    monkeypatch.setitem(LITELLM_DATES, "openrouter/mancer/weaver", "2026-01-01")
+    # Offline, or no longer listed: litellm's row is all there is.
+    assert model_eol("openrouter/mancer/weaver") == ("2026-01-01", "provider")
+    # Listed: OpenRouter says when it stops, or that it does not.
+    openrouter_lists["data"] = [{"id": "mancer/weaver", "expiration_date": "2027-06-30"}]
+    eol_module._openrouter_cache = None
+    assert model_eol("openrouter/mancer/weaver") == ("2027-06-30", "openrouter")
+    openrouter_lists["data"] = [{"id": "mancer/weaver", "expiration_date": None}]
+    eol_module._openrouter_cache = None
+    assert model_eol("openrouter/mancer/weaver") is None
+
+
+def test_with_both_sources_offline_the_shipped_copys_openrouter_row_dates_nothing(monkeypatch, openrouter_lists):
+    # litellm could not download its table and loaded the copy, where the stale date is; OpenRouter is unreachable.
+    monkeypatch.setitem(LITELLM_DATES, "openrouter/google/gemini-2.5-flash-lite", "2026-10-20")
+    monkeypatch.setattr(eol_module, "_live_table_fetched", lambda: False)
+    assert model_eol("openrouter/google/gemini-2.5-flash-lite") is None
+    # The vendor's own id still answers from the copy.
+    assert model_eol("openrouter/anthropic/claude-sonnet-5") == ("2027-03-01", "provider")
+
+
+def test_openrouters_date_is_found_whatever_the_ids_punctuation(openrouter_lists):
+    # Registered with a dash, listed by OpenRouter with a dot: the same model, and its date.
+    openrouter_lists["data"] = [{"id": "anthropic/claude-opus-5.5", "expiration_date": "2026-12-31"}]
+    assert model_eol("openrouter/anthropic/claude-opus-5-5") == ("2026-12-31", "openrouter")
+
+
+@pytest.mark.parametrize("order", [1, -1])
+def test_an_exactly_spelled_id_keeps_its_own_date_beside_a_look_alike(openrouter_lists, order):
+    # Two listed ids that differ only in punctuation share a `same_name`; each keeps its own date, in either order.
+    rows = [
+        {"id": "mancer/weaver:beta", "expiration_date": "2026-12-01"},
+        {"id": "mancer/weaver-beta", "expiration_date": None},
+    ]
+    openrouter_lists["data"] = rows[::order]
+    assert model_eol("openrouter/mancer/weaver-beta") is None
+    assert model_eol("openrouter/mancer/weaver:beta") == ("2026-12-01", "openrouter")
+
+
+def test_the_live_table_counts_as_fetched_only_when_litellm_downloaded_it(monkeypatch):
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": "local"})
+    assert LIVE_TABLE_FETCHED() is False
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": "remote"})
+    assert LIVE_TABLE_FETCHED() is True
+
+
+def test_an_answer_litellm_changed_counts_as_its_shipped_copy(monkeypatch, caplog):
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: object())
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert "did not say where its pricing table came from" in caplog.text
+
+
+@pytest.mark.parametrize("answer", [None, "unknown", "", "REMOTE"])
+def test_only_a_remote_source_counts_as_downloaded(monkeypatch, caplog, answer):
+    # Anything but "remote" or "local" is a source litellm did not have when this was written: not taken on trust.
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": answer})
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert "treating it as its shipped copy" in caplog.text
+
+
+def test_a_local_source_is_the_copy_without_a_warning(monkeypatch, caplog):
+    from litellm.litellm_core_utils import get_model_cost_map as source
+
+    monkeypatch.setattr(source, "get_model_cost_map_source_info", lambda: {"source": "local"})
+    with caplog.at_level("WARNING", logger="uvicorn.error"):
+        assert LIVE_TABLE_FETCHED() is False
+    assert caplog.text == ""
+
+
+def test_a_row_only_the_shipped_copy_has_is_filled_in_without_its_date(monkeypatch):
+    import litellm
+
+    original = litellm.model_cost
+    monkeypatch.setattr(eol_module, "_filled_table", None)
+    monkeypatch.setattr(eol_module, "_from_bundled", frozenset())
+    monkeypatch.setattr(litellm, "model_cost", {"gemini/kept": {"input_cost_per_token": 1e-6, "deprecation_date": "2027-01-01"}})
+    monkeypatch.setattr(
+        eol_module,
+        "bundled_table",
+        lambda: {
+            "gemini/kept": {"input_cost_per_token": 9e-6},
+            "openrouter/google/dropped": {"input_cost_per_token": 2e-6, "deprecation_date": "2026-10-20"},
+        },
+    )
+    try:
+        assert eol_module.fill_from_bundled() == frozenset({"openrouter/google/dropped"})
+        # The price is filled in, the date the live table no longer carries is not.
+        assert litellm.model_cost["openrouter/google/dropped"] == {"input_cost_per_token": 2e-6}
+        # A live row is left as it is, date and all.
+        assert litellm.model_cost["gemini/kept"] == {"input_cost_per_token": 1e-6, "deprecation_date": "2027-01-01"}
+    finally:
+        eol_module.replace_table(original)
 
 
 def test_azures_schedule_is_reached_through_openrouter_too():
