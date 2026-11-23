@@ -108,7 +108,7 @@ def test_a_model_given_with_params_is_built_with_them_and_a_bare_id_left_to_the_
     assert built["panel_language_models"][0] == "ollama/a" and built["panel_language_models"][1].default_kwargs == {"max_tokens": 8}
     assert built["smart_language_model"] == "openai/gpt-4o" and built["instructions"] == "x"
     routed = build_models({"language_model": {"model": "openrouter/x/y"}})["language_model"]
-    assert routed.default_kwargs == {"extra_body": {"provider": {"require_parameters": True}}}
+    assert routed.default_kwargs == {"provider": {"require_parameters": True}}
     decided = build_models({"decision_model": {"model": "typesafe/jev-latest"}})["decision_model"]
     assert isinstance(decided, synalinks.DecisionModel) and decided.model == "typesafe/jev-latest"
     assert build_models({"decision_model": "typesafe/jev-latest"})["decision_model"] == "typesafe/jev-latest"  # a bare id: the framework's

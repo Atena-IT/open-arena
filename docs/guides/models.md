@@ -203,9 +203,10 @@ variable changed.
 
     One key for many vendors. Every call to an `openrouter/` id is sent with
     OpenRouter's `require_parameters` routing: it only goes to a host that
-    honours every parameter sent, tools included. A host that would drop the
-    structured-output call is skipped, and the call fails at once rather than
-    answering in prose.
+    honours every parameter sent, the structured-output format and tools
+    included, and never to a host the framework rules out for structured
+    output. A host that would ignore the format is skipped, and the call fails
+    at once rather than answering in prose.
 
 **When to use which.** A hosted API for the models you measure against, and for
 judges, where answer quality matters more than cost. Ollama to iterate on a
