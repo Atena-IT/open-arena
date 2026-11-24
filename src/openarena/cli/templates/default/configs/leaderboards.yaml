@@ -4,6 +4,7 @@
 #   <name>:
 #     title: ...                 # required
 #     datasets: []               # `datasets` keys in scope; empty: every dataset scored
+#     dataset_tags: {include: [math, "lang:en"], exclude: [toy]}   # or the datasets by tag, instead of `datasets`
 #     models: []                 # `models` keys in scope; empty: every model scored
 #     shares: {}                 # percent of the score per metric (reward, cost, avg_latency, ...);
 #                                # empty: reward first, the other measurements break ties

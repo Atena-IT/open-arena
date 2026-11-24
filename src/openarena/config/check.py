@@ -55,6 +55,7 @@ from openarena.config import (
     flatten_dataset,
 )
 from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN, TOOL_SHAPE
+from openarena.config.tags import lenient_tags
 from openarena.config.errors import Invalid
 from openarena.config.files import SECTIONS, expand, gather, load_yaml, references
 
@@ -693,7 +694,17 @@ def _evaluations(ctx: _Context, name: str, entry: dict, where: str) -> None:
 
 
 def _leaderboards(ctx: _Context, name: str, entry: dict, where: str) -> None:
-    _validate(ctx, "leaderboards", entry, where)
+    board = _validate(ctx, "leaderboards", entry, where)
+    datasets = ctx.registry("datasets") if board is not None and board.dataset_tags is not None else None
+    if datasets is not None and not any(
+        board.dataset_tags.matches(lenient_tags(tags) if isinstance(tags := (d or {}).get("tags"), list) else [])
+        for d in datasets.values()
+    ):
+        ctx.report.warning(
+            f"{where}.dataset_tags",
+            "no dataset of `datasets` passes this tag scope, so the leaderboard ranks nothing",
+            "tag the datasets it should hold, or fix a misspelled tag",
+        )
     # A leaderboard ranks the scores of runs, which outlive the entries they were made with.
     note = "only scores from runs made before it was removed can be ranked"
     for section in ("datasets", "models"):

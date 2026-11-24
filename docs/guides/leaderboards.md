@@ -69,6 +69,7 @@ don't bend one leaderboard to answer both.
 | `description` | text | none | printed after the title; say what decision the board supports |
 | `tags` | list of tags | `[]` | labels for browsing (`math`, `reward-first`, `weekly`); the ranking ignores them |
 | `datasets` | list of dataset names | `[]` = every dataset scored | the datasets in scope |
+| `dataset_tags` | `{include, exclude}`, lists of tags | none | the datasets in scope by their tags, instead of `datasets` |
 | `models` | list of model names | `[]` = every model scored | the models in scope |
 | `shares` | `{metric: number}`, each 0 or more | `{}` = the default preset | each metric's weight in the score |
 | `budgets` | list of `{metric, op, value}` | `[]` | hard limits; a model that breaks one is left out |
@@ -106,6 +107,37 @@ Set it to the dataset names you used in your evaluations (the keys of
 `openarena check` warns when a listed name is not in `datasets.yaml`. This is
 only a warning: runs outlive the entries that made them, so a board can still
 rank scores from a dataset you have since removed.
+
+### `dataset_tags`: datasets by their tags
+
+Instead of naming the datasets, give a tag filter. The datasets in scope are
+then the ones of `datasets.yaml` whose `tags` pass it, read every time the board
+is ranked: a dataset tagged later joins the board with the runs it already has,
+and one that loses the tag leaves it.
+
+```yaml
+leaderboards:
+  tenders:
+    title: Tenders, Italian or English
+    description: Every procurement dataset in Italian or English, toy sets left out.
+    dataset_tags:
+      include: [procurement, "lang:it", "lang:en"]
+      exclude: [toy]
+```
+
+- **`include`**: the tags are grouped by dimension, the part before the colon
+  (`lang` in `lang:it`); a tag without one is a group of its own. A dataset
+  needs one tag of each group: `lang:it` or `lang:en`, and `procurement`.
+- **`exclude`**: a dataset carrying any of these is out.
+
+A board gives `datasets` or `dataset_tags`, not both, and the filter names at
+least one tag, never the same one on both sides. Only the datasets of
+`datasets.yaml` can pass it, never an import's `<import>/...`. A dataset that passes the
+filter but has no score in any run is left out, as an unknown name in
+`datasets` is; the rule of [Missing runs](#missing-runs) applies to the rest.
+`leaderboards run` stops with an error when no dataset passes the filter, and
+`leaderboards list` shows the filter as one line,
+`tagged procurement · lang: it or en · without toy`.
 
 ### `models`: who is compared
 

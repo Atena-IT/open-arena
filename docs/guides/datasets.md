@@ -33,7 +33,7 @@ datasets:
   gsm8k-20:                            # the key evaluations and leaderboards use
     type: huggingface                  # the provider
     description: GSM8K test split, 20 rows.
-    tags: [math]                       # for browsing; the run ignores them
+    tags: [math]                       # for browsing and leaderboard tag scopes; the run ignores them
     config:                            # the provider's settings, the templates, the schemas
       path: openai/gsm8k
       name: main
@@ -64,7 +64,7 @@ datasets:
 | `type` | a provider ([below](#providers)) | required | where rows are read from |
 | `config` | the provider's settings, the templates, the schemas | `{}` | how rows are read and rendered |
 | `description` | text | none | shown when browsing; not read by the run |
-| `tags` | list of labels | `[]` | lower-cased and de-duplicated; for browsing only |
+| `tags` | list of labels | `[]` | lower-cased and de-duplicated; for browsing, and read by a leaderboard's [`dataset_tags`](leaderboards.md#dataset_tags-datasets-by-their-tags) |
 | `generator`, `agent`, `a2a`, `embedding`, `tools`, `harbor` | at most one block | a generator | what answers each row ([below](#what-answers-each-row)) |
 | `reward` | a key of `rewards.yaml` | none | the dataset's score; an evaluation refuses a dataset without one |
 | `metrics` | list | `[]` | extra columns beside the reward ([below](#extra-metrics)) |
