@@ -163,7 +163,7 @@ datasets:
     harbor:
       agent: terminus-2            # terminus-2, claude-code, codex, gemini-cli, goose, opencode,
                                    # openhands, mini-swe-agent, swe-agent, cline-cli, cursor-cli,
-                                   # hermes
+                                   # hermes, pi
       timeout_sec: 600             # optional: per task, over task.toml's [agent] timeout_sec
     reward: harbor-tests
     metrics:                       # optional: reward.json sub-scores as extra columns

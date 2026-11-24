@@ -25,7 +25,9 @@ the model the sweep's axis names. The prediction is Harbor's own ATIF
 trajectory, as a framework data model (`HarborTrajectory`), with the
 `answer` (what the agent wrote to `answer_file`, else its last message) and
 the verifier's `rewards`. The arena's rewards read `answer` unless a reward
-names masks of its own.
+names masks of its own. Success is read from the trajectory, not from how the
+agent exited (pi exits 0 after a model error): a run whose last model call
+failed and that left no answer predicts nothing.
 
 The model entry's params go to the agent where its options take them
 (`agent_kwargs`): `temperature`, `reasoning_effort`, and, for an agent that
@@ -74,6 +76,7 @@ from openarena.harbor import (
     find_trajectory,
     local_limits,
     local_slot,
+    option_names,
     sandbox_not_installed,
     sandbox_options,
     trajectory_messages,
@@ -102,8 +105,10 @@ TRIALS_LOG = "trials.jsonl"
 MAX_REASON = 400
 # How much of the question a trial's line keeps.
 MAX_QUESTION = 2000
-# The arena's "no thinking" is `disable`; Harbor's agents call it `none`.
-_EFFORTS = {"disable": "none"}
+# The arena's "no thinking" is `disable`; Harbor's agents call it `none`, pi `off`.
+_NO_THINKING = {"pi": "off"}
+# How much of the end of an agent's own log is read for what went wrong: the log of a run with images is hundreds of MB.
+LOG_TAIL = 64 * 1024
 
 log = logging.getLogger("uvicorn.error")
 
@@ -373,6 +378,45 @@ def failure(result) -> str | None:
     return f"{info.exception_type}" + (f": {said}" if said else "")
 
 
+def last_output(logs: Path) -> str | None:
+    """What the agent last said went wrong in its own output (`<agent>.txt` in its logs), as one line, or None.
+
+    An event's `errorMessage` (pi's JSON events), else the last line that is
+    not JSON (what the agent wrote to stderr).
+    """
+    for path in sorted(logs.glob("*.txt")) if logs.is_dir() else []:
+        with path.open("rb") as f:
+            start = max(f.seek(0, os.SEEK_END) - LOG_TAIL, 0)
+            f.seek(start)
+            lines = f.read().decode(errors="replace").splitlines()[1 if start else 0 :]  # the first may be cut
+        for line in reversed(lines):
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except ValueError:
+                said = " ".join(line.split())
+            else:
+                message = event.get("message") if isinstance(event, dict) else None
+                said = str(message.get("errorMessage") or "") if isinstance(message, dict) else ""
+            if said:
+                return said if len(said) <= MAX_REASON else said[: MAX_REASON - 1] + "…"
+    return None
+
+
+def run_error(trajectory: dict[str, Any], logs: Path) -> str | None:
+    """Why the agent's run ended on an error its exit code may hide (pi's exits 0 after one), as one line, or None.
+
+    Read from the trajectory: its last agent step stopped on an error (pi
+    records a failed model call as such a step, after its retries).
+    """
+    steps = [s for s in trajectory.get("steps") or [] if s.get("source") == "agent" and not s.get("is_copied_context")]
+    if not steps or (steps[-1].get("extra") or {}).get("stop_reason") != "error":
+        return None
+    said = last_output(logs)
+    return "the agent's last model call failed" + (f": {said}" if said else "")
+
+
 def verifier_rewards(result) -> dict[str, float] | None:
     """What the trial's verifier wrote, `{name: score}`, or None when no verifier scored it."""
     verified = getattr(result, "verifier_result", None)
@@ -391,7 +435,8 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[
         raw = find_trajectory(trial_dir / "agent")
         messages = trajectory_messages(raw)
     except (OSError, ValueError) as e:
-        said = failure(result)
+        printed = last_output(trial_dir / "agent")
+        said = failure(result) or (f"the agent's output ends: {printed}" if printed else None)
         raise ValueError("the Harbor trial left no trajectory" + (f": {said}" if said else f" ({e})")) from None
     collected = trial_dir / "verifier" / COLLECTED_ANSWER
     if collected.is_file():
@@ -401,6 +446,9 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[
         answer = written.read_text(errors="replace").strip() if written.is_file() else ""
     else:
         answer = final_answer(messages)
+    # A run that ended on an error and left no answer did not answer: the row fails, and says why.
+    if not answer and (stopped := run_error(raw, trial_dir / "agent")):
+        raise ValueError(stopped)
     try:
         trajectory = HarborTrajectory.model_validate({**raw, "answer": answer, "rewards": verifier_rewards(result)})
     except Exception as e:  # noqa: BLE001 - pydantic's ValidationError: a trajectory Harbor's own schema refuses
@@ -417,14 +465,14 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
 
     # What the framework is told about the model is not a call option: the agent calls the model itself.
     params = {
-        k: _EFFORTS.get(v, v) if k == "reasoning_effort" else v
+        k: _NO_THINKING.get(agent, "none") if k == "reasoning_effort" and v == "disable" else v
         for k, v in (params or {}).items()
         if v is not None and k not in CAPABILITY_FLAGS
     }
     if not params:
         return {}
     options = AgentFactory.get_agent_class(AgentName(agent)).options_model
-    fields = set(options.model_fields) if options else set()
+    fields = option_names(options)
     kwargs: dict[str, Any] = {}
     for key, value in params.items():
         if key in fields:
@@ -610,7 +658,7 @@ class HarborTask(Module):
             shutil.rmtree(task, ignore_errors=True)
         self.rows_answered += 1
         # A trial the agent did not finish (its time ran out) still answered: what it did is scored, and the line says why it stopped.
-        said = failure(result)
+        said = "; ".join(filter(None, [failure(result), run_error(predicted, space / "trials" / name / "agent")]))
         if self.spec.get("answer_file") and not predicted.get("answer"):
             said = "; ".join(filter(None, [said, f"the agent wrote nothing to {self.spec['answer_file']}"]))
         self._record({
