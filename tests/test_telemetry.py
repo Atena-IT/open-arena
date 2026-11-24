@@ -127,11 +127,29 @@ def test_an_a2a_agents_name_is_not_sent():
     assert properties["dataset_kinds"] == ["a2a"]
 
 
-def test_the_id_is_this_processs_alone():
-    assert (
-        telemetry.event(_config())["distinct_id"]
-        == telemetry.event(_config())["distinct_id"]
-    )
+def test_the_id_is_random_and_this_processs_alone():
+    import uuid
+
+    first = telemetry.event(_config())["distinct_id"]
+    assert uuid.UUID(first).version == 4 and telemetry.event(_config())["distinct_id"] == first
+    telemetry._process_id.cache_clear()  # a new process
+    assert telemetry.event(_config())["distinct_id"] != first
+
+
+def test_a_model_the_user_registers_with_litellm_is_still_not_named(monkeypatch):
+    import litellm
+
+    monkeypatch.setattr(litellm, "model_cost", {**litellm.model_cost, "hosted_vllm/acme-vision-ft": {"litellm_provider": "hosted_vllm"}})
+    cfg = _config()
+    cfg.models["mini"].model = "hosted_vllm/acme-vision-ft"
+    assert "acme" not in json.dumps(telemetry.run_properties(cfg))
+
+
+def test_a_bare_public_id_is_named_with_its_provider():
+    cfg = _config()
+    cfg.models["mini"].model = "gpt-4o-mini"
+    properties = telemetry.run_properties(cfg)
+    assert "gpt-4o-mini" in properties["models"] and "openai" in properties["model_providers"]
 
 
 def test_the_transport_posts_the_body_to_posthog_and_swallows_any_failure(monkeypatch):

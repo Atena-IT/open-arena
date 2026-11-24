@@ -29,6 +29,7 @@ import os
 import platform
 import sys
 import threading
+import time
 import urllib.request
 import uuid
 from datetime import datetime, timezone
@@ -53,6 +54,15 @@ _ON = ("1", "true", "yes", "on")
 # shortcut: the common CI runners' variables; add one when a runner is missed.
 _CI = ("CI", "TF_BUILD", "JENKINS_URL")
 _notice = threading.Event()
+_threads: list[threading.Thread] = []
+
+
+@atexit.register
+def _flush() -> None:
+    """Give the events still in flight at most `TIMEOUT` seconds in all, as the process ends."""
+    deadline = time.monotonic() + TIMEOUT
+    for thread in list(_threads):
+        thread.join(max(0.0, deadline - time.monotonic()))
 
 
 def mode() -> str:
@@ -102,7 +112,7 @@ def capture_run(cfg: Any) -> None:
             target=_send, args=(payload,), name="openarena-telemetry", daemon=True
         )
         thread.start()
-        atexit.register(thread.join, TIMEOUT)
+        _threads[:] = [t for t in _threads if t.is_alive()] + [thread]
     except Exception as e:  # noqa: BLE001 (telemetry never breaks a run)
         log.debug("telemetry skipped (%s: %s)", type(e).__name__, e)
 
@@ -127,9 +137,12 @@ def _process_id() -> str:
 def run_properties(cfg: Any) -> dict[str, Any]:
     """What a run's event says: the environment, and the kinds of things the run compares."""
     from openarena.datasets import PROVIDERS
-    from openarena.lookups.eol import litellm_model_info
+    from openarena.lookups.eol import bundled_table, table_entry
     from openarena.rewards import _REWARD_TYPES
 
+    # The table shipped inside litellm, never the live one: a user's register_model or private
+    # price map puts their own ids in that.
+    table = bundled_table()
     datasets = cfg.selected_dataset_names()
     model_ids = [cfg.model_id(name) for name in cfg.language_models]
     rewards = {
@@ -149,10 +162,10 @@ def run_properties(cfg: Any) -> dict[str, Any]:
         "arch": platform.machine().lower(),
         "models_count": len(model_ids),
         "datasets_count": len(datasets),
-        "model_providers": sorted(
-            {_known(m.partition("/")[0], _litellm_providers()) for m in model_ids}
+        "model_providers": sorted({_provider(m, table) for m in model_ids}),
+        "models": sorted(
+            {m if m in table or table_entry(m, table) else "other" for m in model_ids}
         ),
-        "models": sorted({m if litellm_model_info(m) else "other" for m in model_ids}),
         "dataset_kinds": sorted({cfg.dataset_kind(n) for n in datasets}),
         "dataset_providers": sorted(
             {_known(cfg.datasets[n].type, PROVIDERS) for n in datasets}
@@ -166,10 +179,13 @@ def _known(name: str, shipped) -> str:
     return name if name in shipped else "other"
 
 
-def _litellm_providers() -> list:
+def _provider(model_id: str, table: dict) -> str:
+    """A `provider/model` id's provider, or the one litellm's table gives a bare id (`gpt-4o-mini`)."""
     import litellm
 
-    return litellm.provider_list
+    prefix, slash, _ = model_id.partition("/")
+    name = prefix if slash else (table.get(model_id) or {}).get("litellm_provider", "")
+    return _known(name, litellm.provider_list)
 
 
 def _send(payload: dict[str, Any]) -> None:
