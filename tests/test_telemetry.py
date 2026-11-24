@@ -268,13 +268,6 @@ def test_opt_in_when_the_default_is_off(sent, monkeypatch):
     assert len(_sent_after_run(sent)) == 1
 
 
-def test_the_placeholder_key_sends_nothing(sent, monkeypatch):
-    monkeypatch.setattr(
-        telemetry, "POSTHOG_KEY", "phc_OPEN_ARENA_PROJECT_KEY_PLACEHOLDER"
-    )
-    assert telemetry.mode() == "off"
-
-
 def test_a_broken_config_never_breaks_the_run(sent):
     telemetry.capture_run(object())  # building the event raises inside: swallowed
     assert _sent_after_run(sent) == []

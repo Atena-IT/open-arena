@@ -42,9 +42,9 @@ OPT_OUT = "ARENA_TELEMETRY"
 EVENT = "evaluation_run"
 # PostHog's capture endpoint on the EU Cloud: the one place an event goes.
 ENDPOINT = "https://eu.i.posthog.com/i/v0/e/"
-# The shared Open Arena project's API key (`phc_...`), public and write-only. The placeholder sends
-# nothing: the real key goes here before the release that turns telemetry on.
-POSTHOG_KEY = "phc_OPEN_ARENA_PROJECT_KEY_PLACEHOLDER"
+# The Open Arena PostHog project's API key, the one the platform's events go to: public and
+# write-only by PostHog's design (it can send events, never read them).
+POSTHOG_KEY = "phc_vcttSfzAa6qhV7jBgb7YfsT6czfA2sTqJWHM5gMAkTdh"
 # On unless opted out, the README's Telemetry section being the notice: decided 2026-11-24.
 # False makes it opt-in (`ARENA_TELEMETRY=1`).
 DEFAULT_ON = True
@@ -74,11 +74,7 @@ def mode() -> str:
     value = os.environ.get(OPT_OUT, "").strip().lower()
     if value == "print":
         return "print"
-    if (
-        value not in ("", *_ON)
-        or _truthy("DO_NOT_TRACK")
-        or POSTHOG_KEY.endswith("_PLACEHOLDER")
-    ):
+    if value not in ("", *_ON) or _truthy("DO_NOT_TRACK"):
         return "off"
     if value in _ON:
         return "on"
