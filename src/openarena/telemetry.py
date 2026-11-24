@@ -131,8 +131,20 @@ def event(cfg: Any) -> dict[str, Any]:
 
 @functools.cache
 def _process_id() -> str:
-    # A random id for this process only: nothing is stored on the machine, and runs are not tied together.
+    # A random id for this process only: nothing is stored on the machine. A process's runs share it.
     return str(uuid.uuid4())
+
+
+def _forget() -> None:
+    """A forked child is a new process: its own id, its own notice, none of its parent's threads."""
+    global _notice
+    _process_id.cache_clear()
+    _notice = threading.Event()
+    _threads.clear()
+
+
+if hasattr(os, "register_at_fork"):  # not on Windows, which does not fork
+    os.register_at_fork(after_in_child=_forget)
 
 
 def run_properties(cfg: Any) -> dict[str, Any]:

@@ -10,6 +10,7 @@ sends a real event: the transport is faked.
 """
 
 import json
+import os
 import re
 import threading
 import urllib.request
@@ -140,6 +141,26 @@ def test_the_id_is_random_and_this_processs_alone():
     )
     telemetry._process_id.cache_clear()  # a new process
     assert telemetry.event(_config())["distinct_id"] != first
+
+
+@pytest.mark.skipif(not hasattr(os, "fork"), reason="the platform does not fork")
+# The child only writes to a pipe and exits: no lock it could deadlock on.
+@pytest.mark.filterwarnings("ignore:This process .* is multi-threaded")
+def test_a_forked_child_has_its_own_id_and_its_own_notice(sent):
+    parent = telemetry.event(_config())["distinct_id"]
+    telemetry._notice.set()
+    read, write = os.pipe()
+    pid = os.fork()
+    if pid == 0:  # the child: report, then leave without running pytest's teardown
+        os.write(
+            write, f"{telemetry._process_id()} {telemetry._notice.is_set()}".encode()
+        )
+        os._exit(0)
+    os.close(write)
+    child_id, child_noticed = os.read(read, 200).decode().split()
+    os.waitpid(pid, 0)
+    assert child_id != parent and child_noticed == "False"
+    assert telemetry._process_id() == parent  # the parent's own is untouched
 
 
 def test_a_model_the_user_registers_with_litellm_is_still_not_named(monkeypatch):

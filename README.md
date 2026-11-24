@@ -205,8 +205,10 @@ The event, `evaluation_run`, holds these properties and nothing else:
 It never holds a prompt, a row, an answer, a score, a key, an endpoint, a
 path, a host or user name, or a name you chose (a model's, a dataset's, an
 evaluation's, an agent's). The event's `distinct_id` is a random id made for
-each process and forgotten when it ends: nothing is written on your machine,
-and two runs cannot be tied together. It goes to PostHog's EU Cloud
+each process and forgotten when it ends: nothing is written on your machine.
+Runs started from the same process (a notebook, a service calling `run_sweep`
+more than once) share it; runs from separate processes, a forked one
+included, cannot be tied together. It goes to PostHog's EU Cloud
 (`eu.i.posthog.com`), which sees your IP address as any server you reach
 does; the event asks it to look up no location from it. It is sent in the background, with a 2-second timeout: it never
 fails, slows or stops a run, and nothing is sent when openarena is imported.
