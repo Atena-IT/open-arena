@@ -315,7 +315,26 @@ def task_files(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None 
 # Providers served from the arena's own machine by default: a sandbox cannot reach them.
 LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm", "sglang")
 # Agents whose Harbor wrapper splits the model id at its first `/` and fails every trial of an id without one.
-PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes")
+PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes", "pi")
+# The providers pi knows (`KnownProvider` in pi's packages/ai/src/types.ts); it refuses any other `--provider`.
+# shortcut: pi 1.6.0's list, copied; add a name when a pi release adds a provider the arena needs.
+PI_PROVIDERS = frozenset({
+    "amazon-bedrock", "ant-ling", "anthropic", "google", "google-vertex", "openai", "azure", "openai-codex", "radius",
+    "typesafe", "nvidia", "deepseek", "github-copilot", "xai", "groq", "cerebras", "openrouter", "vercel-ai-gateway", "zai",
+    "zai-coding-cn", "mistral", "minimax", "minimax-cn", "moonshotai", "moonshotai-cn", "huggingface", "fireworks",
+    "together", "baseten", "opencode", "opencode-go", "kimi-coding", "meta", "cloudflare-workers-ai",
+    "cloudflare-ai-gateway", "qwen-token-plan", "qwen-token-plan-cn", "qwen-token-plan-individual",
+    "qwen-token-plan-individual-cn", "xiaomi", "xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp",
+})
+
+
+def option_names(options) -> set[str]:
+    """The names a Harbor agent's options model takes: each field's, and the aliases it also answers to (pi's `thinking` is `reasoning_effort` too)."""
+    names: set[str] = set()
+    for name, field in (options.model_fields.items() if options else ()):
+        alias = field.validation_alias
+        names |= {name, *(c for c in getattr(alias, "choices", [alias]) if isinstance(c, str))}
+    return names
 
 
 def agents() -> list[dict[str, Any]]:
@@ -336,7 +355,7 @@ def agents() -> list[dict[str, Any]]:
     out = []
     for name in HARBOR_AGENTS:
         cls = AgentFactory.get_agent_class(AgentName(name))
-        fields = set(cls.options_model.model_fields) if cls.options_model else set()
+        fields = option_names(cls.options_model)
         params = [p for p in ("temperature", "reasoning_effort", "max_tokens") if p in fields or ("llm_call_kwargs" in fields and p == "max_tokens")]
         connection = cls.MODEL_CONNECTION
         out.append({
@@ -380,6 +399,28 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
             return f"Harbor agent {agent!r} runs inside the sandbox and calls its model from there, which a no-network environment forbids"
         if (provider or "") in LOCAL_PROVIDERS or model_id.split("/", 1)[0] in LOCAL_PROVIDERS:
             return f"Harbor agent {agent!r} runs inside the sandbox, which cannot reach {model_id!r} on the arena's machine"
+    return pi_problem(model_id) if agent == "pi" else None
+
+
+def pi_problem(model_id: str) -> str | None:
+    """Why pi cannot call `model_id` (a `provider/model` id), as one sentence, or None.
+
+    Harbor hands pi the id's provider, as Harbor names it (`gemini` is
+    `google`), and pi refuses one it does not know. A provider whose base URL
+    is set in the environment is a custom endpoint, which Harbor runs only
+    with a `model_api` option the arena does not pass.
+    """
+    from harbor.agents.model_connection import _PROVIDER_ALIASES, PROVIDERS
+
+    prefix = model_id.split("/", 1)[0]
+    provider = _PROVIDER_ALIASES.get(prefix, prefix)
+    if provider not in PI_PROVIDERS:
+        return f"Harbor agent 'pi' knows no provider {provider!r}; it calls only its own, such as openai, anthropic, google or openrouter, under its own names (fireworks, not fireworks_ai)"
+    access = PROVIDERS.get(provider)
+    urls = access.base_url_envs if access else (f"{provider.upper().replace('-', '_')}_BASE_URL",)
+    # As Harbor reads it: the first of these that is set, even blank, and a blank one is no endpoint.
+    if (custom := next((env for env in urls if env in os.environ), None)) and os.environ[custom]:
+        return f"Harbor agent 'pi' would call the custom endpoint {custom} sets, which needs a `model_api` option the arena does not pass; unset {custom} or use another agent"
     return None
 
 

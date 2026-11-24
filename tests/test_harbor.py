@@ -270,6 +270,114 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
 
 
+# Recorded by pi: lines 746 to 751 of packages/coding-agent/test/fixtures/large-session.jsonl in pi v1.6.0 (MIT), after its
+# header, moved to the session format pi 1.6 writes (version 3: each entry an `id` and its `parentId`), as pi migrates them.
+PI_SESSION = [
+    {'type': 'session', 'id': 'd703a1a9-1b7b-4fb1-b512-c9738b1fe617', 'timestamp': '2025-11-20T23:33:50.805Z', 'cwd': '/Users/badlogic/workspaces/pi-mono', 'provider': 'anthropic', 'modelId': 'claude-sonnet-4-5', 'thinkingLevel': 'off', 'version': 3},
+    {'type': 'message', 'id': 'a1b2c3d4', 'parentId': None, 'timestamp': '2025-11-21T01:33:30.786Z', 'message': {'role': 'user', 'content': [{'type': 'text', 'text': 'delete the file'}], 'timestamp': 1763688810764}},
+    {'type': 'message', 'id': 'b2c3d4e5', 'parentId': 'a1b2c3d4', 'timestamp': '2025-11-21T01:33:37.208Z', 'message': {'role': 'assistant', 'content': [{'type': 'toolCall', 'id': 'toolu_01Kh71uh1ch6ko73QcHPuPAJ', 'name': 'bash', 'arguments': {'command': 'rm ~/.pi/agent/themes/test.json'}}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 3, 'output': 61, 'cacheRead': 0, 'cacheWrite': 135129, 'cost': {'input': 9e-06, 'output': 0.000915, 'cacheRead': 0, 'cacheWrite': 0.50673375, 'total': 0.50765775}}, 'stopReason': 'toolUse', 'timestamp': 1763688810766}},
+    {'type': 'message', 'id': 'c3d4e5f6', 'parentId': 'b2c3d4e5', 'timestamp': '2025-11-21T01:33:37.225Z', 'message': {'role': 'toolResult', 'toolCallId': 'toolu_01Kh71uh1ch6ko73QcHPuPAJ', 'toolName': 'bash', 'content': [{'type': 'text', 'text': '(no output)'}], 'isError': False, 'timestamp': 1763688817218}},
+    {'type': 'message', 'id': 'd4e5f6a7', 'parentId': 'c3d4e5f6', 'timestamp': '2025-11-21T01:33:40.875Z', 'message': {'role': 'assistant', 'content': [{'type': 'toolCall', 'id': 'toolu_013q2kM3qFk8PAXFhBqsj3t3', 'name': 'bash', 'arguments': {'command': 'ls ~/.pi/agent/themes/'}}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 5, 'output': 58, 'cacheRead': 135129, 'cacheWrite': 74, 'cost': {'input': 1.5e-05, 'output': 0.00087, 'cacheRead': 0.0405387, 'cacheWrite': 0.0002775, 'total': 0.041701199999999994}}, 'stopReason': 'toolUse', 'timestamp': 1763688817218}},
+    {'type': 'message', 'id': 'e5f6a7b8', 'parentId': 'd4e5f6a7', 'timestamp': '2025-11-21T01:33:40.901Z', 'message': {'role': 'toolResult', 'toolCallId': 'toolu_013q2kM3qFk8PAXFhBqsj3t3', 'toolName': 'bash', 'content': [{'type': 'text', 'text': '(no output)'}], 'isError': False, 'timestamp': 1763688820896}},
+    {'type': 'message', 'id': 'f6a7b8c9', 'parentId': 'e5f6a7b8', 'timestamp': '2025-11-21T01:33:45.787Z', 'message': {'role': 'assistant', 'content': [{'type': 'text', 'text': 'Done! The `test.json` theme file has been deleted. If you had it selected when it was deleted, Pi should have automatically fallen back to the dark theme and logged: `[theme] Theme file deleted, falling back to dark theme`'}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 4, 'output': 54, 'cacheRead': 135203, 'cacheWrite': 73, 'cost': {'input': 1.2e-05, 'output': 0.0008100000000000001, 'cacheRead': 0.0405609, 'cacheWrite': 0.00027375, 'total': 0.04165665}}, 'stopReason': 'stop', 'timestamp': 1763688820896}},
+]
+
+
+def _pi_trial(tmp_path, events, output=""):
+    """A pi trial's folder after Harbor's own pi agent turned its session into `trajectory.json`, as it does after a run."""
+    from harbor.agents.installed.pi import Pi
+    from harbor.models.agent.context import AgentContext
+
+    logs = tmp_path / "trial" / "agent"
+    (logs / "pi" / "sessions").mkdir(parents=True)
+    (logs / "pi" / "sessions" / "session.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+    (logs / "pi.txt").write_text(output)
+    Pi(logs_dir=logs, model_name="anthropic/claude-sonnet-4-5").populate_context_post_run(AgentContext())
+    return tmp_path / "trial"
+
+
+def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.harbor import find_trajectory, trajectory_messages
+    from openarena.programs.harbor_program import prediction, run_error
+
+    trial = _pi_trial(tmp_path, PI_SESSION)
+    messages = trajectory_messages(find_trajectory(trial / "agent"))
+    assert [m["role"] for m in messages] == ["user", "assistant", "tool", "assistant", "tool", "assistant"]
+    assert messages[1]["tool_calls"][0]["function"] == {"name": "bash", "arguments": {"command": "rm ~/.pi/agent/themes/test.json"}}
+    predicted = prediction(trial, SimpleNamespace(exception_info=None))
+    assert predicted["agent"]["name"] == "pi" and predicted["answer"].startswith("Done! The `test.json` theme file has been deleted.")
+    assert run_error(predicted, trial / "agent") is None
+
+
+def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.programs.harbor_program import COLLECTED_ANSWER, prediction, run_error
+
+    failed = {"role": "assistant", "content": [], "api": "anthropic-messages", "provider": "anthropic", "model": "claude-sonnet-4-5",
+              "stopReason": "error", "errorMessage": "401 invalid x-api-key", "timestamp": 1763688820896}
+    events = [*PI_SESSION[:2], {"type": "message", "id": "b2c3d4e5", "parentId": "a1b2c3d4", "timestamp": "2025-11-21T01:33:37.208Z", "message": failed}]
+    # pi's JSON events, as Harbor tees them into pi.txt; pi exits 0 all the same.
+    output = json.dumps({"type": "message_end", "message": failed}) + "\n" + json.dumps({"type": "agent_settled", "aborted": False}) + "\n"
+    trial = _pi_trial(tmp_path, events, output)
+    with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
+        prediction(trial, SimpleNamespace(exception_info=None))
+    # A task folder's own tests score what the agent did in the sandbox, answer or not.
+    assert prediction(trial, SimpleNamespace(exception_info=None), verified=True)["answer"] == ""
+    # A log that cannot be read leaves the trajectory's own word.
+    (trial / "agent" / "pi.txt").unlink()
+    (trial / "agent" / "pi.txt").mkdir()
+    assert run_error(json.loads((trial / "agent" / "trajectory.json").read_text()), trial / "agent") == "the agent's last model call failed"
+    (trial / "agent" / "pi.txt").rmdir()
+    (trial / "agent" / "pi.txt").write_text(output)
+    # What it wrote before the error is still its answer, scored; the error goes to the trial's line.
+    (trial / "verifier").mkdir()
+    (trial / "verifier" / COLLECTED_ANSWER).write_text("4\n")
+    predicted = prediction(trial, SimpleNamespace(exception_info=None), "/app/answer.txt")
+    assert predicted["answer"] == "4"
+    assert run_error(predicted, trial / "agent") == "the agent's last model call failed: 401 invalid x-api-key"
+
+
+def test_a_trial_without_a_trajectory_says_what_the_agent_printed(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.programs.harbor_program import prediction
+
+    logs = tmp_path / "trial" / "agent"
+    logs.mkdir(parents=True)
+    (logs / "pi.txt").write_text('Unknown provider "nebius". Use --list-models to see available providers/models.\n')
+    with pytest.raises(ValueError, match='left no trajectory: the agent\'s output ends: Unknown provider "nebius"'):
+        prediction(tmp_path / "trial", SimpleNamespace(exception_info=None))
+
+
+def test_pi_calls_only_the_providers_it_knows_and_takes_the_reasoning_effort(monkeypatch):
+    from openarena.config import HarborBlock
+    from openarena.harbor import agent_problem, agents
+
+    for env in ("OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENROUTER_BASE_URL", "GOOGLE_BASE_URL"):
+        monkeypatch.delenv(env, raising=False)
+    assert HarborBlock(agent="pi").agent == "pi"
+    assert next(a for a in agents() if a["name"] == "pi") == {"name": "pi", "runs": "sandbox", "provider": None, "params": ["reasoning_effort"]}
+    # pi's `thinking` answers to `reasoning_effort` too; the rest it does not take.
+    assert agent_kwargs("pi", {"reasoning_effort": "high", "temperature": 0.2}) == {"reasoning_effort": "high"}
+    assert agent_kwargs("pi", {"reasoning_effort": "disable"}) == {"reasoning_effort": "off"}
+    public = EnvironmentSpec(docker_image="x")
+    for model in ("openrouter/qwen/qwen3-vl-8b-instruct", "openai/gpt-4.1-mini", "gemini/gemini-2.5-flash", "together_ai/x/y"):
+        assert agent_problem("pi", model, public) is None, model
+    assert "knows no provider 'nebius'" in agent_problem("pi", "nebius/meta-llama/x", public)
+    assert "knows no provider 'fireworks_ai'" in agent_problem("pi", "fireworks_ai/accounts/x", public)
+    assert "names no provider" in agent_problem("pi", "gpt-4o", public)
+    assert "cannot reach 'hosted_vllm/x'" in agent_problem("pi", "hosted_vllm/x", public)
+    # Harbor reads the first of OPENAI_BASE_URL and OPENAI_API_BASE that is set: a blank one is no endpoint, and hides the other.
+    monkeypatch.setenv("OPENAI_BASE_URL", "")
+    monkeypatch.setenv("OPENAI_API_BASE", "https://gateway.example/v1")
+    assert agent_problem("pi", "openai/gpt-4.1-mini", public) is None
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example/v1")
+    assert "custom endpoint OPENAI_BASE_URL sets" in agent_problem("pi", "openai/gpt-4.1-mini", public)
+
+
 def test_a_sandbox_provider_refuses_what_it_cannot_give():
     from openarena.harbor import environment_problems, sandbox_capabilities
 

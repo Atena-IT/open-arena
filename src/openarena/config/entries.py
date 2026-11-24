@@ -174,7 +174,7 @@ class AgentBlock(BaseModel):
 # Harbor's agents a model under test can drive: those that leave an ATIF trajectory, which is what the dataset's reward scores.
 HARBOR_AGENTS = (
     "terminus-2", "claude-code", "codex", "gemini-cli", "goose", "opencode", "openhands",
-    "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli", "hermes",
+    "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli", "hermes", "pi",
 )
 
 
