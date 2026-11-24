@@ -45,11 +45,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 from opentelemetry.trace import SpanKind, Status, StatusCode
 from synalinks.src import tree
 from synalinks.src.backend import any_symbolic_data_models
-from synalinks.src.hooks.monitor import (
-    _chat_messages_of,
-    _chat_output_of,
-    _chat_tools_of,
-)
+from synalinks.src.modules.language_models.language_model import _tool_to_wire
 
 
 log = logging.getLogger("uvicorn.error")
@@ -396,6 +392,52 @@ def _cost_attributes(cost) -> dict:
             "langsmith.metadata.arena_cost_usd": float(cost),
         }
     return {}
+
+
+# A language model call in the OpenAI chat format, as the MLflow monitor of synalinks reads it (0.11 inlined its
+# helpers into that monitor, so the hook keeps its own).
+def _chat_messages_of(inputs):
+    """OpenAI-format message list of a `LanguageModel` call's inputs, or `None`."""
+    if not inputs:
+        return None
+    first = inputs[0]
+    if hasattr(first, "get_json"):
+        data = first.get_json()
+    elif isinstance(first, dict):
+        data = first
+    else:
+        return None
+    messages = data.get("messages") if isinstance(data, dict) else None
+    if not isinstance(messages, list):
+        return None
+    return [{k: v for k, v in m.items() if v is not None} if isinstance(m, dict) else m for m in messages]
+
+
+def _chat_tools_of(kwargs):
+    """Wire tool declarations of a `LanguageModel` call, or an empty list."""
+    tools = []
+    for tool in kwargs.get("tools") or []:
+        try:
+            tools.append(_tool_to_wire(tool))
+        except Exception:
+            continue
+    tools.extend(kwargs.get("tool_schemas") or [])
+    return tools
+
+
+def _chat_output_of(serialized_outputs, usage):
+    """OpenAI-style `choices` for a `LanguageModel` span's outputs."""
+    if not serialized_outputs:
+        return None
+    payload = serialized_outputs[0]
+    if isinstance(payload, dict) and "role" in payload:
+        message = {k: v for k, v in payload.items() if v is not None}
+    else:
+        message = {"role": "assistant", "content": json.dumps(payload)}
+    choice = {"index": 0, "message": message}
+    if usage and usage.get("finish_reason"):
+        choice["finish_reason"] = usage["finish_reason"]
+    return [choice]
 
 
 def _json_leaves(data) -> list:

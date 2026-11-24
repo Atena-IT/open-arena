@@ -61,7 +61,11 @@ def test_each_input_is_the_request_the_row_makes_its_messages_and_its_tools(tmp_
         {"messages": _ask("Time in Rome?"), TOOLS_FIELD: [_tool("get_time"), _tool("get_weather")]},
     ]
     assert TOOLS_FIELD == "tools"  # the request's field, not the kwarg's name
-    assert ds.input_schema["properties"][TOOLS_FIELD]["items"] == synalinks.ChatCompletionTool.get_schema()
+    # The declaration's own schema, its `$defs` at the root where its `$ref`s resolve.
+    tool = synalinks.ChatCompletionTool.get_schema()
+    defs = tool.pop("$defs")
+    assert ds.input_schema["properties"][TOOLS_FIELD]["items"] == tool
+    assert defs.items() <= ds.input_schema["$defs"].items()
     assert ds.row_schema == synalinks.ChatMessages.get_schema()
 
 
