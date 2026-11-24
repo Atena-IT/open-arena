@@ -45,7 +45,8 @@ ENDPOINT = "https://eu.i.posthog.com/i/v0/e/"
 # The shared Open Arena project's API key (`phc_...`), public and write-only. The placeholder sends
 # nothing: the real key goes here before the release that turns telemetry on.
 POSTHOG_KEY = "phc_OPEN_ARENA_PROJECT_KEY_PLACEHOLDER"
-# On unless opted out (the ticket's choice); False makes it opt-in (`ARENA_TELEMETRY=1`).
+# On unless opted out, the README's Telemetry section being the notice: decided 2026-11-24.
+# False makes it opt-in (`ARENA_TELEMETRY=1`).
 DEFAULT_ON = True
 # Seconds a send may take, and the most a finishing process waits for it.
 TIMEOUT = 2.0
