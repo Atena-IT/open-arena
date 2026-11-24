@@ -59,7 +59,7 @@ testpaths = ["tests"]
 
 
 # Synalinks comes from Atena-IT's fork (github.com/Atena-IT/synalinks), pinned to a
-# commit of its main branch: f6796e7 is synalinks 0.10.32. Bump the commit to take a
+# commit of its main branch: 79323a8 is synalinks 0.10.32 plus the confinement retry. Bump the commit to take a
 # new framework; a fix lands on the fork first and goes upstream from there.
 [tool.uv.sources]
-synalinks = { url = "https://github.com/Atena-IT/synalinks/archive/f6796e7fcda83c3b9acc0e091d8f013d0248bf88.tar.gz" }
+synalinks = { url = "https://github.com/Atena-IT/synalinks/archive/79323a85d16e7dc084095ef6d7dcced98cd5ed17.tar.gz" }
