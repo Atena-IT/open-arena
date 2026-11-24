@@ -9,6 +9,16 @@ import pytest
 # litellm fetches its pricing table from GitHub at import unless told to use
 # the copy it ships with; tests must not depend on the network.
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+# No test sends a usage event (README "Telemetry"); tests/test_telemetry.py fakes the transport.
+os.environ["ARENA_TELEMETRY"] = "0"
+
+
+@pytest.fixture(autouse=True)
+def _telemetry_goes_nowhere(monkeypatch):
+    """A test that turns telemetry back on still sends nothing: its endpoint is a closed local port."""
+    from openarena import telemetry
+
+    monkeypatch.setattr(telemetry, "ENDPOINT", "http://127.0.0.1:9/")
 
 
 @pytest.fixture(autouse=True)
