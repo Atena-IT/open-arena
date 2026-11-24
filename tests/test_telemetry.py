@@ -39,6 +39,10 @@ def sent(monkeypatch):
     events: list[dict] = []
     monkeypatch.setattr(telemetry, "POSTHOG_KEY", "phc_test")
     monkeypatch.setattr(telemetry, "_send", events.append)
+    # A send that went around `_send` lands in the list too.
+    monkeypatch.setattr(
+        urllib.request, "urlopen", lambda *a, **k: events.append("urlopen")
+    )
     monkeypatch.setattr(telemetry, "_notice", threading.Event())
     for name in (telemetry.OPT_OUT, "DO_NOT_TRACK", *telemetry._CI):
         monkeypatch.delenv(name, raising=False)
@@ -121,9 +125,8 @@ def test_an_a2a_agents_name_is_not_sent():
         }
     )
     properties = telemetry.run_properties(cfg)
-    assert properties["models"] == ["other"] and properties["model_providers"] == [
-        "other"
-    ]
+    assert properties["models"] == [] and properties["model_providers"] == []
+    assert properties["models_count"] == 1
     assert properties["dataset_kinds"] == ["a2a"]
 
 
@@ -131,7 +134,10 @@ def test_the_id_is_random_and_this_processs_alone():
     import uuid
 
     first = telemetry.event(_config())["distinct_id"]
-    assert uuid.UUID(first).version == 4 and telemetry.event(_config())["distinct_id"] == first
+    assert (
+        uuid.UUID(first).version == 4
+        and telemetry.event(_config())["distinct_id"] == first
+    )
     telemetry._process_id.cache_clear()  # a new process
     assert telemetry.event(_config())["distinct_id"] != first
 
@@ -139,9 +145,27 @@ def test_the_id_is_random_and_this_processs_alone():
 def test_a_model_the_user_registers_with_litellm_is_still_not_named(monkeypatch):
     import litellm
 
-    monkeypatch.setattr(litellm, "model_cost", {**litellm.model_cost, "hosted_vllm/acme-vision-ft": {"litellm_provider": "hosted_vllm"}})
+    monkeypatch.setattr(
+        litellm,
+        "model_cost",
+        {
+            **litellm.model_cost,
+            "hosted_vllm/acme-vision-ft": {"litellm_provider": "hosted_vllm"},
+        },
+    )
     cfg = _config()
     cfg.models["mini"].model = "hosted_vllm/acme-vision-ft"
+    assert "acme" not in json.dumps(telemetry.run_properties(cfg))
+
+
+def test_a_provider_the_user_adds_to_litellm_is_not_named(monkeypatch):
+    import litellm
+
+    monkeypatch.setattr(
+        litellm, "provider_list", [*litellm.provider_list, "acme-internal"]
+    )
+    cfg = _config()
+    cfg.models["mini"].model = "acme-internal/foo"
     assert "acme" not in json.dumps(telemetry.run_properties(cfg))
 
 
@@ -149,7 +173,10 @@ def test_a_bare_public_id_is_named_with_its_provider():
     cfg = _config()
     cfg.models["mini"].model = "gpt-4o-mini"
     properties = telemetry.run_properties(cfg)
-    assert "gpt-4o-mini" in properties["models"] and "openai" in properties["model_providers"]
+    assert (
+        "gpt-4o-mini" in properties["models"]
+        and "openai" in properties["model_providers"]
+    )
 
 
 def test_the_transport_posts_the_body_to_posthog_and_swallows_any_failure(monkeypatch):
@@ -241,7 +268,9 @@ def test_guard_only_the_telemetry_module_reaches_posthog():
         for p in (ROOT / "src").rglob("*.py")
         if p.name != "telemetry.py"
         and re.search(
-            r"posthog|telemetry\.(_send|event)\b", p.read_text(encoding="utf-8"), re.I
+            r"posthog|from openarena\.telemetry import|\btelemetry\.(?!capture_run\b)\w+",
+            p.read_text(encoding="utf-8"),
+            re.I,
         )
     ]
     assert others == [], (
@@ -259,7 +288,9 @@ def test_guard_the_readme_says_what_is_sent_and_how_to_turn_it_off():
     readme = (ROOT / "README.md").read_text(encoding="utf-8").replace("\r\n", "\n")
     assert "\n## Telemetry\n" in readme, "README.md has no Telemetry section"
     section = readme.split("\n## Telemetry\n", 1)[1].split("\n## ", 1)[0]
-    host = telemetry.ENDPOINT.split("/")[2]
+    # The endpoint as shipped: conftest points the module's at a closed port.
+    source = (ROOT / "src/openarena/telemetry.py").read_text(encoding="utf-8")
+    host = re.search(r'ENDPOINT = "https://([^/"]+)', source)[1]
     for needed in (
         f"{telemetry.OPT_OUT}=0",
         "DO_NOT_TRACK",

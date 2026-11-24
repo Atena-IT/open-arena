@@ -14,6 +14,14 @@ os.environ["ARENA_TELEMETRY"] = "0"
 
 
 @pytest.fixture(autouse=True)
+def _telemetry_goes_nowhere(monkeypatch):
+    """A test that turns telemetry back on still sends nothing: its endpoint is a closed local port."""
+    from openarena import telemetry
+
+    monkeypatch.setattr(telemetry, "ENDPOINT", "http://127.0.0.1:9/")
+
+
+@pytest.fixture(autouse=True)
 def _wide_console(monkeypatch):
     """The CLI's output on one line whatever the terminal: off a terminal rich wraps at 80 columns, and a temp path is long."""
     from openarena.cli.main import console

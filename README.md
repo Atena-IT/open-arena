@@ -175,12 +175,12 @@ on next. Downloads alone do not say that.
 **Turn it off** with either of these, set in the environment the run starts in:
 
 ```shell
-export ARENA_TELEMETRY=0     # any value but 1, true, yes, on or print is off
+export ARENA_TELEMETRY=0     # unset or empty is on; any value but 1, true, yes, on or print is off
 export DO_NOT_TRACK=1        # the cross-tool convention, honoured too
 ```
 
-Nothing is sent from a CI runner (`CI`, `TF_BUILD` or `JENKINS_URL` set)
-unless `ARENA_TELEMETRY=1`. A run that sends prints one line on stderr saying
+Nothing is sent from a CI runner (`CI`, `TF_BUILD`, `JENKINS_URL`,
+`CODEBUILD_BUILD_ID` or `TEAMCITY_VERSION` set) unless `ARENA_TELEMETRY=1`. A run that sends prints one line on stderr saying
 so, once per process.
 
 **See exactly what would be sent** with `ARENA_TELEMETRY=print`: the request
@@ -195,7 +195,7 @@ The event, `evaluation_run`, holds these properties and nothing else:
 | `$process_person_profile`, `$geoip_disable` | `false`, `true` | tell PostHog to keep no profile and to look up no location from the request's address |
 | `python_version` | `3.12` | which Pythons to keep supporting |
 | `os`, `arch` | `linux`, `x86_64` | which platforms to test on |
-| `models_count`, `datasets_count` | `3`, `2` | how big a sweep is |
+| `models_count`, `datasets_count` | `3`, `2` | how big a sweep is (an A2A run counts its agents, and names none) |
 | `model_providers` | `["anthropic", "ollama"]` | which providers litellm routes to; `other` for one it does not list |
 | `models` | `["openai/gpt-4o-mini", "other"]` | only models in litellm's public price table; a fine-tune, a deployment or a local model is `other` |
 | `dataset_kinds` | `["agent", "model"]` | what answers the rows: a model, an MCP agent, an A2A agent, Harbor, ... |
@@ -207,7 +207,8 @@ path, a host or user name, or a name you chose (a model's, a dataset's, an
 evaluation's, an agent's). The event's `distinct_id` is a random id made for
 each process and forgotten when it ends: nothing is written on your machine,
 and two runs cannot be tied together. It goes to PostHog's EU Cloud
-(`eu.i.posthog.com`), in the background, with a 2-second timeout: it never
+(`eu.i.posthog.com`), which sees your IP address as any server you reach
+does; the event asks it to look up no location from it. It is sent in the background, with a 2-second timeout: it never
 fails, slows or stops a run, and nothing is sent when openarena is imported.
 
 ## Development

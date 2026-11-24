@@ -52,7 +52,7 @@ TIMEOUT = 2.0
 
 _ON = ("1", "true", "yes", "on")
 # shortcut: the common CI runners' variables; add one when a runner is missed.
-_CI = ("CI", "TF_BUILD", "JENKINS_URL")
+_CI = ("CI", "TF_BUILD", "JENKINS_URL", "CODEBUILD_BUILD_ID", "TEAMCITY_VERSION")
 _notice = threading.Event()
 _threads: list[threading.Thread] = []
 
@@ -144,7 +144,11 @@ def run_properties(cfg: Any) -> dict[str, Any]:
     # price map puts their own ids in that.
     table = bundled_table()
     datasets = cfg.selected_dataset_names()
-    model_ids = [cfg.model_id(name) for name in cfg.language_models]
+    kinds = {cfg.dataset_kind(n) for n in datasets}
+    # An A2A run's axis is the user's agent names, never sent even when one looks like a model id.
+    model_ids = (
+        [] if "a2a" in kinds else [cfg.model_id(name) for name in cfg.language_models]
+    )
     rewards = {
         cfg.rewards[cfg.datasets[n].reward].type
         for n in datasets
@@ -160,13 +164,13 @@ def run_properties(cfg: Any) -> dict[str, Any]:
         "python_version": "{}.{}".format(*sys.version_info[:2]),
         "os": platform.system().lower(),
         "arch": platform.machine().lower(),
-        "models_count": len(model_ids),
+        "models_count": len(cfg.language_models),
         "datasets_count": len(datasets),
         "model_providers": sorted({_provider(m, table) for m in model_ids}),
         "models": sorted(
             {m if m in table or table_entry(m, table) else "other" for m in model_ids}
         ),
-        "dataset_kinds": sorted({cfg.dataset_kind(n) for n in datasets}),
+        "dataset_kinds": sorted(kinds),
         "dataset_providers": sorted(
             {_known(cfg.datasets[n].type, PROVIDERS) for n in datasets}
         ),
@@ -185,7 +189,8 @@ def _provider(model_id: str, table: dict) -> str:
 
     prefix, slash, _ = model_id.partition("/")
     name = prefix if slash else (table.get(model_id) or {}).get("litellm_provider", "")
-    return _known(name, litellm.provider_list)
+    # litellm's enum, not its provider_list, which a user's custom_provider_map appends to.
+    return _known(name, {p.value for p in litellm.LlmProviders})
 
 
 def _send(payload: dict[str, Any]) -> None:
