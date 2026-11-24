@@ -314,6 +314,8 @@ def task_files(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None 
 
 # Providers served from the arena's own machine by default: a sandbox cannot reach them.
 LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm", "sglang")
+# Agents whose Harbor wrapper splits the model id at its first `/` and fails every trial of an id without one.
+PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes")
 
 
 def agents() -> list[dict[str, Any]]:
@@ -368,6 +370,8 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     info = next((a for a in agents() if a["name"] == agent), None)
     if info is None:
         return None
+    if agent in PROVIDER_PREFIXED and "/" not in model_id:
+        return f"Harbor agent {agent!r} needs a `provider/model` id such as 'openai/gpt-4o', and {model_id!r} names no provider"
     provider = model_provider(model_id)
     if info["provider"] and provider and provider != info["provider"]:
         return f"Harbor agent {agent!r} calls {info['provider']} models only, and {model_id!r} is a {provider} model"
@@ -492,7 +496,7 @@ def environment_config(sandbox: str):
 
 
 # Harbor loads most providers' modules without their SDK and records the import as a `_HAS_<SDK>` flag of the
-# module (or its base class's: wandb also needs cwsandbox's); cua-cloud's alone imports its SDK only as a sandbox
+# module (or of its base class's module, whose SDK it needs too); cua-cloud's alone imports its SDK only as a sandbox
 # starts, with no flag, so it is named here.
 _LAZY_SDKS = {"cua-cloud": "cua_train"}
 
