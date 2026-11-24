@@ -218,6 +218,7 @@ fails, slows or stops a run, and nothing is sent when openarena is imported.
 ```shell
 git clone https://github.com/Atena-IT/open-arena && cd open-arena
 uv sync
+export ARENA_TELEMETRY=0                               # your own runs are not usage (Telemetry)
 uv run openarena --help
 uv run pytest                                          # no network needed
 uvx ruff check .
