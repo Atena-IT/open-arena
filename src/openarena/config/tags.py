@@ -153,7 +153,7 @@ def describe_tag_filter(include: Iterable[str] = (), exclude: Iterable[str] = ()
     parts = []
     for group, tags in groups.items():
         if group.endswith(":") and len(tags) > 1:
-            parts.append(f"{group} " + " or ".join(t.removeprefix(group) for t in tags))
+            parts.append(f"{group} " + " or ".join(t.removeprefix(group) or t for t in tags))
         else:
             parts.append(" or ".join(tags))
     if exclude:

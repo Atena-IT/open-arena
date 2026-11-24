@@ -91,7 +91,7 @@ def test_leaderboards_run_resolves_the_tag_scope(tmp_path):
                     "tenders": {
                         "title": "Tenders",
                         "dataset_tags": {
-                            "include": ["procurement", "lang:it", "lang:en"],
+                            "include": ["procurement", "Lang:IT", "lang:en"],
                             "exclude": ["toy"],
                         },
                     },
@@ -136,3 +136,21 @@ def test_leaderboards_run_resolves_the_tag_scope(tmp_path):
 
     listed = runner.invoke(cli, ["leaderboards", "list", "--configs", str(configs)])
     assert "tagged procurement" in " ".join(listed.output.split())
+
+
+def test_check_warns_on_a_tag_scope_no_dataset_passes():
+    from openarena.config.check import check_registry
+
+    boards = {"tenders": {"title": "Tenders", "dataset_tags": {"include": ["procurment"]}}}
+    datasets = {"it-tenders": {"tags": ["procurement"]}, "odd": {"tags": "procurment"}}
+    report = check_registry("leaderboards", boards, registries={"datasets": datasets})
+    assert [(p.level, p.where) for p in report.problems] == [("warning", "leaderboards.tenders.dataset_tags")]
+    datasets["it-tenders"]["tags"] = ["procurment"]
+    assert check_registry("leaderboards", boards, registries={"datasets": datasets}).problems == []
+
+
+def test_export_refuses_a_tag_scope_left_unresolved():
+    from openarena.imports import export
+
+    with pytest.raises(ValueError, match="dataset_tags"):
+        export({"datasets": [], "entries": []}, {"title": "T", "dataset_tags": {"include": ["math"]}})

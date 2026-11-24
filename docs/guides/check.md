@@ -280,6 +280,7 @@ the registry beside the file:
 | `evaluations` | `language_models[i]` | `models`; `a2a_agents` when every dataset it selects is an `a2a` dataset |
 | `evaluations` | `default_language_model`, `default_embedding_model`, models named in `metrics[i]` | `models`, of the right type |
 | `leaderboards` | `datasets[i]`, `models[i]` | `datasets`, `models` (a warning, not an error) |
+| `leaderboards` | `dataset_tags` | at least one dataset of `datasets` passing it (a warning, not an error) |
 
 A model reference is a `models` key, never a raw model id. Writing
 `language_model: openai/gpt-4o-mini` in a reward is an error. When an entry

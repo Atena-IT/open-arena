@@ -68,7 +68,7 @@ from rich.table import Table
 from rich.text import Text
 
 from openarena.config.files import evaluation_config, expand, load_yaml, registries
-from openarena.config.tags import describe_tag_filter, lenient_tags, matches_tag_filter
+from openarena.config.tags import TagFilter, describe_tag_filter, lenient_tags
 
 TEMPLATES = Path(__file__).parent / "templates"
 # The engine's Agent Skills, one per action; `init` copies them into the workspace's `.agents/skills/`.
@@ -160,18 +160,24 @@ def _saved(configs: Path, section: str, name: str) -> dict:
     return entries[name]
 
 
-def _tagged(configs: Path, scope: dict) -> list[str]:
+def _tagged(configs: Path, scope: TagFilter) -> list[str]:
     """The datasets of `configs` passing a leaderboard's tag scope, read from their tags now."""
     try:
         datasets = _section(configs, "datasets")
     except FileNotFoundError:
         return []
-    include, exclude = scope.get("include") or [], scope.get("exclude") or []
-    return [name for name, entry in datasets.items() if matches_tag_filter(lenient_tags(entry.get("tags") or []), include, exclude)]
+    return [name for name, entry in datasets.items() if scope.matches(_tags_of(entry))]
+
+
+def _tags_of(entry: dict) -> list[str]:
+    """An entry's tags as the schema reads them; a `tags:` that is not a list (refused by `check`) is none."""
+    tags = entry.get("tags")
+    return lenient_tags(tags) if isinstance(tags, list) else []
 
 
 def _scope_line(scope: dict) -> str:
-    return describe_tag_filter(scope.get("include") or [], scope.get("exclude") or [])
+    tags = TagFilter.model_validate(scope)
+    return describe_tag_filter(tags.include, tags.exclude)
 
 
 def finished_runs(state_dir: Path) -> list[dict]:
@@ -302,7 +308,10 @@ def _listing(configs: Path, section: str, columns: list[str], *, scopes: tuple[s
         for column in columns:
             value = entry.get(column)
             if column == "datasets" and isinstance(entry.get("dataset_tags"), dict):
-                cells.append(f"tagged {_scope_line(entry['dataset_tags'])}")
+                try:
+                    cells.append(f"tagged {_scope_line(entry['dataset_tags'])}")
+                except ValueError:
+                    cells.append(f"tagged {entry['dataset_tags']} [red](does not read)[/]")
             elif column in scopes and not value:
                 cells.append("[dim]all[/]")
             elif isinstance(value, list):
@@ -570,7 +579,7 @@ def leaderboards_run(name: str, configs: Path, state_dir: Path, no_eol: bool, js
         )
     datasets = saved.get("datasets") or None
     if saved.get("dataset_tags"):
-        datasets = _tagged(configs, saved["dataset_tags"])
+        datasets = _tagged(configs, TagFilter.model_validate(saved["dataset_tags"]))
         if not datasets:
             raise click.ClickException(
                 f"no dataset of {configs / 'datasets.yaml'} passes the leaderboard's tag scope ({_scope_line(saved['dataset_tags'])}); "

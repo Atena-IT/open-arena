@@ -131,7 +131,8 @@ leaderboards:
 - **`exclude`**: a dataset carrying any of these is out.
 
 A board gives `datasets` or `dataset_tags`, not both, and the filter names at
-least one tag, never the same one on both sides. A dataset that passes the
+least one tag, never the same one on both sides. Only the datasets of
+`datasets.yaml` can pass it, never an import's `<import>/...`. A dataset that passes the
 filter but has no score in any run is left out, as an unknown name in
 `datasets` is; the rule of [Missing runs](#missing-runs) applies to the rest.
 `leaderboards run` stops with an error when no dataset passes the filter, and

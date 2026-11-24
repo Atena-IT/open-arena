@@ -393,13 +393,17 @@ def export(data: dict, board: dict, source: ImportFile | None = None) -> dict:
     """A saved leaderboard as an import file: re-imported, it gives back the same board.
 
     `data` is `leaderboard.board()`'s output, `board` the saved entry
-    (`name`, `title`, `description`, `tags`, `datasets`, `models`, `shares`).
+    (`name`, `title`, `description`, `tags`, `datasets`, `models`, `shares`),
+    a tag scope (`dataset_tags`) already resolved into `datasets`: an empty
+    `datasets` reads as every dataset.
     Every metric of every cell in scope becomes a row, uncertainty and sample
     count kept; `eol_days` is left out, the arena works it out again. When the
     board reads one import only (`source`), its datasets lose the
     `<import>/` prefix and the import's own metadata comes along, so the
     re-import names everything as before.
     """
+    if board.get("dataset_tags"):
+        raise ValueError("resolve the leaderboard's `dataset_tags` into `datasets` before exporting it")
     # An empty scope is what the board ranks: the arena's own datasets, not an import's.
     datasets = board.get("datasets") or default_datasets(data)
     models = board.get("models") or [e["model"] for e in data["entries"]]
