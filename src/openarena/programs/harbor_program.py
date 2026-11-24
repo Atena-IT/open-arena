@@ -385,10 +385,13 @@ def last_output(logs: Path) -> str | None:
     not JSON (what the agent wrote to stderr).
     """
     for path in sorted(logs.glob("*.txt")) if logs.is_dir() else []:
-        with path.open("rb") as f:
-            start = max(f.seek(0, os.SEEK_END) - LOG_TAIL, 0)
-            f.seek(start)
-            lines = f.read().decode(errors="replace").splitlines()[1 if start else 0 :]  # the first may be cut
+        try:
+            with path.open("rb") as f:
+                start = max(f.seek(0, os.SEEK_END) - LOG_TAIL, 0)
+                f.seek(start)
+                lines = f.read().decode(errors="replace").splitlines()[1 if start else 0 :]  # the first may be cut
+        except OSError:  # a log that cannot be read says nothing; the row's outcome does not hang on it
+            continue
         for line in reversed(lines):
             if not line.strip():
                 continue
@@ -424,12 +427,14 @@ def verifier_rewards(result) -> dict[str, float] | None:
     return {str(k): float(v) for k, v in rewards.items()} if rewards else None
 
 
-def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[str, Any]:
+def prediction(trial_dir: Path, result, answer_file: str | None = None, verified: bool = False) -> dict[str, Any]:
     """What the agent did: its ATIF trajectory from the downloaded logs, as a `HarborTrajectory`; `ValueError` saying why when there is none.
 
     With an `answer_file`, the answer is what the agent wrote there (the
     verifier's collected copy, else the artifact; empty when it wrote
-    nothing); else its last message. `rewards` are the verifier's.
+    nothing); else its last message. `rewards` are the verifier's. A run that
+    ended on a model error with no answer did not answer (`ValueError`),
+    unless the task is `verified`: its own tests score what the agent did.
     """
     try:
         raw = find_trajectory(trial_dir / "agent")
@@ -447,7 +452,7 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[
     else:
         answer = final_answer(messages)
     # A run that ended on an error and left no answer did not answer: the row fails, and says why.
-    if not answer and (stopped := run_error(raw, trial_dir / "agent")):
+    if not answer and not verified and (stopped := run_error(raw, trial_dir / "agent")):
         raise ValueError(stopped)
     try:
         trajectory = HarborTrajectory.model_validate({**raw, "answer": answer, "rewards": verifier_rewards(result)})
@@ -639,7 +644,7 @@ class HarborTask(Module):
                 spec_sandbox(self.spec),
             )
             _book(self.language_model, result, space / "trials" / name)
-            predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"))
+            predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"), bool(self.spec.get("tasks")))
             # A task scored by the arena's reward system: its tests collected the answer, its reward scores it here.
             scoring = (self.spec.get("task_rewards") or {}).get(str(row.get("task"))) if self.spec.get("tasks") else None
             if scoring is not None:

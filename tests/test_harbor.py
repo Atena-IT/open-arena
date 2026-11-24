@@ -324,6 +324,14 @@ def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(t
     trial = _pi_trial(tmp_path, events, output)
     with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
         prediction(trial, SimpleNamespace(exception_info=None))
+    # A task folder's own tests score what the agent did in the sandbox, answer or not.
+    assert prediction(trial, SimpleNamespace(exception_info=None), verified=True)["answer"] == ""
+    # A log that cannot be read leaves the trajectory's own word.
+    (trial / "agent" / "pi.txt").unlink()
+    (trial / "agent" / "pi.txt").mkdir()
+    assert run_error(json.loads((trial / "agent" / "trajectory.json").read_text()), trial / "agent") == "the agent's last model call failed"
+    (trial / "agent" / "pi.txt").rmdir()
+    (trial / "agent" / "pi.txt").write_text(output)
     # What it wrote before the error is still its answer, scored; the error goes to the trial's line.
     (trial / "verifier").mkdir()
     (trial / "verifier" / COLLECTED_ANSWER).write_text("4\n")
