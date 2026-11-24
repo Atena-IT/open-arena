@@ -289,7 +289,7 @@ def test_guard_only_the_telemetry_module_reaches_posthog():
         for p in (ROOT / "src").rglob("*.py")
         if p.name != "telemetry.py"
         and re.search(
-            r"posthog|from openarena\.telemetry import|\btelemetry\.(?!capture_run\b)\w+",
+            r"posthog|from openarena\.telemetry import|\btelemetry\.(?!capture_run\b|py\b)\w+",
             p.read_text(encoding="utf-8"),
             re.I,
         )

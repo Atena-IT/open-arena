@@ -56,6 +56,9 @@ _ON = ("1", "true", "yes", "on")
 _CI = ("CI", "TF_BUILD", "JENKINS_URL", "CODEBUILD_BUILD_ID", "TEAMCITY_VERSION")
 _notice = threading.Event()
 _threads: list[threading.Thread] = []
+_lock = threading.Lock()
+# One name per CPU family whatever the OS calls it.
+_ARCH = {"amd64": "x86_64", "aarch64": "arm64"}
 
 
 @atexit.register
@@ -113,7 +116,8 @@ def capture_run(cfg: Any) -> None:
             target=_send, args=(payload,), name="openarena-telemetry", daemon=True
         )
         thread.start()
-        _threads[:] = [t for t in _threads if t.is_alive()] + [thread]
+        with _lock:  # two sweeps in two threads must not drop each other's thread
+            _threads[:] = [t for t in _threads if t.is_alive()] + [thread]
     except Exception as e:  # noqa: BLE001 (telemetry never breaks a run)
         log.debug("telemetry skipped (%s: %s)", type(e).__name__, e)
 
@@ -137,9 +141,12 @@ def _process_id() -> str:
 
 def _forget() -> None:
     """A forked child is a new process: its own id, its own notice, none of its parent's threads."""
-    global _notice
+    global _notice, _lock
     _process_id.cache_clear()
     _notice = threading.Event()
+    _lock = (
+        threading.Lock()
+    )  # one held by a parent's thread at the fork would never be released
     _threads.clear()
 
 
@@ -176,7 +183,7 @@ def run_properties(cfg: Any) -> dict[str, Any]:
         "$geoip_disable": True,
         "python_version": "{}.{}".format(*sys.version_info[:2]),
         "os": platform.system().lower(),
-        "arch": platform.machine().lower(),
+        "arch": _ARCH.get(platform.machine().lower(), platform.machine().lower()),
         "models_count": len(cfg.language_models),
         "datasets_count": len(datasets),
         "model_providers": sorted({_provider(m, table) for m in model_ids}),
