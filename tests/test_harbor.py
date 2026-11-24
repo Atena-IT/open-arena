@@ -254,6 +254,22 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     assert agent_problem("terminus-2", "ollama/qwen3", offline) is None
 
 
+def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
+    from openarena.config import HarborBlock
+    from openarena.harbor import agent_problem, agents
+
+    assert HarborBlock(agent="hermes").agent == "hermes"
+    assert next(a for a in agents() if a["name"] == "hermes") == {"name": "hermes", "runs": "sandbox", "provider": None, "params": []}
+    public, offline = EnvironmentSpec(docker_image="x"), EnvironmentSpec(docker_image="x", network_mode="no-network")
+    assert agent_problem("hermes", "openrouter/qwen/qwen3-vl-8b-instruct", public) is None
+    assert "no-network" in agent_problem("hermes", "anthropic/claude-sonnet-4-5", offline)
+    assert "cannot reach 'ollama/qwen3'" in agent_problem("hermes", "ollama/qwen3", public)
+    assert "names no provider" in agent_problem("hermes", "gpt-4o", public)
+    assert "names no provider" in agent_problem("opencode", "gpt-4o", public)
+    # It takes none of the model's params: they are dropped, not passed.
+    assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
+
+
 def test_a_sandbox_provider_refuses_what_it_cannot_give():
     from openarena.harbor import environment_problems, sandbox_capabilities
 
@@ -335,16 +351,21 @@ def test_a_provider_whose_sdk_breaks_on_import_falls_back_with_the_reason(monkey
     assert harbor_program.sandbox_issue("modal") is None
 
 
-def test_a_provider_needs_the_sdk_of_its_base_class_too(monkeypatch):
-    import harbor.environments.cwsandbox
-    import harbor.environments.wandb
+def test_a_provider_needs_the_sdk_of_its_base_class_too(monkeypatch, tmp_path):
+    import importlib
+
+    from harbor.environments import factory
+    from harbor.models.environment_type import EnvironmentType
     from openarena.harbor import sandbox_not_installed
 
-    monkeypatch.setattr(harbor.environments.wandb, "_HAS_WANDB_SANDBOX", True)
-    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", False)
-    assert sandbox_not_installed("wandb") == "wandb's SDK is not installed (pip install 'harbor[wandb]')"
-    monkeypatch.setattr(harbor.environments.cwsandbox, "_HAS_CWSANDBOX", True)
-    assert sandbox_not_installed("wandb") is None
+    # A provider built on another's class, each module with its own SDK flag (as wandb on cwsandbox, before Harbor 0.24).
+    (tmp_path / "base_env.py").write_text("_HAS_BASE_SDK = False\nclass BaseEnv:\n    pass\n")
+    (tmp_path / "child_env.py").write_text("from base_env import BaseEnv\n_HAS_CHILD_SDK = True\nclass ChildEnv(BaseEnv):\n    pass\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(factory._ENVIRONMENT_REGISTRY, EnvironmentType.MODAL, factory._EnvEntry("child_env", "ChildEnv", "modal"))
+    assert sandbox_not_installed("modal") == "modal's SDK is not installed (pip install 'harbor[modal]')"
+    monkeypatch.setattr(importlib.import_module("base_env"), "_HAS_BASE_SDK", True)
+    assert sandbox_not_installed("modal") is None
 
 
 def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():

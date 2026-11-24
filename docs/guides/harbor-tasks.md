@@ -411,6 +411,7 @@ evaluation's axis is what the agent calls to decide each step.
 | `codex` | in the sandbox | OpenAI models only |
 | `gemini-cli` | in the sandbox | Google models only |
 | `goose`, `opencode`, `openhands`, `mini-swe-agent`, `swe-agent`, `cline-cli`, `cursor-cli` | in the sandbox | any provider |
+| `hermes` | in the sandbox | Anthropic, OpenAI, Z.ai, Kimi and MiniMax models with their provider's key; any other `provider/model` id, or one of those without its key, goes to OpenRouter whole, an `openrouter/` prefix included, with `OPENROUTER_API_KEY` |
 
 How to choose:
 
@@ -424,6 +425,10 @@ How to choose:
   from inside the sandbox.
 
 `check` and the run refuse a pairing that cannot work, and say why.
+`gemini-cli`, `goose`, `opencode`, `mini-swe-agent`, `cursor-cli` and
+`hermes` need a `provider/model` id. An agent in the sandbox installs itself
+there before its first step, in each sandbox (Hermes takes several
+minutes); Hermes reads its key from the arena's own environment.
 
 The model entry's `params` reach the agent where it takes them:
 `temperature`, `reasoning_effort` and, for agents that pass call settings
