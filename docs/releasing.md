@@ -3,7 +3,9 @@
 The `openarena` package is published by one workflow,
 `.github/workflows/release.yml`, with Trusted Publishing: PyPI and TestPyPI
 trust that workflow in this repository, so no token is stored anywhere. It
-builds the sdist and the wheel, checks them, publishes them, and then installs
+runs the telemetry guard (`tests/test_telemetry.py`: no usage event without
+its opt-out and the README's notice), builds the sdist and the wheel, checks
+them, publishes them, and then installs
 the exact version it published on a fresh runner, runs `openarena --help`, and
 checks the workspace `openarena init` writes.
 

@@ -47,6 +47,7 @@ from openarena.config import Config, MetricEntry  # noqa: E402
 from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
 from openarena.lookups.prices import ensure_priced  # noqa: E402
+from openarena import telemetry  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent  # noqa: E402
@@ -785,6 +786,9 @@ async def run_sweep(
     """
     cfg = Config.load(config_path)
     emit = on_event or (lambda _event: None)
+
+    # One anonymous usage event, in the background (README "Telemetry"; off with ARENA_TELEMETRY=0).
+    telemetry.capture_run(cfg)
 
     # The run's spend is litellm's price of each call: every model it may call
     # (the ones under test, the judges) is priced from the first source that

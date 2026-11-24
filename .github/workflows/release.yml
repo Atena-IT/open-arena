@@ -51,6 +51,9 @@ jobs:
       - name: Version
         id: version
         run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+      # No release ships the usage telemetry without its opt-out and the README's notice.
+      - name: Telemetry guard
+        run: uv run --frozen pytest -q tests/test_telemetry.py
       - name: Build
         run: uv build
       - name: Check
