@@ -77,7 +77,7 @@ from openarena.config.entries import (
     RewardEntry as RewardEntry,
 )
 from openarena.config.errors import Invalid as Invalid
-from openarena.config.tags import Tag as Tag, Tags as Tags
+from openarena.config.tags import Tag as Tag, TagFilter as TagFilter, Tags as Tags, matches_tag_filter as matches_tag_filter
 
 ModelType = Literal["llm", "embedding", "decision"]
 

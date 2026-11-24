@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 
 from openarena.config.errors import Invalid
 from openarena.config.model_types import MODEL_TYPES, Modality, ModelKind, clean_modalities
-from openarena.config.tags import Tags
+from openarena.config.tags import TagFilter, Tags
 
 NAME_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_.-]*$"
 # A registry key: what other entries name this one by.
@@ -874,6 +874,10 @@ class LeaderboardEntry(BaseModel):
     description: str | None = None
     tags: Tags = Field(default_factory=list, description="Labels for browsing: the domain (`math`), the lens (`reward-first`), the purpose (`weekly`).")
     datasets: list[str] = Field(default_factory=list, description="Dataset names in scope. Empty means every dataset with scores.")
+    dataset_tags: TagFilter | None = Field(
+        default=None,
+        description="The datasets in scope by their tags instead of their names: the ones of `datasets.yaml` passing this filter when the board is ranked. Leave `datasets` empty with it.",
+    )
     models: list[str] = Field(default_factory=list, description="Models in scope, by their registry name. Empty means every scored model.")
     shares: dict[str, float] = Field(default_factory=dict, description="Percent of the score per metric. Empty means the default preset.")
     budgets: list[Budget] = Field(default_factory=list, description="Hard limits, e.g. cost at most 0.05: a model breaking one is left out of the ranking.")
@@ -889,6 +893,15 @@ class LeaderboardEntry(BaseModel):
     @classmethod
     def _weights(cls, weights: dict[str, float]) -> dict[str, float]:
         return check_weights(weights)
+
+    @model_validator(mode="after")
+    def _one_scope(self) -> LeaderboardEntry:
+        if self.dataset_tags is not None and self.datasets:
+            raise Invalid(
+                "the datasets in scope are given both by name (`datasets`) and by tag (`dataset_tags`)",
+                "keep one: empty `datasets`, or remove `dataset_tags`",
+            )
+        return self
 
 
 # Each registry's entry model, by section.

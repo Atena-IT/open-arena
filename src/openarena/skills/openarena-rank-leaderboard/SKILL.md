@@ -23,6 +23,7 @@ leaderboards:
     description: Reward first, cost second, nothing above 5 cents a cell.
     tags: [math, value]
     datasets: [gsm8k-20]                    # datasets keys; [] = every dataset scored
+    # dataset_tags: {include: [math, "lang:en"], exclude: [toy]}   # instead of datasets: by tag, OR within a dimension
     models: [qwen38, gpt-4o-mini]           # models keys (agent names for A2A); [] = every model scored
     shares:                                 # weight per metric; {} = the default preset
       reward: 70

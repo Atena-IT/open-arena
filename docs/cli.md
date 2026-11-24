@@ -243,7 +243,7 @@ that. A registry with no file prints an empty table.
 | `openarena a2a-agents list` | `url`, `description` | [A2A agents](guides/a2a-agents.md) |
 | `openarena environments list` | `docker_image`, `cpus`, `memory_mb`, `network_mode` | [Environments](guides/environments.md) |
 | `openarena evaluations list` | `language_models`, `datasets`, `description` | [Running evaluations](guides/evaluations.md) |
-| `openarena leaderboards list` | `title`, `datasets`, `models`, `description`; an empty scope shows as `all` | [Leaderboards](guides/leaderboards.md) |
+| `openarena leaderboards list` | `title`, `datasets`, `models`, `description`; an empty scope shows as `all`, a tag scope as `tagged ...` | [Leaderboards](guides/leaderboards.md) |
 
 **When to use them.** To find the exact name to pass to
 `openarena evaluations run` or `openarena leaderboards run`, or to see which
