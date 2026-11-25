@@ -159,6 +159,24 @@ def test_an_id_outside_openrouters_form_is_unavailable_and_never_fetched(monkeyp
     assert fetched == []
 
 
+def test_the_endpoints_are_read_off_the_event_loop(listed, monkeypatch):
+    import threading
+
+    readers = []
+
+    def endpoints(slug):
+        readers.append(threading.get_ident())
+        return listed["endpoints"]
+
+    monkeypatch.setattr(prices_module, "openrouter_endpoints", endpoints)
+
+    async def main():
+        return threading.get_ident(), await routed_price(LLAMA)
+
+    loop_thread, _ = asyncio.run(main())
+    assert readers and readers[0] != loop_thread
+
+
 def test_another_providers_id_has_no_routed_price(listed):
     assert _price("openai/gpt-4o-mini") is None
     assert listed["asked"] == []

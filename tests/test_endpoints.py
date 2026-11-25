@@ -90,6 +90,18 @@ def test_offline_before_any_read_is_none(monkeypatch):
     assert openrouter_endpoints(LLAMA) is None
 
 
+def test_a_failed_first_read_is_not_asked_again_within_the_hour(monkeypatch, fetches):
+    def offline(slug):
+        fetches.append(slug)
+        return None
+
+    monkeypatch.setattr(endpoints_module, "_fetch_endpoints", offline)
+    assert openrouter_endpoints(LLAMA) is None
+    assert openrouter_endpoints(LLAMA) is None
+    assert fetches == [LLAMA]
+    assert endpoints_module._cache[LLAMA][1] == endpoints_module._RETRY_S
+
+
 def test_an_answer_without_endpoints_is_an_empty_list(monkeypatch):
     monkeypatch.setattr(endpoints_module, "_fetch_endpoints", lambda slug: {"data": {"endpoints": []}})
     assert openrouter_endpoints(LLAMA) == []

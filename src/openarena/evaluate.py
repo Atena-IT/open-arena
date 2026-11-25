@@ -858,6 +858,8 @@ async def run_sweep(
     # Every program the sweep builds is closed by the end, however it ends: the tuner closes a cell's
     # program when its trial ends, and this `finally` closes the rest (cells a cancellation or an error
     # left unrun), with what they opened: an agent judge's sandbox, an A2A agent's client.
+    # The billed calls count while the cells run, and only for this run: its hooks come off at the end.
+    prices.start()
     try:
         for ds_name in dataset_names:
             emit({"event": "dataset_start", "dataset": ds_name})
@@ -1153,6 +1155,7 @@ async def run_sweep(
         for item in active:
             item["tuner"].on_search_end()
     finally:
+        prices.stop()
         for item in prepared:
             for program in item["programs"].values():
                 await program.close()

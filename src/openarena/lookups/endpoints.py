@@ -8,7 +8,8 @@ a range over them, and which ones a call can reach depends on the parameters
 it sends (`lookups.prices.routed_price`). The list is read once a day per
 model, like the catalogue in `lookups.eol`: a stale list answers while one
 refresh runs behind it, and a refresh that fails keeps the list it had and
-asks again within the hour. Only an id in OpenRouter's own form is ever put
+asks again within the hour; a first read that fails is not asked again
+before then either. Only an id in OpenRouter's own form is ever put
 into the URL, whose host is fixed.
 """
 
@@ -33,7 +34,7 @@ _RETRY_S = 3600
 
 _lock = threading.Lock()
 _fetch_lock = threading.Lock()
-_cache: dict[str, tuple[float, float, list[dict]]] = {}  # slug -> (fetched at, ttl, endpoints)
+_cache: dict[str, tuple[float, float, list[dict] | None]] = {}  # slug -> (fetched at, ttl, endpoints or None)
 _refreshing: set[str] = set()
 
 
@@ -66,10 +67,10 @@ def _refresh(slug: str) -> list[dict] | None:
                 known = _cache.get(slug)
                 if rows is not None:
                     _cache[slug] = (time.monotonic(), _TTL_S, rows)
-                elif known is not None:
-                    # Offline this time: keep what was known, ask again sooner.
-                    _cache[slug] = (time.monotonic(), _RETRY_S, known[2])
-                return _cache[slug][2] if slug in _cache else None
+                else:
+                    # Offline this time: keep what was known (nothing, on a first read), ask again sooner.
+                    _cache[slug] = (time.monotonic(), _RETRY_S, known[2] if known else None)
+                return _cache[slug][2]
         finally:
             with _lock:
                 _refreshing.discard(slug)

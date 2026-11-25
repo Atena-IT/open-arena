@@ -30,6 +30,7 @@ reads.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 from dataclasses import dataclass
@@ -336,7 +337,8 @@ async def routed_price(model_id: str, params: dict | None = None) -> RoutedPrice
     """
     if not model_id.startswith("openrouter/"):
         return None
-    endpoints = openrouter_endpoints(model_id.removeprefix("openrouter/"))
+    # Read in a thread: a first read waits on OpenRouter, and must not hold up the caller's event loop.
+    endpoints = await asyncio.to_thread(openrouter_endpoints, model_id.removeprefix("openrouter/"))
     if endpoints is None:
         return RoutedPrice(
             None, None, None, None, dict.fromkeys(CALL_KINDS, "price_unavailable")

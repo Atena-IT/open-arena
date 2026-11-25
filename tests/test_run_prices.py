@@ -16,6 +16,7 @@ from synalinks.src.modules.language_models.language_model import _CURRENT_CALL_U
 from openarena.run_prices import (
     MAX_COSINE,
     MIN_CALLS,
+    MIN_R2,
     BilledCall,
     RunPrices,
     estimate_prices,
@@ -68,10 +69,17 @@ def test_a_poor_fit_gives_none():
 
 
 def test_the_thresholds_are_the_spec_values():
-    assert (MIN_CALLS, MAX_COSINE) == (10, 0.99)
+    assert (MIN_CALLS, MAX_COSINE, MIN_R2) == (10, 0.99, 0.85)
 
 
 # -- what the run records ------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def clean_usage():
+    token = _CURRENT_CALL_USAGE.set(None)
+    yield
+    _CURRENT_CALL_USAGE.reset(token)
 
 
 def _usage(**usage):
@@ -82,16 +90,23 @@ def _hook_of(model):
     return model._hooks.hooks[-1]
 
 
+def _end(model, **kwargs):
+    """Each of the model's hooks told its call ended, as `Module.__call__` tells them."""
+    for hook in model._hooks.hooks:
+        hook.on_call_end("1", outputs=kwargs.get("outputs", object()), exception=kwargs.get("exception"))
+
+
 def test_calls_are_kept_by_entry_not_by_model_id():
     prices = RunPrices({})
     fast = synalinks.LanguageModel(model="openrouter/acme/m", max_tokens=100)
     slow = synalinks.LanguageModel(model="openrouter/acme/m")
-    prices.watch(fast, "m-short", "structured")
-    prices.watch(slow, "m", "tools")
-    _usage(input_tokens=100, output_tokens=10, cost=1e-5)
-    _hook_of(fast).on_call_end("1", outputs=object())
-    _usage(input_tokens=200, output_tokens=20, cost=2e-5)
-    _hook_of(slow).on_call_end("2", outputs=object())
+    with prices.recording():
+        prices.watch(fast, "m-short", "structured")
+        prices.watch(slow, "m", "tools")
+        _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+        _hook_of(fast).on_call_end("1", outputs=object())
+        _usage(input_tokens=200, output_tokens=20, cost=2e-5)
+        _hook_of(slow).on_call_end("2", outputs=object())
     assert prices.calls == {
         "m-short": [BilledCall(100, 10, 1e-5, "structured")],
         "m": [BilledCall(200, 20, 2e-5, "tools")],
@@ -101,22 +116,49 @@ def test_calls_are_kept_by_entry_not_by_model_id():
 def test_cache_hits_failures_and_free_calls_are_not_counted():
     prices = RunPrices({})
     model = synalinks.LanguageModel(model="openrouter/acme/m")
-    prices.watch(model, "m", "structured")
-    hook = _hook_of(model)
-    for usage in (
-        {"cache_hit": True},
-        {"error": "boom"},
-        {"error": "boom", "fallback": True},
-        {"input_tokens": 100, "output_tokens": 10, "cost": None},
-        {"input_tokens": 100, "output_tokens": 10, "cost": 0.0},
-        {"input_tokens": 0, "output_tokens": 0, "cost": 1e-5},
-        {},
-    ):
-        _usage(**usage)
-        hook.on_call_end("1", outputs=object())
-    _usage(input_tokens=100, output_tokens=10, cost=1e-5)
-    hook.on_call_end("2", outputs=None, exception="the call raised")
+    with prices.recording():
+        prices.watch(model, "m", "structured")
+        hook = _hook_of(model)
+        for usage in (
+            {"cache_hit": True},
+            {"error": "boom"},
+            {"error": "boom", "fallback": True},
+            {"input_tokens": 100, "output_tokens": 10, "cost": None},
+            {"input_tokens": 100, "output_tokens": 10, "cost": 0.0},
+            {"input_tokens": 100, "output_tokens": 10, "cost": float("nan")},
+            {"input_tokens": 100, "output_tokens": 10, "cost": float("inf")},
+            {"input_tokens": 0, "output_tokens": 0, "cost": 1e-5},
+            {},
+        ):
+            _usage(**usage)
+            hook.on_call_end("1", outputs=object())
+        _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+        hook.on_call_end("2", outputs=None, exception="the call raised")
     assert prices.calls == {}
+
+
+def test_a_call_outside_any_recording_run_is_not_counted():
+    prices = RunPrices({})
+    model = synalinks.LanguageModel(model="openrouter/acme/m")
+    prices.watch(model, "m", "structured")
+    _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+    _end(model)
+    assert prices.calls == {}
+
+
+def test_a_model_shared_by_two_runs_counts_for_the_run_that_calls_it_and_keeps_no_hook_after():
+    # A process-wide judge model (synalinks' default) is seen by every run of the process.
+    model = synalinks.LanguageModel(model="openrouter/acme/judge")
+    first, second = RunPrices({}), RunPrices({})
+    second.watch(model, "judge", "structured")
+    with first.recording():
+        first.watch(model, "judge", "structured")
+        _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+        _end(model)
+    assert first.calls == {"judge": [BilledCall(100, 10, 1e-5, "structured")]}
+    assert second.calls == {}
+    # The run that ended took its hook away; the other run's is left.
+    assert [h._prices for h in model._hooks.hooks if type(h).__name__ == "_BilledHook"] == [second]
 
 
 def test_a_model_watched_twice_records_each_call_once():
@@ -134,6 +176,14 @@ def test_both_kinds_in_one_run_are_listed():
     estimate = prices.estimates()["llama"]
     assert estimate["kinds"] == ["structured", "tools"]
     assert estimate["input"] == pytest.approx(2.2e-7) and estimate["output"] == pytest.approx(2.2e-7)
+
+
+def test_a_cost_that_is_not_a_number_never_fails_the_run():
+    prices = RunPrices({})
+    for call in _calls(12, 2.2e-7, 2.2e-7):
+        prices.record("odd", BilledCall(call.input_tokens, call.output_tokens, float("nan"), call.kind))
+    assert estimate_prices(prices.calls["odd"]) is None
+    assert prices.estimates() == {}
 
 
 def test_an_entry_without_a_reliable_estimate_is_left_out():
@@ -180,9 +230,10 @@ def test_a_judge_counts_for_its_own_entry():
 
     prices = RunPrices(judge_keys({"judge": ("openrouter/acme/judge", {"temperature": 0.0})}))
     lm = language_model("openrouter/acme/judge", {"temperature": 0.0})
-    prices.watch_judge(_judge_program(lm))
-    _usage(input_tokens=100, output_tokens=10, cost=1e-5)
-    _hook_of(lm).on_call_end("1", outputs=object())
+    with prices.recording():
+        prices.watch_judge(_judge_program(lm))
+        _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+        _hook_of(lm).on_call_end("1", outputs=object())
     assert prices.calls == {"judge": [BilledCall(100, 10, 1e-5, "structured")]}
 
 
@@ -211,7 +262,12 @@ def test_a_billed_call_of_the_model_under_test_is_recorded():
     lm = MockedLanguageModel(model="openai/gpt-4o-mini")
     program = _judge_program(lm)
     prices = RunPrices({})
-    prices.watch_program(program, "mini", "structured")
-    asyncio.run(program(Query(question="2 + 2?")))
+
+    async def run():
+        with prices.recording():
+            prices.watch_program(program, "mini", "structured")
+            await program(Query(question="2 + 2?"))
+
+    asyncio.run(run())
     (call,) = prices.calls["mini"]
     assert call.kind == "structured" and call.input_tokens > 0 and call.cost > 0

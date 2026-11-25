@@ -20,7 +20,10 @@ A2A agents and embedding models.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
@@ -36,6 +39,12 @@ from openarena.lookups.prices import CallKind
 MIN_CALLS = 10
 MAX_COSINE = 0.99
 MIN_R2 = 0.85
+
+# The run recording in this context: a model the whole process shares (synalinks' default
+# judge) is called by every run, and each call counts only for the run that made it.
+_RECORDING: contextvars.ContextVar[RunPrices | None] = contextvars.ContextVar(
+    "openarena_run_prices", default=None
+)
 
 # A dataset's kind -> the kind of call its model makes; the others are not counted.
 _CALL_KIND: dict[str, CallKind] = {"model": "structured", "tools": "tools", "agent": "tools"}
@@ -60,10 +69,15 @@ def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
         return None
     x = np.array([[c.input_tokens, c.output_tokens] for c in calls], dtype=float)
     y = np.array([c.cost for c in calls], dtype=float)
+    if not np.isfinite(y).all():
+        return None
     norms = np.linalg.norm(x, axis=0)
     if not norms.all() or x[:, 0] @ x[:, 1] / (norms[0] * norms[1]) >= MAX_COSINE:
         return None
-    (a, b), *_ = np.linalg.lstsq(x, y, rcond=None)
+    try:
+        (a, b), *_ = np.linalg.lstsq(x, y, rcond=None)
+    except np.linalg.LinAlgError:
+        return None
     if a < 0 or b < 0:
         return None
     residual = float(((y - x @ (a, b)) ** 2).sum())
@@ -114,14 +128,14 @@ def _language_models(program) -> list:
 
 
 class _BilledHook(synalinks.hooks.Hook):
-    """Record each billed call of one model for its registry entry."""
+    """Record each billed call of one model for its registry entry, while its run records."""
 
     def __init__(self, prices: RunPrices, entry: str, kind: CallKind):
         super().__init__()
         self._prices, self._entry, self._kind = prices, entry, kind
 
     def on_call_end(self, call_id, parent_call_id=None, outputs=None, exception=None):
-        if exception is not None or outputs is None:
+        if exception is not None or outputs is None or _RECORDING.get() is not self._prices:
             return
         # Read in the calling task right after the call, as `hooks.otel` reads it.
         from synalinks.src.modules.language_models.language_model import current_call_usage
@@ -132,7 +146,12 @@ class _BilledHook(synalinks.hooks.Hook):
         cost = usage.get("cost")
         tokens_in = int(usage.get("input_tokens") or 0)
         tokens_out = int(usage.get("output_tokens") or 0)
-        if not isinstance(cost, (int, float)) or cost <= 0 or not (tokens_in or tokens_out):
+        if (
+            not isinstance(cost, (int, float))
+            or not math.isfinite(cost)
+            or cost <= 0
+            or not (tokens_in or tokens_out)
+        ):
             return
         self._prices.record(self._entry, BilledCall(tokens_in, tokens_out, float(cost), self._kind))
 
@@ -156,17 +175,42 @@ class RunPrices:
     def __init__(self, judges: Mapping[tuple[str, str], str]):
         self._judges = dict(judges)
         self.calls: dict[str, list[BilledCall]] = {}
+        self._hooked: list[tuple[object, _BilledHook]] = []
+        self._token: contextvars.Token | None = None
+
+    def start(self) -> None:
+        """Count, in this context, the calls of the models this run watches."""
+        self._token = _RECORDING.set(self)
+
+    def stop(self) -> None:
+        """Stop counting and take this run's hooks off its models (a shared model outlives the run)."""
+        for model, hook in self._hooked:
+            with contextlib.suppress(ValueError):
+                model._hooks.hooks.remove(hook)
+        self._hooked.clear()
+        if self._token is not None:
+            _RECORDING.reset(self._token)
+            self._token = None
+
+    @contextlib.contextmanager
+    def recording(self):
+        self.start()
+        try:
+            yield self
+        finally:
+            self.stop()
 
     def record(self, entry: str, call: BilledCall) -> None:
         self.calls.setdefault(entry, []).append(call)
 
     def watch(self, model, entry: str, kind: CallKind) -> None:
-        """Record `model`'s billed calls for `entry`; a model already watched keeps its hook."""
-        if any(isinstance(h, _BilledHook) for h in model._hooks.hooks):
+        """Record `model`'s billed calls for `entry`; a model this run already watches keeps its hook."""
+        if any(isinstance(h, _BilledHook) and h._prices is self for h in model._hooks.hooks):
             return
         hook = _BilledHook(self, entry, kind)
         hook.set_module(model)
         model.add_hook(hook)
+        self._hooked.append((model, hook))
 
     def watch_program(self, program, entry: str, kind: CallKind) -> None:
         for model in _language_models(program):
