@@ -144,6 +144,12 @@ def test_a_negative_price_is_left_out_of_the_range(listed):
     assert (price.input_min, price.input_max) == pytest.approx((1e-7, 1e-7))
 
 
+def test_a_model_with_no_provider_at_all_says_so(listed):
+    listed["endpoints"] = []
+    price = _price()
+    assert price == RoutedPrice(None, None, None, None, {"structured": "no_provider", "tools": "no_provider"})
+
+
 def test_openrouter_unreachable_before_any_read(listed):
     listed["endpoints"] = None
     price = _price()
@@ -188,6 +194,7 @@ def test_every_reason_is_one_of_the_codes(listed):
         ([_endpoint("alpha", 1e-7, 2e-7, BOTH)], {"reasoning_effort": "high", "supports_reasoning": True}),
         ([_endpoint("alpha", 1e-7, 2e-7, ())], {"temperature": 0.1, "max_tokens": 10, "top_p": 0.1}),
         (None, None),
+        ([], None),
         (copy.deepcopy(ENDPOINTS), None),
     ]
     for endpoints, params in cases:

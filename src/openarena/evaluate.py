@@ -799,9 +799,7 @@ async def run_sweep(
         ensure_priced(entry.model, MODEL_TYPES[entry.type].litellm_mode)
     # What each model paid per token, from the calls it was billed for, by registry entry
     # (run_prices.py); a judge's calls count for the entry its model is built from.
-    prices = RunPrices(
-        judge_keys({name: (entry.model, cfg.lm_kwargs(name)) for name, entry in cfg.models.items() if entry.type == "llm"})
-    )
+    prices = RunPrices(judge_keys(cfg.judge_models()))
 
     # Optional process-wide reproducibility seed. `set_seed`
     # seeds both `numpy.random` and `random` — LM sampling temperature is

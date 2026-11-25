@@ -199,10 +199,10 @@ def test_an_entry_without_a_reliable_estimate_is_left_out():
 def test_judge_keys_name_each_registry_entry_and_leave_out_the_ambiguous_ones():
     keys = judge_keys(
         {
-            "judge": ("openai/gpt-4o-mini", {}),
-            "twin-a": ("openrouter/acme/m", {"temperature": 0.0}),
-            "twin-b": ("openrouter/acme/m", {"temperature": 0.0}),
-            "other": ("openrouter/acme/m", {"temperature": 0.5}),
+            "judge": "openai/gpt-4o-mini",
+            "twin-a": {"model": "openrouter/acme/m", "temperature": 0.0},
+            "twin-b": {"model": "openrouter/acme/m", "temperature": 0.0},
+            "other": {"model": "openrouter/acme/m", "temperature": 0.5},
         }
     )
     assert sorted(keys.values()) == ["judge", "other"]
@@ -228,7 +228,7 @@ class Answer(synalinks.DataModel):
 def test_a_judge_counts_for_its_own_entry():
     from openarena.programs.utils import language_model
 
-    prices = RunPrices(judge_keys({"judge": ("openrouter/acme/judge", {"temperature": 0.0})}))
+    prices = RunPrices(judge_keys({"judge": {"model": "openrouter/acme/judge", "temperature": 0.0}}))
     lm = language_model("openrouter/acme/judge", {"temperature": 0.0})
     with prices.recording():
         prices.watch_judge(_judge_program(lm))
@@ -237,8 +237,24 @@ def test_a_judge_counts_for_its_own_entry():
     assert prices.calls == {"judge": [BilledCall(100, 10, 1e-5, "structured")]}
 
 
+@pytest.mark.parametrize("named", ["openai/gpt-4o-mini", {"model": "openrouter/acme/judge"}])
+def test_a_judge_without_params_counts_for_its_entry(named):
+    from openarena.rewards import build_models
+
+    # Built the way a reward builds the judge its config names (`Config._id`, `rewards.build_models`).
+    lm = build_models({"language_model": named})["language_model"]
+    if isinstance(lm, str):
+        lm = synalinks.LanguageModel(model=lm)
+    prices = RunPrices(judge_keys({"judge": named}))
+    with prices.recording():
+        prices.watch_judge(_judge_program(lm))
+        _usage(input_tokens=100, output_tokens=10, cost=1e-5)
+        _end(lm)
+    assert prices.calls == {"judge": [BilledCall(100, 10, 1e-5, "structured")]}
+
+
 def test_a_judge_outside_the_registry_is_not_recorded():
-    prices = RunPrices(judge_keys({"judge": ("openrouter/acme/judge", {})}))
+    prices = RunPrices(judge_keys({"judge": {"model": "openrouter/acme/judge"}}))
     lm = synalinks.LanguageModel(model="openai/gpt-4o-mini")
     prices.watch_judge(_judge_program(lm))
     assert all(type(h).__name__ != "_BilledHook" for h in lm._hooks.hooks)
@@ -271,3 +287,23 @@ def test_a_billed_call_of_the_model_under_test_is_recorded():
     asyncio.run(run())
     (call,) = prices.calls["mini"]
     assert call.kind == "structured" and call.input_tokens > 0 and call.cost > 0
+
+
+def test_a_cells_hooks_come_off_when_its_evaluation_ends():
+    lm = MockedLanguageModel(model="openai/gpt-4o-mini")
+    program = _judge_program(lm)
+    prices = RunPrices({})
+    watch = prices.callback("mini", "model")
+    watch.set_program(program)
+
+    async def cell():
+        with prices.recording():
+            watch.on_test_begin()
+            await program(Query(question="2 + 2?"))
+            watch.on_test_end()
+            # Nothing of the finished cell is kept: its models can go with its program.
+            assert prices._hooked == []
+
+    asyncio.run(cell())
+    assert len(prices.calls["mini"]) == 1
+    assert all(type(h).__name__ != "_BilledHook" for h in lm._hooks.hooks)

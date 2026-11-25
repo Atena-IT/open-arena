@@ -146,3 +146,17 @@ def test_a_run_is_one_kind_of_sweep_and_an_a2a_axis_names_agents():
     assert cfg.dataset_kind("bots") == "a2a" and cfg.model_id("bot") == "bot"
     passages = {"type": "local", "config": {"path": "p.jsonl", "input_template": "{}"}, "embedding": {"k": 1}, "reward": "exact"}
     _refused("an embedding dataset cannot share a run", datasets={**_dataset(), "p": passages}, evaluation={"language_models": ["m"], "datasets": ["qa", "p"]})
+
+
+def test_an_openrouter_model_without_params_keeps_its_routing_as_a_judge():
+    cfg = _config(
+        models={"or": {"model": "openrouter/acme/judge"}},
+        evaluation={"language_models": ["m"], "datasets": ["qa"], "default_language_model": "or"},
+    )
+    judge = cfg.default_language_model
+    assert judge.model == "openrouter/acme/judge"
+    assert judge.default_kwargs["provider"] == {"require_parameters": True}
+    # Named by a reward or a metric: the same mapping the builders turn into a routed model.
+    assert cfg._resolve({"language_model": "or"}, "here") == {"language_model": {"model": "openrouter/acme/judge"}}
+    assert cfg.judge_models()["or"] == {"model": "openrouter/acme/judge"}
+    assert cfg.judge_models()["m"] == "openai/gpt-4o-mini" and "embed" not in cfg.judge_models()

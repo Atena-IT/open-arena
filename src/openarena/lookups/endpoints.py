@@ -9,8 +9,10 @@ it sends (`lookups.prices.routed_price`). The list is read once a day per
 model, like the catalogue in `lookups.eol`: a stale list answers while one
 refresh runs behind it, and a refresh that fails keeps the list it had and
 asks again within the hour; a first read that fails is not asked again
-before then either. Only an id in OpenRouter's own form is ever put
-into the URL, whose host is fixed.
+before then either. Each model is fetched on its own, once at a time, so a
+slow model holds up no other; the least recently read models are dropped
+past `_MAX_SLUGS`. Only an id in OpenRouter's own form is ever put into the
+URL, whose host is fixed.
 """
 
 from __future__ import annotations
@@ -31,10 +33,12 @@ ENDPOINTS_URL = "https://openrouter.ai/api/v1/models/{}/endpoints"
 OPENROUTER_SLUG = re.compile(r"[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._:-]*")
 _TTL_S = 24 * 3600
 _RETRY_S = 3600
+_MAX_SLUGS = 4096
 
 _lock = threading.Lock()
-_fetch_lock = threading.Lock()
-_cache: dict[str, tuple[float, float, list[dict] | None]] = {}  # slug -> (fetched at, ttl, endpoints or None)
+_fetch_locks: dict[str, threading.Lock] = {}  # slug -> the lock its fetch holds
+# slug -> (fetched at, ttl, endpoints or None), least recently read first.
+_cache: dict[str, tuple[float, float, list[dict] | None]] = {}
 _refreshing: set[str] = set()
 
 
@@ -58,18 +62,35 @@ def _rows(payload: dict | None) -> list[dict] | None:
     return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else None
 
 
-def _refresh(slug: str) -> list[dict] | None:
-    """Fetch a model's endpoints (outside `_lock`, one fetch at a time) and keep them."""
-    with _fetch_lock:
+def _keep(slug: str, entry: tuple[float, float, list[dict] | None]) -> None:
+    """Keep a model's entry as the most recently read; drop the least recently read past `_MAX_SLUGS`. Under `_lock`."""
+    _cache.pop(slug, None)
+    _cache[slug] = entry
+    while len(_cache) > _MAX_SLUGS:
+        oldest = next(iter(_cache))
+        _cache.pop(oldest)
+        _fetch_locks.pop(oldest, None)
+
+
+def _refresh(slug: str, *, cold: bool = False) -> list[dict] | None:
+    """Fetch a model's endpoints (outside `_lock`, one fetch per model at a time) and keep them."""
+    with _lock:
+        fetch_lock = _fetch_locks.setdefault(slug, threading.Lock())
+    with fetch_lock:
         try:
+            if cold:
+                with _lock:
+                    # Another reader fetched it while this one waited for the lock.
+                    if (known := _cache.get(slug)) is not None:
+                        return known[2]
             rows = _rows(_fetch_endpoints(slug))
             with _lock:
                 known = _cache.get(slug)
                 if rows is not None:
-                    _cache[slug] = (time.monotonic(), _TTL_S, rows)
+                    _keep(slug, (time.monotonic(), _TTL_S, rows))
                 else:
                     # Offline this time: keep what was known (nothing, on a first read), ask again sooner.
-                    _cache[slug] = (time.monotonic(), _RETRY_S, known[2] if known else None)
+                    _keep(slug, (time.monotonic(), _RETRY_S, known[2] if known else None))
                 return _cache[slug][2]
         finally:
             with _lock:
@@ -87,9 +108,10 @@ def openrouter_endpoints(slug: str) -> list[dict] | None:
     with _lock:
         known = _cache.get(slug)
         if known is not None:
+            _keep(slug, known)
             if time.monotonic() - known[0] >= known[1] and slug not in _refreshing:
                 _refreshing.add(slug)
                 threading.Thread(target=_refresh, args=(slug,), daemon=True).start()
             return known[2]
         _refreshing.add(slug)
-    return _refresh(slug)
+    return _refresh(slug, cold=True)

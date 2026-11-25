@@ -193,6 +193,7 @@ Reason = Literal[
     "temperature",
     "parameter",
     "platform_exclusion",
+    "no_provider",
     "price_unavailable",
 ]
 CALL_KINDS: tuple[CallKind, ...] = ("structured", "tools")
@@ -343,6 +344,9 @@ async def routed_price(model_id: str, params: dict | None = None) -> RoutedPrice
         return RoutedPrice(
             None, None, None, None, dict.fromkeys(CALL_KINDS, "price_unavailable")
         )
+    if not endpoints:
+        # OpenRouter lists the model and no host for it: no call of any kind can be served.
+        return RoutedPrice(None, None, None, None, dict.fromkeys(CALL_KINDS, "no_provider"))
     import synalinks
 
     from openarena.programs.utils import language_model

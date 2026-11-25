@@ -92,21 +92,23 @@ def _key(model) -> tuple[str, str]:
     return model.model, json.dumps(getattr(model, "default_kwargs", {}) or {}, sort_keys=True, default=str)
 
 
-def judge_keys(models: Mapping[str, tuple[str, dict]]) -> dict[tuple[str, str], str]:
+def judge_keys(models: Mapping[str, object]) -> dict[tuple[str, str], str]:
     """The registry entry each judge model is built from, by `_key`.
 
-    `models` maps an entry's name to its model id and params (`Config.lm_kwargs`).
-    Each is built as a reward builds a judge (`rewards._model`, `language_model`);
-    two entries that build the same model cannot be told apart and are left out.
+    `models` maps an entry's name to what a reward or a metric that names it is
+    handed (`Config.judge_models`: the bare id, or `{model, **params}`). Each is
+    built as a reward builds its judge (`rewards.build_models`, then the
+    framework for a bare id); two entries that build the same model cannot be
+    told apart and are left out.
     """
     from synalinks.src.modules.language_models import get as get_language_model
 
-    from openarena.programs.utils import language_model
+    from openarena.rewards import build_models
 
     found: dict[tuple[str, str], list[str]] = {}
-    for name, (model_id, params) in models.items():
+    for name, named in models.items():
         try:
-            built = language_model(model_id, params)
+            built = build_models({"language_model": named})["language_model"]
             if isinstance(built, str):
                 built = get_language_model(built)
         except Exception:  # noqa: BLE001 — an entry that cannot be built is no judge's
@@ -164,9 +166,14 @@ class _PriceWatch(synalinks.callbacks.Callback):
         self._prices, self._entry, self._kind = prices, entry, kind
 
     def on_test_begin(self, logs=None):
-        self._prices.watch_program(self.program, self._entry, self._kind)
+        self._hooks = self._prices.watch_program(self.program, self._entry, self._kind)
         for judge in _judges(self.program):
-            self._prices.watch_judge(judge)
+            self._hooks += self._prices.watch_judge(judge)
+
+    def on_test_end(self, logs=None):
+        # The cell is over: its models go with its program, nothing of them is kept.
+        self._prices.unwatch(getattr(self, "_hooks", []))
+        self._hooks = []
 
 
 class RunPrices:
@@ -184,10 +191,7 @@ class RunPrices:
 
     def stop(self) -> None:
         """Stop counting and take this run's hooks off its models (a shared model outlives the run)."""
-        for model, hook in self._hooked:
-            with contextlib.suppress(ValueError):
-                model._hooks.hooks.remove(hook)
-        self._hooked.clear()
+        self.unwatch([h for _, h in self._hooked])
         if self._token is not None:
             _RECORDING.reset(self._token)
             self._token = None
@@ -203,24 +207,38 @@ class RunPrices:
     def record(self, entry: str, call: BilledCall) -> None:
         self.calls.setdefault(entry, []).append(call)
 
-    def watch(self, model, entry: str, kind: CallKind) -> None:
-        """Record `model`'s billed calls for `entry`; a model this run already watches keeps its hook."""
+    def watch(self, model, entry: str, kind: CallKind) -> list[_BilledHook]:
+        """Record `model`'s billed calls for `entry`; a model this run already watches keeps its hook.
+
+        Returns the hook it added (`[]` for a model already watched), for `unwatch`.
+        """
         if any(isinstance(h, _BilledHook) and h._prices is self for h in model._hooks.hooks):
-            return
+            return []
         hook = _BilledHook(self, entry, kind)
         hook.set_module(model)
         model.add_hook(hook)
         self._hooked.append((model, hook))
+        return [hook]
 
-    def watch_program(self, program, entry: str, kind: CallKind) -> None:
-        for model in _language_models(program):
-            self.watch(model, entry, kind)
+    def unwatch(self, hooks: Sequence[_BilledHook]) -> None:
+        """Take these hooks off their models, and let the models go."""
+        gone = {id(h) for h in hooks}
+        for model, hook in [(m, h) for m, h in self._hooked if id(h) in gone]:
+            with contextlib.suppress(ValueError):
+                model._hooks.hooks.remove(hook)
+        self._hooked = [(m, h) for m, h in self._hooked if id(h) not in gone]
 
-    def watch_judge(self, program) -> None:
+    def watch_program(self, program, entry: str, kind: CallKind) -> list[_BilledHook]:
+        return [h for model in _language_models(program) for h in self.watch(model, entry, kind)]
+
+    def watch_judge(self, program) -> list[_BilledHook]:
         """A judge program's models, each for the registry entry it is built from; one no entry builds is left alone."""
-        for model in _language_models(program):
-            if (entry := self._judges.get(_key(model))) is not None:
-                self.watch(model, entry, "structured")
+        return [
+            h
+            for model in _language_models(program)
+            if (entry := self._judges.get(_key(model))) is not None
+            for h in self.watch(model, entry, "structured")
+        ]
 
     def callback(self, entry: str, dataset_kind: str) -> synalinks.callbacks.Callback | None:
         """The callback that watches a cell's models; None for a cell whose calls are not counted."""

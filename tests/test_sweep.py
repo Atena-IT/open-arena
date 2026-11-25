@@ -151,6 +151,29 @@ def test_the_run_ends_with_what_each_model_paid_per_token(tmp_path, monkeypatch)
     assert result["last_run_prices"] == paid
 
 
+def test_a_sweep_records_each_billed_call_for_its_entry(tmp_path, monkeypatch):
+    from openarena import run_prices
+
+    async def answer(self, formatted_messages, **kwargs):
+        # The provider answered by litellm's mock: real usage and litellm's price, hooks and all.
+        kwargs.pop("timeout", None)
+        return await litellm.acompletion(model=self.model, messages=formatted_messages, mock_response='{"answer": "4"}', **kwargs)
+
+    monkeypatch.setattr(synalinks.LanguageModel, "_acompletion", answer)
+    recorded = []
+    inner = run_prices.RunPrices.record
+
+    def record(self, entry, call):
+        recorded.append((entry, call.kind, call.cost > 0))
+        inner(self, entry, call)
+
+    monkeypatch.setattr(run_prices.RunPrices, "record", record)
+    result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state"))
+    assert sorted(recorded) == [("right", "structured", True)] * 3 + [("wrong", "structured", True)] * 3
+    # Three calls each: fewer than an estimate needs.
+    assert result["last_run_prices"] == {}
+
+
 def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_again(tmp_path, monkeypatch):
     calls, events = [], []
     _fake_model(monkeypatch, calls)

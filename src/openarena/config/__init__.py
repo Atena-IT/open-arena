@@ -255,6 +255,9 @@ class Config(BaseModel):
 
         `rewards.get` (and `rewards.build_models`) builds the mapping with
         those params, as the models under test are built with `lm_kwargs`.
+        An `openrouter/...` chat model is a mapping even with no params: it is
+        then built with the routing every call to OpenRouter needs
+        (`programs.utils.language_model`), as a model under test is.
         """
         if not isinstance(value, str) or not value:
             return value  # unset: the default model
@@ -264,7 +267,17 @@ class Config(BaseModel):
         if entry.type != wanted:
             raise ValueError(f"{where}: {value!r} is {A_MODEL[entry.type]}; this setting needs {A_MODEL[wanted]}.")
         params = self.lm_kwargs(value)
-        return {"model": entry.model, **params} if params else entry.model
+        if params or (wanted == "llm" and entry.model.startswith("openrouter/")):
+            return {"model": entry.model, **params}
+        return entry.model
+
+    def judge_models(self) -> dict[str, Any]:
+        """Each chat model of the registry as a reward or a metric is handed it (`_id`), by its name."""
+        return {
+            name: self._id(name, "llm", f"models.{name}")
+            for name, entry in self.models.items()
+            if entry.type == "llm"
+        }
 
     def _resolve(self, kwargs: dict[str, Any], where: str) -> dict[str, Any]:
         """`kwargs` with every model it names by key turned into that entry's id, or `{model, **params}` (`_id`)."""
