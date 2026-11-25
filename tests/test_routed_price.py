@@ -95,8 +95,10 @@ def test_a_host_that_takes_tools_but_not_tool_choice_cannot_serve_an_agent(liste
     assert _price().kinds == {"structured": None, "tools": "tools"}
 
 
-def test_a_reasoning_level_reaches_a_host_that_lists_reasoning_under_openrouters_name(listed):
-    # Claude Sonnet 4.5's own host on 25 Nov: `reasoning`, and no `reasoning_effort` (OpenAI's name).
+def test_a_reasoning_level_is_matched_by_the_name_the_request_sends(listed):
+    # Claude Sonnet 4.5's own host on 25 Nov: `reasoning`, and no `reasoning_effort`, the name litellm
+    # sends the level under. Whether OpenRouter's `require_parameters` reads one as the other is not
+    # known, so the host is not counted for it: the price never says a run will work when it may not.
     listed["endpoints"] = [
         _endpoint(
             "anthropic",
@@ -108,8 +110,11 @@ def test_a_reasoning_level_reaches_a_host_that_lists_reasoning_under_openrouters
         )
     ]
     price = _price("openrouter/anthropic/claude-sonnet-4.5", {"reasoning_effort": "high", "supports_reasoning": True})
-    assert price.kinds == {"structured": None, "tools": None}
-    assert (price.input_max, price.output_max) == pytest.approx((3e-6, 1.5e-5))
+    assert price.kinds == {"structured": "reasoning", "tools": "reasoning"}
+    # Without a level the same host serves both kinds.
+    plain = _price("openrouter/anthropic/claude-sonnet-4.5", {"supports_reasoning": True})
+    assert plain.kinds == {"structured": None, "tools": None}
+    assert (plain.input_max, plain.output_max) == pytest.approx((3e-6, 1.5e-5))
 
 
 def test_a_reasoning_level_no_host_takes(listed):

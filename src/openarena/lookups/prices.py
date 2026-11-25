@@ -242,9 +242,10 @@ _PARAMETERS: dict[str, tuple[tuple[str, ...], Reason]] = {
     "response_format": (("response_format", "structured_outputs"), "structured_output"),
     "tools": (("tools",), "tools"),
     "tool_choice": (("tool_choice",), "tools"),
-    # OpenRouter lists a host that takes a reasoning level as `reasoning`, whichever spelling the
-    # request uses: `reasoning_effort` (OpenAI's) is listed only by some (not Claude's, not Gemini's).
-    "reasoning_effort": (("reasoning",), "reasoning"),
+    # By the name the request sends: litellm passes `reasoning_effort` to OpenRouter as it is, and
+    # `require_parameters` is not known to read it as `reasoning`. A host that lists only `reasoning`
+    # (Claude's, Gemini's on 25 Nov) is not counted for a level sent this way.
+    "reasoning_effort": (("reasoning_effort",), "reasoning"),
     "reasoning": (("reasoning",), "reasoning"),
     "max_tokens": (("max_tokens",), "max_tokens"),
     "temperature": (("temperature",), "temperature"),
