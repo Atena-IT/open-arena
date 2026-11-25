@@ -42,9 +42,11 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     return kwargs
 
 
-# The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`
-# refuses: its top level is `xhigh`.
-_GENERATOR_EFFORT = {"max": "xhigh"}
+# The arena's "off" (`model_types.REASONING_EFFORTS`) is the framework's `none`: synalinks 0.11
+# still takes `disable`, with a deprecation warning on every call.
+_FRAMEWORK_EFFORT = {"disable": "none"}
+# The levels the arena offers that `synalinks.Generator` refuses: its top level is `xhigh`.
+_GENERATOR_EFFORT = {**_FRAMEWORK_EFFORT, "max": "xhigh"}
 
 
 def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
@@ -55,10 +57,15 @@ def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
     `LanguageModel`'s default. The level set on the model entry therefore counts
     only if the module is given it too. A value the module's block sets wins,
     and a model with no level adds nothing, so the module keeps its own default.
-    The arena's `max` is passed as `xhigh`, the top level a Generator accepts.
+    The arena's `max` is passed as `xhigh`, the top level a Generator accepts,
+    and its `disable` as `none`, the framework's "off".
     """
+    own = module_kwargs.get("reasoning_effort")
+    if own is not None:
+        # The block's own level, the arena's "off" spelled the framework's way.
+        return {**module_kwargs, "reasoning_effort": _FRAMEWORK_EFFORT.get(own, own)}
     effort = (lm_kwargs or {}).get("reasoning_effort")
-    if effort is None or module_kwargs.get("reasoning_effort") is not None:
+    if effort is None:
         return module_kwargs
     return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
 
@@ -83,7 +90,7 @@ async def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwarg
     level = (module_kwargs or {}).get("reasoning_effort")
     if level is None:
         level = (lm_kwargs or {}).get("reasoning_effort")
-    if level in (None, "disable"):
+    if level in (None, "disable", "none"):
         return False
     return await supports_reasoning(model_id, lm_kwargs)
 
@@ -94,6 +101,7 @@ def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: 
     `module_kwargs` are those of the module the model is built for: a
     `reasoning_effort` they set replaces the model's, as `with_model_effort`
     makes it the module's, so the model's default is the level asked for.
+    The arena's `disable` is passed as the framework's `none`.
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
@@ -102,6 +110,9 @@ def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: 
     own = (module_kwargs or {}).get("reasoning_effort")
     if own is not None:
         lm_kwargs = {**(lm_kwargs or {}), "reasoning_effort": own}
+    effort = (lm_kwargs or {}).get("reasoning_effort")
+    if effort in _FRAMEWORK_EFFORT:
+        lm_kwargs = {**lm_kwargs, "reasoning_effort": _FRAMEWORK_EFFORT[effort]}
     lm_kwargs = with_provider_routing(model_id, lm_kwargs)
     if not lm_kwargs:
         return model_id
