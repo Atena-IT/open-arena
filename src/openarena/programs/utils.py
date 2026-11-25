@@ -9,15 +9,22 @@ def safe_name(model_id: str) -> str:
 
 
 def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
-    """`lm_kwargs` plus the OpenRouter routing every structured call needs.
+    """`lm_kwargs` plus the OpenRouter routing every call needs.
 
-    the framework asks an `openrouter/...` model for structured output as a forced
-    `structured_output` tool call. OpenRouter by default may route to a host
-    that does not support tools and silently drops them: the model then answers
-    in prose and imitates the call in text (DeepSeek-R1 writes
-    `!function_call:{...}`), which fails to parse on every retry.
-    `require_parameters` restricts routing to hosts that honour every parameter
-    sent, so either the tools are honoured or the call fails at once.
+    OpenRouter by default may route to a host that does not support a parameter
+    sent and silently drops it: a host ignoring the structured-output format
+    (`response_format`, a strict `json_schema`) answers in prose, and one
+    dropping tools makes the model imitate the call in text, which fails to
+    parse on every retry. `require_parameters` restricts routing to hosts that
+    honour every parameter sent, so either they are honoured or the call fails
+    at once.
+
+    The block goes in the top-level `provider` argument, never in `extra_body`:
+    the framework adds its own `ignore` list there on a structured call (the
+    hosts it rules out), and litellm merges `extra_body` into the request last,
+    so a `provider` left in it would replace the framework's and its hosts
+    would be called after all. A caller's `extra_body["provider"]` is moved up
+    and merged; a key set in both keeps the top-level value.
 
     `reasoning_effort: disable` adds nothing here: the framework sends OpenRouter's
     `reasoning: {"enabled": false}` itself, to a model declared as reasoning.
@@ -25,10 +32,13 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
         extra_body = dict(kwargs.get("extra_body") or {})
-        provider = dict(extra_body.get("provider") or {})
+        provider = {**(extra_body.pop("provider", None) or {}), **(kwargs.get("provider") or {})}
         provider.setdefault("require_parameters", True)
-        extra_body["provider"] = provider
-        kwargs["extra_body"] = extra_body
+        kwargs["provider"] = provider
+        if extra_body:
+            kwargs["extra_body"] = extra_body
+        else:
+            kwargs.pop("extra_body", None)
     return kwargs
 
 

@@ -87,7 +87,7 @@ def test_a_models_params_build_its_language_model_and_openrouter_gets_its_routin
     assert generator.language_model.default_kwargs == {"temperature": 0.0, "reasoning_effort": "low"}
     assert [m.name for m in program._compile_metrics._user_metrics] == ["em"]
     routed = asyncio.run(build_program("openrouter/deepseek/deepseek-r1", _dataset(), {}, get("exact_match")))
-    assert _modules(routed, synalinks.Generator)[0].language_model.default_kwargs == {"extra_body": {"provider": {"require_parameters": True}}}
+    assert _modules(routed, synalinks.Generator)[0].language_model.default_kwargs == {"provider": {"require_parameters": True}}
 
 
 # -- agent -----------------------------------------------------------------------
@@ -444,6 +444,22 @@ def test_any_other_level_adds_no_reasoning_object_to_an_openrouter_request(wire,
     assert body["provider"]["require_parameters"] is True
 
 
+def test_a_structured_openrouter_call_carries_the_frameworks_excluded_providers(wire):
+    from synalinks.src.modules.language_models.language_model import (
+        OPENROUTER_IGNORED_PROVIDERS,
+    )
+
+    body = _posted(UNKNOWN, wire, False, None)
+    assert body["provider"]["require_parameters"] is True
+    assert set(OPENROUTER_IGNORED_PROVIDERS) <= set(body["provider"]["ignore"])
+    # A host the caller routes to on purpose is not ignored, and the routing still requires parameters.
+    chosen = OPENROUTER_IGNORED_PROVIDERS[0]
+    routed = _posted(UNKNOWN, wire, False, {"extra_body": {"provider": {"order": [chosen]}}})
+    assert routed["provider"]["order"] == [chosen] and chosen not in routed["provider"].get("ignore", [])
+    assert set(OPENROUTER_IGNORED_PROVIDERS) - {chosen} <= set(routed["provider"]["ignore"])
+    assert routed["provider"]["require_parameters"] is True
+
+
 def test_a_model_with_no_level_adds_no_reasoning_object(wire):
     assert "reasoning" not in _posted(UNKNOWN, wire, False, None)
     assert "reasoning" not in _posted(UNKNOWN, wire, True, {"temperature": 0.0})
@@ -474,7 +490,8 @@ def test_a_provider_other_than_openrouter_gets_no_reasoning_object(wire):
 def test_the_routing_keeps_the_entrys_own_extra_body_and_adds_no_reasoning_object():
     for effort in ("disable", "high"):
         lm = language_model(KNOWN, {"reasoning_effort": effort, "extra_body": {"provider": {"order": ["a"]}, "seed": 1}})
-        assert lm.default_kwargs["extra_body"] == {"provider": {"order": ["a"], "require_parameters": True}, "seed": 1}
+        assert lm.default_kwargs["provider"] == {"order": ["a"], "require_parameters": True}
+        assert lm.default_kwargs["extra_body"] == {"seed": 1}
 
 
 def test_every_model_built_from_an_entry_is_turned_off_the_builders_and_the_judges(monkeypatch, wire):
