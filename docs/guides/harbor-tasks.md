@@ -450,8 +450,10 @@ their shape only, nothing installed or imported until the trial:
 
 `agent_version` pins the version of an agent Harbor installs (an ACP agent
 is pinned in its name instead), and `agent_env` is the environment of the
-agent's own process: a sign-in token, a flag. The model's key comes from
-the run, as for every agent.
+agent's own process: a sign-in token, a flag, written as values (a
+`${NAME}` that would read the arena's own environment is refused). The
+model's key comes from the run, as for every agent. A class that is not a
+Harbor agent fails the row before Harbor builds it.
 
 ```yaml
 harbor:

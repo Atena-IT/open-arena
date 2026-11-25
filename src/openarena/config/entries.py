@@ -257,6 +257,10 @@ class HarborBlock(BaseModel):
         bad = sorted(k for k in env if not ENV_NAME.match(k))
         if bad:
             raise Invalid(f"`agent_env` names {bad} are not environment variable names", "use letters, digits and `_`, not starting with a digit")
+        # Harbor fills a `${NAME}` value from the arena's own environment: a dataset must not read the arena's secrets.
+        templated = sorted(k for k, v in env.items() if "${" in v)
+        if templated:
+            raise Invalid(f"`agent_env` {templated} read the arena's environment (`${{...}}`)", "write the value itself")
         return env
 
     @model_validator(mode="after")

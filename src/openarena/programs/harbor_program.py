@@ -503,6 +503,37 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     return kwargs
 
 
+def version_kwargs(agent: str, version: str) -> dict[str, Any]:
+    """The version to install, for an agent Harbor installs: a built-in one, or a class of one's own as written (an ACP
+    agent carries its own in its name). One that runs in the arena installs nothing: the version is logged and dropped.
+    """
+    from harbor.agents.installed.base import BaseInstalledAgent
+
+    from openarena.config.entries import agent_kind
+    from openarena.harbor import _agent_class
+
+    if agent_kind(agent) == "builtin" and not issubclass(_agent_class(agent), BaseInstalledAgent):
+        log.warning("Harbor agent %r runs in the arena and installs nothing; running without `agent_version` %r.", agent, version)
+        return {}
+    return {"version": version}
+
+
+def agent_class_problem(agent: str) -> str | None:
+    """For a class of one's own, imported here, at the trial: why it is not a Harbor agent, or None."""
+    from harbor.agents.base import BaseAgent
+    from harbor.utils.import_path import import_class
+
+    from openarena.config.entries import agent_kind
+
+    if agent_kind(agent) != "class":
+        return None
+    try:
+        import_class(agent, base=BaseAgent, label="agent")
+    except (ValueError, TypeError) as e:
+        return f"Harbor agent {agent!r}: {e}"
+    return None
+
+
 async def run_trial(
     task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
     kwargs: dict[str, Any] | None = None, provider: str | None = None, env: dict[str, str] | None = None,
@@ -514,6 +545,9 @@ async def run_trial(
     from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
+    # Harbor would construct any class an import path names: only a Harbor agent is.
+    if problem := agent_class_problem(agent):
+        raise ValueError(problem)
     provider = sandbox(provider)
     config = TrialConfig(
         task=TaskConfig(path=task),
@@ -595,9 +629,8 @@ class HarborTask(Module):
         self.model_name = model_name or model
         self.params = dict(params or {})
         self.agent_kwargs = agent_kwargs(spec.get("agent") or "terminus-2", self.params)
-        # The version to install, for an agent Harbor installs (an ACP agent carries its own in its name).
         if version := spec.get("agent_version"):
-            self.agent_kwargs["version"] = version
+            self.agent_kwargs.update(version_kwargs(spec.get("agent") or "terminus-2", version))
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)

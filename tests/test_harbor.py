@@ -272,6 +272,9 @@ def test_an_acp_registry_agent_or_a_class_of_ones_own_is_named_by_shape_and_neve
         HarborBlock(agent="acp:gemini", agent_version="0.4.1")
     with pytest.raises(ValidationError, match="not environment variable names"):
         HarborBlock(agent="acp:gemini", agent_env={"MY KEY": "v"})
+    # Harbor would fill `${NAME}` from the arena's environment: a dataset cannot read its secrets that way.
+    with pytest.raises(ValidationError, match="read the arena's environment"):
+        HarborBlock(agent="acp:gemini", agent_env={"LEAK": "${OPENAI_API_KEY}"})
     # A dataset without the new keys reads as before.
     assert HarborBlock().model_dump()["agent"] == "terminus-2" and HarborBlock().agent_env == {}
 
@@ -323,6 +326,19 @@ def test_a_trial_hands_harbor_the_agents_name_version_and_environment(tmp_path, 
     )
     assert out == "done"
     assert (seen["agent"].name, seen["agent"].env, seen["agent"].kwargs) == ("acp:gemini@0.4.1", {"GEMINI_FLAG": "1"}, {"version": "x"})
+    # An import path that names a class but not a Harbor agent never reaches Harbor.
+    with pytest.raises(ValueError, match="must subclass BaseAgent"):
+        asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t2", "pathlib:Path", "openai/gpt-4o", provider="docker"))
+    assert "agent" in seen and len(seen) == 1
+
+
+def test_a_version_goes_only_to_an_agent_harbor_installs():
+    from openarena.programs.harbor_program import version_kwargs
+
+    assert version_kwargs("claude-code", "2.1.0") == {"version": "2.1.0"}
+    assert version_kwargs("our_agents.harbor:OurAgent", "1.0") == {"version": "1.0"}
+    # terminus-2 runs in the arena: nothing to install, so the version is dropped, not the trial.
+    assert version_kwargs("terminus-2", "2.0") == {}
 
 
 def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
