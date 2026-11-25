@@ -1,0 +1,196 @@
+# License Apache 2.0: (c) 2026 Atena-Reply
+
+"""What each model paid per token in a run, estimated from what its calls were billed.
+
+OpenRouter bills each call of an `openrouter/...` model at the price of the
+host it picked, and litellm reads that cost off the answer. A run's calls of
+one model, each with its input tokens, output tokens and cost, then give the
+model's price per token as the least-squares fit `cost ≈ a·in + b·out`, with
+no intercept: the average of the hosts the run reached, weighted by what each
+served. It is given only when the fit can be trusted (`estimate_prices`).
+
+Calls are kept by registry entry, not by model id: two entries may share an
+id with different params, which reach different hosts. A judge's calls count
+for the judge's own entry, found by building each entry's model as a reward
+builds it (`judge_keys`); a judge no entry builds (the framework's default
+model) is not counted. Cache hits, failed calls and calls with no cost are
+left out; so are Harbor tasks (their agents call models inside the sandbox),
+A2A agents and embedding models.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+
+import numpy as np
+import synalinks
+
+from openarena.callbacks.otel import _judges
+from openarena.lookups.prices import CallKind
+
+# Below these the fit says nothing reliable: too few calls, input and output
+# tokens in a fixed ratio (they cannot be told apart), or a fit that explains
+# too little of the costs. Tuned on staging's 17 Nov 2026 runs.
+MIN_CALLS = 10
+MAX_COSINE = 0.99
+MIN_R2 = 0.85
+
+# A dataset's kind -> the kind of call its model makes; the others are not counted.
+_CALL_KIND: dict[str, CallKind] = {"model": "structured", "tools": "tools", "agent": "tools"}
+
+
+@dataclass(frozen=True)
+class BilledCall:
+    input_tokens: int
+    output_tokens: int
+    cost: float  # USD
+    kind: CallKind
+
+
+def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
+    """USD per input and per output token, fitted on `calls`; None when the fit cannot be trusted.
+
+    It needs `MIN_CALLS` calls, input and output token counts that are not
+    proportional (their cosine below `MAX_COSINE`), two prices of at least 0,
+    and an R² of at least `MIN_R2`.
+    """
+    if len(calls) < MIN_CALLS:
+        return None
+    x = np.array([[c.input_tokens, c.output_tokens] for c in calls], dtype=float)
+    y = np.array([c.cost for c in calls], dtype=float)
+    norms = np.linalg.norm(x, axis=0)
+    if not norms.all() or x[:, 0] @ x[:, 1] / (norms[0] * norms[1]) >= MAX_COSINE:
+        return None
+    (a, b), *_ = np.linalg.lstsq(x, y, rcond=None)
+    if a < 0 or b < 0:
+        return None
+    residual = float(((y - x @ (a, b)) ** 2).sum())
+    spread = float(((y - y.mean()) ** 2).sum())
+    if spread <= 0 or 1 - residual / spread < MIN_R2:
+        return None
+    return float(a), float(b)
+
+
+def _key(model) -> tuple[str, str]:
+    """A language model by what its calls send: its id and its default parameters."""
+    return model.model, json.dumps(getattr(model, "default_kwargs", {}) or {}, sort_keys=True, default=str)
+
+
+def judge_keys(models: Mapping[str, tuple[str, dict]]) -> dict[tuple[str, str], str]:
+    """The registry entry each judge model is built from, by `_key`.
+
+    `models` maps an entry's name to its model id and params (`Config.lm_kwargs`).
+    Each is built as a reward builds a judge (`rewards._model`, `language_model`);
+    two entries that build the same model cannot be told apart and are left out.
+    """
+    from synalinks.src.modules.language_models import get as get_language_model
+
+    from openarena.programs.utils import language_model
+
+    found: dict[tuple[str, str], list[str]] = {}
+    for name, (model_id, params) in models.items():
+        try:
+            built = language_model(model_id, params)
+            if isinstance(built, str):
+                built = get_language_model(built)
+        except Exception:  # noqa: BLE001 — an entry that cannot be built is no judge's
+            continue
+        if isinstance(built, synalinks.LanguageModel):
+            found.setdefault(_key(built), []).append(name)
+    return {key: names[0] for key, names in found.items() if len(names) == 1}
+
+
+def _language_models(program) -> list:
+    """The language models a program calls, each with its fallbacks."""
+    found: dict[int, object] = {}
+    for module in program._flatten_modules():
+        model = module
+        while isinstance(model, synalinks.LanguageModel):
+            found.setdefault(id(model), model)
+            model = getattr(model, "fallback", None)
+    return list(found.values())
+
+
+class _BilledHook(synalinks.hooks.Hook):
+    """Record each billed call of one model for its registry entry."""
+
+    def __init__(self, prices: RunPrices, entry: str, kind: CallKind):
+        super().__init__()
+        self._prices, self._entry, self._kind = prices, entry, kind
+
+    def on_call_end(self, call_id, parent_call_id=None, outputs=None, exception=None):
+        if exception is not None or outputs is None:
+            return
+        # Read in the calling task right after the call, as `hooks.otel` reads it.
+        from synalinks.src.modules.language_models.language_model import current_call_usage
+
+        usage = current_call_usage() or {}
+        if usage.get("error") or usage.get("cache_hit"):
+            return
+        cost = usage.get("cost")
+        tokens_in = int(usage.get("input_tokens") or 0)
+        tokens_out = int(usage.get("output_tokens") or 0)
+        if not isinstance(cost, (int, float)) or cost <= 0 or not (tokens_in or tokens_out):
+            return
+        self._prices.record(self._entry, BilledCall(tokens_in, tokens_out, float(cost), self._kind))
+
+
+class _PriceWatch(synalinks.callbacks.Callback):
+    """As a cell's evaluation begins, watch its program's models and its judges'."""
+
+    def __init__(self, prices: RunPrices, entry: str, kind: CallKind):
+        super().__init__()
+        self._prices, self._entry, self._kind = prices, entry, kind
+
+    def on_test_begin(self, logs=None):
+        self._prices.watch_program(self.program, self._entry, self._kind)
+        for judge in _judges(self.program):
+            self._prices.watch_judge(judge)
+
+
+class RunPrices:
+    """A run's billed calls by registry entry, and what each entry paid per token."""
+
+    def __init__(self, judges: Mapping[tuple[str, str], str]):
+        self._judges = dict(judges)
+        self.calls: dict[str, list[BilledCall]] = {}
+
+    def record(self, entry: str, call: BilledCall) -> None:
+        self.calls.setdefault(entry, []).append(call)
+
+    def watch(self, model, entry: str, kind: CallKind) -> None:
+        """Record `model`'s billed calls for `entry`; a model already watched keeps its hook."""
+        if any(isinstance(h, _BilledHook) for h in model._hooks.hooks):
+            return
+        hook = _BilledHook(self, entry, kind)
+        hook.set_module(model)
+        model.add_hook(hook)
+
+    def watch_program(self, program, entry: str, kind: CallKind) -> None:
+        for model in _language_models(program):
+            self.watch(model, entry, kind)
+
+    def watch_judge(self, program) -> None:
+        """A judge program's models, each for the registry entry it is built from; one no entry builds is left alone."""
+        for model in _language_models(program):
+            if (entry := self._judges.get(_key(model))) is not None:
+                self.watch(model, entry, "structured")
+
+    def callback(self, entry: str, dataset_kind: str) -> synalinks.callbacks.Callback | None:
+        """The callback that watches a cell's models; None for a cell whose calls are not counted."""
+        kind = _CALL_KIND.get(dataset_kind)
+        return _PriceWatch(self, entry, kind) if kind else None
+
+    def estimates(self) -> dict[str, dict]:
+        """Each entry with a reliable estimate: USD per input and output token, and the kinds of call it covers."""
+        out = {}
+        for entry, calls in self.calls.items():
+            if (fit := estimate_prices(calls)) is not None:
+                out[entry] = {
+                    "input": fit[0],
+                    "output": fit[1],
+                    "kinds": sorted({c.kind for c in calls}),
+                }
+        return out

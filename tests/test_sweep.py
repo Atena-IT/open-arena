@@ -130,6 +130,27 @@ def test_a_sweep_scores_every_model_on_every_dataset_and_tells_the_run_as_it_goe
     assert samples[0]["input"] == {"question": "2 + 2?"} and samples[0]["target"] == {"answer": "4"} and samples[0]["dataset"] == "qa"
 
 
+def test_the_run_ends_with_what_each_model_paid_per_token(tmp_path, monkeypatch):
+    from openarena import run_prices
+
+    calls, events, watched = [], [], []
+    _fake_model(monkeypatch, calls)
+    paid = {"right": {"input": 2.2e-7, "output": 2.2e-7, "kinds": ["structured"]}}
+    inner = run_prices.RunPrices.callback
+
+    def callback(self, entry, dataset_kind):
+        watched.append((entry, dataset_kind))
+        return inner(self, entry, dataset_kind)
+
+    monkeypatch.setattr(run_prices.RunPrices, "callback", callback)
+    monkeypatch.setattr(run_prices.RunPrices, "estimates", lambda self: paid)
+    result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state", on_event=events.append))
+    # Each cell's models are watched under the registry entry the axis names, with the dataset's kind.
+    assert watched == [("right", "model"), ("wrong", "model")]
+    assert events[-1] == {"event": "sweep_end", "last_run_prices": paid}
+    assert result["last_run_prices"] == paid
+
+
 def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_again(tmp_path, monkeypatch):
     calls, events = [], []
     _fake_model(monkeypatch, calls)
