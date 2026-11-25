@@ -508,25 +508,33 @@ def version_kwargs(agent: str, version: str) -> dict[str, Any]:
     agent carries its own in its name). One that runs in the arena installs nothing: the version is logged and dropped.
     """
     from harbor.agents.installed.base import BaseInstalledAgent
+    from harbor.utils.import_path import import_class
 
     from openarena.config.entries import agent_kind
     from openarena.harbor import _agent_class
 
-    if agent_kind(agent) == "builtin" and not issubclass(_agent_class(agent), BaseInstalledAgent):
+    kind = agent_kind(agent)
+    # A class is imported only once the operator allows its module (`agent_class_problem`, at the program's build).
+    cls = import_class(agent, label="agent") if kind == "class" else _agent_class(agent) if kind == "builtin" else None
+    if cls is not None and not issubclass(cls, BaseInstalledAgent):
         log.warning("Harbor agent %r runs in the arena and installs nothing; running without `agent_version` %r.", agent, version)
         return {}
     return {"version": version}
 
 
 def agent_class_problem(agent: str) -> str | None:
-    """For a class of one's own, imported here, at the trial: why it is not a Harbor agent, or None."""
+    """For a class of one's own: why it cannot run, or None. Its module is checked against the operator's list by name
+    first, so nothing is imported from a module the arena does not allow; then it is imported and must be a Harbor agent.
+    """
     from harbor.agents.base import BaseAgent
     from harbor.utils.import_path import import_class
 
-    from openarena.config.entries import agent_kind
+    from openarena.config.entries import AGENT_MODULES, agent_kind, agent_module_allowed
 
     if agent_kind(agent) != "class":
         return None
+    if not agent_module_allowed(agent):
+        return f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})"
     try:
         import_class(agent, base=BaseAgent, label="agent")
     except (ValueError, TypeError) as e:
@@ -545,9 +553,11 @@ async def run_trial(
     from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
-    # Harbor would construct any class an import path names: only a Harbor agent is.
-    if problem := agent_class_problem(agent):
-        raise ValueError(problem)
+    from openarena.config.entries import AGENT_MODULES, agent_kind, agent_module_allowed
+
+    # The class itself was checked at the program's build; its module is checked again here, by name, at no cost.
+    if agent_kind(agent) == "class" and not agent_module_allowed(agent):
+        raise ValueError(f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})")
     provider = sandbox(provider)
     config = TrialConfig(
         task=TaskConfig(path=task),
@@ -628,6 +638,9 @@ class HarborTask(Module):
         self.model = model
         self.model_name = model_name or model
         self.params = dict(params or {})
+        # A class of one's own is checked once, here: its module allowed, then imported, then a Harbor agent.
+        if problem := agent_class_problem(spec.get("agent") or "terminus-2"):
+            raise ValueError(problem)
         self.agent_kwargs = agent_kwargs(spec.get("agent") or "terminus-2", self.params)
         if version := spec.get("agent_version"):
             self.agent_kwargs.update(version_kwargs(spec.get("agent") or "terminus-2", version))

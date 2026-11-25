@@ -443,23 +443,34 @@ their shape only, nothing installed or imported until the trial:
   sandbox and drives it over the Agent Client Protocol. It needs a
   `provider/model` id and the network, like the agents above.
 - **A Harbor agent class of your own**, as `package.module:ClassName` (a
-  `BaseInstalledAgent` or `BaseAgent` subclass): Harbor imports it inside the
-  trial, so the package must be installed beside the arena. Where it runs is
-  unknown until then, so `check` cannot refuse a pairing for it, and it gets
-  none of the model's `params`.
+  `BaseInstalledAgent` or `BaseAgent` subclass), off unless whoever runs the
+  arena lists the module prefixes classes may come from in
+  `OPENARENA_HARBOR_AGENT_MODULES` (comma-separated): a module not listed is
+  refused by name, before anything is imported. The package must be installed
+  beside the arena; the run imports the class once, when it builds, and
+  refuses one that is not a Harbor agent. Where it runs is unknown until then,
+  so `check` cannot refuse a pairing for it, and it gets none of the model's
+  `params`.
 
 `agent_version` pins the version of an agent Harbor installs (an ACP agent
-is pinned in its name instead), and `agent_env` is the environment of the
-agent's own process: a sign-in token, a flag, written as values (a
-`${NAME}` that would read the arena's own environment is refused). The
-model's key comes from the run, as for every agent. A class that is not a
-Harbor agent fails the row before Harbor builds it.
+is pinned in its name instead): letters, digits, `.`, `_`, `+`, `-`. An agent
+that runs in the arena installs nothing and ignores it.
+
+`agent_env` is the environment of the agent's own process, for its flags.
+It is **not for secrets**: a dataset keeps it in plain text. So it refuses a
+`${NAME}` (which would read the arena's own environment), and any name that
+holds a key or would redirect the model's key or traffic, or change what the
+process loads: `*_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, `*_BASE_URL`,
+`*_API_BASE`, `*_ENDPOINT`, `*_PROXY`, the providers' own prefixes
+(`OPENAI_`, `ANTHROPIC_`, `AWS_`...), `LD_*`, `PATH`, `NODE_OPTIONS`,
+`PYTHONPATH` and the like. The model's key comes from the run, as for every
+agent.
 
 ```yaml
 harbor:
   agent: acp:claude-acp@0.13.0
   agent_env:
-    CLAUDE_CODE_DISABLE_TELEMETRY: "1"
+    DISABLE_AUTOUPDATER: "1"
 ```
 
 The model entry's `params` reach the agent where it takes them:

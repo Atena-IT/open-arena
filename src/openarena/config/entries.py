@@ -182,14 +182,48 @@ HARBOR_AGENTS = (
 ACP_AGENT = re.compile(r"^acp:[a-z0-9][a-z0-9._-]*(@[A-Za-z0-9][A-Za-z0-9._+-]*)?$")
 AGENT_CLASS = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)*:[A-Za-z_]\w*$")
 ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# A version Harbor puts in an install command: no space, no shell character.
+AGENT_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
+# The module prefixes a class of one's own may come from, comma-separated, set by whoever runs the arena; unset (the
+# default), no class may be named. Checked by name, before anything is imported.
+AGENT_MODULES = "OPENARENA_HARBOR_AGENT_MODULES"
+# What a dataset's `agent_env` may not set: what would redirect the model's key or traffic (the run puts the key in
+# the same environment), change what the agent's process loads, or hold a secret, which a dataset keeps in plain text.
+_ENV_REFUSED = {
+    "PATH", "HOME", "SHELL", "ENV", "BASH_ENV", "PROMPT_COMMAND", "NODE_OPTIONS", "NODE_PATH", "NODE_EXTRA_CA_CERTS",
+    "PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE",
+}
+_ENV_REFUSED_PREFIXES = (
+    "LD_", "DYLD_", "HARBOR_", "OPENARENA_", "LITELLM_", "OPENAI_", "ANTHROPIC_", "OPENROUTER_", "GEMINI_", "GOOGLE_",
+    "VERTEX", "AWS_", "AZURE_", "GCP_",
+)
+_ENV_REFUSED_SUFFIXES = ("_KEY", "_TOKEN", "_SECRET", "_PASSWORD", "_API_BASE", "_BASE_URL", "_API_URL", "_ENDPOINT", "_PROXY")
+
+
+def agent_env_refused(name: str) -> bool:
+    """Whether a dataset's `agent_env` may not set `name` (`_ENV_REFUSED`)."""
+    upper = name.upper()
+    return upper in _ENV_REFUSED or upper.startswith(_ENV_REFUSED_PREFIXES) or upper.endswith(_ENV_REFUSED_SUFFIXES)
+
+
+def agent_module_allowed(agent: str) -> bool:
+    """Whether the operator lets a class come from the module `agent` (`module.path:Class`) names (`AGENT_MODULES`)."""
+    import os
+
+    module = agent.split(":", 1)[0]
+    prefixes = [p.strip() for p in os.environ.get(AGENT_MODULES, "").split(",") if p.strip()]
+    return any(module == p or module.startswith(f"{p}.") for p in prefixes)
 
 
 def agent_kind(agent: str) -> Literal["builtin", "acp", "class"] | None:
-    """What a `harbor.agent` names: one of `HARBOR_AGENTS`, an ACP registry agent, a class of one's own, or nothing."""
+    """What a `harbor.agent` names: one of `HARBOR_AGENTS`, an ACP registry agent, a class of one's own, or nothing.
+
+    `acp:` is reserved for the registry: `acp:Claude` is a malformed id, never the class `Claude` of a module `acp`.
+    """
     if agent in HARBOR_AGENTS:
         return "builtin"
-    if ACP_AGENT.match(agent):
-        return "acp"
+    if agent.startswith("acp:"):
+        return "acp" if ACP_AGENT.match(agent) else None
     if AGENT_CLASS.match(agent):
         return "class"
     return None
@@ -244,12 +278,20 @@ class HarborBlock(BaseModel):
                 f"no Harbor agent {agent!r}",
                 f"set `agent:` to one of: {', '.join(HARBOR_AGENTS)}; an ACP registry agent as `acp:<id>[@version]`; or your class as `module.path:ClassName`",
             )
+        if agent_kind(agent) == "class" and not agent_module_allowed(agent):
+            raise Invalid(
+                f"Harbor agent {agent!r} is a class from a module the arena does not allow",
+                f"whoever runs the arena lists the module prefixes classes may come from in {AGENT_MODULES}",
+            )
         return agent
 
     @field_validator("agent_version")
     @classmethod
     def _agent_version(cls, value: str | None) -> str | None:
-        return _blank_is_none(value)
+        value = _blank_is_none(value)
+        if value is not None and not AGENT_VERSION.match(value):
+            raise Invalid(f"`agent_version` {value!r} is not a version", "write it like `1.2.0`: letters, digits, `.`, `_`, `+`, `-`")
+        return value
 
     @field_validator("agent_env")
     @classmethod
@@ -257,6 +299,12 @@ class HarborBlock(BaseModel):
         bad = sorted(k for k in env if not ENV_NAME.match(k))
         if bad:
             raise Invalid(f"`agent_env` names {bad} are not environment variable names", "use letters, digits and `_`, not starting with a digit")
+        refused = sorted(k for k in env if agent_env_refused(k))
+        if refused:
+            raise Invalid(
+                f"`agent_env` may not set {refused}",
+                "it is for an agent's own flags; a key, an endpoint, a proxy or a loader path is the arena's to set",
+            )
         # Harbor fills a `${NAME}` value from the arena's own environment: a dataset must not read the arena's secrets.
         templated = sorted(k for k, v in env.items() if "${" in v)
         if templated:
