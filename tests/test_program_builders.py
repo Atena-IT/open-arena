@@ -234,7 +234,8 @@ def test_a_level_the_generator_block_sets_wins_over_the_models(litellm_calls, ch
 def test_a_model_with_no_level_keeps_the_generators_own_default(litellm_calls):
     for lm_kwargs in (REASONS, _thinks({"temperature": 0.0})):
         program, generator = _generated(THINKER, lm_kwargs=lm_kwargs)
-        assert generator.reasoning_effort is None and _sent(program, litellm_calls) is None
+        # No level sent: the key left out of the call, or sent empty.
+        assert generator.reasoning_effort is None and _sent(program, litellm_calls) in (None, "<absent>")
         program, thinker = _generated(THINKER, True, lm_kwargs)
         assert thinker.reasoning_effort == "low" and _sent(program, litellm_calls) == "low"
 
