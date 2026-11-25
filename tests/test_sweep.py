@@ -151,6 +151,31 @@ def test_the_run_ends_with_what_each_model_paid_per_token(tmp_path, monkeypatch)
     assert result["last_run_prices"] == paid
 
 
+def test_an_openrouter_default_model_is_kept_on_disk_as_its_id_and_routed(tmp_path, monkeypatch):
+    import json
+
+    from synalinks.src.backend import config as framework_config
+
+    # The framework's home config in a folder of the test's own, and its process-wide default put back after.
+    home = tmp_path / "synalinks-home"
+    home.mkdir()
+    monkeypatch.setattr(framework_config, "_synalinks_DIR", str(home))
+    monkeypatch.setattr(framework_config, "_config_path", str(home / "synalinks.json"))
+    monkeypatch.setattr(framework_config, "_DEFAULT_LANGUAGE_MODEL", framework_config._DEFAULT_LANGUAGE_MODEL)
+    monkeypatch.setattr(framework_config, "_DEFAULT_LANGUAGE_MODEL_IDENTIFIER", framework_config._DEFAULT_LANGUAGE_MODEL_IDENTIFIER)
+    _fake_model(monkeypatch, [])
+    path = _config(tmp_path)
+    config = yaml.safe_load(path.read_text())
+    config["models"]["or"] = {"model": "openrouter/acme/judge"}
+    config["evaluation"]["default_language_model"] = "or"
+    path.write_text(yaml.safe_dump(config))
+    asyncio.run(run_sweep(str(path), state_dir=tmp_path / "state"))
+    # Persisted as the id it is, as the framework does for any id, not erased.
+    assert json.loads((home / "synalinks.json").read_text())["language_model"] == "openrouter/acme/judge"
+    # And the model a judge falls back to carries the routing every OpenRouter call needs.
+    assert synalinks.default_language_model().default_kwargs["provider"] == {"require_parameters": True}
+
+
 def test_a_sweep_records_each_billed_call_for_its_entry(tmp_path, monkeypatch):
     from openarena import run_prices
 

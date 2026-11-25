@@ -54,7 +54,7 @@ from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent  # noqa: E402
 from synalinks.src.modules.module import release_resource  # noqa: E402
 from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
-from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
+from openarena.programs.utils import answer_layout, template_keys, with_provider_routing  # noqa: E402
 from openarena.results import SweepResults  # noqa: E402
 from openarena.rewards import _REWARD_TYPES, build_models, get as get_reward  # noqa: E402
 
@@ -812,8 +812,18 @@ async def run_sweep(
     # `embedding_model:` pick these up. The framework persists the identifier
     # into the framework's config file in the home folder as a side effect — that's the
     # library's documented behavior for string identifiers.
-    if cfg.default_language_model is not None:
-        synalinks.set_default_language_model(cfg.default_language_model)
+    if (default := cfg.default_language_model) is not None:
+        named = cfg.evaluation.default_language_model
+        if isinstance(default, synalinks.LanguageModel) and not cfg.lm_kwargs(named):
+            # An `openrouter/` entry with no params is built with its routing (`Config._id`). Handed
+            # over as that instance, the framework would rewrite its home config without a default
+            # model; handed over as the id it is, the id is persisted as before, and the routing is
+            # put on the model the framework builds from it.
+            synalinks.set_default_language_model(cfg.model_id(named))
+            built = synalinks.default_language_model()
+            built.default_kwargs = with_provider_routing(built.model, built.default_kwargs)
+        else:
+            synalinks.set_default_language_model(default)
     if cfg.default_embedding_model is not None:
         synalinks.set_default_embedding_model(cfg.default_embedding_model)
 
