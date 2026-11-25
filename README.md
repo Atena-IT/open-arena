@@ -166,11 +166,59 @@ datasets:
 
 See the [guides](https://atena-it.github.io/open-arena/) for every registry.
 
+## Telemetry
+
+openarena sends one anonymous event each time an evaluation run starts, so
+we can see which providers, datasets and rewards people use, and what to work
+on next. Downloads alone do not say that.
+
+**Turn it off** with either of these, set in the environment the run starts in:
+
+```shell
+export ARENA_TELEMETRY=0     # unset or empty is on; any value but 1, true, yes, on or print is off
+export DO_NOT_TRACK=1        # the cross-tool convention, honoured too
+```
+
+Nothing is sent from a CI runner (`CI`, `TF_BUILD`, `JENKINS_URL`,
+`CODEBUILD_BUILD_ID` or `TEAMCITY_VERSION` set) unless `ARENA_TELEMETRY=1`. A run that sends prints one line on stderr saying
+so, once per process.
+
+**See exactly what would be sent** with `ARENA_TELEMETRY=print`: the request
+body is printed on stderr and nothing leaves your machine.
+
+The event, `evaluation_run`, holds these properties and nothing else:
+
+| property | example | why |
+| --- | --- | --- |
+| `source` | `sdk` | tells these events from the Open Arena platform's, which share the project |
+| `$lib`, `$lib_version` | `openarena`, `0.2.0` | which releases are in use |
+| `$process_person_profile`, `$geoip_disable` | `false`, `true` | tell PostHog to keep no profile and to look up no location from the request's address |
+| `python_version` | `3.12` | which Pythons to keep supporting |
+| `os`, `arch` | `linux`, `x86_64` | which platforms to test on |
+| `models_count`, `datasets_count` | `3`, `2` | how big a sweep is (an A2A run counts its agents, and names none) |
+| `model_providers` | `["anthropic", "ollama"]` | which providers litellm routes to; `other` for one it does not list |
+| `models` | `["openai/gpt-4o-mini", "other"]` | only models in litellm's public price table; a fine-tune, a deployment or a local model is `other` |
+| `dataset_kinds` | `["agent", "model"]` | what answers the rows: a model, an MCP agent, an A2A agent, Harbor, ... |
+| `dataset_providers` | `["huggingface", "local"]` | where the rows come from |
+| `reward_types` | `["exact_match", "lm_as_judge"]` | how answers are scored |
+
+It never holds a prompt, a row, an answer, a score, a key, an endpoint, a
+path, a host or user name, or a name you chose (a model's, a dataset's, an
+evaluation's, an agent's). The event's `distinct_id` is a random id made for
+each process and forgotten when it ends: nothing is written on your machine.
+Runs started from the same process (a notebook, a service calling `run_sweep`
+more than once) share it; runs from separate processes, a forked one
+included, cannot be tied together. It goes to PostHog's EU Cloud
+(`eu.i.posthog.com`), which sees your IP address as any server you reach
+does; the event asks it to look up no location from it. It is sent in the background, with a 2-second timeout: it never
+fails, slows or stops a run, and nothing is sent when openarena is imported.
+
 ## Development
 
 ```shell
 git clone https://github.com/Atena-IT/open-arena && cd open-arena
 uv sync
+export ARENA_TELEMETRY=0                               # your own runs are not usage (Telemetry)
 uv run openarena --help
 uv run pytest                                          # no network needed
 uvx ruff check .

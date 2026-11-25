@@ -411,6 +411,8 @@ evaluation's axis is what the agent calls to decide each step.
 | `codex` | in the sandbox | OpenAI models only |
 | `gemini-cli` | in the sandbox | Google models only |
 | `goose`, `opencode`, `openhands`, `mini-swe-agent`, `swe-agent`, `cline-cli`, `cursor-cli` | in the sandbox | any provider |
+| `pi` | in the sandbox | the providers pi knows, by Harbor's name (`google` for `gemini/`): `openai`, `anthropic`, `google`, `openrouter`, `groq`, `mistral`, `deepseek`, `xai`, `together` and more; not `nebius/`, nor `fireworks_ai/` (pi says `fireworks`), nor a custom endpoint (`OPENAI_BASE_URL`) |
+| `hermes` | in the sandbox | Anthropic, OpenAI, Z.ai, Kimi and MiniMax models with their provider's key; any other `provider/model` id, or one of those without its key, goes to OpenRouter whole, an `openrouter/` prefix included, with `OPENROUTER_API_KEY` |
 
 How to choose:
 
@@ -424,6 +426,13 @@ How to choose:
   from inside the sandbox.
 
 `check` and the run refuse a pairing that cannot work, and say why.
+`gemini-cli`, `goose`, `opencode`, `mini-swe-agent`, `cursor-cli`, `hermes`
+and `pi` need a `provider/model` id. An agent in the sandbox installs itself
+there before its first step, in each sandbox (Hermes takes several
+minutes); Hermes reads its key from the arena's own environment. A run
+that ends on a model error and leaves no answer fails its row, with the
+error, even when the agent exits as if it had worked (pi does); a task
+folder keeps what its own tests scored, and its trial notes the error.
 
 The model entry's `params` reach the agent where it takes them:
 `temperature`, `reasoning_effort` and, for agents that pass call settings
@@ -433,9 +442,12 @@ warning in the run's log. See [Models](models.md).
 ## Where it runs
 
 `ARENA_HARBOR_SANDBOX` names the sandbox provider (`e2b`, `docker`,
-`daytona`, `modal`, ...), `e2b` by default. Without `E2B_API_KEY`, trials
-fall back to the local Docker. With neither, the run refuses to start. A
+`daytona`, `modal`, ...), `e2b` by default. Without the provider's key
+(`E2B_API_KEY`) or its SDK, trials fall back to the local Docker. With neither, the run refuses to start. A
 provider name Harbor does not know fails the run with the list of known ones.
+Task folders bring their own environment, so they always run on this
+provider; an environments.yaml entry's `sandbox:` applies to datasets over
+rows only ([Environments](environments.md#one-environment-on-its-own-provider-sandbox)).
 
 | variable | default | what it does |
 |---|---|---|

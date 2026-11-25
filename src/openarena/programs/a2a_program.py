@@ -188,8 +188,13 @@ class A2aAgent(Module):
             warnings.warn(f"A2A agent {self.url}: {self.last_failure}")
             return None
 
-    async def aclose(self) -> None:
-        """Close the client and its connections, once the program that holds them is done."""
+    async def close(self) -> None:
+        """Close the client and its connections, once the program that holds them is done.
+
+        Closed with its program (`Program.close`), as the tuner does when the cell ends. The
+        next call connects again.
+        """
+        await super().close()
         client, http, self._client, self._http = self._client, self._http, None, None
         if client is not None:
             await client.close()
@@ -228,8 +233,8 @@ async def build_a2a(agent: str, dataset, connection: dict, reward, metrics=None)
 
     `agent` is the axis entry (an `a2a_agents` key) and `connection` its
     entry as the run's config resolved it: `{url, headers, card_path,
-    timeout_sec}`. The program keeps the agent's client; `close_program`
-    closes it.
+    timeout_sec}`. The program keeps the agent's client; closing the
+    program (`Program.close`) closes it.
     """
     inputs = synalinks.Input(
         schema=dataset.input_schema,
@@ -249,12 +254,5 @@ async def build_a2a(agent: str, dataset, connection: dict, reward, metrics=None)
     outputs = await module(inputs)
     program = synalinks.Program(inputs=inputs, outputs=outputs, name=f"a2a_{safe_name(agent)}")
     program.compile(reward=reward, metrics=metrics or None)
-    program._arena_a2a_module = module  # for `close_program`
+    program._arena_a2a_module = module
     return program
-
-
-async def close_program(program) -> None:
-    """Close the client behind a program built by `build_a2a`; a no-op for any other program."""
-    module = getattr(program, "_arena_a2a_module", None)
-    if module is not None:
-        await module.aclose()

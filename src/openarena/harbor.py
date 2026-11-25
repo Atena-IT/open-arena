@@ -314,6 +314,27 @@ def task_files(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None 
 
 # Providers served from the arena's own machine by default: a sandbox cannot reach them.
 LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm", "sglang")
+# Agents whose Harbor wrapper splits the model id at its first `/` and fails every trial of an id without one.
+PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes", "pi")
+# The providers pi knows (`KnownProvider` in pi's packages/ai/src/types.ts); it refuses any other `--provider`.
+# shortcut: pi 1.6.0's list, copied; add a name when a pi release adds a provider the arena needs.
+PI_PROVIDERS = frozenset({
+    "amazon-bedrock", "ant-ling", "anthropic", "google", "google-vertex", "openai", "azure", "openai-codex", "radius",
+    "typesafe", "nvidia", "deepseek", "github-copilot", "xai", "groq", "cerebras", "openrouter", "vercel-ai-gateway", "zai",
+    "zai-coding-cn", "mistral", "minimax", "minimax-cn", "moonshotai", "moonshotai-cn", "huggingface", "fireworks",
+    "together", "baseten", "opencode", "opencode-go", "kimi-coding", "meta", "cloudflare-workers-ai",
+    "cloudflare-ai-gateway", "qwen-token-plan", "qwen-token-plan-cn", "qwen-token-plan-individual",
+    "qwen-token-plan-individual-cn", "xiaomi", "xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp",
+})
+
+
+def option_names(options) -> set[str]:
+    """The names a Harbor agent's options model takes: each field's, and the aliases it also answers to (pi's `thinking` is `reasoning_effort` too)."""
+    names: set[str] = set()
+    for name, field in (options.model_fields.items() if options else ()):
+        alias = field.validation_alias
+        names |= {name, *(c for c in getattr(alias, "choices", [alias]) if isinstance(c, str))}
+    return names
 
 
 def agents() -> list[dict[str, Any]]:
@@ -334,7 +355,7 @@ def agents() -> list[dict[str, Any]]:
     out = []
     for name in HARBOR_AGENTS:
         cls = AgentFactory.get_agent_class(AgentName(name))
-        fields = set(cls.options_model.model_fields) if cls.options_model else set()
+        fields = option_names(cls.options_model)
         params = [p for p in ("temperature", "reasoning_effort", "max_tokens") if p in fields or ("llm_call_kwargs" in fields and p == "max_tokens")]
         connection = cls.MODEL_CONNECTION
         out.append({
@@ -368,6 +389,8 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     info = next((a for a in agents() if a["name"] == agent), None)
     if info is None:
         return None
+    if agent in PROVIDER_PREFIXED and "/" not in model_id:
+        return f"Harbor agent {agent!r} needs a `provider/model` id such as 'openai/gpt-4o', and {model_id!r} names no provider"
     provider = model_provider(model_id)
     if info["provider"] and provider and provider != info["provider"]:
         return f"Harbor agent {agent!r} calls {info['provider']} models only, and {model_id!r} is a {provider} model"
@@ -376,6 +399,28 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
             return f"Harbor agent {agent!r} runs inside the sandbox and calls its model from there, which a no-network environment forbids"
         if (provider or "") in LOCAL_PROVIDERS or model_id.split("/", 1)[0] in LOCAL_PROVIDERS:
             return f"Harbor agent {agent!r} runs inside the sandbox, which cannot reach {model_id!r} on the arena's machine"
+    return pi_problem(model_id) if agent == "pi" else None
+
+
+def pi_problem(model_id: str) -> str | None:
+    """Why pi cannot call `model_id` (a `provider/model` id), as one sentence, or None.
+
+    Harbor hands pi the id's provider, as Harbor names it (`gemini` is
+    `google`), and pi refuses one it does not know. A provider whose base URL
+    is set in the environment is a custom endpoint, which Harbor runs only
+    with a `model_api` option the arena does not pass.
+    """
+    from harbor.agents.model_connection import _PROVIDER_ALIASES, PROVIDERS
+
+    prefix = model_id.split("/", 1)[0]
+    provider = _PROVIDER_ALIASES.get(prefix, prefix)
+    if provider not in PI_PROVIDERS:
+        return f"Harbor agent 'pi' knows no provider {provider!r}; it calls only its own, such as openai, anthropic, google or openrouter, under its own names (fireworks, not fireworks_ai)"
+    access = PROVIDERS.get(provider)
+    urls = access.base_url_envs if access else (f"{provider.upper().replace('-', '_')}_BASE_URL",)
+    # As Harbor reads it: the first of these that is set, even blank, and a blank one is no endpoint.
+    if (custom := next((env for env in urls if env in os.environ), None)) and os.environ[custom]:
+        return f"Harbor agent 'pi' would call the custom endpoint {custom} sets, which needs a `model_api` option the arena does not pass; unset {custom} or use another agent"
     return None
 
 
@@ -453,6 +498,10 @@ SANDBOX_OPTIONS = "ARENA_HARBOR_SANDBOX_OPTIONS"
 def sandbox_options() -> dict[str, Any]:
     """`ARENA_HARBOR_SANDBOX_OPTIONS`: the configured provider's settings, as Harbor's environment takes them; `{}` when unset.
 
+    Only trials on `ARENA_HARBOR_SANDBOX`'s provider get them
+    (`environment_config`); an environment's own `sandbox:`, when another
+    provider, runs with none.
+
     A JSON object of the keyword arguments Harbor passes the provider's
     environment class (what `harbor run --ek` sets): the namespace, registry
     and node selector of the Kubernetes environment (`ack`), for instance.
@@ -475,8 +524,10 @@ def sandbox_options() -> dict[str, Any]:
 def environment_config(sandbox: str):
     """Harbor's `EnvironmentConfig` for a trial on provider `sandbox`: with `sandbox_options()` when it is the configured one.
 
-    The local Docker a trial falls back to, when the configured provider
-    cannot start, gets none: they are that other provider's settings.
+    The options are the process-wide provider's (`ARENA_HARBOR_SANDBOX`'s)
+    settings. Any other provider gets none: the local Docker a trial falls
+    back to when the configured one cannot start, and a provider an
+    environment names with `sandbox:` that is not the configured one.
     """
     from harbor.models.trial.config import EnvironmentConfig
 
@@ -485,33 +536,70 @@ def environment_config(sandbox: str):
     return EnvironmentConfig(type=sandbox, kwargs=sandbox_options() if sandbox == configured_sandbox() else {})
 
 
+# Harbor loads most providers' modules without their SDK and records the import as a `_HAS_<SDK>` flag of the
+# module (or of its base class's module, whose SDK it needs too); cua-cloud's alone imports its SDK only as a sandbox
+# starts, with no flag, so it is named here.
+_LAZY_SDKS = {"cua-cloud": "cua_train"}
+
+
+def sandbox_not_installed(name: str) -> str | None:
+    """Why sandbox provider `name` is not installed here, its vendor SDK not importable, as one sentence; None when it is.
+
+    A provider that needs no SDK (Docker) is always installed. The sentence
+    names Harbor's extra for the provider when it has one.
+    """
+    import importlib.util
+    import sys
+
+    from harbor.environments.factory import _ENVIRONMENT_REGISTRY, _load_environment_class
+    from harbor.models.environment_type import EnvironmentType
+
+    extra = next((e.pip_extra for t, e in _ENVIRONMENT_REGISTRY.items() if t.value == name), None)
+    hint = f" (pip install 'harbor[{extra}]')" if extra else ""
+    try:
+        cls = _load_environment_class(EnvironmentType(name))
+    except Exception as e:  # noqa: BLE001 - an SDK the module imports as it loads, missing or broken, or a name Harbor does not have
+        return f"{name} cannot be loaded: {e.__cause__ or e}{hint}"
+    sdk = _LAZY_SDKS.get(name)
+    try:
+        found = sdk is None or importlib.util.find_spec(sdk) is not None
+    except (ImportError, ValueError):  # a broken module, or a stub without a spec, under that name
+        found = False
+    modules = {sys.modules[base.__module__] for base in cls.__mro__}
+    flags = [value for module in modules for key, value in vars(module).items() if key.startswith("_HAS_")]
+    return None if all(flags) and found else f"{name}'s SDK is not installed{hint}"
+
+
 def sandbox_capabilities(name: str) -> dict[str, Any]:
     """What sandbox provider `name` can give: `{installed, gpus, no_network, allowlist}`.
 
-    `installed` is False when Harbor lacks the provider's extra; each other
-    flag is True, False, or None when the provider decides per sandbox (Docker's
-    GPUs depend on the host).
+    `installed` is True when the provider's vendor SDK can be imported here
+    (always, for one that needs none, such as Docker); False when it cannot,
+    or Harbor has no such provider (`sandbox_not_installed` says why).
+    Whether the provider's credentials are set is `harbor_program.ready`'s
+    to say. Each other flag is True, False, or None when the provider
+    decides per sandbox (Docker's GPUs depend on the host).
     """
     from harbor.environments.factory import _load_environment_class
     from harbor.models.environment_type import EnvironmentType
 
+    installed = sandbox_not_installed(name) is None
     try:
         cls = _load_environment_class(EnvironmentType(name))
-    except ImportError:
+    except Exception:  # noqa: BLE001 - not installed: `sandbox_not_installed` says why
         return {"installed": False, "gpus": None, "no_network": None, "allowlist": None}
     try:
         caps = object.__new__(cls).capabilities  # a class constant for most providers
     except Exception:  # noqa: BLE001 - one that reads its instance decides per sandbox
-        return {"installed": True, "gpus": None, "no_network": None, "allowlist": None}
-    return {"installed": True, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
+        return {"installed": installed, "gpus": None, "no_network": None, "allowlist": None}
+    return {"installed": installed, "gpus": caps.gpus, "no_network": caps.disable_internet, "allowlist": caps.network_allowlist}
 
 
 def environment_problems(spec: EnvironmentSpec, sandbox: str) -> list[str]:
     """What of `spec` sandbox provider `sandbox` cannot give, one sentence each: every trial would fail on it."""
     caps = sandbox_capabilities(sandbox)
-    problems = []
-    if not caps["installed"]:
-        problems.append(f"Harbor is installed without the {sandbox!r} sandbox provider")
+    missing = sandbox_not_installed(sandbox)
+    problems = [missing] if missing else []
     if spec.gpus and caps["gpus"] is False:
         problems.append(f"{sandbox} sandboxes have no GPUs, and the environment asks for {spec.gpus}")
     if spec.network_mode == "no-network" and caps["no_network"] is False:

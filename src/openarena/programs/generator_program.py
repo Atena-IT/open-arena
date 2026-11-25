@@ -11,7 +11,19 @@ as an opaque `Program`.
 
 import synalinks
 
-from openarena.programs.utils import language_model as _language_model, safe_name
+from openarena.programs.utils import answer_layout, keeps_native_trace, language_model as _language_model, safe_name, with_model_effort
+
+
+def _fits_thinking(dataset, block: dict) -> bool:
+    """Whether the dataset can hold a `thinking` field beside its answer, by the sweep's own rule (`answer_layout`).
+
+    It cannot when the answer already has one, or when a returned input has that name.
+    """
+    try:
+        answer_layout(dataset, "model", {**block, "chain_of_thought": True})
+    except ValueError:
+        return False
+    return True
 
 
 async def build_program(
@@ -30,7 +42,8 @@ async def build_program(
 
     `lm_kwargs` are per-model options for `LanguageModel` (a
     `reasoning_effort`, say). Without them, the bare id is handed to
-    the framework exactly as before.
+    the framework exactly as before. The model's `reasoning_effort` is also
+    the module's own, unless the `generator:` block sets one (`with_model_effort`).
 
     `chain_of_thought: true` in the generator block builds the framework's
     `ChainOfThought` instead of a plain `Generator`: it puts a `thinking`
@@ -38,6 +51,13 @@ async def build_program(
     model reasons before it answers — without the dataset's schema having to
     make room for it. `answer_layout` counts `thinking` beside the answer, so
     a rule-based reward still scores the answer alone.
+
+    A model that reasons natively at a level gets it with or without the flag
+    (`keeps_native_trace`): its request is the same, the framework fills `thinking`
+    from the reasoning trace instead of asking the model to write it, and the
+    trace is kept with the row. The flag stays what makes any other model write it.
+    A dataset that cannot hold a `thinking` field (its answer has one, or a returned
+    input is named so) is left as it is.
     """
     inputs = synalinks.Input(
         schema=dataset.input_schema,
@@ -45,15 +65,19 @@ async def build_program(
     )
 
     gen_kwargs = dict(generator_kwargs)
-    module = (
-        synalinks.ChainOfThought if gen_kwargs.pop("chain_of_thought", False) else synalinks.Generator
+    thinking = gen_kwargs.pop("chain_of_thought", False) or (
+        await keeps_native_trace(model_id, lm_kwargs, gen_kwargs) and _fits_thinking(dataset, gen_kwargs)
     )
+    if thinking:
+        # An explicit chain of thought is refused here as the sweep refuses it, before any trial.
+        answer_layout(dataset, "model", {**gen_kwargs, "chain_of_thought": True})
+    module = synalinks.ChainOfThought if thinking else synalinks.Generator
     if dataset.output_schema is not None and "schema" not in gen_kwargs:
         gen_kwargs["schema"] = dataset.output_schema
 
     outputs = await module(
-        language_model=_language_model(model_id, lm_kwargs),
-        **gen_kwargs,
+        language_model=_language_model(model_id, lm_kwargs, gen_kwargs),
+        **with_model_effort(lm_kwargs, gen_kwargs),
     )(inputs)
 
     program = synalinks.Program(

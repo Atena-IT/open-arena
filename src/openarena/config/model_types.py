@@ -24,6 +24,10 @@ from typing import Any, Literal
 MODALITIES = ("text", "image", "audio")
 Modality = Literal[*MODALITIES]
 
+# What the framework is told about a chat model, rather than finding it out: whether it reasons natively (a param),
+# and whether it takes images and audio (its `modalities`). They shape how it is called, so they are never sent.
+CAPABILITY_FLAGS = ("supports_reasoning", "supports_vision", "supports_audio")
+
 
 @dataclass(frozen=True)
 class Param:
@@ -31,7 +35,7 @@ class Param:
 
     name: str
     label: str
-    kind: Literal["number", "integer", "choice"]
+    kind: Literal["number", "integer", "choice", "boolean"]
     hint: str = ""
     choices: tuple[str, ...] = ()
     min: float | None = None
@@ -45,6 +49,10 @@ class Param:
         if self.kind == "choice":
             if value not in self.choices:
                 raise ValueError(f"{self.name}: one of {', '.join(self.choices)}")
+            return value
+        if self.kind == "boolean":
+            if not isinstance(value, bool):
+                raise ValueError(f"{self.name}: true or false")
             return value
         if isinstance(value, bool) or not isinstance(value, (int, float, str)):
             raise ValueError(f"{self.name}: a number")
@@ -148,6 +156,16 @@ MODEL_TYPES: dict[str, ModelType] = {
                     ),
                     choices=REASONING_EFFORTS,
                     labels={"disable": "Off", "minimal": "Minimal", "low": "Low", "medium": "Medium", "high": "High", "xhigh": "Extra high", "max": "Max"},
+                ),
+                Param(
+                    "supports_reasoning",
+                    "Reasons natively",
+                    "boolean",
+                    # The framework does not find it out: a level is forwarded, and the trace kept, only when this says so.
+                    hint=(
+                        "Whether the model thinks before answering and returns its reasoning. "
+                        "Only then is its Thinking level sent and its trace kept."
+                    ),
                 ),
                 Param(
                     "temperature",

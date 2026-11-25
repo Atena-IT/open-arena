@@ -41,6 +41,7 @@ models:
     params:
       temperature: 0
       reasoning_effort: disable      # turn native thinking off
+      supports_reasoning: true       # it thinks natively: without this, no level is sent
     tags: [local, open-weights]
   minilm:
     model: ollama/all-minilm
@@ -61,7 +62,7 @@ models:
 | `model` | `<provider>/<id>`, a litellm id | required | which provider is called, and which model there |
 | `type` | `llm`, `embedding`, `decision` | `llm` | what the model does: which params it takes, where it may be named |
 | `params` | a mapping, by type ([below](#params)) | `{}` | settings sent with each call; a param left out keeps the provider's default |
-| `modalities` | a list of `text`, `image`, `audio` | `[text]` | a fact about the model, for listings |
+| `modalities` | a list of `text`, `image`, `audio` | `[text]` | what the model takes in: for a chat model, whether a tool's images and audio reach it ([below](#modalities)) |
 | `description` | text | none | shown by `openarena models list` |
 | `tags` | a list of labels | `[]` | for browsing and filtering lists |
 
@@ -241,6 +242,7 @@ not sent, and the provider's default applies.
 | `llm` | `temperature` | a number, 0 to 2 | how much the model samples; lower is more consistent |
 | `llm` | `max_tokens` | an integer, at least 1 | the longest answer, in tokens |
 | `llm` | `reasoning_effort` | `disable`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | how much the model thinks before answering, where it can |
+| `llm` | `supports_reasoning` | `true` or `false` | whether the model reasons natively; only then is its `reasoning_effort` sent and its trace kept |
 | `embedding` | `dimensions` | an integer, at least 1 | the vector size, where the model lets you pick |
 | `decision` | none | | a decision model takes no params; `params` must be left out or empty |
 
@@ -279,7 +281,7 @@ How much a model that can think does so before answering.
 
 | value | effect |
 |---|---|
-| `disable` | turns native thinking off, for local models that think by default (Ollama's `qwen3`, `deepseek-r1`) |
+| `disable` | turns native thinking off, with each provider's own switch (OpenRouter's `reasoning: {"enabled": false}`, Ollama's `think: false`, ...), for a model that reasons; a model that cannot stop reasoning gets its lowest level |
 | `minimal`, `low`, `medium`, `high`, `xhigh`, `max` | the effort, where the model supports levels; each model takes the ones its provider lists (OpenRouter states them per model) |
 | left out | the provider's default |
 
@@ -287,6 +289,49 @@ More effort usually means better answers on hard rows, at the price of more
 output tokens, more cost and more latency. That trade-off is what a
 leaderboard with shares on `cost` and latency weighs. A model that does not
 support the param may ignore it or refuse it.
+
+On a generator, agent or tools dataset the model is asked at its level on every
+call. `max` is sent as `xhigh`, the top level the engine's generator takes. A
+`reasoning_effort` in the dataset's block (`generator:`, `agent:`, `tools:`)
+applies to every model of the evaluation and wins over the model's own, so
+leave it out of the block to compare models on their levels. The level reaches
+the provider only for a model whose entry says it can think
+([`supports_reasoning: true`](#supports_reasoning)). For any other model
+nothing about thinking is sent, `disable` included: it has nothing to turn off,
+and OpenRouter refuses the switch on an endpoint with no `reasoning` parameter. A model that cannot stop reasoning gets its lowest level
+for `disable`. An Off entry stops reasoning for real, so its cost, latency and
+score differ from what it gave before. A model that must reason
+(`openai/gpt-oss-20b`) fails its cells with OpenRouter's own message.
+
+`chain_of_thought: true` is not native thinking: it has the model write a
+`thinking` field beside its answer. A model with no level is asked for `low`
+with it on, and with it off no level is passed at all. With `disable` and it
+on, the model writes `thinking` itself, with no native reasoning behind it.
+
+A model that reasons natively at a level (its entry sets `supports_reasoning:
+true`, as above) needs no flag to keep its reasoning. The request is the same either
+way: `thinking` is left out of what the model is asked for (the default
+instructions of a dataset that sets none still list it), and it holds
+the provider's reasoning trace, in the samples and in the traces, with the flag
+on or off (empty when the provider returns none). Any other model writes
+`thinking` only with the flag on. Metrics and rewards leave `thinking` out as
+for a chain of thought, and a judge sees it only when the flag is on. To
+compare levels, leave the flag off.
+
+### `supports_reasoning`
+
+Whether the model thinks natively before answering and returns its reasoning
+trace: `true` for `o4-mini`, Qwen3 or DeepSeek-R1, left out for `gpt-4o`. The
+arena does not find it out: it asks no provider and reads no model table, so a
+reasoning model whose entry leaves it out is asked at no level, its `disable`
+turns nothing off, and its trace is not kept. Check the provider's page for the
+model (OpenRouter lists a `reasoning` parameter for the ones that think). It is
+not sent to the provider: it decides what is. `openarena check` warns on an
+entry that sets `reasoning_effort` and says neither `true` nor `false`.
+
+Set it only for a model that does return a trace on the endpoint you call. On
+OpenRouter, `disable` sends `reasoning: {"enabled": false}`, which an endpoint
+with no `reasoning` parameter refuses.
 
 ### `dimensions`
 
@@ -301,8 +346,8 @@ test, as a judge, as a metric's model or as a default.
 
 | the model is... | its params |
 |---|---|
-| under test on a generator, agent or tools dataset | sent with every call |
-| under test on a Harbor dataset | given to the Harbor agent where its options take them (`temperature`, `reasoning_effort`, `max_tokens`); what it does not take is logged and left out |
+| under test on a generator, agent or tools dataset | sent with every call (`supports_reasoning` is not sent: it decides whether `reasoning_effort` is) |
+| under test on a Harbor dataset | given to the Harbor agent where its options take them (`temperature`, `reasoning_effort`, `max_tokens`); what it does not take is logged and left out. `supports_reasoning` and the `modalities` are never given: the agent calls the model itself |
 | under test on a retrieval (`embedding:`) dataset | `dimensions` sent with every embedding call |
 | a reward's or metric's model (`language_model`, `embedding_model`, a panel, ...) | sent with every call the reward or metric makes |
 | `default_language_model`, `default_embedding_model` | sent with every call, as for a reward's model |
@@ -315,8 +360,11 @@ So a judge entry with `temperature: 0` grades at temperature 0. See
 What the model reads: `text`, `image`, `audio`. Default `[text]`; at least one;
 duplicates dropped. Add `image` for a vision model.
 
-It is a fact for listings: the run does not read it, and it does not turn image
-input on or off. What a model is sent comes from the dataset's templates.
+For a chat model, `image` and `audio` tell the engine the model takes them in.
+When a tool or an agent's sandbox returns an image or a sound, a model that
+lists it gets it as such; any other model gets a note in its place. It does not
+turn input on or off otherwise: what a model is sent comes from the dataset's
+templates. For any other type, it is a fact for listings.
 
 ## `description` and `tags`
 
@@ -351,12 +399,14 @@ models:
     model: openai/o4-mini
     params:
       reasoning_effort: low
+      supports_reasoning: true
     description: o4-mini, light thinking.
     tags: [openai, reasoning]
   o4-mini-high:
     model: openai/o4-mini
     params:
       reasoning_effort: high
+      supports_reasoning: true
     description: o4-mini, deep thinking.
     tags: [openai, reasoning]
 ```
@@ -492,8 +542,15 @@ well it scores. The date comes from the first source that has one:
 | Azure's OpenAI retirement schedule | `openai/`, `azure/`, `azure_ai/` ids the provider has not dated; fetched once a day, a shipped snapshot answers offline |
 | OpenRouter's expiration date | `openrouter/` ids; it wins when it is earlier than the vendor's |
 
-An `openrouter/<vendor>/<model>` id is also looked up under the vendor's own id:
-it is the same model, and it stops on the same day.
+An `openrouter/<vendor>/<model>` id is looked up under the vendor's own id: it
+is the same model, and it stops on the same day. litellm's row for the
+OpenRouter id itself, whose date is copied from one of the vendor's endpoints,
+is read only when OpenRouter's list does not have the model (offline, or no
+longer listed) and litellm downloaded its table rather than loading the copy
+it ships with; otherwise OpenRouter's expiration date says when OpenRouter
+stops, matched to the id whatever its punctuation (`claude-opus-5-5` and
+`claude-opus-5.5` are one model). A row litellm's live table dropped, kept from the copy shipped with
+litellm for its prices, carries no date.
 
 | case | `eol_days` |
 |---|---|
@@ -534,7 +591,7 @@ What it reports for a model, and the fix:
 | an option the type does not take, under `params:` (`top_p`, `temperature` on an embedding model) | `Chat models take reasoning_effort, temperature, max_tokens, not top_p` | remove it |
 | a server address or key (`api_base`, `base_url`, `api_key`) | `not a field of a models entry`, fix: `` remove `api_base:`; a base URL is not a model setting: set it in the environment instead (`.env`) `` | set the provider's variable in `.env` (`OLLAMA_API_BASE`, `HOSTED_VLLM_API_BASE`) |
 | `provider: openai` | `not a field of a models entry` | remove it: the provider is read off the id's prefix |
-| `reasoning_effort: max` | `reasoning_effort: one of disable, low, medium, high` | use one of those |
+| `reasoning_effort: extreme` | `reasoning_effort: one of disable, minimal, low, medium, high, xhigh, max` | use one of those |
 | `temperature: 3` | `temperature: between 0 and 2` | a value in range |
 | `modalities: [video]` | `Input should be 'text', 'image' or 'audio'` | one of those |
 | `tags: OpenAI` | `` `tags:` is a list `` | `tags: [openai]` |

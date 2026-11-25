@@ -30,6 +30,7 @@ models:
     params:
       temperature: 0
       reasoning_effort: disable
+      supports_reasoning: true       # it thinks natively; without this no level, Off included, is sent
     tags: [local]
   minilm:
     model: ollama/all-minilm
@@ -54,6 +55,7 @@ model.
 | `llm` | `temperature` | number, 0 to 2 |
 | `llm` | `max_tokens` | integer, at least 1 |
 | `llm` | `reasoning_effort` | `disable`, `minimal`, `low`, `medium`, `high`, `xhigh` or `max` (a model takes the levels its provider lists) |
+| `llm` | `supports_reasoning` | `true` or `false` |
 | `embedding` | `dimensions` | integer, at least 1 |
 | `decision` | none | leave `params` out |
 
@@ -61,6 +63,16 @@ Nothing else: `api_base`, `top_p`, `seed`, `stop` are refused. Leave a param
 out to keep the provider's default. Where params actually apply:
 
 - Model under test on a generator, agent or tools dataset: sent with every call.
+  Its `reasoning_effort` is the level it is asked at, unless the dataset's
+  block sets its own, which wins for every model of the evaluation (`max` is
+  sent as `xhigh`); `disable` turns thinking off with each provider's own
+  switch (OpenRouter's `reasoning: {"enabled": false}`), for a model whose
+  entry sets `supports_reasoning: true`: the arena does not find it out, so
+  set it for every model that thinks natively (OpenRouter lists a `reasoning`
+  parameter for those), or its level is never sent. `chain_of_thought` is not native thinking, only a written
+  `thinking` field (with `disable` the model writes it itself): leave it off
+  to compare levels. A model that reasons natively at a level keeps its trace
+  in `thinking` whether or not it is on.
 - Model under test on a Harbor dataset: passed to the agent where it takes them.
 - A judge, a reward's or metric's model, a `default_*_model`: built with its
   entry's params too (an embedding model's `dimensions` included). Give a

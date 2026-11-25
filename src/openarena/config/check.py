@@ -55,6 +55,7 @@ from openarena.config import (
     flatten_dataset,
 )
 from openarena.config.entries import ENTRIES, HARBOR_TASKS, NAME_PATTERN, TOOL_SHAPE
+from openarena.config.tags import lenient_tags
 from openarena.config.errors import Invalid
 from openarena.config.files import SECTIONS, expand, gather, load_yaml, references
 
@@ -338,6 +339,7 @@ _MODEL_PARAMS = {
     "top_p",
     "top_k",
     "reasoning_effort",
+    "supports_reasoning",
     "seed",
     "stop",
     "frequency_penalty",
@@ -506,7 +508,17 @@ def _validate(ctx: _Context, section: str, entry: dict, where: str):
 
 
 def _models(ctx: _Context, name: str, entry: dict, where: str) -> None:
-    _validate(ctx, "models", entry, where)
+    model = _validate(ctx, "models", entry, where)
+    if model is None or model.type != "llm":
+        return
+    # A level is sent only to a model declared as one that reasons: an entry that sets one and says nothing either
+    # way was written when the engine found it out, and its level (an Off included) is now dropped without a word.
+    if "reasoning_effort" in model.params and "supports_reasoning" not in model.params:
+        ctx.report.warning(
+            f"{where}.params.reasoning_effort",
+            "is sent only to a model declared as one that reasons; this entry does not say, so no level reaches it",
+            "add `supports_reasoning: true` under `params:` if the model thinks natively, or `false` to keep it as it is",
+        )
 
 
 def _mcp_servers(ctx: _Context, name: str, entry: dict, where: str) -> None:
@@ -682,7 +694,17 @@ def _evaluations(ctx: _Context, name: str, entry: dict, where: str) -> None:
 
 
 def _leaderboards(ctx: _Context, name: str, entry: dict, where: str) -> None:
-    _validate(ctx, "leaderboards", entry, where)
+    board = _validate(ctx, "leaderboards", entry, where)
+    datasets = ctx.registry("datasets") if board is not None and board.dataset_tags is not None else None
+    if datasets is not None and not any(
+        board.dataset_tags.matches(lenient_tags(tags) if isinstance(tags := (d or {}).get("tags"), list) else [])
+        for d in datasets.values()
+    ):
+        ctx.report.warning(
+            f"{where}.dataset_tags",
+            "no dataset of `datasets` passes this tag scope, so the leaderboard ranks nothing",
+            "tag the datasets it should hold, or fix a misspelled tag",
+        )
     # A leaderboard ranks the scores of runs, which outlive the entries they were made with.
     note = "only scores from runs made before it was removed can be ranked"
     for section in ("datasets", "models"):

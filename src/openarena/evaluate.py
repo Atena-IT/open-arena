@@ -22,14 +22,16 @@ Run a sweep with:
 
 import copy
 import functools
+import inspect
 import sys
 import traceback
 import warnings
 from pathlib import Path
 from typing import Callable
 
-
+import numpy as np
 import synalinks
+from synalinks.src import ops, tree
 
 synalinks.disable_keras_backend()  # MUST precede `import keras_tuner`
 
@@ -45,9 +47,11 @@ from openarena.config import Config, MetricEntry  # noqa: E402
 from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
 from openarena.lookups.prices import ensure_priced  # noqa: E402
+from openarena import telemetry  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
-from openarena.programs.a2a_program import A2aAgent, close_program  # noqa: E402
+from openarena.programs.a2a_program import A2aAgent  # noqa: E402
+from synalinks.src.modules.module import release_resource  # noqa: E402
 from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
 from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
 from openarena.results import SweepResults  # noqa: E402
@@ -74,6 +78,36 @@ def _usage(logs) -> dict[str, float]:
         for k in USAGE_METRICS
         if isinstance(logs.get(k), (int, float))
     }
+
+
+def _number(value) -> float | None:
+    """A metric's value as a number: a list, one score per output field, is averaged. `None` when it is no number."""
+    try:
+        return float(np.mean(value)) if np.size(value) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalars(metrics: dict, where: str) -> dict[str, float]:
+    """`metrics` with a number each: a list is averaged and anything else left out, each with a warning.
+
+    keras-tuner stores a value with `float()`, which raises on a list and fails
+    the whole cell, every other metric with it. A value the cell cannot keep
+    must not cost it the rest, and must not go unseen: `where` names the cell.
+    """
+    out = {}
+    for name, value in metrics.items():
+        # `_evaluate_only` copies every metric under a `val_` name: one line for the pair.
+        quiet = name.startswith("val_") and name[4:] in metrics
+        number = _number(value)
+        if number is None:
+            if not quiet:
+                warnings.warn(f"{where}: metric {name!r} is {value!r}, not a number: left out.")
+            continue
+        if np.ndim(value) and not quiet:
+            warnings.warn(f"{where}: metric {name!r} gave {value!r}, a list: kept as its mean, {number}.")
+        out[name] = number
+    return out
 
 
 class _ProgressCallback(synalinks.callbacks.Callback):
@@ -107,10 +141,7 @@ class _ProgressCallback(synalinks.callbacks.Callback):
         )
 
     def on_test_end(self, logs=None):
-        metrics = {
-            k: float(v) for k, v in (logs or {}).items() if isinstance(v, (int, float))
-        }
-        self._emit("cell_end", metrics=metrics)
+        self._emit("cell_end", metrics=_scalars(logs or {}, f"{self._ds_name} · {self._model}"))
 
 
 class _RunMonitor(synalinks.callbacks.Monitor):
@@ -315,6 +346,15 @@ def _scope_to_answer(spec: dict, target: list[str]) -> dict:
     return {**spec, ANSWER_FIELDS: list(target)}
 
 
+def _leaving_out_trace(spec: dict) -> dict:
+    """`spec`, a reward's, with `thinking` masked out of what it reads, unless it is scoped to fields or masked already."""
+    from openarena.rewards import ANSWER_FIELDS, SELF_SCORED
+
+    if spec.get("name") in SELF_SCORED or ANSWER_FIELDS in spec or any(k in spec for k in _MASK_KEYS):
+        return spec
+    return {**spec, "out_mask": ["thinking"]}
+
+
 def _beside(entry: dict, base: Path) -> dict:
     """A Harbor task folders dataset's `path` read against the run's config: the run copies the tasks beside it (`tasks/`)."""
     if entry.get("type") == "harbor_tasks" and entry.get("path") and not Path(entry["path"]).is_absolute():
@@ -322,7 +362,37 @@ def _beside(entry: dict, base: Path) -> dict:
     return entry
 
 
-def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None):
+def _leaving_out(metric, fields: list[str]):
+    """`metric` rebuilt to compare both sides without the top-level `fields`, what is nested in the others kept whole.
+
+    As `rewards.AnswerFields` does for a reward. The metric's own `out_mask`
+    would drop the names at every nesting level, so a returned input named
+    `text` would also take the `text` out of an answer object, and a wrong
+    answer could score as right. A subclass that keeps `fields` in its config,
+    not a patched `update_state`: `compile` clones every metric through
+    `from_config(get_config())`.
+    """
+    base = type(metric)
+
+    class LeavingOut(base):
+        def __init__(self, *args, leave_out=(), **kwargs):
+            super().__init__(*args, **kwargs)
+            self.leave_out = list(leave_out)
+
+        async def update_state(self, y_true, y_pred):
+            def drop(data):
+                return None if data is None else ops.convert_to_json_data_model(data).out_mask(mask=list(self.leave_out), recursive=False)
+
+            await super().update_state(tree.map_structure(drop, y_true), tree.map_structure(drop, y_pred))
+
+        def get_config(self):
+            return {**super().get_config(), "leave_out": list(self.leave_out)}
+
+    LeavingOut.__name__ = base.__name__
+    return LeavingOut.from_config({**metric.get_config(), "leave_out": fields})
+
+
+def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=None, beside=None, trace=False, owned=None):
     """Resolve validated `MetricEntry` rows into `[(alias, Metric, direction, is_objective)]`.
 
     Identifiers resolve in two registries: the project rewards (auto-wrapped
@@ -331,13 +401,29 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
     metrics. `name=` on the wrapper flows to the wrapping metric (whose
     `.name` is the evaluate() result-dict key), not the inner reward —
     that's how the user's `alias:` survives into the matrix.
+
+    Both compare the answer alone, as the reward does. A rule-based reward is
+    scoped to the `target` fields. A plain metric that takes masks leaves out
+    `beside`, what the program returns beside the answer (a chain of thought's
+    `thinking`, an agent's `messages`): the target has no such field, so scored
+    against nothing it makes the metric a list, one score per field. A mask the
+    entry sets, even an empty one, is the user's and leaves the metric as written.
+    `trace` is a model's native reasoning trace the dataset did not ask for: a reward
+    named as a metric leaves `thinking` out too, as the dataset's reward does.
+
+    `owned`, when given, receives each reward and metric as it is built, before
+    anything about it is checked: an agent judge holds a sandbox, so the caller
+    can close what was built even when a later entry, or this one's alias, fails.
     """
+    owned = [] if owned is None else owned
     out = []
     for entry in entries:
         key = to_snake_case(entry.class_name)
         if key in _REWARD_TYPES:
             spec = {"name": key, **entry.kwargs}
-            reward = get_reward(_scope_to_answer(spec, target) if target else spec)
+            scoped = _scope_to_answer(spec, target) if target else spec
+            reward = get_reward(_leaving_out_trace(scoped) if trace else scoped)
+            owned.append(reward)
             instance = synalinks.metrics.MeanMetricWrapper(
                 reward,
                 name=entry.alias or key,
@@ -349,11 +435,21 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             )
         else:
             instance = synalinks.metrics.get(entry.class_name)
+        if instance is not None:
+            owned.append(instance)
         if instance is None:
             raise ValueError(
                 f"{context}: identifier {entry.class_name!r} resolved to None — "
                 f"not a known metric or reward class."
             )
+        if (
+            beside
+            and key not in _REWARD_TYPES
+            and not any(k in entry.kwargs for k in _MASK_KEYS)
+            and "out_mask" in inspect.signature(type(instance).__init__).parameters
+        ):
+            instance = _leaving_out(instance, list(beside))
+            owned.append(instance)
         resolved_alias = (
             entry.alias or getattr(instance, "name", None) or entry.class_name
         )
@@ -364,6 +460,40 @@ def _instantiate_metrics(entries: list[MetricEntry], *, context: str, target=Non
             )
         out.append((resolved_alias, instance, entry.direction, entry.objective))
     return out
+
+
+async def _release(resources) -> None:
+    """Close each of `resources` (a reward, a metric), never raising: teardown must not replace the error it follows."""
+    for resource in resources:
+        await release_resource(resource)
+
+
+def _not_held(built: list, reward, program) -> list:
+    """What of `built` (a cell's reward and metrics) its compiled `program` does not hold, to close."""
+    compiled = getattr(program, "_compile_metrics", None)
+    shared = {id(getattr(m, "_fn", None)) for m in tree.flatten(getattr(compiled, "_user_metrics", None) or [])}
+    shared.discard(id(None))
+    return [
+        m for m in built
+        # A metric clone that wraps its original's callable holds it: that callable stays open.
+        if program is None or (m is not reward and id(m) not in shared and id(getattr(m, "_fn", None)) not in shared)
+    ]
+
+
+async def _metric_layout(entries: list[MetricEntry], **kwargs):
+    """`_instantiate_metrics`' aliases, directions and objective flags, without the instances.
+
+    Reading them builds each metric, and a judge named as a metric opens what
+    it holds (an agent judge's sandbox): the instances are closed at once, and
+    the tuples keep `None` in their place. A cell's program builds its own.
+    """
+    built: list = []
+    try:
+        layout = _instantiate_metrics(entries, owned=built, **kwargs)
+    finally:
+        # Closed whatever happens: an entry that fails leaves those built before it open otherwise.
+        await _release(built)
+    return [(alias, None, direction, is_objective) for alias, _, direction, is_objective in layout]
 
 
 def _first_by_alias(*lists):
@@ -492,8 +622,16 @@ async def _run_cell(tuner, trial, **fit_kwargs) -> None:
     the framework's own `_run_trial_async` instead keeps the sweep on its own
     event loop. Outcomes land
     on the trial the way kt records them: COMPLETED with its metrics, FAILED
-    for a `FailedTrialError`, INVALID for any other error, while a
-    `FatalError` (cancellation) propagates and ends the sweep, as before.
+    for a `FailedTrialError`, INVALID for any other error (which `end_trial`
+    turns into FAILED when no retry is left, as here: `max_retries_per_trial`
+    is 0), while a `FatalError` (cancellation) propagates and ends the sweep,
+    as before.
+
+    A metric kept as a list (one score per output field) is averaged first, and
+    one that is no number left out, each with a warning (`_scalars`): kt would
+    `float()` it, and the error would fail the cell with every other metric.
+    A list-valued *objective* is not covered: with several objectives the
+    framework adds them up inside `_run_trial_async`, ahead of this.
     """
     tuner.on_trial_begin(trial)
     try:
@@ -502,7 +640,10 @@ async def _run_cell(tuner, trial, **fit_kwargs) -> None:
         tuner_utils.validate_trial_results(results, objective, "Tuner.run_trial()")
         tuner.oracle.update_trial(
             trial.trial_id,
-            tuner_utils.convert_to_metrics_dict(results, objective),
+            _scalars(
+                tuner_utils.convert_to_metrics_dict(results, objective),
+                f"{tuner.project_name} · {trial.hyperparameters.values.get('language_model')}",
+            ),
             step=tuner_utils.get_best_step(results, objective),
         )
         trial.status = trial_module.TrialStatus.COMPLETED
@@ -622,10 +763,14 @@ async def run_sweep(
     flight are re-run along with the ones never reached. Programs are only
     built for the cells that still have to run. See `_resume_grid`.
 
-    Programs are built eagerly per `(model, dataset)` cell, then the cells
-    run in turn, model-major, on this event loop (`_run_cell`), each with a
-    view of its dataset batched to the run's `batch_size` (else the
-    dataset's own): the batch is what the framework sends at once.
+    The cells run in turn, model-major, on this event loop (`_run_cell`),
+    each with a view of its dataset batched to the run's `batch_size` (else
+    the dataset's own): the batch is what the framework sends at once. A
+    cell's program, with its own reward and metrics, is built as the cell
+    starts and closed when its trial ends (the tuner's `Program.close`), so
+    what it opens (an agent judge's sandbox, an A2A agent's client) lives for
+    that one cell, and memory does not grow with the grid. Whatever a
+    cancellation or an error left open is closed before the sweep returns.
 
     A cell that cannot give a score ends FAILED (or INVALID) with why, and the
     other cells still run: an agent whose MCP servers gave no tools, a cell
@@ -641,6 +786,9 @@ async def run_sweep(
     """
     cfg = Config.load(config_path)
     emit = on_event or (lambda _event: None)
+
+    # One anonymous usage event, in the background (README "Telemetry"; off with ARENA_TELEMETRY=0).
+    telemetry.capture_run(cfg)
 
     # The run's spend is litellm's price of each call: every model it may call
     # (the ones under test, the judges) is priced from the first source that
@@ -687,7 +835,7 @@ async def run_sweep(
 
     # Pre-resolve the global metric list so unknown identifiers fail fast,
     # before the first trial.
-    global_metrics = _instantiate_metrics(cfg.metrics, context="metrics")
+    global_metrics = await _metric_layout(cfg.metrics, context="metrics")
 
     # One `GridSearch` tuner per dataset — model is the only HP
     # axis, dataset is a fixed search context. Per-dataset `project_name`
@@ -700,267 +848,303 @@ async def run_sweep(
     # model's cells, then the next model's. Dataset-major would make a local
     # server reload every model for every dataset.
     prepared: list[dict] = []
-    for ds_name in dataset_names:
-        emit({"event": "dataset_start", "dataset": ds_name})
-        ds = datasets[ds_name]
-        gen_kwargs = cfg.generator_kwargs(ds_name)
-        agent_cfg = cfg.resolved_agent(ds_name)
-        kind = cfg.dataset_kind(ds_name)
-        # What each prediction holds: fails the run here, before any trial,
-        # when returned inputs would clash with the answer's field names.
-        block = {"model": gen_kwargs, "agent": agent_cfg}.get(kind)
-        if kind == "tools":
-            block = cfg.tools_kwargs(ds_name)
-        answer_layout(ds, kind, block)
-        # A rule-based reward compares the fields the output template renders.
-        target = template_keys(getattr(ds, "output_template", None))
-        reward = get_reward(_scope_to_answer(cfg.reward_spec(ds_name), target))
-        reward_direction = cfg.reward_direction(ds_name)
-        ds_metrics = _first_by_alias(
-            _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
-            global_metrics,
-        )
-        # `ds_metrics` (and its instances) is used only for the aliases /
-        # directions / objectives metadata below. It must NOT be reused as the
-        # per-model programs' metrics: operational metrics are stateful — each
-        # binds to its program's LanguageModel on compile, and bind_program
-        # OVERWRITES the previous binding — so a single instance shared across
-        # the per-model programs ends up bound to the LAST model only, and every
-        # other model's trial then reads that LM's counters and records zero ops
-        # (tokens/latency/cost). Each program gets its own freshly-instantiated
-        # set instead (below).
+    # Every program the sweep builds is closed by the end, however it ends: the tuner closes a cell's
+    # program when its trial ends, and this `finally` closes the rest (cells a cancellation or an error
+    # left unrun), with what they opened: an agent judge's sandbox, an A2A agent's client.
+    try:
+        for ds_name in dataset_names:
+            emit({"event": "dataset_start", "dataset": ds_name})
+            ds = datasets[ds_name]
+            gen_kwargs = cfg.generator_kwargs(ds_name)
+            agent_cfg = cfg.resolved_agent(ds_name)
+            kind = cfg.dataset_kind(ds_name)
+            # What each prediction holds: fails the run here, before any trial,
+            # when returned inputs would clash with the answer's field names.
+            block = {"model": gen_kwargs, "agent": agent_cfg}.get(kind)
+            if kind == "tools":
+                block = cfg.tools_kwargs(ds_name)
+            answer, beside = answer_layout(ds, kind, block)
+            # A model that reasons natively at a level keeps its trace in `thinking` whether or not the
+            # dataset asks for a chain of thought (`build_program`): it is left out of what the metrics
+            # compare and the rewards read, as a chain of thought is, so a judge sees what it always saw.
+            trace = kind == "model" and "thinking" not in answer + beside
+            if trace:
+                beside = [*beside, "thinking"]
+            # A rule-based reward compares the fields the output template renders.
+            target = template_keys(getattr(ds, "output_template", None))
+            reward_spec = _scope_to_answer(cfg.reward_spec(ds_name), target)
+            # Built per cell, as the metrics are: a program closes the reward it was compiled with (an agent
+            # judge's sandbox), so one shared by the dataset's cells would be closed with the first.
+            reward_spec = _leaving_out_trace(reward_spec) if trace else reward_spec
+            reward_direction = cfg.reward_direction(ds_name)
+            ds_metrics = _first_by_alias(
+                await _metric_layout(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace),
+                global_metrics,
+            )
+            # `ds_metrics` (and its instances) is used only for the aliases /
+            # directions / objectives metadata below. It must NOT be reused as the
+            # per-model programs' metrics: operational metrics are stateful — each
+            # binds to its program's LanguageModel on compile, and bind_program
+            # OVERWRITES the previous binding — so a single instance shared across
+            # the per-model programs ends up bound to the LAST model only, and every
+            # other model's trial then reads that LM's counters and records zero ops
+            # (tokens/latency/cost). Each program gets its own freshly-instantiated
+            # set instead (below).
 
-        # `programs` is filled *after* the tuner exists: on a resume the
-        # tuner's reloaded trials say which cells are already scored, and
-        # building a program is real work (an agent dataset opens every MCP
-        # server it declares). kt's HP-discovery call and every real trial
-        # then resolve `hypermodel(hp)` to a pre-built Program by lookup —
-        # no async acrobatics inside a sync callback.
-        programs: dict[str, synalinks.Program] = {}
-        # Why a cell's program could not be built (an agent's MCP servers gave
-        # no tools): raised in that cell's trial, so it fails alone.
-        broken: dict[str, Exception] = {}
+            # `programs` is filled *after* the tuner exists: on a resume the
+            # tuner's reloaded trials say which cells are already scored, and
+            # building a program is real work (an agent dataset opens every MCP
+            # server it declares). kt's HP-discovery call and every real trial
+            # then resolve `hypermodel(hp)` to a pre-built Program by lookup —
+            # no async acrobatics inside a sync callback.
+            programs: dict[str, synalinks.Program] = {}
+            # Why a cell's program could not be built (an agent's MCP servers gave
+            # no tools): raised in that cell's trial, so it fails alone.
+            broken: dict[str, Exception] = {}
 
-        def hypermodel(hp, programs=programs, broken=broken):
-            # kt's discovery probe calls this once at tuner construction, before
-            # any program exists, and discards the result; every real trial
-            # then resolves to a pre-built program.
-            model = hp.Choice("language_model", values=model_ids)
-            if model in broken:
-                raise broken[model]
-            return programs.get(model)
+            def hypermodel(hp, programs=programs, broken=broken):
+                # kt's discovery probe calls this once at tuner construction, before
+                # any program exists, and discards the result; every real trial
+                # then resolves to a pre-built program.
+                model = hp.Choice("language_model", values=model_ids)
+                if model in broken:
+                    raise broken[model]
+                return programs.get(model)
 
-        objectives = [synalinks.tuners.Objective("reward", direction=reward_direction)]
-        objective_axes = [("reward", reward_direction)]
-        for alias, _, direction, is_obj in ds_metrics:
-            if is_obj:
-                objectives.append(
-                    synalinks.tuners.Objective(alias, direction=direction)
+            objectives = [synalinks.tuners.Objective("reward", direction=reward_direction)]
+            objective_axes = [("reward", reward_direction)]
+            for alias, _, direction, is_obj in ds_metrics:
+                if is_obj:
+                    objectives.append(
+                        synalinks.tuners.Objective(alias, direction=direction)
+                    )
+                    objective_axes.append((alias, direction))
+
+            tuner = synalinks.tuners.GridSearch(
+                hypermodel,
+                objective=objectives if len(objectives) > 1 else objectives[0],
+                max_trials=len(model_ids),
+                directory=str(state_dir),
+                project_name=ds_name,
+                overwrite=no_cache,
+                # kt gives up after 3 failures in a row, raising out of the sweep,
+                # which would cost the whole matrix and every other dataset. A cell
+                # that failed is a result too (`SweepResults.read` records it,
+                # a resume runs it again), so the limit is never reached: the run
+                # reports every failure instead.
+                max_consecutive_failed_trials=sys.maxsize,
+            )
+            # `overwrite=no_cache` above wiped the project when the caller asked
+            # for a clean run; otherwise the tuner has just reloaded whatever the
+            # previous attempt left behind, and this decides what is left to do.
+            scored, retrying = _resume_grid(tuner.oracle)
+            pending = [m for m in model_ids if m not in scored]
+            if scored or retrying:
+                emit(
+                    {
+                        "event": "dataset_resumed",
+                        "dataset": ds_name,
+                        "scored": scored,
+                        "retrying": retrying,
+                    }
                 )
-                objective_axes.append((alias, direction))
 
-        tuner = synalinks.tuners.GridSearch(
-            hypermodel,
-            objective=objectives if len(objectives) > 1 else objectives[0],
-            max_trials=len(model_ids),
-            directory=str(state_dir),
-            project_name=ds_name,
-            overwrite=no_cache,
-            # kt gives up after 3 failures in a row, raising out of the sweep,
-            # which would cost the whole matrix and every other dataset. A cell
-            # that failed is a result too (`SweepResults.read` records it,
-            # a resume runs it again), so the limit is never reached: the run
-            # reports every failure instead.
-            max_consecutive_failed_trials=sys.maxsize,
-        )
-        # `overwrite=no_cache` above wiped the project when the caller asked
-        # for a clean run; otherwise the tuner has just reloaded whatever the
-        # previous attempt left behind, and this decides what is left to do.
-        scored, retrying = _resume_grid(tuner.oracle)
-        pending = [m for m in model_ids if m not in scored]
-        if scored or retrying:
+            async def build(
+                model_id, ds_name=ds_name, ds=ds, kind=kind, agent_cfg=agent_cfg, gen_kwargs=gen_kwargs,
+                reward_spec=reward_spec, target=target, beside=beside, trace=trace, programs=programs, broken=broken,
+            ):
+                """Build the cell's program, as the cell starts: one cell's program (and its judge's sandbox) is open at a time."""
+                # What this builds is its to close until a program holds it: a build that fails or is
+                # cancelled, or a metric an alias of the dataset's overrides, would otherwise leave an
+                # agent judge's sandbox open.
+                owned: list = []
+                try:
+                    # Fresh, per-model metric instances (see note above): each program's
+                    # operational metrics must bind to that program's own LanguageModel.
+                    # Registered as each is built, so a later one that fails still lets these be closed.
+                    ours = _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target, beside=beside, trace=trace, owned=owned)
+                    theirs = _instantiate_metrics(cfg.metrics, context="metrics", target=target, beside=beside, trace=trace, owned=owned)
+                    model_metrics = [m for _, m, _, _ in _first_by_alias(ours, theirs)]
+                    reward = get_reward(reward_spec)
+                    owned.append(reward)
+                    lm_kwargs = cfg.lm_kwargs(model_id)
+                    # The axis names the model (a registry entry); the program calls its id.
+                    calls = cfg.model_id(model_id)
+                    if kind == "a2a":
+                        # The axis names the agent itself; there is no model id to call.
+                        programs[model_id] = await build_a2a(
+                            model_id, ds, cfg.a2a_connection(model_id), reward,
+                            metrics=model_metrics or None,
+                        )
+                    elif kind == "harbor":
+                        # Each row asked of a Harbor agent in a sandbox; the environments' folders were copied beside the run's config.
+                        # The reward goes along, serialized into a generated task's default tests/ (it scores here, on the arena's side).
+                        spec = {**cfg.harbor_spec(ds_name), "dataset": ds_name, "reward": cfg.reward_spec(ds_name), "reward_name": cfg.datasets[ds_name].reward}
+                        if spec.get("tasks"):
+                            # Each task scored by the arena's reward system lists its rewards in tests/rewards.yaml: read and resolved once.
+                            from openarena.datasets.harbor_tasks_dataset import task_folders
+                            from openarena.programs.harbor_program import task_reward
+
+                            entry = _beside(cfg.dataset_entry(ds_name), Path(config_path).parent)
+                            spec["task_rewards"] = {
+                                folder.name: scoring
+                                for folder in task_folders(entry["path"], entry.get("tasks"))
+                                if (scoring := task_reward(folder, cfg._resolve)) is not None
+                            }
+                        programs[model_id] = await build_harbor(
+                            calls, ds, spec, reward,
+                            metrics=model_metrics or None,
+                            contexts=Path(config_path).parent / "environments",
+                            work_dir=Path(state_dir) / "harbor",
+                            lm_kwargs=lm_kwargs,
+                            model_name=model_id,
+                        )
+                    elif kind == "embedding":
+                        programs[model_id] = await build_embedding(
+                            calls, ds, cfg.embedding_kwargs(ds_name), reward,
+                            metrics=model_metrics or None, lm_kwargs=lm_kwargs,
+                        )
+                    elif kind == "tools":
+                        programs[model_id] = await build_tools(
+                            calls, ds, cfg.tools_kwargs(ds_name), reward,
+                            metrics=model_metrics or None, lm_kwargs=lm_kwargs,
+                        )
+                    elif agent_cfg is not None:
+                        # A server that is down fails this cell, not the run: the trial raises it.
+                        try:
+                            programs[model_id] = await build_agent(
+                                calls,
+                                ds,
+                                agent_cfg,
+                                reward,
+                                metrics=model_metrics or None,
+                                lm_kwargs=lm_kwargs,
+                            )
+                        except McpToolsUnavailable as e:
+                            broken[model_id] = e
+                            await _release(owned)
+                            return
+                    else:
+                        programs[model_id] = await build_program(
+                            calls,
+                            ds,
+                            gen_kwargs,
+                            reward,
+                            metrics=model_metrics or None,
+                            lm_kwargs=lm_kwargs,
+                        )
+                    if on_sample is not None and samples_per_cell > 0:
+                        _tee_samples(
+                            programs[model_id],
+                            lambda row, d=ds_name, m=model_id: on_sample(
+                                {**row, "dataset": d, "model": m}
+                            ),
+                            limit=samples_per_cell,
+                        )
+                except BaseException:
+                    await _release(owned)
+                    raise
+                # `compile` keeps the reward and clones each metric: the program holds the reward and the
+                # clones, so the metrics built here are closed now (one an alias overrode included). A
+                # clone that shares its original's wrapped callable keeps it open.
+                await _release(_not_held(owned, reward, programs.get(model_id)))
+
+            batches_total = _num_batches(ds)
             emit(
                 {
-                    "event": "dataset_resumed",
+                    "event": "dataset_ready",
                     "dataset": ds_name,
-                    "scored": scored,
-                    "retrying": retrying,
+                    "batches_total": batches_total,
                 }
             )
 
-        for model_id in pending:
-            # Fresh, per-model metric instances (see note above): each program's
-            # operational metrics must bind to that program's own LanguageModel.
-            model_metrics = [
-                m
-                for _, m, _, _ in _first_by_alias(
-                    _instantiate_metrics(cfg.dataset_metrics(ds_name), context=f"datasets.{ds_name}.metrics", target=target),
-                    _instantiate_metrics(cfg.metrics, context="metrics", target=target),
-                )
-            ]
-            lm_kwargs = cfg.lm_kwargs(model_id)
-            # The axis names the model (a registry entry); the program calls its id.
-            calls = cfg.model_id(model_id)
-            if kind == "a2a":
-                # The axis names the agent itself; there is no model id to call.
-                programs[model_id] = await build_a2a(
-                    model_id, ds, cfg.a2a_connection(model_id), reward,
-                    metrics=model_metrics or None,
-                )
-            elif kind == "harbor":
-                # Each row asked of a Harbor agent in a sandbox; the environments' folders were copied beside the run's config.
-                # The reward goes along, serialized into a generated task's default tests/ (it scores here, on the arena's side).
-                spec = {**cfg.harbor_spec(ds_name), "dataset": ds_name, "reward": cfg.reward_spec(ds_name), "reward_name": cfg.datasets[ds_name].reward}
-                if spec.get("tasks"):
-                    # Each task scored by the arena's reward system lists its rewards in tests/rewards.yaml: read and resolved once.
-                    from openarena.datasets.harbor_tasks_dataset import task_folders
-                    from openarena.programs.harbor_program import task_reward
-
-                    entry = _beside(cfg.dataset_entry(ds_name), Path(config_path).parent)
-                    spec["task_rewards"] = {
-                        folder.name: scoring
-                        for folder in task_folders(entry["path"], entry.get("tasks"))
-                        if (scoring := task_reward(folder, cfg._resolve)) is not None
-                    }
-                programs[model_id] = await build_harbor(
-                    calls, ds, spec, reward,
-                    metrics=model_metrics or None,
-                    contexts=Path(config_path).parent / "environments",
-                    work_dir=Path(state_dir) / "harbor",
-                    lm_kwargs=lm_kwargs,
-                    model_name=model_id,
-                )
-            elif kind == "embedding":
-                programs[model_id] = await build_embedding(
-                    calls, ds, cfg.embedding_kwargs(ds_name), reward,
-                    metrics=model_metrics or None, lm_kwargs=lm_kwargs,
-                )
-            elif kind == "tools":
-                programs[model_id] = await build_tools(
-                    calls, ds, cfg.tools_kwargs(ds_name), reward,
-                    metrics=model_metrics or None, lm_kwargs=lm_kwargs,
-                )
-            elif agent_cfg is not None:
-                # A server that is down fails this cell, not the run: the trial raises it.
-                try:
-                    programs[model_id] = await build_agent(
-                        calls,
-                        ds,
-                        agent_cfg,
-                        reward,
-                        metrics=model_metrics or None,
-                        lm_kwargs=lm_kwargs,
-                    )
-                except McpToolsUnavailable as e:
-                    broken[model_id] = e
-                    continue
-            else:
-                programs[model_id] = await build_program(
-                    calls,
-                    ds,
-                    gen_kwargs,
-                    reward,
-                    metrics=model_metrics or None,
-                    lm_kwargs=lm_kwargs,
-                )
-            if on_sample is not None and samples_per_cell > 0:
-                _tee_samples(
-                    programs[model_id],
-                    lambda row, d=ds_name, m=model_id: on_sample(
-                        {**row, "dataset": d, "model": m}
-                    ),
-                    limit=samples_per_cell,
-                )
-
-        batches_total = _num_batches(ds)
-        emit(
-            {
-                "event": "dataset_ready",
-                "dataset": ds_name,
-                "batches_total": batches_total,
-            }
-        )
-
-        prepared.append(
-            {
-                "name": ds_name,
-                "ds": ds,
-                "tuner": tuner,
-                "pending": pending,
-                "retrying": retrying,
-                "ds_metrics": ds_metrics,
-                "reward_direction": reward_direction,
-                "objectives": objective_axes,
-                "programs": programs,
-            }
-        )
-
-    # One trial per pending cell, issued up front (`_hand_out`), then the
-    # cells in turn, model-major; a dataset is viewed per cell so each cell
-    # gets its own batch size.
-    active = [item for item in prepared if item["pending"]]
-    work: list[dict] = []
-    for item in active:
-        tuner = item["tuner"]
-        tuner.on_search_begin()
-        _hand_out(
-            tuner.oracle, [m for m in item["pending"] if m not in item["retrying"]]
-        )
-        for n in range(len(item["pending"])):
-            trial = tuner.oracle.create_trial(f"{tuner.tuner_id}/{n}")
-            if trial.status != trial_module.TrialStatus.RUNNING:
-                break
-            work.append(
+            prepared.append(
                 {
-                    "item": item,
-                    "trial": trial,
-                    "model": trial.hyperparameters.values["language_model"],
+                    "name": ds_name,
+                    "ds": ds,
+                    "tuner": tuner,
+                    "pending": pending,
+                    "retrying": retrying,
+                    "ds_metrics": ds_metrics,
+                    "reward_direction": reward_direction,
+                    "objectives": objective_axes,
+                    "programs": programs,
+                    "broken": broken,
+                    "build": build,
                 }
             )
-    work.sort(key=lambda c: (model_ids.index(c["model"]), prepared.index(c["item"])))
 
-    async def run_cell(cell: dict) -> None:
-        item, model_id = cell["item"], cell["model"]
-        view = copy.copy(item["ds"])
-        # The run's `batch_size` (else its evaluation's) overrides the dataset's own; with neither, one row.
-        view.batch_size = batch_size or cfg.batch_size or view.batch_size or 1
-        # The trace destinations' hook, on the program and its judges: idle outside `use_tracing`.
-        callbacks = [OtelCallback(), _ProgressCallback(emit, item["name"], model_id, view)]
-        # A cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
-        # A cell whose program could not be built has no program: its trial raises why.
-        if (program := item["programs"].get(model_id)) is not None:
-            callbacks.insert(0, no_answer_guard(program) or _NoAnswerGuard(program))
-        if mlflow_experiment and synalinks.is_observability_enabled():
-            callbacks.append(
-                _RunMonitor(
-                    mlflow_experiment,
-                    mlflow_tracking_uri,
-                    item["name"],
-                    model_id,
-                    mlflow_tags or {},
-                    on_event=emit,
-                )
+        # One trial per pending cell, issued up front (`_hand_out`), then the
+        # cells in turn, model-major; a dataset is viewed per cell so each cell
+        # gets its own batch size.
+        active = [item for item in prepared if item["pending"]]
+        work: list[dict] = []
+        for item in active:
+            tuner = item["tuner"]
+            tuner.on_search_begin()
+            _hand_out(
+                tuner.oracle, [m for m in item["pending"] if m not in item["retrying"]]
             )
-        emit(
-            {
-                "event": "cell_start",
-                "dataset": item["name"],
-                "model": model_id,
-                "batches_total": _num_batches(view),
-            }
-        )
-        await _run_cell(
-            item["tuner"], cell["trial"], x=view, verbose=verbose, callbacks=callbacks
-        )
+            for n in range(len(item["pending"])):
+                trial = tuner.oracle.create_trial(f"{tuner.tuner_id}/{n}")
+                if trial.status != trial_module.TrialStatus.RUNNING:
+                    break
+                work.append(
+                    {
+                        "item": item,
+                        "trial": trial,
+                        "model": trial.hyperparameters.values["language_model"],
+                    }
+                )
+        work.sort(key=lambda c: (model_ids.index(c["model"]), prepared.index(c["item"])))
 
-    for cell in work:
-        await run_cell(cell)
-    for item in active:
-        item["tuner"].on_search_end()
-    # An A2A program keeps its agent's client for the grid; close them now that every cell has run.
-    for item in prepared:
-        for program in item["programs"].values():
-            await close_program(program)
+        async def run_cell(cell: dict) -> None:
+            item, model_id = cell["item"], cell["model"]
+            view = copy.copy(item["ds"])
+            # The run's `batch_size` (else its evaluation's) overrides the dataset's own; with neither, one row.
+            view.batch_size = batch_size or cfg.batch_size or view.batch_size or 1
+            # The trace destinations' hook, on the program and its judges: idle outside `use_tracing`.
+            callbacks = [OtelCallback(), _ProgressCallback(emit, item["name"], model_id, view)]
+            # Built as the cell starts, not with the grid: a program and what it opens live for one cell.
+            if model_id not in item["programs"] and model_id not in item["broken"]:
+                await item["build"](model_id)
+            # A cell none of whose rows got an answer fails, ahead of the progress callback's `cell_end`.
+            # A cell whose program could not be built has no program: its trial raises why.
+            if (program := item["programs"].get(model_id)) is not None:
+                callbacks.insert(0, no_answer_guard(program) or _NoAnswerGuard(program))
+            if mlflow_experiment and synalinks.is_observability_enabled():
+                callbacks.append(
+                    _RunMonitor(
+                        mlflow_experiment,
+                        mlflow_tracking_uri,
+                        item["name"],
+                        model_id,
+                        mlflow_tags or {},
+                        on_event=emit,
+                    )
+                )
+            emit(
+                {
+                    "event": "cell_start",
+                    "dataset": item["name"],
+                    "model": model_id,
+                    "batches_total": _num_batches(view),
+                }
+            )
+            await _run_cell(
+                item["tuner"], cell["trial"], x=view, verbose=verbose, callbacks=callbacks
+            )
+
+        for cell in work:
+            await run_cell(cell)
+            # The tuner closed the cell's program when its trial ended; let it go.
+            cell["item"]["programs"].pop(cell["model"], None)
+        for item in active:
+            item["tuner"].on_search_end()
+    finally:
+        for item in prepared:
+            for program in item["programs"].values():
+                await program.close()
 
     for item in prepared:
         ds_name = item["name"]

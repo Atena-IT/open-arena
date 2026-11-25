@@ -33,7 +33,7 @@ datasets:
   gsm8k-20:                            # the key evaluations and leaderboards use
     type: huggingface                  # the provider
     description: GSM8K test split, 20 rows.
-    tags: [math]                       # for browsing; the run ignores them
+    tags: [math]                       # for browsing and leaderboard tag scopes; the run ignores them
     config:                            # the provider's settings, the templates, the schemas
       path: openai/gsm8k
       name: main
@@ -64,7 +64,7 @@ datasets:
 | `type` | a provider ([below](#providers)) | required | where rows are read from |
 | `config` | the provider's settings, the templates, the schemas | `{}` | how rows are read and rendered |
 | `description` | text | none | shown when browsing; not read by the run |
-| `tags` | list of labels | `[]` | lower-cased and de-duplicated; for browsing only |
+| `tags` | list of labels | `[]` | lower-cased and de-duplicated; for browsing, and read by a leaderboard's [`dataset_tags`](leaderboards.md#dataset_tags-datasets-by-their-tags) |
 | `generator`, `agent`, `a2a`, `embedding`, `tools`, `harbor` | at most one block | a generator | what answers each row ([below](#what-answers-each-row)) |
 | `reward` | a key of `rewards.yaml` | none | the dataset's score; an evaluation refuses a dataset without one |
 | `metrics` | list | `[]` | extra columns beside the reward ([below](#extra-metrics)) |
@@ -1156,6 +1156,15 @@ datasets:
       - answer_accuracy
       - {class: lm_as_judge, alias: judged, language_model: gpt-4o-mini}
 ```
+
+A plain metric that takes masks (`accuracy`, `f1_score`, ...) scores the
+answer alone, as a rule-based reward does: what the program returns beside it
+(`thinking`, a chain of thought's or a reasoning model's trace, an agent's
+`messages`, returned inputs) is
+left out. Write an `in_mask` or an `out_mask` on the entry to choose the fields
+yourself, and the metric is left as written. A metric that still returns one
+score per field is averaged, and one that returns no number is left out, each
+with a warning in the run log; the cell keeps its other metrics either way.
 
 Cost, tokens and latency reach `result.json` only when listed here or on the
 evaluation, by their measurement names. Their direction is set for you: a

@@ -272,8 +272,8 @@ editing the file.
 
     | variable | what it does | default |
     |---|---|---|
-    | `ARENA_HARBOR_SANDBOX` | where trials run: a Harbor environment type (`e2b`, `docker`, `daytona`, `modal`, ...) | `e2b` |
-    | `ARENA_HARBOR_SANDBOX_OPTIONS` | that provider's own settings, a JSON object Harbor hands its environment (`{"namespace": "sandboxes"}` for the Kubernetes one, `ack`) | none |
+    | `ARENA_HARBOR_SANDBOX` | where trials run: a Harbor environment type (`e2b`, `docker`, `daytona`, `modal`, ...); an environment's own `sandbox:` overrides it | `e2b` |
+    | `ARENA_HARBOR_SANDBOX_OPTIONS` | that provider's own settings, a JSON object Harbor hands its environment (`{"namespace": "sandboxes"}` for the Kubernetes one, `ack`); not given to another provider an environment's `sandbox:` names | none |
     | `E2B_API_KEY` | E2B's key. Without it, the `e2b` setting falls back to the local Docker | none |
     | `ARENA_HARBOR_LOCAL_CPUS`, `ARENA_HARBOR_LOCAL_MEMORY_MB` | CPUs and memory a local Docker task gets when its environment sets none | 2, 2048 |
     | `ARENA_HARBOR_LOCAL_TRIALS` | trials at once on the local Docker | 1 |
@@ -310,6 +310,7 @@ editing the file.
     | `LANGSMITH_AGENT_ID`, `LANGSMITH_AGENT_ENVIRONMENT` | an agent-based LangSmith workspace's agent and environment (`local`, `development`, `staging` or `production`), sent as headers; both or neither. Its traces go under that agent, not a project per run: the run is the `run` metadata (`langsmith.metadata.run`) and a thread of its own (`thread_id`, slashes and other URL-unsafe characters as colons), one per run in the agent's Threads tab |
     | `DD_API_KEY`, `DD_SITE` | Datadog's API key, and its site (`datadoghq.com` by default) |
     | `ARENA_TRACE_SERVICE`, `ARENA_TRACE_CONTENT` | the service name the destinations see (`open-arena`); `0` keeps prompts and answers out |
+    | `ARENA_TELEMETRY`, `DO_NOT_TRACK` | `ARENA_TELEMETRY=0` or `DO_NOT_TRACK=1` turns off the anonymous usage event each run sends (a CI runner sends none unless `ARENA_TELEMETRY=1`); `ARENA_TELEMETRY=print` prints it on stderr instead ([Telemetry](https://github.com/Atena-IT/open-arena#telemetry)) |
 
     Tracing is optional; nothing in the workspace depends on it. The arena
     app traces its runs when the server answers, and an unreachable server

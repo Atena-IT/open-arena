@@ -90,6 +90,22 @@ def test_a_models_params_defaults_and_an_a2a_connection():
     assert _config(evaluation={"language_models": ["m"], "datasets": ["qa"], "seed": 7, "batch_size": 4}).batch_size == 4
 
 
+def test_what_a_chat_model_can_do_is_declared_to_the_framework_never_found_out():
+    models = {
+        **_raw()["models"],
+        "thinker": {"model": "openai/o4-mini", "params": {"supports_reasoning": True}, "modalities": ["text", "image", "audio"]},
+        "eyes": {"model": "openai/gpt-4o", "modalities": ["image", "text"]},
+        "clip": {"model": "openai/clip", "type": "embedding", "modalities": ["image", "text"]},
+    }
+    cfg = _config(models=models)
+    assert cfg.lm_kwargs("thinker") == {"supports_reasoning": True, "supports_vision": True, "supports_audio": True}
+    assert cfg.lm_kwargs("eyes") == {"supports_vision": True}
+    assert cfg.lm_kwargs("m") == {} and cfg.lm_kwargs("clip") == {}  # a text model and an embedding model are told nothing
+    for value in ("yes", 1):
+        _refused("supports_reasoning: true or false", models={"bad": {"model": "openai/o4-mini", "params": {"supports_reasoning": value}}})
+    _refused("Embedding models take dimensions, not supports_reasoning", models={"vec": {"model": "openai/text-embedding-3-small", "type": "embedding", "params": {"supports_reasoning": True}}})
+
+
 # -- what is refused on load -------------------------------------------------------------
 
 

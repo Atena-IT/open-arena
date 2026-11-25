@@ -19,13 +19,15 @@ from one of two places:
   dataset's reward, serialized beside it (`tests/rewards.yaml`), scores
   it on the arena's side, Mirage sandbox and all, with no second sandbox.
 
-Harbor runs one trial of each task: it starts the sandbox (E2B unless
-`ARENA_HARBOR_SANDBOX` says otherwise) and lets the block's agent work with
+Harbor runs one trial of each task: it starts the sandbox (the
+environment's `sandbox:`, else `ARENA_HARBOR_SANDBOX`, else E2B) and lets the block's agent work with
 the model the sweep's axis names. The prediction is Harbor's own ATIF
 trajectory, as a framework data model (`HarborTrajectory`), with the
 `answer` (what the agent wrote to `answer_file`, else its last message) and
 the verifier's `rewards`. The arena's rewards read `answer` unless a reward
-names masks of its own.
+names masks of its own. Success is read from the trajectory, not from how the
+agent exited (pi exits 0 after a model error): a run whose last model call
+failed and that left no answer predicts nothing.
 
 The model entry's params go to the agent where its options take them
 (`agent_kwargs`): `temperature`, `reasoning_effort`, and, for an agent that
@@ -64,7 +66,7 @@ from pydantic import Field
 from synalinks.src.backend import JsonDataModel, SymbolicDataModel
 from synalinks.src.modules.module import Module
 
-from openarena.config.entries import EnvironmentSpec
+from openarena.config.entries import EnvironmentSpec, sandbox_types
 from openarena.harbor import (
     LOCAL_SANDBOX,
     arm_task,
@@ -74,6 +76,8 @@ from openarena.harbor import (
     find_trajectory,
     local_limits,
     local_slot,
+    option_names,
+    sandbox_not_installed,
     sandbox_options,
     trajectory_messages,
 )
@@ -101,27 +105,30 @@ TRIALS_LOG = "trials.jsonl"
 MAX_REASON = 400
 # How much of the question a trial's line keeps.
 MAX_QUESTION = 2000
-# The arena's "no thinking" is `disable`; Harbor's agents call it `none`.
-_EFFORTS = {"disable": "none"}
+# The arena's "no thinking" is `disable`; Harbor's agents call it `none`, pi `off`.
+_NO_THINKING = {"pi": "off"}
+# How much of the end of an agent's own log is read for what went wrong: the log of a run with images is hundreds of MB.
+LOG_TAIL = 64 * 1024
 
 log = logging.getLogger("uvicorn.error")
 
 
 
-def configured_sandbox() -> str:
-    """The provider asked for: `ARENA_HARBOR_SANDBOX` (a Harbor environment type: e2b, docker, daytona, modal, ...), E2B by default.
+def configured_sandbox(name: str | None = None) -> str:
+    """The provider asked for: `name` (an environment's `sandbox:`), else `ARENA_HARBOR_SANDBOX`, else E2B.
 
-    A name Harbor does not know raises `ValueError` with the ones it does:
-    every trial would fail on it, and each failed row scores 0, so a typo
-    would pass for every model failing every task.
+    A Harbor environment type: e2b, docker, daytona, modal, ... A name Harbor
+    does not know raises `ValueError` with the ones it does: every trial
+    would fail on it, and each failed row scores 0, so a typo would pass for
+    every model failing every task.
     """
-    from harbor.models.environment_type import EnvironmentType
-
-    name = (os.environ.get("ARENA_HARBOR_SANDBOX") or DEFAULT_SANDBOX).strip().lower()
-    known = [t.value for t in EnvironmentType]
-    if name not in known:
-        raise ValueError(f"Harbor has no sandbox {name!r}; set ARENA_HARBOR_SANDBOX to one of: {', '.join(known)}")
-    return name
+    given = bool(name and name.strip())
+    chosen = (name if given else os.environ.get("ARENA_HARBOR_SANDBOX") or DEFAULT_SANDBOX).strip().lower()
+    known = sandbox_types()
+    if chosen not in known:
+        where = "use" if given else "set ARENA_HARBOR_SANDBOX to"
+        raise ValueError(f"Harbor has no sandbox {chosen!r}; {where} one of: {', '.join(known)}")
+    return chosen
 
 
 def ready(name: str) -> bool:
@@ -136,44 +143,54 @@ def ready(name: str) -> bool:
     return True
 
 
-def sandbox() -> str:
-    """Where trials run: the configured provider, or the local Docker when that one lacks its credentials.
+def sandbox(name: str | None = None) -> str:
+    """Where trials on provider `name` (the configured one when None) run: that provider, or the local Docker when it is not installed or lacks its credentials.
 
-    A cloud provider without its key (E2B with no `E2B_API_KEY`) is no reason
-    to run nothing: the tasks run on this machine's Docker instead, which
-    needs none. `sandbox_issue` says when neither can start.
+    A cloud provider without its SDK or its key (E2B with no `E2B_API_KEY`)
+    is no reason to run nothing: the tasks run on this machine's Docker
+    instead, which needs neither. `sandbox_issue` says when neither can start.
     """
-    name = configured_sandbox()
-    if name != LOCAL_SANDBOX and not ready(name):
+    name = configured_sandbox(name)
+    if name != LOCAL_SANDBOX and (sandbox_not_installed(name) or not ready(name)):
         return LOCAL_SANDBOX
     return name
 
 
-def sandbox_note() -> str | None:
-    """One sentence when the tasks do not run where configured (the provider's key is missing), else None."""
-    name = configured_sandbox()
-    used = sandbox()
-    return f"{name} has no credentials set, so tasks run on the local Docker instead" if used != name else None
+def sandbox_note(name: str | None = None) -> str | None:
+    """One sentence when tasks on provider `name` do not run there (its SDK or its key is missing), else None."""
+    name = configured_sandbox(name)
+    if sandbox(name) == name:
+        return None
+    why = sandbox_not_installed(name) or f"{name} has no credentials set"
+    return f"{why}, so tasks run on the local Docker instead"
 
 
-def sandbox_issue() -> str | None:
-    """Why no task can start at all, as one sentence, or None: an unknown provider or its options, or none with credentials and no Docker.
+def sandbox_issue(name: str | None = None) -> str | None:
+    """Why no task on provider `name` (the configured one when None) can start, as one sentence, or None.
 
-    The options are checked whichever provider ends up running: a malformed
+    An unknown provider or malformed options, or a provider without its SDK
+    or credentials and no Docker to fall back to. The options are checked
+    whichever provider ends up running: a malformed
     `ARENA_HARBOR_SANDBOX_OPTIONS` is a mistake to fix, not one the Docker
     fallback (which gets none) should hide.
     """
     try:
-        name = configured_sandbox()
+        name = configured_sandbox(name)
         sandbox_options()
     except ValueError as e:
         return str(e)
-    used = sandbox()
+    used = sandbox(name)
     if ready(used):
         return None
     if used != name:
-        return f"{name} has no credentials set, and the local Docker it falls back to is not available to the backend either"
+        why = sandbox_not_installed(name) or f"{name} has no credentials set"
+        return f"{why}, and the local Docker it falls back to is not available to the backend either"
     return f"the {name} sandbox provider cannot start: Harbor's pre-flight check refused it"
+
+
+def spec_sandbox(spec: dict[str, Any]) -> str | None:
+    """The provider a Harbor run's environment names (`sandbox:`), or None: the configured one, as for `harbor_tasks`, which has no environment."""
+    return (spec.get("environment_entry") or {}).get("sandbox") or None
 
 
 def docker_is_snap() -> bool:
@@ -182,8 +199,8 @@ def docker_is_snap() -> bool:
     return bool(found) and (found.startswith("/snap/") or os.path.realpath(found).startswith("/snap/") or os.path.realpath(found).endswith("/usr/bin/snap"))
 
 
-def work_root(default: Path) -> Path:
-    """Where Harbor's task folders and trials go: `ARENA_HARBOR_WORKDIR`, else `default`, unless a snap Docker cannot reach it.
+def work_root(default: Path, name: str | None = None) -> Path:
+    """Where Harbor's task folders and trials go: `ARENA_HARBOR_WORKDIR`, else `default`, unless a snap Docker (trials on provider `name`) cannot reach it.
 
     A snap Docker cannot read the run's state (under a hidden `.arena`) nor
     Harbor's temporary files in /tmp, so its tasks, trials and temporary
@@ -192,7 +209,7 @@ def work_root(default: Path) -> Path:
     """
     if os.environ.get("ARENA_HARBOR_WORKDIR", "").strip():
         root = Path(os.environ["ARENA_HARBOR_WORKDIR"].strip()).expanduser()
-    elif sandbox() == LOCAL_SANDBOX and docker_is_snap() and any(part.startswith(".") for part in Path(default).resolve().parts):
+    elif sandbox(name) == LOCAL_SANDBOX and docker_is_snap() and any(part.startswith(".") for part in Path(default).resolve().parts):
         root = Path.home() / "arena-harbor"
     else:
         return Path(default)
@@ -264,7 +281,7 @@ def write_task(folder: Path, row: dict[str, Any], spec: dict[str, Any], contexts
     environment = EnvironmentSpec.model_validate(
         {k: v for k, v in spec["environment_entry"].items() if k in EnvironmentSpec.model_fields}
     )
-    (folder / "task.toml").write_text(task_toml(spec, sandbox()))
+    (folder / "task.toml").write_text(task_toml(spec, sandbox(spec_sandbox(spec))))
     (folder / "instruction.md").write_text(told + "\n")
     context = folder / "environment"
     source = contexts / spec["environment"] / "environment" if contexts else None
@@ -361,6 +378,48 @@ def failure(result) -> str | None:
     return f"{info.exception_type}" + (f": {said}" if said else "")
 
 
+def last_output(logs: Path) -> str | None:
+    """What the agent last said went wrong in its own output (`<agent>.txt` in its logs), as one line, or None.
+
+    An event's `errorMessage` (pi's JSON events), else the last line that is
+    not JSON (what the agent wrote to stderr).
+    """
+    for path in sorted(logs.glob("*.txt")) if logs.is_dir() else []:
+        try:
+            with path.open("rb") as f:
+                start = max(f.seek(0, os.SEEK_END) - LOG_TAIL, 0)
+                f.seek(start)
+                lines = f.read().decode(errors="replace").splitlines()[1 if start else 0 :]  # the first may be cut
+        except OSError:  # a log that cannot be read says nothing; the row's outcome does not hang on it
+            continue
+        for line in reversed(lines):
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except ValueError:
+                said = " ".join(line.split())
+            else:
+                message = event.get("message") if isinstance(event, dict) else None
+                said = str(message.get("errorMessage") or "") if isinstance(message, dict) else ""
+            if said:
+                return said if len(said) <= MAX_REASON else said[: MAX_REASON - 1] + "…"
+    return None
+
+
+def run_error(trajectory: dict[str, Any], logs: Path) -> str | None:
+    """Why the agent's run ended on an error its exit code may hide (pi's exits 0 after one), as one line, or None.
+
+    Read from the trajectory: its last agent step stopped on an error (pi
+    records a failed model call as such a step, after its retries).
+    """
+    steps = [s for s in trajectory.get("steps") or [] if s.get("source") == "agent" and not s.get("is_copied_context")]
+    if not steps or (steps[-1].get("extra") or {}).get("stop_reason") != "error":
+        return None
+    said = last_output(logs)
+    return "the agent's last model call failed" + (f": {said}" if said else "")
+
+
 def verifier_rewards(result) -> dict[str, float] | None:
     """What the trial's verifier wrote, `{name: score}`, or None when no verifier scored it."""
     verified = getattr(result, "verifier_result", None)
@@ -368,18 +427,21 @@ def verifier_rewards(result) -> dict[str, float] | None:
     return {str(k): float(v) for k, v in rewards.items()} if rewards else None
 
 
-def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[str, Any]:
+def prediction(trial_dir: Path, result, answer_file: str | None = None, verified: bool = False) -> dict[str, Any]:
     """What the agent did: its ATIF trajectory from the downloaded logs, as a `HarborTrajectory`; `ValueError` saying why when there is none.
 
     With an `answer_file`, the answer is what the agent wrote there (the
     verifier's collected copy, else the artifact; empty when it wrote
-    nothing); else its last message. `rewards` are the verifier's.
+    nothing); else its last message. `rewards` are the verifier's. A run that
+    ended on a model error with no answer did not answer (`ValueError`),
+    unless the task is `verified`: its own tests score what the agent did.
     """
     try:
         raw = find_trajectory(trial_dir / "agent")
         messages = trajectory_messages(raw)
     except (OSError, ValueError) as e:
-        said = failure(result)
+        printed = last_output(trial_dir / "agent")
+        said = failure(result) or (f"the agent's output ends: {printed}" if printed else None)
         raise ValueError("the Harbor trial left no trajectory" + (f": {said}" if said else f" ({e})")) from None
     collected = trial_dir / "verifier" / COLLECTED_ANSWER
     if collected.is_file():
@@ -389,6 +451,9 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None) -> dict[
         answer = written.read_text(errors="replace").strip() if written.is_file() else ""
     else:
         answer = final_answer(messages)
+    # A run that ended on an error and left no answer did not answer: the row fails, and says why.
+    if not answer and not verified and (stopped := run_error(raw, trial_dir / "agent")):
+        raise ValueError(stopped)
     try:
         trajectory = HarborTrajectory.model_validate({**raw, "answer": answer, "rewards": verifier_rewards(result)})
     except Exception as e:  # noqa: BLE001 - pydantic's ValidationError: a trajectory Harbor's own schema refuses
@@ -401,11 +466,18 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     from harbor.agents.factory import AgentFactory
     from harbor.models.agent.name import AgentName
 
-    params = {k: _EFFORTS.get(v, v) if k == "reasoning_effort" else v for k, v in (params or {}).items() if v is not None}
+    from openarena.config.model_types import CAPABILITY_FLAGS
+
+    # What the framework is told about the model is not a call option: the agent calls the model itself.
+    params = {
+        k: _NO_THINKING.get(agent, "none") if k == "reasoning_effort" and v == "disable" else v
+        for k, v in (params or {}).items()
+        if v is not None and k not in CAPABILITY_FLAGS
+    }
     if not params:
         return {}
     options = AgentFactory.get_agent_class(AgentName(agent)).options_model
-    fields = set(options.model_fields) if options else set()
+    fields = option_names(options)
     kwargs: dict[str, Any] = {}
     for key, value in params.items():
         if key in fields:
@@ -426,12 +498,18 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     return kwargs
 
 
-async def run_trial(task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None, kwargs: dict[str, Any] | None = None):
-    """One Harbor trial of `task`, named `name` under `trials`, its verifier running the task's `tests/`; its `TrialResult`."""
+async def run_trial(
+    task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
+    kwargs: dict[str, Any] | None = None, provider: str | None = None,
+):
+    """One Harbor trial of `task`, named `name` under `trials`, on sandbox `provider` (the configured one when None); its `TrialResult`.
+
+    Its verifier runs the task's `tests/`.
+    """
     from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
-    provider = sandbox()
+    provider = sandbox(provider)
     config = TrialConfig(
         task=TaskConfig(path=task),
         trial_name=name,
@@ -538,7 +616,7 @@ class HarborTask(Module):
             return None
         work = Path(self.work_dir)
         # Tasks and trials where the sandbox can reach them; the trials' log stays in the run's state.
-        space = work_root(work)
+        space = work_root(work, spec_sandbox(self.spec))
         row = inputs.get_json()
         # A task folder's row names it: its name says which task in the trial's name too.
         label = row.get("task") if self.spec.get("tasks") else self.spec.get("dataset")
@@ -562,10 +640,11 @@ class HarborTask(Module):
             else:
                 write_task(task, row, self.spec, Path(self.contexts) if self.contexts else None)
             result = await run_trial(
-                task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs
+                task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs,
+                spec_sandbox(self.spec),
             )
             _book(self.language_model, result, space / "trials" / name)
-            predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"))
+            predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"), bool(self.spec.get("tasks")))
             # A task scored by the arena's reward system: its tests collected the answer, its reward scores it here.
             scoring = (self.spec.get("task_rewards") or {}).get(str(row.get("task"))) if self.spec.get("tasks") else None
             if scoring is not None:
@@ -584,7 +663,7 @@ class HarborTask(Module):
             shutil.rmtree(task, ignore_errors=True)
         self.rows_answered += 1
         # A trial the agent did not finish (its time ran out) still answered: what it did is scored, and the line says why it stopped.
-        said = failure(result)
+        said = "; ".join(filter(None, [failure(result), run_error(predicted, space / "trials" / name / "agent")]))
         if self.spec.get("answer_file") and not predicted.get("answer"):
             said = "; ".join(filter(None, [said, f"the agent wrote nothing to {self.spec['answer_file']}"]))
         self._record({
@@ -631,7 +710,7 @@ def no_answer_guard(program) -> NoAnswerGuard | None:
 
 async def build_harbor(model_id: str, dataset, spec: dict, reward, metrics=None, contexts=None, work_dir="harbor", lm_kwargs=None, model_name=None):
     """Build (and compile) a program that asks each row of a Harbor agent driven by `model_id` with its entry's `lm_kwargs`."""
-    sandbox()  # an unknown sandbox fails the cell, not each of its rows
+    sandbox(spec_sandbox(spec))  # an unknown sandbox fails the cell, not each of its rows
     sandbox_options()  # and so do malformed options, whichever provider the rows run on
     inputs = synalinks.Input(
         schema=dataset.input_schema,

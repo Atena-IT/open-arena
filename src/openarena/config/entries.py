@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 
 from openarena.config.errors import Invalid
 from openarena.config.model_types import MODEL_TYPES, Modality, ModelKind, clean_modalities
-from openarena.config.tags import Tags
+from openarena.config.tags import TagFilter, Tags
 
 NAME_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_.-]*$"
 # A registry key: what other entries name this one by.
@@ -61,6 +61,13 @@ def _blank_is_none(value: str | None) -> str | None:
 
 def _clean_args(args: list[str]) -> list[str]:
     return [a for a in (x.strip() for x in args) if a]
+
+
+def sandbox_types() -> list[str]:
+    """The sandbox providers Harbor knows (its `EnvironmentType`s: docker, e2b, daytona, modal, ...), read off Harbor when asked."""
+    from harbor.models.environment_type import EnvironmentType
+
+    return [t.value for t in EnvironmentType]
 
 
 def _clean_mapping(mapping: dict[str, str], what: str) -> dict[str, str]:
@@ -167,7 +174,7 @@ class AgentBlock(BaseModel):
 # Harbor's agents a model under test can drive: those that leave an ATIF trajectory, which is what the dataset's reward scores.
 HARBOR_AGENTS = (
     "terminus-2", "claude-code", "codex", "gemini-cli", "goose", "opencode", "openhands",
-    "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli",
+    "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli", "hermes", "pi",
 )
 
 
@@ -691,7 +698,8 @@ class EnvironmentSpec(BaseModel):
 
     Either a prebuilt `docker_image` or a `dockerfile` to build, never both.
     `mcp_servers` are keys of the MCP servers registry, written into the
-    task as `[[environment.mcp_servers]]`.
+    task as `[[environment.mcp_servers]]`. `sandbox` is the Harbor provider
+    its tasks run on, the process-wide `ARENA_HARBOR_SANDBOX` when unset.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -712,11 +720,27 @@ class EnvironmentSpec(BaseModel):
     healthcheck: HealthcheckSpec | None = None
     mcp_servers: list[Name] = Field(default_factory=list, description="MCP servers the agent is given, by their key in the MCP servers registry.")
     clock: ClockSpec | None = Field(default=None, description="A virtual clock every process in the sandbox reads; none keeps real time.")
+    sandbox: str | None = Field(
+        default=None,
+        description="The Harbor sandbox provider its tasks run on (`docker`, `e2b`, `daytona`, `modal`, ...); none keeps `ARENA_HARBOR_SANDBOX`'s, E2B by default.",
+    )
 
     @field_validator("docker_image", "dockerfile", "workdir")
     @classmethod
     def _blank(cls, value: str | None) -> str | None:
         return _blank_is_none(value)
+
+    @field_validator("sandbox")
+    @classmethod
+    def _known_sandbox(cls, value: str | None) -> str | None:
+        name = _blank_is_none(value)
+        if name is None:
+            return None
+        name = name.lower()
+        known = sandbox_types()
+        if name not in known:
+            raise Invalid(f"Harbor has no sandbox {name!r}", f"set `sandbox:` to one of: {', '.join(known)}; or remove it for ARENA_HARBOR_SANDBOX's")
+        return name
 
     @field_validator("gpu_types", "allowed_hosts")
     @classmethod
@@ -850,6 +874,10 @@ class LeaderboardEntry(BaseModel):
     description: str | None = None
     tags: Tags = Field(default_factory=list, description="Labels for browsing: the domain (`math`), the lens (`reward-first`), the purpose (`weekly`).")
     datasets: list[str] = Field(default_factory=list, description="Dataset names in scope. Empty means every dataset with scores.")
+    dataset_tags: TagFilter | None = Field(
+        default=None,
+        description="The datasets in scope by their tags instead of their names: the ones of `datasets.yaml` passing this filter when the board is ranked. Leave `datasets` empty with it.",
+    )
     models: list[str] = Field(default_factory=list, description="Models in scope, by their registry name. Empty means every scored model.")
     shares: dict[str, float] = Field(default_factory=dict, description="Percent of the score per metric. Empty means the default preset.")
     budgets: list[Budget] = Field(default_factory=list, description="Hard limits, e.g. cost at most 0.05: a model breaking one is left out of the ranking.")
@@ -865,6 +893,15 @@ class LeaderboardEntry(BaseModel):
     @classmethod
     def _weights(cls, weights: dict[str, float]) -> dict[str, float]:
         return check_weights(weights)
+
+    @model_validator(mode="after")
+    def _one_scope(self) -> LeaderboardEntry:
+        if self.dataset_tags is not None and self.datasets:
+            raise Invalid(
+                "the datasets in scope are given both by name (`datasets`) and by tag (`dataset_tags`)",
+                "keep one: empty `datasets`, or remove `dataset_tags`",
+            )
+        return self
 
 
 # Each registry's entry model, by section.

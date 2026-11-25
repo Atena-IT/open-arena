@@ -28,12 +28,15 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
       # --frozen: pyproject only, uv.lock is not resolved again for a build.
       - name: Dev version
         if: github.event_name == 'workflow_dispatch'
@@ -51,6 +54,9 @@ jobs:
       - name: Version
         id: version
         run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+      # No release ships the usage telemetry without its opt-out and the README's notice.
+      - name: Telemetry guard
+        run: uv run --frozen pytest -q tests/test_telemetry.py
       - name: Build
         run: uv build
       - name: Check

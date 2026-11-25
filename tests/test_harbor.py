@@ -29,7 +29,7 @@ from openarena.harbor import (
     task_files,
     virtual_now,
 )
-from openarena.programs.harbor_program import copy_task
+from openarena.programs.harbor_program import agent_kwargs, copy_task
 from pydantic import ValidationError
 
 
@@ -254,6 +254,130 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     assert agent_problem("terminus-2", "ollama/qwen3", offline) is None
 
 
+def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
+    from openarena.config import HarborBlock
+    from openarena.harbor import agent_problem, agents
+
+    assert HarborBlock(agent="hermes").agent == "hermes"
+    assert next(a for a in agents() if a["name"] == "hermes") == {"name": "hermes", "runs": "sandbox", "provider": None, "params": []}
+    public, offline = EnvironmentSpec(docker_image="x"), EnvironmentSpec(docker_image="x", network_mode="no-network")
+    assert agent_problem("hermes", "openrouter/qwen/qwen3-vl-8b-instruct", public) is None
+    assert "no-network" in agent_problem("hermes", "anthropic/claude-sonnet-4-5", offline)
+    assert "cannot reach 'ollama/qwen3'" in agent_problem("hermes", "ollama/qwen3", public)
+    assert "names no provider" in agent_problem("hermes", "gpt-4o", public)
+    assert "names no provider" in agent_problem("opencode", "gpt-4o", public)
+    # It takes none of the model's params: they are dropped, not passed.
+    assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
+
+
+# Recorded by pi: lines 746 to 751 of packages/coding-agent/test/fixtures/large-session.jsonl in pi v1.6.0 (MIT), after its
+# header, moved to the session format pi 1.6 writes (version 3: each entry an `id` and its `parentId`), as pi migrates them.
+PI_SESSION = [
+    {'type': 'session', 'id': 'd703a1a9-1b7b-4fb1-b512-c9738b1fe617', 'timestamp': '2025-11-20T23:33:50.805Z', 'cwd': '/Users/badlogic/workspaces/pi-mono', 'provider': 'anthropic', 'modelId': 'claude-sonnet-4-5', 'thinkingLevel': 'off', 'version': 3},
+    {'type': 'message', 'id': 'a1b2c3d4', 'parentId': None, 'timestamp': '2025-11-21T01:33:30.786Z', 'message': {'role': 'user', 'content': [{'type': 'text', 'text': 'delete the file'}], 'timestamp': 1763688810764}},
+    {'type': 'message', 'id': 'b2c3d4e5', 'parentId': 'a1b2c3d4', 'timestamp': '2025-11-21T01:33:37.208Z', 'message': {'role': 'assistant', 'content': [{'type': 'toolCall', 'id': 'toolu_01Kh71uh1ch6ko73QcHPuPAJ', 'name': 'bash', 'arguments': {'command': 'rm ~/.pi/agent/themes/test.json'}}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 3, 'output': 61, 'cacheRead': 0, 'cacheWrite': 135129, 'cost': {'input': 9e-06, 'output': 0.000915, 'cacheRead': 0, 'cacheWrite': 0.50673375, 'total': 0.50765775}}, 'stopReason': 'toolUse', 'timestamp': 1763688810766}},
+    {'type': 'message', 'id': 'c3d4e5f6', 'parentId': 'b2c3d4e5', 'timestamp': '2025-11-21T01:33:37.225Z', 'message': {'role': 'toolResult', 'toolCallId': 'toolu_01Kh71uh1ch6ko73QcHPuPAJ', 'toolName': 'bash', 'content': [{'type': 'text', 'text': '(no output)'}], 'isError': False, 'timestamp': 1763688817218}},
+    {'type': 'message', 'id': 'd4e5f6a7', 'parentId': 'c3d4e5f6', 'timestamp': '2025-11-21T01:33:40.875Z', 'message': {'role': 'assistant', 'content': [{'type': 'toolCall', 'id': 'toolu_013q2kM3qFk8PAXFhBqsj3t3', 'name': 'bash', 'arguments': {'command': 'ls ~/.pi/agent/themes/'}}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 5, 'output': 58, 'cacheRead': 135129, 'cacheWrite': 74, 'cost': {'input': 1.5e-05, 'output': 0.00087, 'cacheRead': 0.0405387, 'cacheWrite': 0.0002775, 'total': 0.041701199999999994}}, 'stopReason': 'toolUse', 'timestamp': 1763688817218}},
+    {'type': 'message', 'id': 'e5f6a7b8', 'parentId': 'd4e5f6a7', 'timestamp': '2025-11-21T01:33:40.901Z', 'message': {'role': 'toolResult', 'toolCallId': 'toolu_013q2kM3qFk8PAXFhBqsj3t3', 'toolName': 'bash', 'content': [{'type': 'text', 'text': '(no output)'}], 'isError': False, 'timestamp': 1763688820896}},
+    {'type': 'message', 'id': 'f6a7b8c9', 'parentId': 'e5f6a7b8', 'timestamp': '2025-11-21T01:33:45.787Z', 'message': {'role': 'assistant', 'content': [{'type': 'text', 'text': 'Done! The `test.json` theme file has been deleted. If you had it selected when it was deleted, Pi should have automatically fallen back to the dark theme and logged: `[theme] Theme file deleted, falling back to dark theme`'}], 'api': 'anthropic-messages', 'provider': 'anthropic', 'model': 'claude-sonnet-4-5', 'usage': {'input': 4, 'output': 54, 'cacheRead': 135203, 'cacheWrite': 73, 'cost': {'input': 1.2e-05, 'output': 0.0008100000000000001, 'cacheRead': 0.0405609, 'cacheWrite': 0.00027375, 'total': 0.04165665}}, 'stopReason': 'stop', 'timestamp': 1763688820896}},
+]
+
+
+def _pi_trial(tmp_path, events, output=""):
+    """A pi trial's folder after Harbor's own pi agent turned its session into `trajectory.json`, as it does after a run."""
+    from harbor.agents.installed.pi import Pi
+    from harbor.models.agent.context import AgentContext
+
+    logs = tmp_path / "trial" / "agent"
+    (logs / "pi" / "sessions").mkdir(parents=True)
+    (logs / "pi" / "sessions" / "session.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+    (logs / "pi.txt").write_text(output)
+    Pi(logs_dir=logs, model_name="anthropic/claude-sonnet-4-5").populate_context_post_run(AgentContext())
+    return tmp_path / "trial"
+
+
+def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.harbor import find_trajectory, trajectory_messages
+    from openarena.programs.harbor_program import prediction, run_error
+
+    trial = _pi_trial(tmp_path, PI_SESSION)
+    messages = trajectory_messages(find_trajectory(trial / "agent"))
+    assert [m["role"] for m in messages] == ["user", "assistant", "tool", "assistant", "tool", "assistant"]
+    assert messages[1]["tool_calls"][0]["function"] == {"name": "bash", "arguments": {"command": "rm ~/.pi/agent/themes/test.json"}}
+    predicted = prediction(trial, SimpleNamespace(exception_info=None))
+    assert predicted["agent"]["name"] == "pi" and predicted["answer"].startswith("Done! The `test.json` theme file has been deleted.")
+    assert run_error(predicted, trial / "agent") is None
+
+
+def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.programs.harbor_program import COLLECTED_ANSWER, prediction, run_error
+
+    failed = {"role": "assistant", "content": [], "api": "anthropic-messages", "provider": "anthropic", "model": "claude-sonnet-4-5",
+              "stopReason": "error", "errorMessage": "401 invalid x-api-key", "timestamp": 1763688820896}
+    events = [*PI_SESSION[:2], {"type": "message", "id": "b2c3d4e5", "parentId": "a1b2c3d4", "timestamp": "2025-11-21T01:33:37.208Z", "message": failed}]
+    # pi's JSON events, as Harbor tees them into pi.txt; pi exits 0 all the same.
+    output = json.dumps({"type": "message_end", "message": failed}) + "\n" + json.dumps({"type": "agent_settled", "aborted": False}) + "\n"
+    trial = _pi_trial(tmp_path, events, output)
+    with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
+        prediction(trial, SimpleNamespace(exception_info=None))
+    # A task folder's own tests score what the agent did in the sandbox, answer or not.
+    assert prediction(trial, SimpleNamespace(exception_info=None), verified=True)["answer"] == ""
+    # A log that cannot be read leaves the trajectory's own word.
+    (trial / "agent" / "pi.txt").unlink()
+    (trial / "agent" / "pi.txt").mkdir()
+    assert run_error(json.loads((trial / "agent" / "trajectory.json").read_text()), trial / "agent") == "the agent's last model call failed"
+    (trial / "agent" / "pi.txt").rmdir()
+    (trial / "agent" / "pi.txt").write_text(output)
+    # What it wrote before the error is still its answer, scored; the error goes to the trial's line.
+    (trial / "verifier").mkdir()
+    (trial / "verifier" / COLLECTED_ANSWER).write_text("4\n")
+    predicted = prediction(trial, SimpleNamespace(exception_info=None), "/app/answer.txt")
+    assert predicted["answer"] == "4"
+    assert run_error(predicted, trial / "agent") == "the agent's last model call failed: 401 invalid x-api-key"
+
+
+def test_a_trial_without_a_trajectory_says_what_the_agent_printed(tmp_path):
+    from types import SimpleNamespace
+
+    from openarena.programs.harbor_program import prediction
+
+    logs = tmp_path / "trial" / "agent"
+    logs.mkdir(parents=True)
+    (logs / "pi.txt").write_text('Unknown provider "nebius". Use --list-models to see available providers/models.\n')
+    with pytest.raises(ValueError, match='left no trajectory: the agent\'s output ends: Unknown provider "nebius"'):
+        prediction(tmp_path / "trial", SimpleNamespace(exception_info=None))
+
+
+def test_pi_calls_only_the_providers_it_knows_and_takes_the_reasoning_effort(monkeypatch):
+    from openarena.config import HarborBlock
+    from openarena.harbor import agent_problem, agents
+
+    for env in ("OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENROUTER_BASE_URL", "GOOGLE_BASE_URL"):
+        monkeypatch.delenv(env, raising=False)
+    assert HarborBlock(agent="pi").agent == "pi"
+    assert next(a for a in agents() if a["name"] == "pi") == {"name": "pi", "runs": "sandbox", "provider": None, "params": ["reasoning_effort"]}
+    # pi's `thinking` answers to `reasoning_effort` too; the rest it does not take.
+    assert agent_kwargs("pi", {"reasoning_effort": "high", "temperature": 0.2}) == {"reasoning_effort": "high"}
+    assert agent_kwargs("pi", {"reasoning_effort": "disable"}) == {"reasoning_effort": "off"}
+    public = EnvironmentSpec(docker_image="x")
+    for model in ("openrouter/qwen/qwen3-vl-8b-instruct", "openai/gpt-4.1-mini", "gemini/gemini-2.5-flash", "together_ai/x/y"):
+        assert agent_problem("pi", model, public) is None, model
+    assert "knows no provider 'nebius'" in agent_problem("pi", "nebius/meta-llama/x", public)
+    assert "knows no provider 'fireworks_ai'" in agent_problem("pi", "fireworks_ai/accounts/x", public)
+    assert "names no provider" in agent_problem("pi", "gpt-4o", public)
+    assert "cannot reach 'hosted_vllm/x'" in agent_problem("pi", "hosted_vllm/x", public)
+    # Harbor reads the first of OPENAI_BASE_URL and OPENAI_API_BASE that is set: a blank one is no endpoint, and hides the other.
+    monkeypatch.setenv("OPENAI_BASE_URL", "")
+    monkeypatch.setenv("OPENAI_API_BASE", "https://gateway.example/v1")
+    assert agent_problem("pi", "openai/gpt-4.1-mini", public) is None
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example/v1")
+    assert "custom endpoint OPENAI_BASE_URL sets" in agent_problem("pi", "openai/gpt-4.1-mini", public)
+
+
 def test_a_sandbox_provider_refuses_what_it_cannot_give():
     from openarena.harbor import environment_problems, sandbox_capabilities
 
@@ -262,6 +386,117 @@ def test_a_sandbox_provider_refuses_what_it_cannot_give():
     assert environment_problems(EnvironmentSpec(docker_image="x", network_mode="allowlist", allowed_hosts=["pypi.org"]), "e2b") == []
     # Docker decides per host: nothing refused up front.
     assert environment_problems(EnvironmentSpec(docker_image="x", gpus=1), "docker") == []
+
+
+def test_a_provider_is_installed_only_when_its_sdk_imports(monkeypatch):
+    import importlib.machinery
+    import sys
+    import types
+
+    import harbor.environments.e2b
+    from openarena.harbor import environment_problems, sandbox_capabilities, sandbox_not_installed
+
+    # E2B's SDK comes with the engine; Docker needs none.
+    assert sandbox_capabilities("e2b")["installed"] and sandbox_capabilities("docker")["installed"]
+    # Harbor loads its E2B module without the SDK and records the failed import as `_HAS_E2B`.
+    monkeypatch.setattr(harbor.environments.e2b, "_HAS_E2B", False)
+    assert sandbox_capabilities("e2b")["installed"] is False
+    assert environment_problems(EnvironmentSpec(docker_image="x"), "e2b") == ["e2b's SDK is not installed (pip install 'harbor[e2b]')"]
+    # Harbor's Kubernetes module imports its SDK as it loads: without it, the module itself fails, and the reason is kept.
+    monkeypatch.delitem(sys.modules, "harbor.environments.ack", raising=False)
+    monkeypatch.setitem(sys.modules, "kubernetes", None)
+    assert sandbox_capabilities("ack")["installed"] is False
+    assert sandbox_not_installed("ack").startswith("ack cannot be loaded: ") and "kubernetes" in sandbox_not_installed("ack")
+    # cua-cloud imports its SDK only once a sandbox starts: there, missing, or a stub with no spec to tell.
+    sdk = types.ModuleType("cua_train")
+    sdk.__spec__ = importlib.machinery.ModuleSpec("cua_train", None)
+    monkeypatch.setitem(sys.modules, "cua_train", sdk)
+    assert sandbox_capabilities("cua-cloud")["installed"] is True
+    monkeypatch.setitem(sys.modules, "cua_train", None)
+    assert sandbox_not_installed("cua-cloud") == "cua-cloud's SDK is not installed (pip install 'harbor[cua]')"
+    monkeypatch.setitem(sys.modules, "cua_train", types.ModuleType("cua_train"))
+    assert sandbox_capabilities("cua-cloud")["installed"] is False
+    # A provider Harbor does not have.
+    assert sandbox_capabilities("nope")["installed"] is False
+    assert "'nope' is not a valid EnvironmentType" in sandbox_not_installed("nope")
+
+
+def test_an_environment_on_a_provider_without_its_sdk_says_so(monkeypatch):
+    import harbor.environments.e2b
+    from openarena.harbor import environment_problems
+    from openarena.programs import harbor_program
+
+    # The environment names E2B, whose key is set but whose SDK is missing.
+    spec = EnvironmentSpec(docker_image="x", sandbox="e2b")
+    monkeypatch.setattr(harbor.environments.e2b, "_HAS_E2B", False)
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    missing = "e2b's SDK is not installed (pip install 'harbor[e2b]')"
+    # Its tasks run on the local Docker, and the note gives that reason, not missing credentials.
+    assert harbor_program.sandbox(spec.sandbox) == "docker"
+    assert harbor_program.sandbox_note(spec.sandbox) == f"{missing}, so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue(spec.sandbox) is None
+    # Asked of E2B itself, the environment check refuses it for the same reason.
+    assert environment_problems(spec, spec.sandbox) == [missing]
+    # With no Docker to fall back to either, no task can start, and the reason is the same.
+    monkeypatch.setattr(harbor_program, "ready", lambda name: False)
+    assert harbor_program.sandbox_issue(spec.sandbox) == f"{missing}, and the local Docker it falls back to is not available to the backend either"
+
+
+def test_a_provider_whose_sdk_breaks_on_import_falls_back_with_the_reason(monkeypatch, tmp_path):
+    from harbor.environments import factory
+    from harbor.models.environment_type import EnvironmentType
+    from openarena.harbor import sandbox_capabilities
+    from openarena.programs import harbor_program
+
+    # An SDK installed but broken: the provider's module raises something other than ImportError as it loads.
+    (tmp_path / "broken_modal_env.py").write_text('raise TypeError("protobuf clash")\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(factory._ENVIRONMENT_REGISTRY, EnvironmentType.MODAL, factory._EnvEntry("broken_modal_env", "ModalEnvironment", "modal"))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name == "docker")
+    assert sandbox_capabilities("modal")["installed"] is False
+    assert harbor_program.sandbox("modal") == "docker"
+    assert harbor_program.sandbox_note("modal") == "modal cannot be loaded: protobuf clash (pip install 'harbor[modal]'), so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue("modal") is None
+
+
+def test_a_provider_needs_the_sdk_of_its_base_class_too(monkeypatch, tmp_path):
+    import importlib
+
+    from harbor.environments import factory
+    from harbor.models.environment_type import EnvironmentType
+    from openarena.harbor import sandbox_not_installed
+
+    # A provider built on another's class, each module with its own SDK flag (as wandb on cwsandbox, before Harbor 0.24).
+    (tmp_path / "base_env.py").write_text("_HAS_BASE_SDK = False\nclass BaseEnv:\n    pass\n")
+    (tmp_path / "child_env.py").write_text("from base_env import BaseEnv\n_HAS_CHILD_SDK = True\nclass ChildEnv(BaseEnv):\n    pass\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.setitem(factory._ENVIRONMENT_REGISTRY, EnvironmentType.MODAL, factory._EnvEntry("child_env", "ChildEnv", "modal"))
+    assert sandbox_not_installed("modal") == "modal's SDK is not installed (pip install 'harbor[modal]')"
+    monkeypatch.setattr(importlib.import_module("base_env"), "_HAS_BASE_SDK", True)
+    assert sandbox_not_installed("modal") is None
+
+
+def test_every_harbor_provider_with_an_sdk_records_whether_it_imports():
+    import sys
+
+    from harbor.environments.factory import _ENVIRONMENT_REGISTRY, _load_environment_class
+    from openarena.harbor import _LAZY_SDKS
+
+    # A module found with no `_HAS_*` flag counts as installed: a Harbor that renames a flag must fail here, not
+    # call that provider installed again. A provider with no extra needs no SDK; a module that imports its SDK as it
+    # loads fails without it, and is skipped, or loads with it and is named here.
+    eager = {"islo", "tensorlake", "runta", "prime", "smol"}
+    unflagged = []
+    for kind, entry in _ENVIRONMENT_REGISTRY.items():
+        if entry.pip_extra is None or kind.value in _LAZY_SDKS or kind.value in eager:
+            continue
+        try:
+            cls = _load_environment_class(kind)
+        except ImportError:
+            continue
+        if not any(key.startswith("_HAS_") for key in vars(sys.modules[cls.__module__])):
+            unflagged.append(kind.value)
+    assert unflagged == []
 
 
 def test_the_configured_provider_runs_with_its_options_and_the_fallback_without(monkeypatch):
@@ -321,7 +556,7 @@ def test_a_trial_hands_its_provider_the_options(monkeypatch, tmp_path):
         return Ran()
 
     monkeypatch.setattr(Trial, "create", staticmethod(create))
-    monkeypatch.setattr(harbor_program, "sandbox", lambda: "ack")
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: "ack")
     monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
     monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
     (tmp_path / "task").mkdir()
@@ -536,3 +771,133 @@ def test_a_task_clock_needs_linux_and_whole_seconds(tmp_path, change, says):
     with pytest.raises(Invalid, match=says) as refused:
         task_clock(folder)
     assert str(refused.value).startswith("task 'week': ")
+
+
+# -- a sandbox provider per environment ----------------------------------------
+
+
+def test_an_environment_names_its_sandbox_or_keeps_the_configured_one():
+    assert EnvironmentSpec(docker_image="x").sandbox is None
+    assert EnvironmentSpec(docker_image="x", sandbox=" Docker ").sandbox == "docker"
+    assert EnvironmentSpec(docker_image="x", sandbox="  ").sandbox is None
+    with pytest.raises(ValidationError, match="Harbor has no sandbox 'dokcer'"):
+        EnvironmentSpec(docker_image="x", sandbox="dokcer")
+
+
+def test_check_refuses_an_unknown_sandbox_with_the_known_ones(tmp_path):
+    report = check_file(_write(tmp_path, "environments", {"ok": {"docker_image": "x", "sandbox": "kata"}, "typo": {"docker_image": "x", "sandbox": "dokcer"}}))
+    [problem] = report.problems
+    assert (problem.level, problem.where) == ("error", "environments.typo.sandbox")
+    assert problem.message == "Harbor has no sandbox 'dokcer'"
+    assert "docker" in problem.fix and "e2b" in problem.fix and "kata" in problem.fix
+
+
+def test_a_named_provider_wins_over_the_configured_one(monkeypatch):
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "modal")
+    assert harbor_program.configured_sandbox() == "modal"
+    assert harbor_program.configured_sandbox("Daytona") == "daytona"
+    assert harbor_program.configured_sandbox("") == "modal"
+    monkeypatch.delenv("ARENA_HARBOR_SANDBOX")
+    assert harbor_program.configured_sandbox() == "e2b"
+    with pytest.raises(ValueError, match="no sandbox 'nope'; use one of: .*docker"):
+        harbor_program.configured_sandbox("nope")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "nope")
+    with pytest.raises(ValueError, match="set ARENA_HARBOR_SANDBOX to one of"):
+        harbor_program.configured_sandbox()
+
+
+def test_a_named_provider_falls_back_to_docker_on_its_own(monkeypatch):
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setattr(harbor_program, "ready", lambda name: name in ("e2b", "docker"))
+    monkeypatch.setattr(harbor_program, "sandbox_not_installed", lambda name: None)  # every SDK here: this is about keys
+    assert harbor_program.sandbox() == "e2b" and harbor_program.sandbox_note() is None
+    # Daytona has no key here: its tasks run on the local Docker, whatever the configured provider does.
+    assert harbor_program.sandbox("daytona") == "docker"
+    assert harbor_program.sandbox_note("daytona") == "daytona has no credentials set, so tasks run on the local Docker instead"
+    assert harbor_program.sandbox_issue("daytona") is None
+    assert "no sandbox 'nope'" in harbor_program.sandbox_issue("nope")
+    monkeypatch.setattr(harbor_program, "ready", lambda name: False)
+    assert "daytona has no credentials set" in harbor_program.sandbox_issue("daytona")
+    assert "the docker sandbox provider cannot start" in harbor_program.sandbox_issue("docker")
+
+
+def test_options_go_only_to_the_configured_provider(monkeypatch):
+    from openarena.harbor import environment_config
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "ack")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"namespace": "arena-sandboxes"}')
+    # An environment naming the configured provider gets its options; one naming another provider gets none.
+    assert environment_config("ack").kwargs == {"namespace": "arena-sandboxes"}
+    assert environment_config("daytona").kwargs == {}
+
+
+def _ran_trials(monkeypatch, tmp_path, spec):
+    """Run one row of `spec` through `HarborTask`, the trial faked: what each trial was configured with."""
+    import asyncio
+
+    from harbor.trial.trial import Trial
+    from openarena.programs import harbor_program
+    from synalinks.src.backend import JsonDataModel
+
+    seen = []
+
+    class Ran:
+        async def run(self):
+            raise RuntimeError("no sandbox in tests")
+
+    async def create(config):
+        seen.append({"config": config, "task_toml": (Path(config.task.path) / "task.toml").read_text()})
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    task = harbor_program.HarborTask(model="openai/gpt-4o", spec=spec, work_dir=str(tmp_path / "work"))
+    row = JsonDataModel(json={"question": "What is 2+2?", "path": str(tmp_path / "source")}, schema={"type": "object", "properties": {}})
+    assert asyncio.run(task.call(row)) is None  # the faked trial fails: the row is unanswered
+    return seen
+
+
+def test_a_run_uses_its_environments_sandbox_everywhere(monkeypatch, tmp_path):
+    import asyncio
+
+    from openarena.programs import harbor_program
+
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"template": "arena"}')
+    entry = EnvironmentSpec(docker_image="python:3.12-slim", sandbox="docker").model_dump(mode="json")
+    spec = {"agent": "terminus-2", "dataset": "d", "environment": "py", "environment_entry": entry, "mcp_servers": {}}
+    asked = []
+    real = harbor_program.sandbox
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: asked.append(name) or real(name))
+    [trial] = _ran_trials(monkeypatch, tmp_path, spec)
+    assert trial["config"].environment.type == "docker"
+    assert trial["config"].environment.kwargs == {}  # the options are E2B's, the configured provider
+    # The task was written for the local Docker: the CPUs and memory the entry leaves blank get its defaults.
+    assert {"cpus", "memory_mb"} <= set(tomllib.loads(trial["task_toml"])["environment"])
+    assert asked and set(asked) == {"docker"}
+    # And the cell's pre-check asks the environment's provider too.
+    asked.clear()
+    with pytest.raises(ValueError, match="no sandbox 'nope'"):
+        asyncio.run(harbor_program.build_harbor("openai/gpt-4o", None, {"environment_entry": {**entry, "sandbox": "nope"}}, None))
+    assert asked == ["nope"]
+
+
+def test_harbor_tasks_keep_the_configured_sandbox(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX_OPTIONS", '{"template": "arena"}')
+    source = tmp_path / "source"
+    (source / "environment").mkdir(parents=True)
+    (source / "task.toml").write_text('[environment]\ndocker_image = "python:3.12-slim"\n')
+    (source / "instruction.md").write_text("Say hi.\n")
+    [trial] = _ran_trials(monkeypatch, tmp_path, {"agent": "terminus-2", "dataset": "d", "tasks": True})
+    assert trial["config"].environment.type == "e2b"
+    assert trial["config"].environment.kwargs == {"template": "arena"}
+
+
+def test_what_the_framework_is_told_about_a_model_is_never_passed_to_a_harbor_agent():
+    params = {"temperature": 0.0, "reasoning_effort": "high", "supports_reasoning": True, "supports_vision": True, "supports_audio": True}
+    assert agent_kwargs("terminus-2", params) == {"temperature": 0.0, "reasoning_effort": "high"}

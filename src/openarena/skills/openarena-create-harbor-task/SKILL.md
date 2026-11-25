@@ -169,7 +169,8 @@ datasets:
       # repeat: 3                  # optional: each task this many times; the mean is the success rate
     harbor:
       agent: terminus-2            # terminus-2, claude-code, codex, gemini-cli, goose, opencode,
-                                   # openhands, mini-swe-agent, swe-agent, cline-cli, cursor-cli
+                                   # openhands, mini-swe-agent, swe-agent, cline-cli, cursor-cli,
+                                   # hermes, pi
       timeout_sec: 600             # optional: per task, over task.toml's [agent] timeout_sec
     reward: harbor-tests
     metrics:                       # optional: reward.json sub-scores as extra columns
@@ -206,9 +207,10 @@ work, saying why.
 
 `ARENA_HARBOR_SANDBOX` names the sandbox provider (`e2b`, `docker`,
 `daytona`, `modal`, ...), `e2b` by default; E2B needs `E2B_API_KEY`, and
-without it trials fall back to this machine's Docker. With neither, every
-trial fails and the cell fails with `none of the N Harbor task(s) got an
-answer` (an app may refuse to launch instead). On the local Docker, trials run one at a time unless
+without a provider's key or its SDK, trials fall back to this machine's Docker.
+With neither, every trial fails and the cell fails with `none of the N Harbor
+task(s) got an answer` (an app may refuse to launch instead). On the local
+Docker, trials run one at a time unless
 `ARENA_HARBOR_LOCAL_TRIALS` says otherwise.
 Each trial's logs land under the run's `harbor/trials/<trial>/` (under
 `ARENA_HARBOR_WORKDIR` when that is set), one line per

@@ -18,6 +18,9 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     `!function_call:{...}`), which fails to parse on every retry.
     `require_parameters` restricts routing to hosts that honour every parameter
     sent, so either the tools are honoured or the call fails at once.
+
+    `reasoning_effort: disable` adds nothing here: the framework sends OpenRouter's
+    `reasoning: {"enabled": false}` itself, to a model declared as reasoning.
     """
     kwargs = dict(lm_kwargs or {})
     if model_id.startswith("openrouter/"):
@@ -29,13 +32,66 @@ def with_provider_routing(model_id: str, lm_kwargs: dict | None) -> dict:
     return kwargs
 
 
-def language_model(model_id: str, lm_kwargs: dict | None = None):
+# The levels the arena offers (`model_types.REASONING_EFFORTS`) that `synalinks.Generator`
+# refuses: its top level is `xhigh`.
+_GENERATOR_EFFORT = {"max": "xhigh"}
+
+
+def with_model_effort(lm_kwargs: dict | None, module_kwargs: dict) -> dict:
+    """`module_kwargs` for a Generator-based module, with the model's `reasoning_effort` as the module's own.
+
+    `synalinks.Generator` passes its own `reasoning_effort` on every call (`None`,
+    or `"low"` for a `ChainOfThought`), and a value passed per call replaces the
+    `LanguageModel`'s default. The level set on the model entry therefore counts
+    only if the module is given it too. A value the module's block sets wins,
+    and a model with no level adds nothing, so the module keeps its own default.
+    The arena's `max` is passed as `xhigh`, the top level a Generator accepts.
+    """
+    effort = (lm_kwargs or {}).get("reasoning_effort")
+    if effort is None or module_kwargs.get("reasoning_effort") is not None:
+        return module_kwargs
+    return {**module_kwargs, "reasoning_effort": _GENERATOR_EFFORT.get(effort, effort)}
+
+
+async def supports_reasoning(model_id: str, lm_kwargs: dict | None = None) -> bool:
+    """Whether the model is declared as one that reasons natively, the signal the framework forwards a level on.
+
+    The framework does not find it out: `LanguageModel(supports_reasoning=True)` says so, and the model entry's
+    `supports_reasoning` param is what the arena passes. Nothing is asked of the provider or of litellm's table.
+    """
+    return bool((lm_kwargs or {}).get("supports_reasoning"))
+
+
+async def keeps_native_trace(model_id: str, lm_kwargs: dict | None, module_kwargs: dict | None) -> bool:
+    """Whether the model reasons natively at a level the program asks for, so its trace can fill `thinking`.
+
+    The framework forwards a level only for a model it takes for a reasoning one (`supports_reasoning`). It
+    then leaves `thinking` out of the schema it sends and fills it from the reasoning trace the provider
+    returns, or with an empty string when it returns none: the request is the same, and the trace is kept.
+    The module's level wins over the model's, as in `with_model_effort`.
+    """
+    level = (module_kwargs or {}).get("reasoning_effort")
+    if level is None:
+        level = (lm_kwargs or {}).get("reasoning_effort")
+    if level in (None, "disable"):
+        return False
+    return await supports_reasoning(model_id, lm_kwargs)
+
+
+def language_model(model_id: str, lm_kwargs: dict | None = None, module_kwargs: dict | None = None):
     """What to pass as `language_model=`.
+
+    `module_kwargs` are those of the module the model is built for: a
+    `reasoning_effort` they set replaces the model's, as `with_model_effort`
+    makes it the module's, so the model's default is the level asked for.
 
     the framework resolves a bare id itself, and a `LanguageModel` is only built
     when there are options to carry (per-model `reasoning_effort`, or the
     OpenRouter routing of `with_provider_routing`).
     """
+    own = (module_kwargs or {}).get("reasoning_effort")
+    if own is not None:
+        lm_kwargs = {**(lm_kwargs or {}), "reasoning_effort": own}
     lm_kwargs = with_provider_routing(model_id, lm_kwargs)
     if not lm_kwargs:
         return model_id
