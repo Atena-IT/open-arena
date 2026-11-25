@@ -466,6 +466,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     from harbor.agents.factory import AgentFactory
     from harbor.models.agent.name import AgentName
 
+    from openarena.config.entries import agent_kind
     from openarena.config.model_types import CAPABILITY_FLAGS
 
     # What the framework is told about the model is not a call option: the agent calls the model itself.
@@ -476,7 +477,11 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     }
     if not params:
         return {}
-    options = AgentFactory.get_agent_class(AgentName(agent)).options_model
+    if agent_kind(agent) == "class":
+        # Never imported outside the trial: what it takes is unknown, so it gets none of the model's settings.
+        log.warning("Harbor agent %r is a class of its own; running without the model's %s.", agent, ", ".join(sorted(params)))
+        return {}
+    options = AgentFactory.get_agent_class(AgentName.ACP if agent_kind(agent) == "acp" else AgentName(agent)).options_model
     fields = option_names(options)
     kwargs: dict[str, Any] = {}
     for key, value in params.items():
@@ -498,9 +503,48 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     return kwargs
 
 
+def version_kwargs(agent: str, version: str) -> dict[str, Any]:
+    """The version to install, for an agent Harbor installs: a built-in one, or a class of one's own as written (an ACP
+    agent carries its own in its name). One that runs in the arena installs nothing: the version is logged and dropped.
+    """
+    from harbor.agents.installed.base import BaseInstalledAgent
+    from harbor.utils.import_path import import_class
+
+    from openarena.config.entries import agent_kind
+    from openarena.harbor import _agent_class
+
+    kind = agent_kind(agent)
+    # A class is imported only once the operator allows its module (`agent_class_problem`, at the program's build).
+    cls = import_class(agent, label="agent") if kind == "class" else _agent_class(agent) if kind == "builtin" else None
+    if cls is not None and not issubclass(cls, BaseInstalledAgent):
+        log.warning("Harbor agent %r runs in the arena and installs nothing; running without `agent_version` %r.", agent, version)
+        return {}
+    return {"version": version}
+
+
+def agent_class_problem(agent: str) -> str | None:
+    """For a class of one's own: why it cannot run, or None. Its module is checked against the operator's list by name
+    first, so nothing is imported from a module the arena does not allow; then it is imported and must be a Harbor agent.
+    """
+    from harbor.agents.base import BaseAgent
+    from harbor.utils.import_path import import_class
+
+    from openarena.config.entries import AGENT_MODULES, agent_kind, agent_module_allowed
+
+    if agent_kind(agent) != "class":
+        return None
+    if not agent_module_allowed(agent):
+        return f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})"
+    try:
+        import_class(agent, base=BaseAgent, label="agent")
+    except (ValueError, TypeError) as e:
+        return f"Harbor agent {agent!r}: {e}"
+    return None
+
+
 async def run_trial(
     task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
-    kwargs: dict[str, Any] | None = None, provider: str | None = None,
+    kwargs: dict[str, Any] | None = None, provider: str | None = None, env: dict[str, str] | None = None,
 ):
     """One Harbor trial of `task`, named `name` under `trials`, on sandbox `provider` (the configured one when None); its `TrialResult`.
 
@@ -509,12 +553,18 @@ async def run_trial(
     from harbor.models.trial.config import AgentConfig, TaskConfig, TrialConfig, VerifierConfig
     from harbor.trial.trial import Trial
 
+    from openarena.config.entries import AGENT_MODULES, agent_kind, agent_module_allowed
+
+    # The class itself was checked at the program's build; its module is checked again here, by name, at no cost.
+    if agent_kind(agent) == "class" and not agent_module_allowed(agent):
+        raise ValueError(f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})")
     provider = sandbox(provider)
     config = TrialConfig(
         task=TaskConfig(path=task),
         trial_name=name,
         trials_dir=trials,
-        agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {})),
+        # Harbor reads `acp:<id>[@version]` as its ACP runner and `module:Class` as an import path, imported here, in the trial.
+        agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
         environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
@@ -588,7 +638,12 @@ class HarborTask(Module):
         self.model = model
         self.model_name = model_name or model
         self.params = dict(params or {})
+        # A class of one's own is checked once, here: its module allowed, then imported, then a Harbor agent.
+        if problem := agent_class_problem(spec.get("agent") or "terminus-2"):
+            raise ValueError(problem)
         self.agent_kwargs = agent_kwargs(spec.get("agent") or "terminus-2", self.params)
+        if version := spec.get("agent_version"):
+            self.agent_kwargs.update(version_kwargs(spec.get("agent") or "terminus-2", version))
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)
@@ -641,7 +696,7 @@ class HarborTask(Module):
                 write_task(task, row, self.spec, Path(self.contexts) if self.contexts else None)
             result = await run_trial(
                 task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs,
-                spec_sandbox(self.spec),
+                spec_sandbox(self.spec), self.spec.get("agent_env"),
             )
             _book(self.language_model, result, space / "trials" / name)
             predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"), bool(self.spec.get("tasks")))

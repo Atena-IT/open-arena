@@ -346,25 +346,48 @@ def agents() -> list[dict[str, Any]]:
     any; `params` the model settings it takes of `temperature`,
     `reasoning_effort` and `max_tokens`.
     """
-    from harbor.agents.factory import AgentFactory
-    from harbor.agents.installed.base import BaseInstalledAgent
-    from harbor.models.agent.name import AgentName
-
     from openarena.config.entries import HARBOR_AGENTS
 
-    out = []
-    for name in HARBOR_AGENTS:
-        cls = AgentFactory.get_agent_class(AgentName(name))
-        fields = option_names(cls.options_model)
-        params = [p for p in ("temperature", "reasoning_effort", "max_tokens") if p in fields or ("llm_call_kwargs" in fields and p == "max_tokens")]
-        connection = cls.MODEL_CONNECTION
-        out.append({
-            "name": name,
-            "runs": "sandbox" if issubclass(cls, BaseInstalledAgent) else "host",
-            "provider": connection.default_provider if connection else None,
-            "params": params,
-        })
-    return out
+    return [_described(name, _agent_class(name)) for name in HARBOR_AGENTS]
+
+
+def _agent_class(agent: str):
+    """The Harbor class behind a built-in agent, or behind an ACP registry agent (Harbor's one ACP runner)."""
+    from harbor.agents.factory import AgentFactory
+    from harbor.models.agent.name import AgentName
+
+    from openarena.config.entries import agent_kind
+
+    return AgentFactory.get_agent_class(AgentName.ACP if agent_kind(agent) == "acp" else AgentName(agent))
+
+
+def _described(name: str, cls) -> dict[str, Any]:
+    from harbor.agents.installed.base import BaseInstalledAgent
+
+    fields = option_names(cls.options_model)
+    params = [p for p in ("temperature", "reasoning_effort", "max_tokens") if p in fields or ("llm_call_kwargs" in fields and p == "max_tokens")]
+    connection = cls.MODEL_CONNECTION
+    return {
+        "name": name,
+        "runs": "sandbox" if issubclass(cls, BaseInstalledAgent) else "host",
+        "provider": connection.default_provider if connection else None,
+        "params": params,
+    }
+
+
+def agent_info(agent: str) -> dict[str, Any] | None:
+    """What `agents()` says of one, for any `harbor.agent`: a built-in, an ACP registry agent (Harbor's ACP runner,
+    installed in the sandbox), or a class of one's own, never imported here, so where it runs is unknown (`runs`
+    None) and it takes none of the model's settings. None for a name that is none of these.
+    """
+    from openarena.config.entries import agent_kind
+
+    kind = agent_kind(agent)
+    if kind is None:
+        return None
+    if kind == "class":
+        return {"name": agent, "runs": None, "provider": None, "params": []}
+    return _described(agent, _agent_class(agent))
 
 
 def model_provider(model_id: str) -> str | None:
@@ -386,10 +409,13 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     sandbox calls its model from there, so it needs the network, and a model
     served from the arena's machine is out of its reach.
     """
-    info = next((a for a in agents() if a["name"] == agent), None)
+    from openarena.config.entries import agent_kind
+
+    info = agent_info(agent)
     if info is None:
         return None
-    if agent in PROVIDER_PREFIXED and "/" not in model_id:
+    # Harbor's ACP runner splits the id into provider and model, like the agents that take a provider.
+    if (agent in PROVIDER_PREFIXED or agent_kind(agent) == "acp") and "/" not in model_id:
         return f"Harbor agent {agent!r} needs a `provider/model` id such as 'openai/gpt-4o', and {model_id!r} names no provider"
     provider = model_provider(model_id)
     if info["provider"] and provider and provider != info["provider"]:

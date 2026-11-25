@@ -434,6 +434,45 @@ that ends on a model error and leaves no answer fails its row, with the
 error, even when the agent exits as if it had worked (pi does); a task
 folder keeps what its own tests scored, and its trial notes the error.
 
+Beside Harbor's own agents, `agent:` takes two more kinds, checked by
+their shape only, nothing installed or imported until the trial:
+
+- **An agent of the public ACP registry**
+  ([agentclientprotocol.com](https://agentclientprotocol.com)), as
+  `acp:<id>`, pinned with `acp:<id>@<version>`: Harbor installs it in the
+  sandbox and drives it over the Agent Client Protocol. It needs a
+  `provider/model` id and the network, like the agents above.
+- **A Harbor agent class of your own**, as `package.module:ClassName` (a
+  `BaseInstalledAgent` or `BaseAgent` subclass), off unless whoever runs the
+  arena lists the module prefixes classes may come from in
+  `OPENARENA_HARBOR_AGENT_MODULES` (comma-separated): a module not listed is
+  refused by name, before anything is imported. The package must be installed
+  beside the arena; the run imports the class once, when it builds, and
+  refuses one that is not a Harbor agent. Where it runs is unknown until then,
+  so `check` cannot refuse a pairing for it, and it gets none of the model's
+  `params`.
+
+`agent_version` pins the version of an agent Harbor installs (an ACP agent
+is pinned in its name instead): letters, digits, `.`, `_`, `+`, `-`. An agent
+that runs in the arena installs nothing and ignores it.
+
+`agent_env` is the environment of the agent's own process, for its flags.
+It is **not for secrets**: a dataset keeps it in plain text. So it refuses a
+`${NAME}` (which would read the arena's own environment), and any name that
+holds a key or would redirect the model's key or traffic, or change what the
+process loads: `*_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, `*_BASE_URL`,
+`*_API_BASE`, `*_ENDPOINT`, `*_PROXY`, the providers' own prefixes
+(`OPENAI_`, `ANTHROPIC_`, `AWS_`...), `LD_*`, `PATH`, `NODE_OPTIONS`,
+`PYTHONPATH` and the like. The model's key comes from the run, as for every
+agent.
+
+```yaml
+harbor:
+  agent: acp:claude-acp@0.13.0
+  agent_env:
+    DISABLE_AUTOUPDATER: "1"
+```
+
 The model entry's `params` reach the agent where it takes them:
 `temperature`, `reasoning_effort` and, for agents that pass call settings
 through, `max_tokens`. A param the agent does not take is dropped, with a

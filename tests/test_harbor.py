@@ -254,6 +254,145 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     assert agent_problem("terminus-2", "ollama/qwen3", offline) is None
 
 
+ALLOWED = "OPENARENA_HARBOR_AGENT_MODULES"
+
+
+def test_an_acp_registry_agent_or_a_class_is_named_by_shape_and_a_class_needs_the_operators_go(monkeypatch):
+    import sys
+
+    from openarena.config import HarborBlock
+
+    monkeypatch.delenv(ALLOWED, raising=False)
+    assert HarborBlock(agent="acp:claude-acp").agent == "acp:claude-acp"
+    assert HarborBlock(agent=" acp:gemini@0.4.1 ").agent == "acp:gemini@0.4.1"
+    # A class is off until whoever runs the arena lists its module, and refused by name: nothing is imported.
+    with pytest.raises(ValidationError, match="a module the arena does not allow"):
+        HarborBlock(agent="our_agents.harbor:OurAgent")
+    monkeypatch.setenv(ALLOWED, "our_agents, other")
+    block = HarborBlock(agent="our_agents.harbor:OurAgent", agent_version="1.2.0", agent_env={"OUR_FLAG": "1"})
+    assert (block.agent_version, block.agent_env) == ("1.2.0", {"OUR_FLAG": "1"})
+    with pytest.raises(ValidationError, match="does not allow"):
+        HarborBlock(agent="our_agents_evil.x:Agent")
+    assert "our_agents" not in sys.modules
+    # `acp:` is the registry's: `acp:Claude` is a malformed id, never the class `Claude` of a module `acp`.
+    monkeypatch.setenv(ALLOWED, "acp")
+    for bad in ("nope", "acp:Claude ACP", "acp:", "acp:Claude", "our_agents.OurAgent", "our-agents:Agent"):
+        with pytest.raises(ValidationError, match="no Harbor agent"):
+            HarborBlock(agent=bad)
+    with pytest.raises(ValidationError, match="pinned in its name"):
+        HarborBlock(agent="acp:gemini", agent_version="0.4.1")
+    # Harbor puts the version in an install command: no shell character gets there.
+    for bad in ("1.0; curl x | sh", "1.0 rc", "$(id)", "-1"):
+        with pytest.raises(ValidationError, match="is not a version"):
+            HarborBlock(agent="claude-code", agent_version=bad)
+    # A dataset without the new keys reads as before.
+    assert HarborBlock().model_dump()["agent"] == "terminus-2" and HarborBlock().agent_env == {}
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "MY KEY", "ANTHROPIC_API_KEY", "CURSOR_API_KEY", "GITHUB_TOKEN", "DB_PASSWORD", "APP_SECRET",
+        "ANTHROPIC_BASE_URL", "OPENAI_BASE_URL", "OPENAI_API_BASE", "AZURE_API_VERSION", "AWS_REGION",
+        "HTTPS_PROXY", "http_proxy", "NO_PROXY", "NODE_OPTIONS", "PATH", "LD_PRELOAD", "DYLD_INSERT_LIBRARIES",
+        "PYTHONPATH", "SSL_CERT_FILE", "HARBOR_ACP_REQUESTED_MODEL", "OPENARENA_HARBOR_AGENT_MODULES",
+    ],
+)
+def test_agent_env_holds_an_agents_flags_never_a_key_an_endpoint_or_a_loader(name):
+    from openarena.config import HarborBlock
+
+    with pytest.raises(ValidationError, match="not environment variable names|may not set"):
+        HarborBlock(agent="acp:gemini", agent_env={name: "x"})
+
+
+def test_agent_env_holds_values_never_the_arenas_own():
+    from openarena.config import HarborBlock
+
+    assert HarborBlock(agent="acp:gemini", agent_env={"DISABLE_AUTOUPDATER": "1"}).agent_env == {"DISABLE_AUTOUPDATER": "1"}
+    with pytest.raises(ValidationError, match="read the arena's environment"):
+        HarborBlock(agent="acp:gemini", agent_env={"MY_FLAG": "${OPENAI_API_KEY}"})
+
+
+def test_an_acp_agent_runs_in_the_sandbox_and_a_class_is_checked_by_harbor_itself(monkeypatch):
+    import sys
+
+    from openarena.harbor import agent_info, agent_problem
+
+    public = EnvironmentSpec(docker_image="x")
+    assert agent_info("acp:claude-acp")["runs"] == "sandbox"
+    assert agent_info("our_agents.harbor:OurAgent") == {"name": "our_agents.harbor:OurAgent", "runs": None, "provider": None, "params": []}
+    assert agent_info("nope") is None and agent_info("acp:Claude") is None
+    # Harbor's ACP runner splits the id into provider and model, and calls it from the sandbox.
+    assert "names no provider" in agent_problem("acp:claude-acp", "claude-sonnet-4-5", public)
+    assert "cannot reach 'ollama/qwen3'" in agent_problem("acp:opencode", "ollama/qwen3", public)
+    assert agent_problem("acp:claude-acp", "anthropic/claude-sonnet-4-5", public) is None
+    # A class of one's own: where it runs is unknown until it is imported, which a check never does.
+    assert agent_problem("our_agents.harbor:OurAgent", "ollama/qwen3", public) is None
+    assert "our_agents" not in sys.modules
+    # It gets none of the model's settings, and nothing is imported to find out what it takes.
+    assert agent_kwargs("our_agents.harbor:OurAgent", {"temperature": 0.2}) == {}
+    assert "our_agents" not in sys.modules
+
+
+def test_a_class_is_imported_only_from_an_allowed_module_and_must_be_a_harbor_agent(monkeypatch):
+    import sys
+
+    from openarena.programs.harbor_program import agent_class_problem
+
+    monkeypatch.delenv(ALLOWED, raising=False)
+    sys.modules.pop("this", None)
+    # Not allowed: refused by name, so the module's code never runs (`this` prints on import).
+    assert "does not allow" in agent_class_problem("this:Anything")
+    assert "this" not in sys.modules
+    monkeypatch.setenv(ALLOWED, "pathlib")
+    assert "must subclass BaseAgent" in agent_class_problem("pathlib:Path")
+    assert agent_class_problem("acp:gemini") is None and agent_class_problem("terminus-2") is None
+
+
+def test_a_trial_hands_harbor_the_agents_name_version_and_environment(tmp_path, monkeypatch):
+    import asyncio
+
+    from harbor.trial.trial import Trial
+
+    from openarena.programs import harbor_program
+
+    seen = {}
+
+    class Ran:
+        async def run(self):
+            return "done"
+
+    async def create(config):
+        seen["agent"] = config.agent
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    out = asyncio.run(
+        harbor_program.run_trial(
+            tmp_path / "task", tmp_path / "trials", "t1", "acp:gemini@0.4.1", "google/gemini-2.5-pro",
+            kwargs={"version": "x"}, provider="docker", env={"GEMINI_FLAG": "1"},
+        )
+    )
+    assert out == "done"
+    assert (seen["agent"].name, seen["agent"].env, seen["agent"].kwargs) == ("acp:gemini@0.4.1", {"GEMINI_FLAG": "1"}, {"version": "x"})
+    # A class whose module is not allowed never reaches Harbor, whoever calls the trial.
+    monkeypatch.delenv(ALLOWED, raising=False)
+    with pytest.raises(ValueError, match="does not allow"):
+        asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t2", "pathlib:Path", "openai/gpt-4o", provider="docker"))
+    assert len(seen) == 1
+
+
+def test_a_version_goes_only_to_an_agent_harbor_installs(monkeypatch):
+    from openarena.programs.harbor_program import version_kwargs
+
+    assert version_kwargs("claude-code", "2.1.0") == {"version": "2.1.0"}
+    # terminus-2 runs in the arena, and so does a class that is not an installed agent: the version is dropped.
+    assert version_kwargs("terminus-2", "2.0") == {}
+    monkeypatch.setenv(ALLOWED, "harbor")
+    assert version_kwargs("harbor.agents.terminus_2:Terminus2", "1.0") == {}
+    assert version_kwargs("harbor.agents.installed.codex:Codex", "1.0") == {"version": "1.0"}
+
+
 def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     from openarena.config import HarborBlock
     from openarena.harbor import agent_problem, agents
