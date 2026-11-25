@@ -242,7 +242,9 @@ _PARAMETERS: dict[str, tuple[tuple[str, ...], Reason]] = {
     "response_format": (("response_format", "structured_outputs"), "structured_output"),
     "tools": (("tools",), "tools"),
     "tool_choice": (("tool_choice",), "tools"),
-    "reasoning_effort": (("reasoning_effort",), "reasoning"),
+    # OpenRouter lists a host that takes a reasoning level as `reasoning`, whichever spelling the
+    # request uses: `reasoning_effort` (OpenAI's) is listed only by some (not Claude's, not Gemini's).
+    "reasoning_effort": (("reasoning",), "reasoning"),
     "reasoning": (("reasoning",), "reasoning"),
     "max_tokens": (("max_tokens",), "max_tokens"),
     "temperature": (("temperature",), "temperature"),

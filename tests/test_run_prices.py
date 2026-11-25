@@ -208,6 +208,19 @@ def test_judge_keys_name_each_registry_entry_and_leave_out_the_ambiguous_ones():
     assert sorted(keys.values()) == ["judge", "other"]
 
 
+def test_two_entries_told_apart_only_by_what_the_model_is_declared_to_take_are_both_judges():
+    # The same id and params; one declared as reasoning (a constructor argument, not a default kwarg),
+    # so it sends the reasoning level and the other does not: two different requests.
+    keys = judge_keys(
+        {
+            "plain": {"model": "openrouter/acme/m", "reasoning_effort": "high"},
+            "thinker": {"model": "openrouter/acme/m", "reasoning_effort": "high", "supports_reasoning": True},
+            "seer": {"model": "openrouter/acme/m", "reasoning_effort": "high", "supports_vision": True},
+        }
+    )
+    assert sorted(keys.values()) == ["plain", "seer", "thinker"]
+
+
 def _judge_program(lm):
     async def build():
         x0 = synalinks.Input(data_model=Query)

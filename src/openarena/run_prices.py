@@ -88,8 +88,17 @@ def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
 
 
 def _key(model) -> tuple[str, str]:
-    """A language model by what its calls send: its id and its default parameters."""
-    return model.model, json.dumps(getattr(model, "default_kwargs", {}) or {}, sort_keys=True, default=str)
+    """A language model by what its calls send: its id, its default parameters, and what it is declared to take.
+
+    `supports_reasoning`, `supports_vision` and `supports_audio` are constructor arguments, not
+    default parameters, yet they change the request (a level is sent only to a declared reasoner).
+    """
+    declared = {
+        flag: bool(getattr(model, f"_{flag}", False))
+        for flag in ("supports_reasoning", "supports_vision", "supports_audio")
+    }
+    sent = {"default_kwargs": getattr(model, "default_kwargs", {}) or {}, **declared}
+    return model.model, json.dumps(sent, sort_keys=True, default=str)
 
 
 def judge_keys(models: Mapping[str, object]) -> dict[tuple[str, str], str]:

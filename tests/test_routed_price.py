@@ -95,6 +95,23 @@ def test_a_host_that_takes_tools_but_not_tool_choice_cannot_serve_an_agent(liste
     assert _price().kinds == {"structured": None, "tools": "tools"}
 
 
+def test_a_reasoning_level_reaches_a_host_that_lists_reasoning_under_openrouters_name(listed):
+    # Claude Sonnet 4.5's own host on 25 Nov: `reasoning`, and no `reasoning_effort` (OpenAI's name).
+    listed["endpoints"] = [
+        _endpoint(
+            "anthropic",
+            3e-6,
+            1.5e-5,
+            ("include_reasoning", "max_tokens", "reasoning", "response_format", "stop", "structured_outputs",
+             "temperature", "tool_choice", "tools", "top_k", "top_p"),
+            max_completion=64_000,
+        )
+    ]
+    price = _price("openrouter/anthropic/claude-sonnet-4.5", {"reasoning_effort": "high", "supports_reasoning": True})
+    assert price.kinds == {"structured": None, "tools": None}
+    assert (price.input_max, price.output_max) == pytest.approx((3e-6, 1.5e-5))
+
+
 def test_a_reasoning_level_no_host_takes(listed):
     listed["endpoints"] = [_endpoint("alpha", 1e-7, 2e-7, BOTH)]
     price = _price(params={"reasoning_effort": "high", "supports_reasoning": True})
