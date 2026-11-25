@@ -17,8 +17,10 @@ harbor/trials/<trial>/         that row's logs
 ```
 
 Read `config.yaml` in the run folder, not `configs/`, to know what produced a
-number. The CLI saves no per-row answers and does not trace into MLflow.
-Full reference: `docs/guides/results.md`.
+number. Outside Harbor's `trials.jsonl` the CLI keeps no per-row answers; it
+traces only to the destinations `ARENA_TRACE_DESTINATIONS` names (langsmith,
+datadog), never to MLflow.
+Full reference: [Reading results](https://atena-it.github.io/open-arena/guides/results/).
 
 ## Did it work?
 
@@ -101,17 +103,18 @@ and scores 0, with a warning. When **no** row got an answer, the cell is
 error>`: a missing key or an unreachable server shows there, not as a 0. A
 plain rerun runs the failed cells again, so after fixing the cause no
 `--no-cache` is needed. A `COMPLETED` cell is reused as it is, its 0s too:
-rerun with `--no-cache` to redo one where only some rows failed.
+rerun without the cache (`--no-cache`, a fresh run) to redo one where only
+some rows failed.
 
 | symptom | likely cause | fix |
 |---|---|---|
-| one model `FAILED`, `no row got an answer`, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE`, or `sglang/...` with no SGLang server | set the key in `.env`; ask the user to start the server (do not start it yourself); rerun |
+| one model `FAILED`, `no row got an answer`, others fine | its `*_API_KEY` unset, or `ollama/...` with no Ollama, or `vllm/...` without `HOSTED_VLLM_API_BASE`, or `sglang/...` with no SGLang server | its key is unset where the run reads its environment (the CLI: the shell or the workspace's `.env`; an app: its settings): say which variable the user must set, never write a key yourself; ask the user to start the server (do not start it yourself); rerun |
 | `FAILED`, `could not load the MCP tools of [...]` | an MCP server down, its command not on the PATH, or it exposes no tools | openarena-add-mcp-tools; rerun |
 | model not found | a wrong id in `models.yaml` | fix `model:` |
 | `INVALID` at the dataset | wrong `path` / `name` / `split`, or a template naming a missing column | look at a real row; fix `config` (openarena-add-dataset) |
 | every model at 0, answers look right | the answer's form differs from the reference (`"42"` vs `"42.0"`, `"B"` vs `"B) ..."`) | tighten `output_schema` or the template, or use `answer_accuracy` / a judge |
-| a judge reward fails | the judge's `language_model` has no key | set that provider's key |
-| the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` in the config is set neither in the shell nor in `.env` | add `NAME=...` to the workspace's `.env` |
+| a judge reward fails | the judge's `language_model` has no key | say which provider key the user must set |
+| the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` in the config is unset where the run reads its environment (the CLI: the shell or the workspace's `.env`; an app: its settings) | tell the user to set `NAME`; never write its value into a file yourself |
 | `none of the N Harbor task(s) got an answer` (`FAILED`) | the sandbox: no Docker / E2B key, image build failed, `tmux` missing | `harbor/trials.jsonl`, below |
 
 However many cells fail, the run goes on to the end and writes
@@ -119,7 +122,9 @@ However many cells fail, the run goes on to the end and writes
 `result.json`; the previous one stays in place, and the trial state is kept,
 so the next run resumes.
 
-To see why a 0 happened row by row outside Harbor, run the sweep from Python with
+To see why a 0 happened row by row, read the rows the run recorded where they
+are kept; the CLI records none outside Harbor, so there, from a shell with the
+engine installed, run the sweep from Python with
 `run_sweep(..., on_sample=..., samples_per_cell=N)` and a fresh `state_dir`.
 See "From a number to the rows" in the docs page.
 
@@ -131,7 +136,7 @@ Each row's trial appends one line to `harbor/trials.jsonl`:
 `error`, `seconds`, `input_tokens`, `output_tokens`, `cost_usd`.
 
 ```bash
-jq -c '{model, task, status, rewards, error}' .open-arena/harbor/harbor/trials.jsonl
+jq -c '{model, task, status, rewards, error}' .open-arena/<evaluation>/harbor/trials.jsonl
 ```
 
 `dir` is that trial's folder: `agent/` (the session), `verifier/` (the tests'
@@ -149,5 +154,6 @@ Report to the user from the files:
 - what failed and why, quoting `trial.json` → `message`
 - what you changed
 
-To compare models, use a leaderboard (openarena-rank-leaderboard). Do not
+To compare models, use a leaderboard (`openarena leaderboards run`; see
+openarena-rank-leaderboard). Do not
 average the rows yourself.

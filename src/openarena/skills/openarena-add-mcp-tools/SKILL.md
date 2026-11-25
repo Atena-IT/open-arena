@@ -9,7 +9,7 @@ description: Use when openarena should evaluate models that answer by calling to
 entry. A dataset with an `agent:` block gives the model under test those
 servers' tools: on every row it may call them for up to `max_iterations`
 turns, then writes its answer, which the dataset's reward scores as usual.
-Full reference: `docs/guides/mcp-tools.md`.
+Full reference: https://atena-it.github.io/open-arena/guides/mcp-tools/.
 
 Not the right tool when the test is only *which* function a model would call
 (a `tools:` dataset, openarena-add-dataset), or an agent you built yourself
@@ -32,7 +32,7 @@ mcp_servers:
     transport: streamable_http         # streamable_http | sse | websocket
     url: http://localhost:8080/mcp     # required; http://, https://, ws:// or wss://
     headers:                           # streamable_http and sse only
-      Authorization: Bearer ${DOCS_MCP_TOKEN}   # from the workspace's .env
+      Authorization: Bearer ${DOCS_MCP_TOKEN}   # set by the user, never written here
 ```
 
 - `stdio` reads `command` (required), `args`, `env`, `cwd`. `streamable_http`
@@ -43,13 +43,15 @@ mcp_servers:
   use the server's own flags in `args`.
 - **A stdio server does not see `.env`.** It gets only `HOME`, `LOGNAME`,
   `PATH`, `SHELL`, `TERM`, `USER`, plus its own `env:`. A server that needs an
-  API key gets it through `env:`, from the workspace's `.env`:
+  API key gets it through `env:`, as a reference:
   `env: {API_KEY: "${API_KEY}"}`.
-- **Secrets as `${NAME}`**: put the token or key in the workspace's `.env`
-  and reference it in `headers` or `env` as `${NAME}`; the run replaces it
-  when it reads its config, refuses to start if it is set nowhere, and
-  `.open-arena/<evaluation>/config.yaml` keeps the reference, not the value.
-  Never write a token you were shown into the file.
+- **Secrets as `${NAME}`**: reference the token or key as `${NAME}` in
+  `headers` or `env`; the variable is set by the user where the run reads
+  its environment (the CLI: the shell or the workspace's `.env`; an app: its
+  settings). The run replaces it when it reads its config, refuses to start
+  if it is set nowhere, and `.open-arena/<evaluation>/config.yaml` keeps the
+  reference, not the value. Never write a token's value into any file
+  yourself; say which variable is missing.
 - **Each tool call opens a new MCP session** (for stdio, a new process).
   Nothing the server keeps in memory survives between two calls, even within
   a row; state on disk or in a database does.
@@ -114,11 +116,13 @@ dataset's agent does:
    (from the server's docs). Do not start a long-running server yourself; a
    stdio one is spawned by the run. An HTTP server must already be up.
 2. Add the entry; add the dataset with `agent.mcp_servers`.
-3. `uv run openarena check configs` from the workspace. It checks shapes and
+3. `openarena check configs` from the workspace. It checks shapes and
    that `agent.mcp_servers` names exist; it does not connect, so a wrong URL,
    transport or command shows only at run time.
-   `uv run openarena mcp-servers list --configs configs` shows what is saved.
-4. Run a few rows first (openarena-run-evaluation). Every server's tool list
+   Read `mcp_servers.yaml` for what is saved (`openarena mcp-servers list`
+   prints it).
+4. Run a few rows first (`openarena evaluations run <evaluation>`; see
+   openarena-run-evaluation). Every server's tool list
    is read while the run is prepared: a server that is down, a command not on
    `PATH` or a server with no tools fails **that cell**
    (`could not load the MCP tools of [...]: <why>`, or
@@ -126,6 +130,6 @@ dataset's agent does:
    Fix it and rerun: the failed cells run again, no `--no-cache` needed. A
    misspelled `agent:` key still stops the whole run.
 5. Read the result (openarena-read-results). The CLI does not trace into
-   MLflow and does not save per-row trajectories; to read them, run from
-   Python with `on_sample` or from the arena app. If every model scores alike
+   MLflow and does not save per-row trajectories; an app that records a
+   cell's rows (or a Python run with `on_sample`) shows them. If every model scores alike
    and low, `max_iterations` is likely too low.

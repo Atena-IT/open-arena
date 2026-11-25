@@ -10,9 +10,9 @@ description: Use after writing or editing any openarena YAML (models, rewards, d
 files. It reads every entry and reports every problem at once, each with its
 line and a fix. Run it after every edit and before every run.
 
-`evaluations run` validates only the evaluation it runs and the entries it
-selects, and stops at the first problem: a broken entry no evaluation uses
-yet waits there. So check the whole folder, not just the file you edited.
+`evaluations run` validates the evaluation it runs, the entries it selects
+and every model entry, and stops at the first problem: a broken entry no
+evaluation uses yet waits there. So check the whole folder, not just the file you edited.
 
 Depth: [Checking configs](https://atena-it.github.io/open-arena/guides/check/).
 
@@ -31,7 +31,8 @@ openarena check drafts/datasets.yaml --configs configs   # a file elsewhere, ref
   PATH (`nothing at <PATH>; pass a configs folder or a registry file`), or a
   folder with no registry file
   (``no registry files in <PATH>; write some with `openarena init` ``).
-- There is no JSON output. For a machine-readable result, call
+- There is no JSON output. For a machine-readable result, from a shell with
+  the engine installed: call
   `openarena.config.check.check_folder(Path("configs"))` from Python (each
   `Report` has `.problems`, `.errors`, `.warnings`).
 
@@ -76,7 +77,9 @@ Each problem gives level, line, where, what is wrong, and the fix:
   the registry or the file name.
 - Two levels only. **error**: the engine would refuse it; it fails `check`
   and blocks a run that loads that entry. **warning**: it loads, or could not
-  be checked; it never fails `check` and never blocks a run.
+  be checked; it never fails `check`. Some still stop a run: an unset
+  `${NAME}`, and `not validated whole`, whose registry has errors. The others
+  (names missing from a leaderboard, references not checked) never block one.
 - **fix** is literal: apply it as written. A multi-line fix is a snippet to
   paste. Shapes you will see:
   - a rename: ``rename `pth:` to `path:` under datasets.local.config``;
@@ -101,7 +104,9 @@ Warnings to know:
   check and fix it, and the warning goes.
 - ``` `${NAME}` is not set in your shell or in .env; a run that reads it refuses to start ```:
   a value references a variable set nowhere (check reads the `.env` beside
-  the configs folder for it). Add `NAME=...` to that `.env`, or export it.
+  the configs folder for it). The user sets it where the run reads its
+  environment (the CLI: the shell or that `.env`; an app: its settings);
+  never write its value into a file yourself: say which variable is missing.
 
 ## The loop
 

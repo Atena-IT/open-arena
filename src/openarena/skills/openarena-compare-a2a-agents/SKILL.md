@@ -10,7 +10,7 @@ An A2A agent is a running service with an agent card at
 each agent as one user message and scores the reply with the dataset's
 reward. The agents are what is compared: the evaluation lists `a2a_agents`
 keys in `language_models`, where it would list models. Depth:
-`docs/guides/a2a-agents.md`.
+https://atena-it.github.io/open-arena/guides/a2a-agents/.
 
 ## The agent entry
 
@@ -20,7 +20,7 @@ a2a_agents:
     url: http://localhost:9999         # required: http:// or https://; the card is read here
     # card_path: /.well-known/agent.json   # the card elsewhere, a path under url
     headers:                           # sent on every request (card, messages, task polls)
-      Authorization: Bearer ${HELPER_TOKEN}   # HELPER_TOKEN set in the workspace's .env
+      Authorization: Bearer ${HELPER_TOKEN}   # set by the user, never written here
     timeout_sec: 120                   # one whole row, polls included (default 300, > 0)
     description: The support agent, current version.
     tags: [support]
@@ -31,9 +31,11 @@ a2a_agents:
 
 Only these six fields exist: `url`, `card_path`, `headers`, `timeout_sec`,
 `description`, `tags`. There is no streaming, retry or rate-limit field; any
-other key is an error. Keep a token out of the file: put it in the
-workspace's `.env` (`HELPER_TOKEN=...`) and reference it as `${NAME}`; the run
-replaces it when it reads its config, refuses to start when it is set nowhere,
+other key is an error. Keep a token out of the file: reference it as
+`${HELPER_TOKEN}`; the variable is set by the user where the run reads its
+environment (the CLI: the shell or the workspace's `.env`; an app: its
+settings). Never write its value into any file yourself; say which variable
+is missing. The run replaces it when it reads its config, refuses to start when it is set nowhere,
 and the run's `config.yaml` keeps the reference. `openarena check` warns about
 a variable set neither in the shell nor in `.env`. Still prefer a revocable
 evaluation key. Quote a header value YAML would read as a number.
@@ -87,7 +89,7 @@ evaluations:
     batch_size: 2                      # rows sent to one agent at once
 ```
 
-The rendered input is sent as the text of one user message, with nothing else
+The rendered input object, as JSON text, is sent as one user message, with nothing else
 (no system prompt, no schema, no earlier rows). The reply is a message (its
 text) or a task, polled every second until it ends; a `completed` task gives
 its artifacts' text. Only text parts are read.
@@ -113,17 +115,17 @@ Rules the run enforces:
 
 ## Steps
 
-1. Get each agent's URL from the user, and whether it needs a header.
-   `curl -s <url>/.well-known/agent-card.json` (add `-H` for auth) shows its
-   card, its skills and the interface URLs messages will go to; check those
-   are reachable. Do not start agents yourself.
+1. Get each agent's URL from the user, and whether it needs a header. Its
+   card, at `<url>/.well-known/agent-card.json`, lists its skills and the
+   interface URLs messages will go to: ask the user to confirm those are
+   reachable from where the evaluation runs. Do not fetch the card or start
+   agents yourself.
 2. Ask whether the agent can answer a JSON object; if not, use an
    inputs-only dataset with a judge.
 3. Add the entries, the dataset, its reward, and the evaluation.
-4. `uv run openarena check my-arena/configs` (reads files only; it never
-   contacts the agents).
-5. Run it (openarena-run-evaluation):
-   `uv run openarena evaluations run support-agents --configs my-arena/configs`.
-   Rank with a leaderboard (openarena-rank-leaderboard) with `models: []`,
-   which takes every agent scored; listing agent names in `models:` makes
+4. `openarena check configs` (reads files only; it never contacts the
+   agents).
+5. Run it (`openarena evaluations run support-agents`; see
+   openarena-run-evaluation). Rank them with a leaderboard whose
+   `models: []` takes every agent scored; listing agent names in `models:` makes
    `check` warn that each is `not in models`.
