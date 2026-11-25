@@ -434,6 +434,32 @@ that ends on a model error and leaves no answer fails its row, with the
 error, even when the agent exits as if it had worked (pi does); a task
 folder keeps what its own tests scored, and its trial notes the error.
 
+Beside Harbor's own agents, `agent:` takes two more kinds, checked by
+their shape only, nothing installed or imported until the trial:
+
+- **An agent of the public ACP registry**
+  ([agentclientprotocol.com](https://agentclientprotocol.com)), as
+  `acp:<id>`, pinned with `acp:<id>@<version>`: Harbor installs it in the
+  sandbox and drives it over the Agent Client Protocol. It needs a
+  `provider/model` id and the network, like the agents above.
+- **A Harbor agent class of your own**, as `package.module:ClassName` (a
+  `BaseInstalledAgent` or `BaseAgent` subclass): Harbor imports it inside the
+  trial, so the package must be installed beside the arena. Where it runs is
+  unknown until then, so `check` cannot refuse a pairing for it, and it gets
+  none of the model's `params`.
+
+`agent_version` pins the version of an agent Harbor installs (an ACP agent
+is pinned in its name instead), and `agent_env` is the environment of the
+agent's own process: a sign-in token, a flag. The model's key comes from
+the run, as for every agent.
+
+```yaml
+harbor:
+  agent: acp:claude-acp@0.13.0
+  agent_env:
+    CLAUDE_CODE_DISABLE_TELEMETRY: "1"
+```
+
 The model entry's `params` reach the agent where it takes them:
 `temperature`, `reasoning_effort` and, for agents that pass call settings
 through, `max_tokens`. A param the agent does not take is dropped, with a

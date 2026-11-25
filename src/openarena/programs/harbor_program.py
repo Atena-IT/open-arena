@@ -466,6 +466,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     from harbor.agents.factory import AgentFactory
     from harbor.models.agent.name import AgentName
 
+    from openarena.config.entries import agent_kind
     from openarena.config.model_types import CAPABILITY_FLAGS
 
     # What the framework is told about the model is not a call option: the agent calls the model itself.
@@ -476,7 +477,11 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
     }
     if not params:
         return {}
-    options = AgentFactory.get_agent_class(AgentName(agent)).options_model
+    if agent_kind(agent) == "class":
+        # Never imported outside the trial: what it takes is unknown, so it gets none of the model's settings.
+        log.warning("Harbor agent %r is a class of its own; running without the model's %s.", agent, ", ".join(sorted(params)))
+        return {}
+    options = AgentFactory.get_agent_class(AgentName.ACP if agent_kind(agent) == "acp" else AgentName(agent)).options_model
     fields = option_names(options)
     kwargs: dict[str, Any] = {}
     for key, value in params.items():
@@ -500,7 +505,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
 
 async def run_trial(
     task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
-    kwargs: dict[str, Any] | None = None, provider: str | None = None,
+    kwargs: dict[str, Any] | None = None, provider: str | None = None, env: dict[str, str] | None = None,
 ):
     """One Harbor trial of `task`, named `name` under `trials`, on sandbox `provider` (the configured one when None); its `TrialResult`.
 
@@ -514,7 +519,8 @@ async def run_trial(
         task=TaskConfig(path=task),
         trial_name=name,
         trials_dir=trials,
-        agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {})),
+        # Harbor reads `acp:<id>[@version]` as its ACP runner and `module:Class` as an import path, imported here, in the trial.
+        agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
         environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
@@ -589,6 +595,9 @@ class HarborTask(Module):
         self.model_name = model_name or model
         self.params = dict(params or {})
         self.agent_kwargs = agent_kwargs(spec.get("agent") or "terminus-2", self.params)
+        # The version to install, for an agent Harbor installs (an ACP agent carries its own in its name).
+        if version := spec.get("agent_version"):
+            self.agent_kwargs["version"] = version
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)
@@ -641,7 +650,7 @@ class HarborTask(Module):
                 write_task(task, row, self.spec, Path(self.contexts) if self.contexts else None)
             result = await run_trial(
                 task, space / "trials", name, line["agent"], self.model, self.spec.get("timeout_sec"), self.agent_kwargs,
-                spec_sandbox(self.spec),
+                spec_sandbox(self.spec), self.spec.get("agent_env"),
             )
             _book(self.language_model, result, space / "trials" / name)
             predicted = prediction(space / "trials" / name, result, self.spec.get("answer_file"), bool(self.spec.get("tasks")))

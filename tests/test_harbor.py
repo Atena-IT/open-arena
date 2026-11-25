@@ -254,6 +254,77 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     assert agent_problem("terminus-2", "ollama/qwen3", offline) is None
 
 
+def test_an_acp_registry_agent_or_a_class_of_ones_own_is_named_by_shape_and_never_imported(monkeypatch):
+    import sys
+
+    from openarena.config import HarborBlock
+
+    assert HarborBlock(agent="acp:claude-acp").agent == "acp:claude-acp"
+    assert HarborBlock(agent=" acp:gemini@0.4.1 ").agent == "acp:gemini@0.4.1"
+    block = HarborBlock(agent="our_agents.harbor:OurAgent", agent_version="1.2.0", agent_env={"OUR_TOKEN": "t"})
+    assert (block.agent_version, block.agent_env) == ("1.2.0", {"OUR_TOKEN": "t"})
+    # Validating, describing and checking it imports nothing: the class runs only inside Harbor's trial.
+    assert "our_agents" not in sys.modules
+    for bad in ("nope", "acp:Claude ACP", "acp:", "our_agents.OurAgent", "our-agents:Agent"):
+        with pytest.raises(ValidationError, match="no Harbor agent"):
+            HarborBlock(agent=bad)
+    with pytest.raises(ValidationError, match="pinned in its name"):
+        HarborBlock(agent="acp:gemini", agent_version="0.4.1")
+    with pytest.raises(ValidationError, match="not environment variable names"):
+        HarborBlock(agent="acp:gemini", agent_env={"MY KEY": "v"})
+    # A dataset without the new keys reads as before.
+    assert HarborBlock().model_dump()["agent"] == "terminus-2" and HarborBlock().agent_env == {}
+
+
+def test_an_acp_agent_runs_in_the_sandbox_and_a_class_is_checked_by_harbor_itself():
+    import sys
+
+    from openarena.harbor import agent_info, agent_problem
+
+    public = EnvironmentSpec(docker_image="x")
+    assert agent_info("acp:claude-acp")["runs"] == "sandbox"
+    assert agent_info("our_agents.harbor:OurAgent") == {"name": "our_agents.harbor:OurAgent", "runs": None, "provider": None, "params": []}
+    assert agent_info("nope") is None
+    # Harbor's ACP runner splits the id into provider and model, and calls it from the sandbox.
+    assert "names no provider" in agent_problem("acp:claude-acp", "claude-sonnet-4-5", public)
+    assert "cannot reach 'ollama/qwen3'" in agent_problem("acp:opencode", "ollama/qwen3", public)
+    assert agent_problem("acp:claude-acp", "anthropic/claude-sonnet-4-5", public) is None
+    # A class of one's own: where it runs is unknown until Harbor imports it in the trial.
+    assert agent_problem("our_agents.harbor:OurAgent", "ollama/qwen3", public) is None
+    assert "our_agents" not in sys.modules
+    # It gets none of the model's settings, and nothing is imported to find out what it takes.
+    assert agent_kwargs("our_agents.harbor:OurAgent", {"temperature": 0.2}) == {}
+    assert "our_agents" not in sys.modules
+
+
+def test_a_trial_hands_harbor_the_agents_name_version_and_environment(tmp_path, monkeypatch):
+    import asyncio
+
+    from harbor.trial.trial import Trial
+
+    from openarena.programs import harbor_program
+
+    seen = {}
+
+    class Ran:
+        async def run(self):
+            return "done"
+
+    async def create(config):
+        seen["agent"] = config.agent
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    out = asyncio.run(
+        harbor_program.run_trial(
+            tmp_path / "task", tmp_path / "trials", "t1", "acp:gemini@0.4.1", "google/gemini-2.5-pro",
+            kwargs={"version": "x"}, provider="docker", env={"GEMINI_FLAG": "1"},
+        )
+    )
+    assert out == "done"
+    assert (seen["agent"].name, seen["agent"].env, seen["agent"].kwargs) == ("acp:gemini@0.4.1", {"GEMINI_FLAG": "1"}, {"version": "x"})
+
+
 def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     from openarena.config import HarborBlock
     from openarena.harbor import agent_problem, agents

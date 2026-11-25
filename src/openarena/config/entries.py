@@ -176,6 +176,23 @@ HARBOR_AGENTS = (
     "terminus-2", "claude-code", "codex", "gemini-cli", "goose", "opencode", "openhands",
     "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli", "hermes", "pi",
 )
+# Beside them, two kinds of agent named by shape, never imported or run to check: an agent of the public ACP registry,
+# which Harbor installs and runs (`acp:<id>`, `@<version>` to pin it), and a Harbor agent class of one's own
+# (`package.module:Class`), which Harbor imports inside the trial.
+ACP_AGENT = re.compile(r"^acp:[a-z0-9][a-z0-9._-]*(@[A-Za-z0-9][A-Za-z0-9._+-]*)?$")
+AGENT_CLASS = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)*:[A-Za-z_]\w*$")
+ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def agent_kind(agent: str) -> Literal["builtin", "acp", "class"] | None:
+    """What a `harbor.agent` names: one of `HARBOR_AGENTS`, an ACP registry agent, a class of one's own, or nothing."""
+    if agent in HARBOR_AGENTS:
+        return "builtin"
+    if ACP_AGENT.match(agent):
+        return "acp"
+    if AGENT_CLASS.match(agent):
+        return "class"
+    return None
 
 
 class HarborBlock(BaseModel):
@@ -201,7 +218,16 @@ class HarborBlock(BaseModel):
     environment: Name | None = Field(
         default=None, description="Key of the environments registry: the sandbox every row's generated task runs in. None for `harbor_tasks`."
     )
-    agent: str = Field(default="terminus-2", description=f"The Harbor agent the model drives: {', '.join(HARBOR_AGENTS)}.")
+    agent: str = Field(
+        default="terminus-2",
+        description=f"The Harbor agent the model drives: {', '.join(HARBOR_AGENTS)}, an ACP registry agent as `acp:<id>[@version]`, or a class as `module.path:ClassName`.",
+    )
+    agent_version: str | None = Field(
+        default=None, description="The version of the agent to install; blank: the latest. An ACP agent is pinned in its name instead."
+    )
+    agent_env: dict[str, str] = Field(
+        default_factory=dict, description="Environment variables for the agent's own process: a sign-in token, a flag. The model's key comes from the run."
+    )
     instructions: str | None = Field(default=None, description="Said to the agent before every row's question.")
     answer_file: str | None = Field(
         default=None,
@@ -212,9 +238,35 @@ class HarborBlock(BaseModel):
     @field_validator("agent")
     @classmethod
     def _agent(cls, agent: str) -> str:
-        if agent not in HARBOR_AGENTS:
-            raise Invalid(f"no Harbor agent {agent!r}", f"set `agent:` to one of: {', '.join(HARBOR_AGENTS)}")
+        agent = agent.strip()
+        if agent_kind(agent) is None:
+            raise Invalid(
+                f"no Harbor agent {agent!r}",
+                f"set `agent:` to one of: {', '.join(HARBOR_AGENTS)}; an ACP registry agent as `acp:<id>[@version]`; or your class as `module.path:ClassName`",
+            )
         return agent
+
+    @field_validator("agent_version")
+    @classmethod
+    def _agent_version(cls, value: str | None) -> str | None:
+        return _blank_is_none(value)
+
+    @field_validator("agent_env")
+    @classmethod
+    def _agent_env(cls, env: dict[str, str]) -> dict[str, str]:
+        bad = sorted(k for k in env if not ENV_NAME.match(k))
+        if bad:
+            raise Invalid(f"`agent_env` names {bad} are not environment variable names", "use letters, digits and `_`, not starting with a digit")
+        return env
+
+    @model_validator(mode="after")
+    def _pinned_once(self) -> HarborBlock:
+        if self.agent_version and agent_kind(self.agent) == "acp":
+            raise Invalid(
+                "an ACP registry agent is pinned in its name, not with `agent_version`",
+                f"write `agent: {self.agent.split('@', 1)[0]}@{self.agent_version}` and remove `agent_version:`",
+            )
+        return self
 
     @field_validator("instructions")
     @classmethod
