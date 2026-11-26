@@ -19,7 +19,7 @@ CHECK = "&& hermes sessions list >/dev/null && hermes --version"
 
 class Hermes(HarborHermes):
     def get_version_command(self) -> str | None:
-        return 'export PATH="$HOME/.local/bin:$PATH"; hermes --version'
+        return 'export PATH="$HOME/.local/bin:$PATH"; hermes --version | head -n 1'
 
     async def exec_as_agent(self, environment, command: str, *args: Any, **kwargs: Any) -> Any:
         # Only the install command ends so; once Harbor fixes its own, nothing matches and this passes it through.

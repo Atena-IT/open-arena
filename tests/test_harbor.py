@@ -431,7 +431,7 @@ def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path
     asyncio.run(hermes.install(None))
     assert ran[-1].endswith("&& hermes sessions list >/dev/null && hermes --version")
     assert "hermes version" not in ran[-1]
-    assert hermes.get_version_command().endswith("hermes --version")
+    assert hermes.get_version_command().endswith("hermes --version | head -n 1")
     # Any other command goes as it came.
     asyncio.run(hermes.exec_as_agent(None, "hermes chat -q hi"))
     assert ran[-1] == "hermes chat -q hi"
