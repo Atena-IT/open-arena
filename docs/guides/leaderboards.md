@@ -177,10 +177,12 @@ default preset.
 
 !!! warning "Read the `Shares:` line"
     `leaderboards run` prints the shares it actually used, for example
-    `Shares: reward 70%, cost 30%`. If it differs from what you wrote, a
-    metric was dropped. Check its name in the run's `meta.metrics`
-    ([Reading results](results.md)), and check that every dataset in scope
-    records it.
+    `Shares: reward 70%, cost 30%`. If a metric you gave a share above 0 is
+    missing from it, the metric was dropped. Check its name in the run's
+    `meta.metrics` ([Reading results](results.md)), and check that every
+    dataset in scope records it. The line shows whole percents that add up to
+    100, so equal shares over three metrics print as 34, 33 and 33; the
+    ranking and the `--json` file use the exact ones.
 
 With the default preset, the reward leads and the other measurements mostly
 break near-ties. With `reward`, `cost`, `input_tokens` and `output_tokens`,

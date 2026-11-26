@@ -213,6 +213,26 @@ def default_shares(metrics: list[str]) -> dict[str, float]:
     return {m: float(LEVELS[level]) for m, level in levels.items() if LEVELS[level] > 0}
 
 
+def whole_shares(shares: dict[str, float]) -> dict[str, int]:
+    """Shares as whole percents that add up to the total they came from (100 when any metric counts), for showing them.
+
+    Rounding each share on its own gives six 17s for six equal metrics, which is 102%. Largest remainder instead:
+    every share goes down to its whole part, then the points still missing go one each to the shares with the largest
+    fractional part, the first in `shares` winning a tie. A share that is already whole keeps its value, a share of 0
+    stays 0, and none moves by a full point. The port of `wholeShares` in the app's `lib/criteria.ts`: the same rule, so
+    the same numbers for shares given in the same order. Display only: `rank` keeps the exact shares.
+    """
+    exact = {m: max(0.0, s) for m, s in shares.items()}
+    # Float noise (33.33…3 three times is 99.99999999999999) must not cost or invent a point.
+    target = math.floor(sum(exact.values()) + 0.5)
+    whole = {m: math.floor(x + 1e-9) for m, x in exact.items()}
+    missing = target - sum(whole.values())
+    # `sorted` is stable, so equal remainders keep the order of `shares`.
+    for m in sorted(exact, key=lambda m: whole[m] - exact[m])[: max(0, missing)]:
+        whole[m] += 1
+    return whole
+
+
 def _active(weights: dict[str, float]) -> dict[str, float]:
     positive = {m: w for m, w in weights.items() if w > 0}
     total = sum(positive.values()) or 1.0

@@ -19,6 +19,73 @@ def _result(cells):
     return {"meta": {}, "rows": rows}
 
 
+def _percent(weights):
+    """Weights as the exact percents `rank` reports in `shares`."""
+    total = sum(weights.values())
+    return {m: 100 * w / total for m, w in weights.items()}
+
+
+def _metrics(n):
+    return ["reward", *(f"m{i}" for i in range(1, n))]
+
+
+def test_whole_shares_add_up_to_100_for_every_preset_however_many_metrics_carry_weight():
+    # The same cases as `wholeShares` in the app's `lib/criteria.test.ts`: the two must agree.
+    for n in range(1, 13):
+        metrics = _metrics(n)
+        for name, weights in {
+            "Reward first": lb.default_shares(metrics),
+            "Balanced": {m: float(lb.LEVELS["Medium"]) for m in metrics},
+        }.items():
+            whole = lb.whole_shares(_percent(weights))
+            assert sum(whole.values()) == 100, f"{name} over {n} metrics: {whole}"
+
+
+def test_whole_shares_split_balanced_over_six_metrics_as_17_17_17_17_16_16():
+    metrics = _metrics(6)
+    whole = lb.whole_shares(_percent({m: float(lb.LEVELS["Medium"]) for m in metrics}))
+    assert [whole[m] for m in metrics] == [17, 17, 17, 17, 16, 16]
+
+
+def test_whole_shares_give_the_missing_point_of_reward_first_to_the_reward():
+    # 64.29 and five times 7.14: the reward has the largest remainder.
+    metrics = _metrics(6)
+    whole = lb.whole_shares(_percent(lb.default_shares(metrics)))
+    assert [whole[m] for m in metrics] == [65, 7, 7, 7, 7, 7]
+
+
+def test_whole_shares_move_no_share_by_a_point():
+    exact = _percent({m: float(lb.LEVELS["Medium"]) for m in _metrics(7)})
+    whole = lb.whole_shares(exact)
+    assert all(abs(whole[m] - exact[m]) < 1 for m in exact)
+
+
+def test_whole_shares_keep_a_zero_and_a_share_that_is_already_whole():
+    assert lb.whole_shares({"reward": 60.0, "cost": 40.0, "latency": 0.0}) == {"reward": 60, "cost": 40, "latency": 0}
+
+
+def test_whole_shares_keep_a_hand_set_share_and_the_100():
+    # A share put at 30 over three metrics, the other two in proportion to what they were.
+    whole = lb.whole_shares({"reward": 30.0, "cost": 70 / 3, "latency": 140 / 3})
+    assert whole["reward"] == 30 and sum(whole.values()) == 100
+
+
+def test_whole_shares_give_a_tie_of_remainders_to_the_first_share():
+    assert lb.whole_shares({"a": 12.5, "b": 87.5}) == {"a": 13, "b": 87}
+    assert lb.whole_shares({"b": 87.5, "a": 12.5}) == {"b": 88, "a": 12}
+
+
+def test_whole_shares_are_not_thrown_off_by_float_noise():
+    # 100/3 three times sums to 99.99999999999999: still 100 to hand out, not 99.
+    assert lb.whole_shares({"a": 100 / 3, "b": 100 / 3, "c": 100 / 3}) == {"a": 34, "b": 33, "c": 33}
+    # A share a hair under or over a whole number is that number, and no point is invented.
+    assert lb.whole_shares({"a": 29.999999999999996, "b": 70.00000000000001}) == {"a": 30, "b": 70}
+
+
+def test_whole_shares_invent_nothing_when_no_metric_counts():
+    assert lb.whole_shares({"reward": 0.0, "cost": 0.0}) == {"reward": 0, "cost": 0}
+
+
 def test_rank_weighs_and_marks_the_frontier():
     runs = [
         {

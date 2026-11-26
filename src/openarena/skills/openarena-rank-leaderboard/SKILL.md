@@ -68,7 +68,9 @@ Any other key is an error. `group_shares` / `dataset_shares` weigh datasets
   on any other metric (a typo, a metric only some datasets have, `eol_days`
   under `--no-eol`) is dropped silently; if all are dropped, the default
   preset is used. Always compare the printed `Shares:` line with what you
-  wrote.
+  wrote. It shows whole percents that add up to 100 (equal shares over three
+  metrics print as 34, 33 and 33), so a difference of one point is rounding;
+  a metric with a share above 0 that is missing from the line was dropped.
 - **Budgets** are checked per dataset on that cell's value, before
   normalizing; breaking one on any dataset leaves the model out. A cell
   without the budget's metric cannot break it, so a misspelled metric
