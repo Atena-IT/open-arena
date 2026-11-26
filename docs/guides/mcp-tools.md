@@ -16,11 +16,12 @@ comparison is about the model.
 flowchart LR
   row[row: input_template] --> step
   subgraph agent["agent loop, up to max_iterations turns"]
-    step[model picks tool calls] -->|calls| tools[(MCP servers)]
+    step[model calls tools or answers] -->|calls| tools[(MCP servers)]
     tools -->|results| step
   end
-  step -->|no more calls, or turns used up| final[model writes the answer]
-  final --> reward[dataset reward]
+  step -->|the answer| reward[dataset reward]
+  step -->|turns used up| final[a last call writes the answer]
+  final --> reward
 ```
 
 ## MCP tools, A2A agents, environments or `tools:`
@@ -243,7 +244,7 @@ datasets:
 | `mcp_servers` | | required. A list of `mcp_servers.yaml` keys, at least one. Their tools are merged into one list |
 | `max_iterations` | 5 | tool-calling turns per row ([below](#max_iterations)) |
 | `instructions` | a generic "helpful agent" line | the instructions for every turn; say when to use the tools |
-| `final_instructions` | `instructions` | instructions for the last call, the one that writes the answer |
+| `final_instructions` | `instructions` | instructions for the last call, made only when the turns ran out without an answer |
 | `use_chain_of_thought` | false | have the model reason before each tool decision; for non-reasoning models |
 | `return_inputs_with_trajectory` | true | keep the tool trajectory (`messages`) beside the answer ([scoring](#what-gets-recorded-and-scored)) |
 | `return_inputs` | false | also put the row's input fields in the prediction |
@@ -274,24 +275,28 @@ sequenceDiagram
     M->>S: one or more tool calls (run concurrently)
     S-->>M: results, or "error: ..."
   end
-  Note over M: stops early when a turn has no tool call
-  M->>R: final call: the answer, in the output_schema
+  Note over M: stops at the turn that answers
+  M->>R: the answer, in the output_schema
 ```
 
 1. Each turn, the model sees the conversation so far and the full tool list,
-   and either calls tools or does not. Several calls in one turn run at once.
-2. A turn without a tool call ends the loop. So does the last allowed turn.
-3. A last call writes the answer from the whole trajectory, shaped by the
-   dataset's `output_schema` (an `answer` field above). It is made even when
-   the turns ran out: a model cut off mid-search still answers, usually
-   badly, and is scored for it.
+   and either calls tools or answers. Several calls in one turn run at once.
+2. The turn that answers ends the loop. With an `output_schema` (an `answer`
+   field above) the answer is a call to a `final_answer` tool whose
+   arguments are that schema, and every turn must call a tool; arguments
+   that do not fit go back to the model as that call's error, and the loop
+   goes on. Without one, a reply with no tool call is the answer.
+3. When the turns run out first, a last call writes the answer from the
+   whole trajectory, under `final_instructions`: a model cut off mid-search
+   still answers, usually badly, and is scored for it.
 4. A tool that fails (bad arguments, a server error) does not fail the row.
    Its result becomes `error: <message>` in the conversation, and the model
    may retry or work around it. That is part of what is measured.
 
 ### max_iterations
 
-Each turn is a model call, plus the final answer call: a row costs up to
+Each turn is a model call, and the answer is given in one of them; only a
+row whose turns ran out gets one more call: a row costs up to
 `max_iterations + 1` calls of the model under test, and each call re-sends the
 whole conversation, tool results included. Tokens grow with every turn.
 
