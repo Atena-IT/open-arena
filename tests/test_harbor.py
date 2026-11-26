@@ -1061,6 +1061,27 @@ def test_terminus_2_records_no_terminal_session_unless_asked(monkeypatch, tmp_pa
     assert [a.kwargs for a in seen] == [{"record_terminal_session": False}, {"record_terminal_session": True}, {}]
 
 
+def test_a_failed_commands_error_keeps_the_end_of_its_output_not_the_command(tmp_path):
+    from types import SimpleNamespace
+
+    from harbor.agents.installed.claude_code import ClaudeCode
+    from openarena.programs.harbor_program import MAX_OUTPUT, failure
+
+    # The message as Harbor 0.24 builds it: the whole command, then stdout and stderr cut to their head and tail.
+    command = "set -euo pipefail; curl -fsSL https://example.invalid/install.sh | bash -s -- --skip-setup && " + "x " * 400
+    printed = "Installing the agent... " + "progress " * 300 + "agent: 'run' is not a command. Did you mean: start?"
+    error = ClaudeCode(logs_dir=tmp_path)._classify_exec_error(command, SimpleNamespace(return_code=2, stdout="progress " * 300, stderr=printed))
+    said = failure(SimpleNamespace(exception_info=SimpleNamespace(exception_type=type(error).__name__, exception_message=str(error))))
+    assert said.startswith(f"{type(error).__name__}: exit 2: …")
+    assert said.endswith("agent: 'run' is not a command. Did you mean: start?")
+    assert "curl" not in said and "stderr: None" not in said and len(said) < MAX_OUTPUT + 60
+    # A short output is kept whole, and the older `Command: ...` form still loses its command.
+    short = "Command failed (exit 1): agent --version\nstdout: None\nstderr: no dependency environment"
+    assert failure(SimpleNamespace(exception_info=SimpleNamespace(exception_type="E", exception_message=short))) == "E: exit 1: stderr: no dependency environment"
+    old = "Command: apt-get install tmux. Return code: 100. Stdout: None. Stderr: unable to locate"
+    assert failure(SimpleNamespace(exception_info=SimpleNamespace(exception_type="E", exception_message=old))) == "E: . Return code: 100. Stderr: unable to locate"
+
+
 def test_what_the_framework_is_told_about_a_model_is_never_passed_to_a_harbor_agent():
     params = {"temperature": 0.0, "reasoning_effort": "high", "supports_reasoning": True, "supports_vision": True, "supports_audio": True}
     assert agent_kwargs("terminus-2", params) == {"temperature": 0.0, "reasoning_effort": "high"}

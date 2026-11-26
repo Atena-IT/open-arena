@@ -297,8 +297,12 @@ class _NoAnswerGuard(synalinks.callbacks.Callback):
         if self.unanswered and not self.answered:
             why = " ".join(str(self.first_error or "see the warnings above").split())
             raise keras_tuner.errors.FailedTrialError(
-                f"no row got an answer: all {self.unanswered} row(s) failed; the first error: {why[:500]}"
+                f"no row got an answer: all {self.unanswered} row(s) failed; the first error: {why[:MAX_FIRST_ERROR]}"
             )
+
+
+# How much of the first row's error a failed cell quotes: a Harbor trial's keeps the end of what the command printed.
+MAX_FIRST_ERROR = 2000
 
 
 def _num_batches(ds):
