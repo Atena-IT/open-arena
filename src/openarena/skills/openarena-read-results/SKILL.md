@@ -51,9 +51,11 @@ scores are good: still read the statuses and values.
 }
 ```
 
-- `last_run_prices` (beside `meta` and `rows`): per model, what it paid per
-  input and output token in USD in this run, fitted on its billed calls, and
-  the kinds of call covered; a model with no reliable fit is absent.
+- `last_run_prices` (beside `meta` and `rows`): per model, what it paid in
+  USD in this run and the kinds of call covered: `input` and `output` per
+  token when a fit on its billed calls can be trusted, else `blended`, its
+  calls' cost over their tokens of either kind; a model with no billed call
+  is absent.
 - One row per model × dataset × metric. `reward` is the mean of the dataset's
   reward over its rows, usually 0 to 1. Its `direction` is the reward's own.
 - `metrics` is `reward` plus only the aliases listed under a dataset's or

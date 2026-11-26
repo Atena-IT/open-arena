@@ -19,6 +19,7 @@ from openarena.run_prices import (
     MIN_R2,
     BilledCall,
     RunPrices,
+    blended_price,
     estimate_prices,
     judge_keys,
 )
@@ -186,11 +187,51 @@ def test_a_cost_that_is_not_a_number_never_fails_the_run():
     assert prices.estimates() == {}
 
 
-def test_an_entry_without_a_reliable_estimate_is_left_out():
+def _blend(calls):
+    return sum(c.cost for c in calls) / sum(c.input_tokens + c.output_tokens for c in calls)
+
+
+def test_hosts_at_different_prices_give_the_blended_price():
+    # Each call billed by one of two hosts, at its own prices: no one pair of prices explains them all.
+    cheap, dear = _calls(20, 1.7e-8, 8.5e-8), _calls(20, 1.5e-7, 9.5e-7, seed=7)
+    calls = [c for pair in zip(cheap, dear) for c in pair]
+    assert estimate_prices(calls) is None
     prices = RunPrices({})
-    for call in _calls(MIN_CALLS - 1, 2.2e-7, 2.2e-7):
+    for call in calls:
+        prices.record("gptoss-high", call)
+    assert prices.estimates() == {
+        "gptoss-high": {"blended": pytest.approx(_blend(calls)), "kinds": ["structured"]}
+    }
+
+
+def test_an_entry_without_a_reliable_fit_gets_its_blended_price():
+    few = _calls(MIN_CALLS - 1, 2.2e-7, 2.2e-7)
+    proportional = [BilledCall(n, 2 * n, n * 3e-7, "tools") for n in range(100, 100 + 10 * MIN_CALLS, 10)]
+    prices = RunPrices({})
+    for call in few:
         prices.record("few", call)
-    assert prices.estimates() == {}
+    for call in proportional:
+        prices.record("proportional", call)
+    assert prices.estimates() == {
+        "few": {"blended": pytest.approx(_blend(few)), "kinds": ["structured"]},
+        # 3e-7 per input token, none per output token: 1e-7 per token of either kind.
+        "proportional": {"blended": pytest.approx(1e-7), "kinds": ["tools"]},
+    }
+
+
+def test_a_fit_that_holds_gives_two_prices_and_no_blended_one():
+    prices = RunPrices({})
+    for call in _calls(12, 2.2e-7, 4.4e-7):
+        prices.record("llama", call)
+    assert set(prices.estimates()["llama"]) == {"input", "output", "kinds"}
+
+
+def test_the_blended_price_leaves_out_what_is_not_a_cost():
+    calls = _calls(3, 2.2e-7, 2.2e-7)
+    odd = BilledCall(calls[0].input_tokens, calls[0].output_tokens, float("nan"), "structured")
+    assert blended_price(calls + [odd]) == pytest.approx(_blend(calls))
+    assert blended_price([odd]) is None
+    assert blended_price([]) is None
 
 
 # -- judges --------------------------------------------------------------------
