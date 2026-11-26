@@ -409,6 +409,51 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
 
 
+def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path):
+    import asyncio
+
+    from harbor.agents.factory import AgentFactory
+    from harbor.trial.trial import Trial
+    from openarena.harbor_hermes import Hermes
+    from openarena.programs import harbor_program
+
+    ran = []
+
+    async def record(self, environment, command, **kwargs):
+        ran.append(command)
+
+    async def nothing(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(Hermes, "_exec", record)
+    monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
+    hermes = Hermes(logs_dir=tmp_path)
+    asyncio.run(hermes.install(None))
+    assert ran[-1].endswith("&& hermes sessions list >/dev/null && hermes --version")
+    assert "hermes version" not in ran[-1]
+    assert hermes.get_version_command().endswith("hermes --version")
+    # Any other command goes as it came.
+    asyncio.run(hermes.exec_as_agent(None, "hermes chat -q hi"))
+    assert ran[-1] == "hermes chat -q hi"
+
+    seen = {}
+
+    class Ran:
+        async def run(self):
+            return "result"
+
+    async def create(config):
+        seen["config"] = config
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: "docker")
+    (tmp_path / "task").mkdir()
+    asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t", "hermes", "openrouter/x/y"))
+    cls = AgentFactory.get_agent_class_from_config(seen["config"].agent)
+    assert cls is Hermes and cls.name() == "hermes"
+
+
 # Recorded by pi: lines 746 to 751 of packages/coding-agent/test/fixtures/large-session.jsonl in pi v1.6.0 (MIT), after its
 # header, moved to the session format pi 1.6 writes (version 3: each entry an `id` and its `parentId`), as pi migrates them.
 PI_SESSION = [
