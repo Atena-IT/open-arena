@@ -559,6 +559,10 @@ async def run_trial(
     if agent_kind(agent) == "class" and not agent_module_allowed(agent):
         raise ValueError(f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})")
     provider = sandbox(provider)
+    kwargs = dict(kwargs or {})
+    if agent == "terminus-2":
+        # Recording installs asciinema in the sandbox, which hangs a no-network task; the arena shows the trajectory instead.
+        kwargs.setdefault("record_terminal_session", False)
     config = TrialConfig(
         task=TaskConfig(path=task),
         trial_name=name,

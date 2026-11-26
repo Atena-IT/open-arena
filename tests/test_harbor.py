@@ -1037,6 +1037,30 @@ def test_harbor_tasks_keep_the_configured_sandbox(monkeypatch, tmp_path):
     assert trial["config"].environment.kwargs == {"template": "arena"}
 
 
+def test_terminus_2_records_no_terminal_session_unless_asked(monkeypatch, tmp_path):
+    import asyncio
+
+    from harbor.trial.trial import Trial
+    from openarena.programs.harbor_program import run_trial
+
+    seen = []
+
+    class Ran:
+        async def run(self):
+            return None
+
+    async def create(config):
+        seen.append(config.agent)
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    for agent, kwargs in (("terminus-2", None), ("terminus-2", {"record_terminal_session": True}), ("claude-code", None)):
+        asyncio.run(run_trial(tmp_path / "task", tmp_path / "trials", "t", agent, "openai/gpt-4o", kwargs=kwargs))
+    # Off by default (asciinema would be installed in the sandbox, which a no-network task cannot do); kept when set.
+    assert [a.kwargs for a in seen] == [{"record_terminal_session": False}, {"record_terminal_session": True}, {}]
+
+
 def test_what_the_framework_is_told_about_a_model_is_never_passed_to_a_harbor_agent():
     params = {"temperature": 0.0, "reasoning_effort": "high", "supports_reasoning": True, "supports_vision": True, "supports_audio": True}
     assert agent_kwargs("terminus-2", params) == {"temperature": 0.0, "reasoning_effort": "high"}
