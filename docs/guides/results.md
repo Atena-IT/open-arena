@@ -95,8 +95,8 @@ bar, `-vv` for a line per batch.
      "value": 0.0021, "status": "COMPLETED", "direction": "min", "on_frontier": true}
   ],
   "last_run_prices": {
-    "qwen38": {"input": 1.3e-07, "output": 1.69e-07, "kinds": ["structured"]},
-    "gpt-oss-high": {"blended": 6.9e-08, "kinds": ["structured"]}
+    "qwen38": {"input": 1.3e-07, "output": 1.69e-07, "kinds": ["structured"], "approx": false},
+    "gpt-oss-high": {"input": 1.9e-08, "output": 9.2e-08, "kinds": ["structured"], "approx": true}
   }
 }
 ```
@@ -149,8 +149,8 @@ Keyed by the model's registry name; a model with no billed call is absent.
 
 | key | meaning |
 |---|---|
-| `input`, `output` | USD per input and per output token, when a fit on the calls can be trusted |
-| `blended` | otherwise: USD per token of either kind, the calls' cost over their tokens |
+| `input`, `output` | USD per input and per output token |
+| `approx` | `false` when a fit on the calls can be trusted; `true` when the calls reached hosts at different prices, were few, or kept input and output in a fixed ratio |
 | `kinds` | the kinds of call the fit covers: `structured` (a plain or `generator` dataset, a judge), `tools` (a `tools` or `agent` dataset) |
 
 ### Reading it

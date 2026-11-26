@@ -7,10 +7,12 @@ host it picked, and litellm reads that cost off the answer. A run's calls of
 one model, each with its input tokens, output tokens and cost, then give the
 model's price per token as the least-squares fit `cost ≈ a·in + b·out`, with
 no intercept: the average of the hosts the run reached, weighted by what each
-served. It is given only when the fit can be trusted (`estimate_prices`).
-Otherwise, typically when the calls reached hosts at different prices, the
-model gets what its calls cost over the tokens they took, input and output
-together (`blended_price`).
+served. A model with billed calls always gets the two prices: the fit when
+it can be trusted (`estimate_prices`); else, marked approximate, the same fit
+without its thresholds (typically when the calls reached hosts at different
+prices, or were few); else, when input and output cannot be told apart (one
+call, or tokens in a fixed ratio), the run's cost split as the model's hosts
+price output over input (`split_prices`, `price_ratio`).
 
 Calls are kept by registry entry, not by model id: two entries may share an
 id with different params, which reach different hosts. A judge's calls count
@@ -34,7 +36,8 @@ import numpy as np
 import synalinks
 
 from openarena.callbacks.otel import _judges
-from openarena.lookups.prices import CallKind
+from openarena.lookups.endpoints import openrouter_endpoints
+from openarena.lookups.prices import CallKind, _per_token, model_price
 
 # Below these the fit says nothing reliable: too few calls, input and output
 # tokens in a fixed ratio (they cannot be told apart), or a fit that explains
@@ -70,6 +73,20 @@ def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
     """
     if len(calls) < MIN_CALLS:
         return None
+    return _fit(calls, min_r2=MIN_R2)
+
+
+def loose_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
+    """The fit of `estimate_prices` without its count and R² thresholds: what the calls paid, approximately.
+
+    Calls whose cost is not a number are left out. It still needs two calls, input and output token counts
+    that are not proportional, and two prices of at least 0: otherwise None, as the two cannot be told apart.
+    """
+    kept = [c for c in calls if math.isfinite(c.cost)]
+    return _fit(kept, min_r2=None) if len(kept) >= 2 else None
+
+
+def _fit(calls: Sequence[BilledCall], *, min_r2: float | None) -> tuple[float, float] | None:
     x = np.array([[c.input_tokens, c.output_tokens] for c in calls], dtype=float)
     y = np.array([c.cost for c in calls], dtype=float)
     if not np.isfinite(y).all():
@@ -83,25 +100,49 @@ def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
         return None
     if a < 0 or b < 0:
         return None
-    residual = float(((y - x @ (a, b)) ** 2).sum())
-    spread = float(((y - y.mean()) ** 2).sum())
-    if spread <= 0 or 1 - residual / spread < MIN_R2:
-        return None
+    if min_r2 is not None:
+        residual = float(((y - x @ (a, b)) ** 2).sum())
+        spread = float(((y - y.mean()) ** 2).sum())
+        if spread <= 0 or 1 - residual / spread < min_r2:
+            return None
     return float(a), float(b)
 
 
-def blended_price(calls: Sequence[BilledCall]) -> float | None:
-    """USD per token, input and output together: what `calls` cost over the tokens they took.
+def split_prices(calls: Sequence[BilledCall], ratio: float) -> tuple[float, float] | None:
+    """The run's cost split into USD per input and per output token, output priced `ratio` times input.
 
-    What a model paid when `estimate_prices` gives nothing: its calls reached hosts at
-    different prices, were too few, or kept input and output in a fixed ratio. Calls whose
-    cost is not a number are left out; None when none is left or they took no token.
+    `a·in + ratio·a·out` gives back what the calls cost. Calls whose cost is not a number are left out;
+    None when none is left or they took no token.
     """
     kept = [c for c in calls if math.isfinite(c.cost)]
-    tokens = sum(c.input_tokens + c.output_tokens for c in kept)
-    if not kept or tokens <= 0:
+    weighted = sum(c.input_tokens + ratio * c.output_tokens for c in kept)
+    if not kept or weighted <= 0:
         return None
-    return sum(c.cost for c in kept) / tokens
+    per_input = sum(c.cost for c in kept) / weighted
+    return per_input, ratio * per_input
+
+
+def price_ratio(model_id: str | None) -> float | None:
+    """What a model's hosts charge per output token over per input token; None when no source says.
+
+    An `openrouter/...` model: the median over its OpenRouter endpoints with a price per token (read
+    as `routed_price` reads them, cached). Any other: litellm's table, or OpenRouter's catalogue
+    (`model_price`). Never raises.
+    """
+    if not model_id:
+        return None
+    try:
+        if model_id.startswith("openrouter/"):
+            priced = [p for e in openrouter_endpoints(model_id.removeprefix("openrouter/")) or [] if (p := _per_token(e))]
+            ratios = sorted(out / inp for inp, out in priced if inp > 0)
+            if ratios:
+                return float(np.median(ratios))
+        price = model_price(model_id)
+        if price is not None and price.input and price.output and price.input > 0:
+            return price.output / price.input
+    except Exception:  # noqa: BLE001 (no ratio: the cost is split evenly)
+        return None
+    return None
 
 
 def _key(model) -> tuple[str, str]:
@@ -208,6 +249,8 @@ class RunPrices:
     def __init__(self, judges: Mapping[tuple[str, str], str]):
         self._judges = dict(judges)
         self.calls: dict[str, list[BilledCall]] = {}
+        # Each entry's model id, as watched: what `price_ratio` reads when the calls cannot be told apart.
+        self.models: dict[str, str] = {}
         self._hooked: list[tuple[object, _BilledHook]] = []
         self._token: contextvars.Token | None = None
 
@@ -240,6 +283,8 @@ class RunPrices:
         """
         if any(isinstance(h, _BilledHook) and h._prices is self for h in model._hooks.hooks):
             return []
+        if isinstance(model_id := getattr(model, "model", None), str):
+            self.models.setdefault(entry, model_id)
         hook = _BilledHook(self, entry, kind)
         hook.set_module(model)
         model.add_hook(hook)
@@ -272,13 +317,17 @@ class RunPrices:
         return _PriceWatch(self, entry, kind) if kind else None
 
     def estimates(self) -> dict[str, dict]:
-        """What each entry paid, with the kinds of call it covers: USD per input and per output token
-        when the fit can be trusted (`estimate_prices`), else USD per token of either kind (`blended`)."""
+        """What each entry with billed calls paid: USD per input and per output token, the kinds of call
+        covered, and `approx`. Not approximate only when the fit can be trusted (`estimate_prices`); else
+        the fit without its thresholds (`loose_prices`); else the cost split by the hosts' ratio
+        (`split_prices`, `price_ratio`, even when no source has one)."""
         out = {}
         for entry, calls in self.calls.items():
             kinds = sorted({c.kind for c in calls})
             if (fit := estimate_prices(calls)) is not None:
-                out[entry] = {"input": fit[0], "output": fit[1], "kinds": kinds}
-            elif (blended := blended_price(calls)) is not None:
-                out[entry] = {"blended": blended, "kinds": kinds}
+                out[entry] = {"input": fit[0], "output": fit[1], "kinds": kinds, "approx": False}
+                continue
+            paid = loose_prices(calls) or split_prices(calls, price_ratio(self.models.get(entry)) or 1.0)
+            if paid is not None:
+                out[entry] = {"input": paid[0], "output": paid[1], "kinds": kinds, "approx": True}
         return out

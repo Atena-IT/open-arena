@@ -13,13 +13,14 @@ import pytest
 import synalinks
 from synalinks.src.modules.language_models.language_model import _CURRENT_CALL_USAGE
 
+from openarena import run_prices
+from openarena.lookups.prices import Price
 from openarena.run_prices import (
     MAX_COSINE,
     MIN_CALLS,
     MIN_R2,
     BilledCall,
     RunPrices,
-    blended_price,
     estimate_prices,
     judge_keys,
 )
@@ -187,51 +188,108 @@ def test_a_cost_that_is_not_a_number_never_fails_the_run():
     assert prices.estimates() == {}
 
 
-def _blend(calls):
-    return sum(c.cost for c in calls) / sum(c.input_tokens + c.output_tokens for c in calls)
+def _total(calls):
+    return sum(c.cost for c in calls), sum(c.input_tokens for c in calls), sum(c.output_tokens for c in calls)
 
 
-def test_hosts_at_different_prices_give_the_blended_price():
-    # Each call billed by one of two hosts, at its own prices: no one pair of prices explains them all.
+def _ratio(monkeypatch, ratios):
+    """`price_ratio` as the test sets it, by model id: what the model's hosts charge out over in."""
+    monkeypatch.setattr(run_prices, "price_ratio", lambda model_id: ratios.get(model_id))
+
+
+def test_a_fit_that_holds_gives_two_prices_not_approximate():
+    prices = RunPrices({})
+    for call in _calls(12, 2.2e-7, 4.4e-7):
+        prices.record("llama", call)
+    estimate = prices.estimates()["llama"]
+    assert estimate == {"input": pytest.approx(2.2e-7), "output": pytest.approx(4.4e-7), "kinds": ["structured"], "approx": False}
+
+
+def test_hosts_at_different_prices_still_give_two_prices():
+    # Each call billed by one of two hosts, at its own prices: no fit to trust, yet one that weighs them.
     cheap, dear = _calls(20, 1.7e-8, 8.5e-8), _calls(20, 1.5e-7, 9.5e-7, seed=7)
     calls = [c for pair in zip(cheap, dear) for c in pair]
     assert estimate_prices(calls) is None
     prices = RunPrices({})
     for call in calls:
         prices.record("gptoss-high", call)
-    assert prices.estimates() == {
-        "gptoss-high": {"blended": pytest.approx(_blend(calls)), "kinds": ["structured"]}
-    }
+    estimate = prices.estimates()["gptoss-high"]
+    assert estimate["approx"] is True and estimate["kinds"] == ["structured"]
+    assert 1.7e-8 <= estimate["input"] <= 1.5e-7 and 8.5e-8 <= estimate["output"] <= 9.5e-7
+    # The two prices give back what the run paid, within the fit's spread.
+    cost, tokens_in, tokens_out = _total(calls)
+    assert estimate["input"] * tokens_in + estimate["output"] * tokens_out == pytest.approx(cost, rel=0.1)
 
 
-def test_an_entry_without_a_reliable_fit_gets_its_blended_price():
-    few = _calls(MIN_CALLS - 1, 2.2e-7, 2.2e-7)
-    proportional = [BilledCall(n, 2 * n, n * 3e-7, "tools") for n in range(100, 100 + 10 * MIN_CALLS, 10)]
+def test_a_few_calls_of_one_host_give_its_prices():
     prices = RunPrices({})
-    for call in few:
+    for call in _calls(MIN_CALLS - 1, 2.2e-7, 4.4e-7):
         prices.record("few", call)
-    for call in proportional:
-        prices.record("proportional", call)
-    assert prices.estimates() == {
-        "few": {"blended": pytest.approx(_blend(few)), "kinds": ["structured"]},
-        # 3e-7 per input token, none per output token: 1e-7 per token of either kind.
-        "proportional": {"blended": pytest.approx(1e-7), "kinds": ["tools"]},
+    assert prices.estimates()["few"] == {
+        "input": pytest.approx(2.2e-7),
+        "output": pytest.approx(4.4e-7),
+        "kinds": ["structured"],
+        "approx": True,
     }
 
 
-def test_a_fit_that_holds_gives_two_prices_and_no_blended_one():
+def test_calls_that_cannot_be_told_apart_are_split_by_the_hosts_ratio(monkeypatch):
+    # One call, or input and output always in a fixed ratio: the run's cost is split as the model's hosts price.
+    _ratio(monkeypatch, {"openrouter/acme/m": 5.0})
+    one = [BilledCall(1000, 200, 3e-5, "tools")]
+    proportional = [BilledCall(n, 2 * n, n * 3e-7, "structured") for n in range(100, 100 + 10 * MIN_CALLS, 10)]
     prices = RunPrices({})
-    for call in _calls(12, 2.2e-7, 4.4e-7):
-        prices.record("llama", call)
-    assert set(prices.estimates()["llama"]) == {"input", "output", "kinds"}
+    for name, calls in (("one", one), ("proportional", proportional)):
+        prices.models[name] = "openrouter/acme/m"
+        for call in calls:
+            prices.record(name, call)
+    paid = prices.estimates()
+    for name, calls in (("one", one), ("proportional", proportional)):
+        cost, tokens_in, tokens_out = _total(calls)
+        assert paid[name]["approx"] is True
+        assert paid[name]["output"] == pytest.approx(5.0 * paid[name]["input"])
+        assert paid[name]["input"] * tokens_in + paid[name]["output"] * tokens_out == pytest.approx(cost)
 
 
-def test_the_blended_price_leaves_out_what_is_not_a_cost():
-    calls = _calls(3, 2.2e-7, 2.2e-7)
-    odd = BilledCall(calls[0].input_tokens, calls[0].output_tokens, float("nan"), "structured")
-    assert blended_price(calls + [odd]) == pytest.approx(_blend(calls))
-    assert blended_price([odd]) is None
-    assert blended_price([]) is None
+def test_without_a_ratio_the_cost_is_split_evenly(monkeypatch):
+    _ratio(monkeypatch, {})
+    prices = RunPrices({})
+    prices.models["one"] = "acme/unknown"
+    prices.record("one", BilledCall(1000, 200, 3e-5, "structured"))
+    paid = prices.estimates()["one"]
+    assert paid["input"] == paid["output"] == pytest.approx(3e-5 / 1200) and paid["approx"] is True
+
+
+def test_what_is_not_a_cost_is_left_out_and_an_entry_with_none_is_absent(monkeypatch):
+    _ratio(monkeypatch, {})
+    good = BilledCall(1000, 200, 3e-5, "structured")
+    odd = BilledCall(1000, 200, float("nan"), "structured")
+    prices = RunPrices({})
+    prices.record("mixed", good)
+    prices.record("mixed", odd)
+    prices.record("only-odd", odd)
+    paid = prices.estimates()
+    assert set(paid) == {"mixed"} and paid["mixed"]["input"] == pytest.approx(3e-5 / 1200)
+
+
+def test_a_watched_model_is_known_by_its_id_for_its_entry():
+    prices = RunPrices({})
+    prices.watch(synalinks.LanguageModel(model="openrouter/acme/m"), "m-entry", "structured")
+    assert prices.models == {"m-entry": "openrouter/acme/m"}
+
+
+def test_the_ratio_is_the_hosts_median_on_openrouter_and_the_table_elsewhere(monkeypatch):
+    endpoints = [
+        {"pricing": {"prompt": "1e-7", "completion": "5e-7"}},
+        {"pricing": {"prompt": "2e-7", "completion": "6e-7"}},
+        {"pricing": {"prompt": "1e-7", "completion": "8e-7"}},
+        {"pricing": {"prompt": "-1", "completion": "-1"}},  # priced per request: left out
+    ]
+    monkeypatch.setattr(run_prices, "openrouter_endpoints", lambda slug: endpoints if slug == "acme/m" else None)
+    monkeypatch.setattr(run_prices, "model_price", lambda model_id: Price(2.5e-6, 1e-5, "litellm") if model_id == "openai/gpt-4o" else None)
+    assert run_prices.price_ratio("openrouter/acme/m") == pytest.approx(5.0)
+    assert run_prices.price_ratio("openai/gpt-4o") == pytest.approx(4.0)
+    assert run_prices.price_ratio("acme/unknown") is None
 
 
 # -- judges --------------------------------------------------------------------
