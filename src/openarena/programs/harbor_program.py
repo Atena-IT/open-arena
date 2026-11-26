@@ -27,7 +27,9 @@ trajectory, as a framework data model (`HarborTrajectory`), with the
 the verifier's `rewards`. The arena's rewards read `answer` unless a reward
 names masks of its own. Success is read from the trajectory, not from how the
 agent exited (pi exits 0 after a model error): a run whose last model call
-failed and that left no answer predicts nothing.
+failed and that left no answer predicts nothing, and neither does a trial
+that failed before any model call went through (an id the provider does not
+know, a key, an outage), a task folder's included.
 
 The model entry's params go to the agent where its options take them
 (`agent_kwargs`): `temperature`, `reasoning_effort`, and, for an agent that
@@ -35,8 +37,9 @@ passes litellm call kwargs, `max_tokens`. A row whose trial left no
 trajectory (the sandbox would not start, the agent crashed before its first
 step) is logged with what Harbor said and predicts nothing, which scores 0:
 one flaky sandbox does not cost the cell. A cell none of whose rows got an
-answer fails, though (`NoAnswerGuard`): that is the sandbox, the image or a
-key failing, not the model, and a 0 would rank it as if it were.
+answer fails, though (`NoAnswerGuard`), with the first row's error: that is
+the sandbox, the image, a key or the provider failing, not the model, and a 0
+would rank it as if it were.
 
 Each row's trial keeps its logs under the run's state, `harbor/trials/<trial>/`,
 and a line in `harbor/trials.jsonl` (`TRIALS_LOG`) says which dataset, model
@@ -417,14 +420,23 @@ def last_output(logs: Path) -> str | None:
     return None
 
 
+def agent_steps(trajectory: dict[str, Any]) -> list[dict[str, Any]]:
+    """The steps of an ATIF trajectory that are the agent's own: what the model said and did."""
+    return [s for s in trajectory.get("steps") or [] if s.get("source") == "agent" and not s.get("is_copied_context")]
+
+
+def stopped_on_error(step: dict[str, Any]) -> bool:
+    return (step.get("extra") or {}).get("stop_reason") == "error"
+
+
 def run_error(trajectory: dict[str, Any], logs: Path) -> str | None:
     """Why the agent's run ended on an error its exit code may hide (pi's exits 0 after one), as one line, or None.
 
     Read from the trajectory: its last agent step stopped on an error (pi
     records a failed model call as such a step, after its retries).
     """
-    steps = [s for s in trajectory.get("steps") or [] if s.get("source") == "agent" and not s.get("is_copied_context")]
-    if not steps or (steps[-1].get("extra") or {}).get("stop_reason") != "error":
+    steps = agent_steps(trajectory)
+    if not steps or not stopped_on_error(steps[-1]):
         return None
     said = last_output(logs)
     return "the agent's last model call failed" + (f": {said}" if said else "")
@@ -445,6 +457,8 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None, verified
     nothing); else its last message. `rewards` are the verifier's. A run that
     ended on a model error with no answer did not answer (`ValueError`),
     unless the task is `verified`: its own tests score what the agent did.
+    A trial that failed with no model call gone through and no answer did
+    not answer either, `verified` or not: the agent did nothing to score.
     """
     try:
         raw = find_trajectory(trial_dir / "agent")
@@ -461,9 +475,17 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None, verified
         answer = written.read_text(errors="replace").strip() if written.is_file() else ""
     else:
         answer = final_answer(messages)
-    # A run that ended on an error and left no answer did not answer: the row fails, and says why.
-    if not answer and not verified and (stopped := run_error(raw, trial_dir / "agent")):
-        raise ValueError(stopped)
+    if not answer:
+        stopped = run_error(raw, trial_dir / "agent")
+        if all(stopped_on_error(s) for s in agent_steps(raw)):
+            # No model call went through (Terminus 2 leaves the instruction alone, pi its failed call): the model
+            # never answered. With an error to say why, the row fails, a task's own tests having nothing to score.
+            why = failure(result) or stopped
+        else:
+            # A run that ended on an error and left no answer did not answer: the row fails, and says why.
+            why = None if verified else stopped
+        if why:
+            raise ValueError(why)
     try:
         trajectory = HarborTrajectory.model_validate({**raw, "answer": answer, "rewards": verifier_rewards(result)})
     except Exception as e:  # noqa: BLE001 - pydantic's ValidationError: a trajectory Harbor's own schema refuses
@@ -665,10 +687,10 @@ class HarborTask(Module):
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)
-        # The rows tried, by outcome, and what the last unanswered one said: `NoAnswerGuard` reads them.
+        # The rows tried, by outcome, and what the first unanswered one said: `NoAnswerGuard` reads them.
         self.rows_answered = 0
         self.rows_unanswered = 0
-        self.last_failure: str | None = None
+        self.first_failure: str | None = None
         # The agent calls the model itself, not through the framework, so the cell's token and cost metrics would read
         # nothing. This model is never called: each trial's usage is added to its counters (`_book`), which those
         # metrics sum like any program's.
@@ -729,7 +751,7 @@ class HarborTask(Module):
         except Exception as e:  # noqa: BLE001 - a row that could not be answered scores 0; the cell goes on
             log.warning("Harbor task for %s answered nothing: %s", self.model, e)
             self.rows_unanswered += 1
-            self.last_failure = str(e)
+            self.first_failure = self.first_failure or str(e) or type(e).__name__
             self._record({**line, "status": "failed", "error": str(e), "seconds": round(time.monotonic() - began, 1), **(_usage(result) if result else {})})
             return None
         finally:
@@ -754,10 +776,10 @@ class HarborTask(Module):
 
 
 class NoAnswerGuard(synalinks.callbacks.Callback):
-    """Fail a Harbor cell none of whose rows got an answer, with what the last one said.
+    """Fail a Harbor cell none of whose rows got an answer, with what the first one said.
 
-    Every row failing is the sandbox, the image or a key, not the model under
-    test; scored 0 it would sit on the leaderboard as the model's result.
+    Every row failing is the sandbox, the image, a key or the provider, not the
+    model under test; scored 0 it would sit on the leaderboard as the model's result.
     Raised at the end of the cell's evaluation, it fails the cell's trial.
     """
 
@@ -771,8 +793,8 @@ class NoAnswerGuard(synalinks.callbacks.Callback):
         answered = sum(t.rows_answered for t in self.tasks)
         unanswered = sum(t.rows_unanswered for t in self.tasks)
         if unanswered and not answered:
-            last = next((t.last_failure for t in self.tasks if t.last_failure), None)
-            raise FailedTrialError(f"none of the {unanswered} Harbor task(s) got an answer; the last: {last}")
+            first = next((t.first_failure for t in self.tasks if t.first_failure), None)
+            raise FailedTrialError(f"none of the {unanswered} Harbor task(s) got an answer; the first: {first}")
 
 
 def no_answer_guard(program) -> NoAnswerGuard | None:

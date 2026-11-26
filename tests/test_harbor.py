@@ -513,8 +513,15 @@ def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(t
     trial = _pi_trial(tmp_path, events, output)
     with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
         prediction(trial, SimpleNamespace(exception_info=None))
-    # A task folder's own tests score what the agent did in the sandbox, answer or not.
-    assert prediction(trial, SimpleNamespace(exception_info=None), verified=True)["answer"] == ""
+    # No model call went through, so the agent did nothing a task folder's own tests could score either.
+    with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
+        prediction(trial, SimpleNamespace(exception_info=None), verified=True)
+    # After a call that went through, a task folder's own tests score what the agent did in the sandbox, answer or not.
+    later = {"type": "message", "id": "d4e5f6a7", "parentId": "c3d4e5f6", "timestamp": "2025-11-21T01:33:40.875Z", "message": failed}
+    worked = _pi_trial(tmp_path / "worked", [*PI_SESSION[:4], later], output)
+    assert prediction(worked, SimpleNamespace(exception_info=None), verified=True)["answer"] == ""
+    with pytest.raises(ValueError, match="the agent's last model call failed"):
+        prediction(worked, SimpleNamespace(exception_info=None))
     # A log that cannot be read leaves the trajectory's own word.
     (trial / "agent" / "pi.txt").unlink()
     (trial / "agent" / "pi.txt").mkdir()
@@ -1144,3 +1151,58 @@ def test_a_failed_commands_error_keeps_the_end_of_its_output_not_the_command(tmp
 def test_what_the_framework_is_told_about_a_model_is_never_passed_to_a_harbor_agent():
     params = {"temperature": 0.0, "reasoning_effort": "high", "supports_reasoning": True, "supports_vision": True, "supports_audio": True}
     assert agent_kwargs("terminus-2", params) == {"temperature": 0.0, "reasoning_effort": "high"}
+
+
+def test_a_trial_whose_model_never_answered_fails_and_a_cell_of_them_fails_with_the_first_error(monkeypatch, tmp_path):
+    import asyncio
+    from types import SimpleNamespace
+
+    from harbor.trial.trial import Trial
+    from openarena.evaluate import keras_tuner  # the sweep's import: it picks the framework's backend first
+    from openarena.programs import harbor_program
+    from synalinks.src.backend import JsonDataModel
+
+    # What Terminus 2 leaves when its model call raises (an id the provider does not know, a key, an outage):
+    # Harbor's exception, no tokens, and a trajectory holding the instruction alone.
+    said = 'litellm.BadRequestError: OpenrouterException - {"error":{"message":"rv/does-not-exist is not a valid model ID","code":400}}'
+    asked = {**_trajectory(), "steps": _trajectory()["steps"][:1]}
+    outcomes = [
+        (asked, SimpleNamespace(exception_type="BadRequestError", exception_message=said)),
+        (asked, SimpleNamespace(exception_type="AuthenticationError", exception_message="no key")),
+        (_trajectory(), None),
+    ]
+
+    async def create(config):
+        trajectory, exception = outcomes.pop(0)
+
+        class Ran:
+            async def run(self):
+                logs = Path(config.trials_dir) / config.trial_name / "agent"
+                logs.mkdir(parents=True)
+                (logs / "trajectory.json").write_text(json.dumps(trajectory))
+                usage = SimpleNamespace(n_input_tokens=0, n_output_tokens=0, cost_usd=None)
+                return SimpleNamespace(exception_info=exception, agent_result=usage, verifier_result=None)
+
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    monkeypatch.setenv("ARENA_HARBOR_SANDBOX", "e2b")
+    source = tmp_path / "source"
+    (source / "environment").mkdir(parents=True)
+    (source / "task.toml").write_text('[environment]\ndocker_image = "python:3.12-slim"\n')
+    (source / "instruction.md").write_text("Say hi.\n")
+    # A task folder, as on the run that showed it: its own tests would have scored the trial, and none ran.
+    task = harbor_program.HarborTask(model="openai/gpt-4o", spec={"agent": "terminus-2", "dataset": "d", "tasks": True}, work_dir=str(tmp_path / "work"))
+    row = JsonDataModel(json={"task": "hello", "path": str(source)}, schema={"type": "object", "properties": {}})
+    guard = harbor_program.NoAnswerGuard([task])
+
+    assert asyncio.run(task.call(row)) is None and asyncio.run(task.call(row)) is None
+    lines = [json.loads(line) for line in (tmp_path / "work" / harbor_program.TRIALS_LOG).read_text().splitlines()]
+    assert [line["status"] for line in lines] == ["failed", "failed"]
+    assert lines[0]["error"].startswith("BadRequestError: ") and "not a valid model ID" in lines[0]["error"]
+    with pytest.raises(keras_tuner.errors.FailedTrialError, match=r"none of the 2 Harbor task\(s\) got an answer; the first: BadRequestError: .*not a valid model ID"):
+        guard.on_test_end()
+    # One trial that answered and the cell is scored, the unanswered ones at 0.
+    assert asyncio.run(task.call(row)).get_json()["answer"] == "hello"
+    guard.on_test_end()

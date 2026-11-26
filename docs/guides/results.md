@@ -284,7 +284,7 @@ python -c "import json,sys; t=json.load(open(sys.argv[1])); print(t['hyperparame
 | an error reading the dataset | a wrong `path`, `name` or `split`, or a template naming a missing column | look at a real row, fix `config` |
 | reward 0 everywhere, answers look right | the answer's form differs from the expected one (`"42"` and `"42.0"`, `"B"` and `"B) ..."`) | tighten the `output_schema` or the template, or use `answer_accuracy` or a judge |
 | a judge reward fails | the judge model's key is not set | set its provider's key |
-| `none of the N Harbor task(s) got an answer` | the sandbox: no Docker or E2B key, a failed image build, no `tmux` | read `harbor/trials.jsonl` |
+| `none of the N Harbor task(s) got an answer; the first: <error>` | the sandbox (no Docker or E2B key, a failed image build, no `tmux`), or the model never answered (a wrong id, a missing key, the provider down); the error after `the first:` says which | read `harbor/trials.jsonl` |
 
 !!! note "Every cell runs"
     A failed cell never stops the run, however many fail in a row: every
@@ -303,7 +303,7 @@ between them. Rule out the last two before blaming the first.
 | every model scores 0 on a dataset | the scoring or the data: a template, a schema, an expected answer, a Harbor task whose solution fails its own tests |
 | one model at 0, the others fine | that model's setup first (key, id, server), then the model |
 | a low reward with `output_tokens` near 0 | the model answered nothing: the provider failed on the rows |
-| a Harbor line with `"status": "failed"` | the sandbox did not run that row; it scored 0 |
+| a Harbor line with `"status": "failed"` | the sandbox did not run that row, or no model call went through; it scored 0 |
 | a Harbor line `answered` with an `error` | the agent ran but stopped short (a timeout, nothing in the answer file); the score is the model's |
 | scores move when only `batch_size` changes | rate limits, or a struggling local server |
 
@@ -328,7 +328,7 @@ Each row's trial writes one line to `harbor/trials.jsonl`:
 | `trial`, `dir` | the trial's name, and where its logs are |
 | `dataset`, `model`, `agent` | the cell, and the Harbor agent that ran |
 | `task`, `question` | the task folder (task datasets), the instruction asked |
-| `status` | `answered`, or `failed` when the trial left no trajectory |
+| `status` | `answered`, or `failed` when the trial left no trajectory or failed before any model call went through |
 | `answer`, `steps` | what the agent answered, and how many steps it took |
 | `rewards` | what the verifier, or the task's `rewards.yaml`, scored |
 | `error` | why it failed, or why an answered trial stopped short |
