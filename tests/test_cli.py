@@ -163,6 +163,20 @@ def _save_run(state, name, cells, models, mtime):
     os.utime(run / "result.json", (mtime, mtime))
 
 
+def test_leaderboards_run_prints_shares_that_add_up_to_100(tmp_path):
+    configs, state = tmp_path / "configs", tmp_path / "state"
+    init(tmp_path)
+    (configs / "leaderboards.yaml").write_text(
+        yaml.safe_dump({"leaderboards": {"even": {"title": "Even", "datasets": ["gsm8k-20"], "shares": {"reward": 1, "cost": 1, "latency": 1}}}})
+    )
+    cells = {("a", "gsm8k-20"): {"reward": 0.9, "cost": 2.0, "latency": 3.0}, ("b", "gsm8k-20"): {"reward": 0.6, "cost": 1.0, "latency": 5.0}}
+    _save_run(state, "smoke", cells, ["a", "b"], 2_000)
+    ok = CliRunner().invoke(cli, ["leaderboards", "run", "even", "--configs", str(configs), "--state-dir", str(state), "--no-eol"])
+    assert ok.exit_code == 0, ok.output
+    # Three equal thirds: rounding each alone prints 33% three times, 99%; the missing point goes to the first.
+    assert "Shares: cost 34%, latency 33%, reward 33%" in ok.output
+
+
 def test_leaderboards_run(tmp_path):
     configs, state = tmp_path / "configs", tmp_path / "state"
     init(tmp_path)

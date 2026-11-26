@@ -239,10 +239,12 @@ def _fmt(value: float) -> str:
 
 def _ranking(name: str, leaderboard: dict, ranking: dict) -> None:
     """The ranked table, then the models in scope that could not be ranked and why."""
+    from openarena.leaderboard import whole_shares
+
     title = leaderboard.get("title") or name
     console.print(f"[bold]{title}[/]" + (f" — {leaderboard['description']}" if leaderboard.get("description") else ""))
     console.print(f"Datasets: {', '.join(ranking['datasets']) or '(none)'}")
-    console.print("Shares: " + ", ".join(f"{m} {share:.0f}%" for m, share in ranking["shares"].items()))
+    console.print("Shares: " + ", ".join(f"{m} {share}%" for m, share in whole_shares(ranking["shares"]).items()))
     table = Table()
     table.add_column("#", justify="right")
     table.add_column("model", style="cyan")
