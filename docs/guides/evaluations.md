@@ -459,6 +459,24 @@ often dozens of calls. Each judge adds a call per row.
 Then measure rather than guess: run the sweep with `limit: 5` and `cost` as a
 metric, read the cost per cell, and multiply by `rows / 5`.
 
+### What a model paid per token
+
+OpenRouter bills each call of an `openrouter/` model at the price of the host
+it picked, so a model's list price is a range, not a number. After a run,
+`result.json` says what each model paid per input and per output token
+(`last_run_prices`, [Reading results](results.md#last_run_prices)), fitted on
+the calls it was billed for:
+
+- by registry entry: two entries of the same model with different `params`
+  are fitted apart;
+- a judge's calls count for its own entry; a judge set by no entry is not
+  counted;
+- cache hits, failed calls and calls with no cost are left out, and so are
+  Harbor tasks, A2A agents and embedding models;
+- it is given only when the fit can be trusted: at least 10 billed calls,
+  questions and answers whose lengths are not in a fixed ratio, and a fit
+  that explains the costs. A model can have none.
+
 ## When to use what
 
 === "First run of a new setup"

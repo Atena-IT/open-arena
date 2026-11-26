@@ -48,12 +48,13 @@ from openarena.config.model_types import MODEL_TYPES  # noqa: E402
 from openarena.datasets import load_dataset_from_config  # noqa: E402
 from openarena.lookups.prices import ensure_priced  # noqa: E402
 from openarena import telemetry  # noqa: E402
+from openarena.run_prices import RunPrices, judge_keys  # noqa: E402
 from openarena.programs import build_a2a, build_agent, build_embedding, build_harbor, build_program, build_tools  # noqa: E402
 from openarena.programs.harbor_program import no_answer_guard  # noqa: E402
 from openarena.programs.a2a_program import A2aAgent  # noqa: E402
 from synalinks.src.modules.module import release_resource  # noqa: E402
 from openarena.programs.agent_program import McpToolsUnavailable  # noqa: E402
-from openarena.programs.utils import answer_layout, template_keys  # noqa: E402
+from openarena.programs.utils import answer_layout, template_keys, with_provider_routing  # noqa: E402
 from openarena.results import SweepResults  # noqa: E402
 from openarena.rewards import _REWARD_TYPES, build_models, get as get_reward  # noqa: E402
 
@@ -737,8 +738,9 @@ async def run_sweep(
     (models already scored / queued for a retry, only when a previous
     attempt left state behind), `dataset_ready` (batches), `cell_start`
     (model), `batch` (batch, batches_total, running reward), `cell_end`
-    (metrics), `dataset_end` (statuses per model) and `sweep_end`. Raising
-    `SweepCancelled` from it aborts the sweep.
+    (metrics), `dataset_end` (statuses per model) and `sweep_end` (what
+    each model paid per token, `last_run_prices`, also in the result).
+    Raising `SweepCancelled` from it aborts the sweep.
 
     `on_sample`, with `samples_per_cell > 0`, receives the first rows of each
     `(model, dataset)` cell as `{dataset, model, index, input, target,
@@ -799,6 +801,9 @@ async def run_sweep(
     # knows it, not only litellm's live table (lookups/prices.py).
     for entry in cfg.models.values():
         ensure_priced(entry.model, MODEL_TYPES[entry.type].litellm_mode)
+    # What each model paid per token, from the calls it was billed for, by registry entry
+    # (run_prices.py); a judge's calls count for the entry its model is built from.
+    prices = RunPrices(judge_keys(cfg.judge_models()))
 
     # Optional process-wide reproducibility seed. `set_seed`
     # seeds both `numpy.random` and `random` — LM sampling temperature is
@@ -811,8 +816,18 @@ async def run_sweep(
     # `embedding_model:` pick these up. The framework persists the identifier
     # into the framework's config file in the home folder as a side effect — that's the
     # library's documented behavior for string identifiers.
-    if cfg.default_language_model is not None:
-        synalinks.set_default_language_model(cfg.default_language_model)
+    if (default := cfg.default_language_model) is not None:
+        named = cfg.evaluation.default_language_model
+        if isinstance(default, synalinks.LanguageModel) and not cfg.lm_kwargs(named):
+            # An `openrouter/` entry with no params is built with its routing (`Config._id`). Handed
+            # over as that instance, the framework would rewrite its home config without a default
+            # model; handed over as the id it is, the id is persisted as before, and the routing is
+            # put on the model the framework builds from it.
+            synalinks.set_default_language_model(cfg.model_id(named))
+            built = synalinks.default_language_model()
+            built.default_kwargs = with_provider_routing(built.model, built.default_kwargs)
+        else:
+            synalinks.set_default_language_model(default)
     if cfg.default_embedding_model is not None:
         synalinks.set_default_embedding_model(cfg.default_embedding_model)
 
@@ -855,6 +870,8 @@ async def run_sweep(
     # Every program the sweep builds is closed by the end, however it ends: the tuner closes a cell's
     # program when its trial ends, and this `finally` closes the rest (cells a cancellation or an error
     # left unrun), with what they opened: an agent judge's sandbox, an A2A agent's client.
+    # The billed calls count while the cells run, and only for this run: its hooks come off at the end.
+    prices.start()
     try:
         for ds_name in dataset_names:
             emit({"event": "dataset_start", "dataset": ds_name})
@@ -1065,6 +1082,7 @@ async def run_sweep(
             prepared.append(
                 {
                     "name": ds_name,
+                    "kind": kind,
                     "ds": ds,
                     "tuner": tuner,
                     "pending": pending,
@@ -1116,6 +1134,9 @@ async def run_sweep(
             # A cell whose program could not be built has no program: its trial raises why.
             if (program := item["programs"].get(model_id)) is not None:
                 callbacks.insert(0, no_answer_guard(program) or _NoAnswerGuard(program))
+            # The billed calls of the cell's model and of its judges, for what each paid per token.
+            if (watch := prices.callback(model_id, item["kind"])) is not None:
+                callbacks.append(watch)
             if mlflow_experiment and synalinks.is_observability_enabled():
                 callbacks.append(
                     _RunMonitor(
@@ -1146,6 +1167,7 @@ async def run_sweep(
         for item in active:
             item["tuner"].on_search_end()
     finally:
+        prices.stop()
         for item in prepared:
             for program in item["programs"].values():
                 await program.close()
@@ -1170,6 +1192,7 @@ async def run_sweep(
             }
         )
 
-    emit({"event": "sweep_end"})
-    return {"meta": results.meta(config_path), "rows": results.rows()}
+    last_run_prices = prices.estimates()
+    emit({"event": "sweep_end", "last_run_prices": last_run_prices})
+    return {"meta": results.meta(config_path), "rows": results.rows(), "last_run_prices": last_run_prices}
 

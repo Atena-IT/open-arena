@@ -130,6 +130,75 @@ def test_a_sweep_scores_every_model_on_every_dataset_and_tells_the_run_as_it_goe
     assert samples[0]["input"] == {"question": "2 + 2?"} and samples[0]["target"] == {"answer": "4"} and samples[0]["dataset"] == "qa"
 
 
+def test_the_run_ends_with_what_each_model_paid_per_token(tmp_path, monkeypatch):
+    from openarena import run_prices
+
+    calls, events, watched = [], [], []
+    _fake_model(monkeypatch, calls)
+    paid = {"right": {"input": 2.2e-7, "output": 2.2e-7, "kinds": ["structured"]}}
+    inner = run_prices.RunPrices.callback
+
+    def callback(self, entry, dataset_kind):
+        watched.append((entry, dataset_kind))
+        return inner(self, entry, dataset_kind)
+
+    monkeypatch.setattr(run_prices.RunPrices, "callback", callback)
+    monkeypatch.setattr(run_prices.RunPrices, "estimates", lambda self: paid)
+    result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state", on_event=events.append))
+    # Each cell's models are watched under the registry entry the axis names, with the dataset's kind.
+    assert watched == [("right", "model"), ("wrong", "model")]
+    assert events[-1] == {"event": "sweep_end", "last_run_prices": paid}
+    assert result["last_run_prices"] == paid
+
+
+def test_an_openrouter_default_model_is_kept_on_disk_as_its_id_and_routed(tmp_path, monkeypatch):
+    import json
+
+    from synalinks.src.backend import config as framework_config
+
+    # The framework's home config in a folder of the test's own, and its process-wide default put back after.
+    home = tmp_path / "synalinks-home"
+    home.mkdir()
+    monkeypatch.setattr(framework_config, "_synalinks_DIR", str(home))
+    monkeypatch.setattr(framework_config, "_config_path", str(home / "synalinks.json"))
+    monkeypatch.setattr(framework_config, "_DEFAULT_LANGUAGE_MODEL", framework_config._DEFAULT_LANGUAGE_MODEL)
+    monkeypatch.setattr(framework_config, "_DEFAULT_LANGUAGE_MODEL_IDENTIFIER", framework_config._DEFAULT_LANGUAGE_MODEL_IDENTIFIER)
+    _fake_model(monkeypatch, [])
+    path = _config(tmp_path)
+    config = yaml.safe_load(path.read_text())
+    config["models"]["or"] = {"model": "openrouter/acme/judge"}
+    config["evaluation"]["default_language_model"] = "or"
+    path.write_text(yaml.safe_dump(config))
+    asyncio.run(run_sweep(str(path), state_dir=tmp_path / "state"))
+    # Persisted as the id it is, as the framework does for any id, not erased.
+    assert json.loads((home / "synalinks.json").read_text())["language_model"] == "openrouter/acme/judge"
+    # And the model a judge falls back to carries the routing every OpenRouter call needs.
+    assert synalinks.default_language_model().default_kwargs["provider"] == {"require_parameters": True}
+
+
+def test_a_sweep_records_each_billed_call_for_its_entry(tmp_path, monkeypatch):
+    from openarena import run_prices
+
+    async def answer(self, formatted_messages, **kwargs):
+        # The provider answered by litellm's mock: real usage and litellm's price, hooks and all.
+        kwargs.pop("timeout", None)
+        return await litellm.acompletion(model=self.model, messages=formatted_messages, mock_response='{"answer": "4"}', **kwargs)
+
+    monkeypatch.setattr(synalinks.LanguageModel, "_acompletion", answer)
+    recorded = []
+    inner = run_prices.RunPrices.record
+
+    def record(self, entry, call):
+        recorded.append((entry, call.kind, call.cost > 0))
+        inner(self, entry, call)
+
+    monkeypatch.setattr(run_prices.RunPrices, "record", record)
+    result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state"))
+    assert sorted(recorded) == [("right", "structured", True)] * 3 + [("wrong", "structured", True)] * 3
+    # Three calls each: fewer than an estimate needs.
+    assert result["last_run_prices"] == {}
+
+
 def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_again(tmp_path, monkeypatch):
     calls, events = [], []
     _fake_model(monkeypatch, calls)

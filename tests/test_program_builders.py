@@ -222,7 +222,18 @@ def test_the_level_set_on_a_model_is_the_one_its_generator_sends(litellm_calls, 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
 def test_off_on_a_model_turns_a_local_models_thinking_off(litellm_calls, chain_of_thought):
     program, module = _generated("ollama/qwen3:8b", chain_of_thought, _thinks({"reasoning_effort": "disable"}))
-    assert module.reasoning_effort == "disable" and _sent(program, litellm_calls, "think") is False
+    assert module.reasoning_effort == "none" and _sent(program, litellm_calls, "think") is False
+
+
+def test_off_reaches_the_framework_as_none_which_it_takes_without_a_warning(litellm_calls):
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message='.*reasoning_effort="disable".*')
+        program, _ = _generated("ollama/qwen3:8b", False, _thinks({"reasoning_effort": "disable"}))
+        assert _sent(program, litellm_calls, "think") is False
+        program, _ = _generated(THINKER, False, REASONS, reasoning_effort="disable")
+        _sent(program, litellm_calls)
 
 
 @pytest.mark.parametrize("chain_of_thought", [False, True])
@@ -485,7 +496,7 @@ def test_the_level_a_generator_block_sets_decides_the_reasoning_object_not_the_m
 def test_a_provider_other_than_openrouter_gets_no_reasoning_object(wire):
     body = _posted("openai/gpt-4o-mini", wire, False, {"reasoning_effort": "disable"})
     assert "reasoning" not in body and "reasoning_effort" not in body and "provider" not in body
-    assert language_model("ollama/qwen3:8b", {"reasoning_effort": "disable"}).default_kwargs == {"reasoning_effort": "disable"}
+    assert language_model("ollama/qwen3:8b", {"reasoning_effort": "disable"}).default_kwargs == {"reasoning_effort": "none"}
 
 
 def test_the_routing_keeps_the_entrys_own_extra_body_and_adds_no_reasoning_object():

@@ -93,7 +93,10 @@ bar, `-vv` for a line per batch.
      "value": 0.85, "status": "COMPLETED", "direction": "max", "on_frontier": true},
     {"model": "gpt-4o-mini", "dataset": "gsm8k-20", "metric": "cost",
      "value": 0.0021, "status": "COMPLETED", "direction": "min", "on_frontier": true}
-  ]
+  ],
+  "last_run_prices": {
+    "qwen38": {"input": 1.3e-07, "output": 1.69e-07, "kinds": ["structured"]}
+  }
 }
 ```
 
@@ -136,6 +139,17 @@ needs to be read alone.
     A failed cell has `value: null`, and leaderboards skip it. A cell that
     `COMPLETED` with 0 did run: the model answered and every answer scored 0, or
     the scoring could not match its form. See [Model or infrastructure](#model-or-infrastructure).
+
+### last_run_prices
+
+What each model paid in this run, per token in USD, fitted on the calls it was
+billed for ([What a model paid per token](evaluations.md#what-a-model-paid-per-token)).
+Keyed by the model's registry name; a model with no reliable fit is absent.
+
+| key | meaning |
+|---|---|
+| `input`, `output` | USD per input and per output token |
+| `kinds` | the kinds of call the fit covers: `structured` (a plain or `generator` dataset, a judge), `tools` (a `tools` or `agent` dataset) |
 
 ### Reading it
 
