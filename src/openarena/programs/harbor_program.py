@@ -29,7 +29,9 @@ names masks of its own. Success is read from the trajectory, not from how the
 agent exited (pi exits 0 after a model error): a run whose last model call
 failed and that left no answer predicts nothing, and neither does a trial
 that failed before any model call went through (an id the provider does not
-know, a key, an outage), a task folder's included.
+know, a key, an outage), a task folder's included. That is read off the
+shapes Terminus 2 and pi leave; an agent that writes the provider's error as
+its answer is scored on it.
 
 The model entry's params go to the agent where its options take them
 (`agent_kwargs`): `temperature`, `reasoning_effort`, and, for an agent that
@@ -37,7 +39,7 @@ passes litellm call kwargs, `max_tokens`. A row whose trial left no
 trajectory (the sandbox would not start, the agent crashed before its first
 step) is logged with what Harbor said and predicts nothing, which scores 0:
 one flaky sandbox does not cost the cell. A cell none of whose rows got an
-answer fails, though (`NoAnswerGuard`), with the first row's error: that is
+answer fails, though (`NoAnswerGuard`), with the error of the first row to fail: that is
 the sandbox, the image, a key or the provider failing, not the model, and a 0
 would rank it as if it were.
 
@@ -458,7 +460,9 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None, verified
     ended on a model error with no answer did not answer (`ValueError`),
     unless the task is `verified`: its own tests score what the agent did.
     A trial that failed with no model call gone through and no answer did
-    not answer either, `verified` or not: the agent did nothing to score.
+    not answer either, `verified` or not: every agent step stopped on an
+    error, or there is no step, no output token and an error that is not the
+    time limit (an unfinished trial is scored, and Harbor's verifier ran).
     """
     try:
         raw = find_trajectory(trial_dir / "agent")
@@ -476,14 +480,18 @@ def prediction(trial_dir: Path, result, answer_file: str | None = None, verified
     else:
         answer = final_answer(messages)
     if not answer:
-        stopped = run_error(raw, trial_dir / "agent")
-        if all(stopped_on_error(s) for s in agent_steps(raw)):
-            # No model call went through (Terminus 2 leaves the instruction alone, pi its failed call): the model
-            # never answered. With an error to say why, the row fails, a task's own tests having nothing to score.
-            why = failure(result) or stopped
+        steps = agent_steps(raw)
+        if not steps:
+            # Terminus 2 records a step once its reply's commands ran, so no step is no reply only when the agent
+            # counted no output token. The time limit is left out: an unfinished trial is scored, by Harbor's verifier too.
+            timed_out = getattr(result.exception_info, "exception_type", None) == "AgentTimeoutError"
+            why = None if timed_out or _usage(result).get("output_tokens") else failure(result)
+        elif verified and not all(stopped_on_error(s) for s in steps):
+            # After a call that went through, a task's own tests score what the agent did, answer or not.
+            why = None
         else:
             # A run that ended on an error and left no answer did not answer: the row fails, and says why.
-            why = None if verified else stopped
+            why = run_error(raw, trial_dir / "agent")
         if why:
             raise ValueError(why)
     try:
@@ -615,11 +623,7 @@ async def run_trial(
 
 def model_calls(trajectory: dict[str, Any]) -> int:
     """The model calls an ATIF trajectory records: each agent step's `llm_call_count`, one when it does not say."""
-    return sum(
-        int(step.get("llm_call_count") or 1)
-        for step in trajectory.get("steps") or []
-        if step.get("source") == "agent" and not step.get("is_copied_context")
-    )
+    return sum(int(step.get("llm_call_count") or 1) for step in agent_steps(trajectory))
 
 
 def _seconds(timing) -> float:

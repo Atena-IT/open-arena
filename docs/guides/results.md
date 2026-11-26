@@ -321,6 +321,7 @@ between them. Rule out the last two before blaming the first.
 | a low reward with `output_tokens` near 0 | the model answered nothing: the provider failed on the rows |
 | a Harbor line with `"status": "failed"` | the sandbox did not run that row, or no model call went through; it scored 0 |
 | a Harbor line `answered` with an `error` | the agent ran but stopped short (a timeout, nothing in the answer file); the score is the model's |
+| a Harbor line `answered` whose `answer` quotes a provider's error | the agent wrote the error as its answer and the row was scored: a failed call is told apart on Terminus 2 and pi only; the 0 is the setup's |
 | scores move when only `batch_size` changes | rate limits, or a struggling local server |
 
 !!! warning "A provider error on some rows does not fail the cell"

@@ -121,6 +121,7 @@ some rows failed.
 | a judge reward fails | the judge's `language_model` has no key | say which provider key the user must set |
 | the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` in the config is unset where the run reads its environment (the CLI: the shell or the workspace's `.env`; an app: its settings) | tell the user to set `NAME`; never write its value into a file yourself |
 | `none of the N Harbor task(s) got an answer; the first: <error>` (`FAILED`) | the sandbox (no Docker / E2B key, image build failed, `tmux` missing), or the model never answered (wrong id, key unset, provider down) | the error after `the first:`, then `harbor/trials.jsonl`, below |
+| a Harbor row answered with a provider's error as its answer (`API Error: 400 ...`) | the agent wrote the error as its answer: a failed call is told apart on Terminus 2 and pi only | the model's id and key, not the model |
 
 However many cells fail, the run goes on to the end and writes
 `result.json`. Only an interruption (Ctrl-C, a crash) leaves no new
