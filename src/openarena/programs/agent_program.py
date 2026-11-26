@@ -88,8 +88,8 @@ async def build_agent(
 
     # Final-answer schema/data_model: prefer explicit override in agent_config,
     # otherwise inherit from the dataset's output side. Inputs-only datasets
-    # (no output_template) leave both unset → agent returns a free-form chat
-    # answer via its final_generator.
+    # (no output_template) leave both unset → the agent's reply without a tool
+    # call is its free-form answer.
     if "schema" not in cfg and "data_model" not in cfg:
         if dataset.output_schema is not None:
             cfg["schema"] = dataset.output_schema
