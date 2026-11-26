@@ -542,6 +542,9 @@ def agent_class_problem(agent: str) -> str | None:
     return None
 
 
+HERMES = "openarena.harbor_hermes:Hermes"
+
+
 async def run_trial(
     task: Path, trials: Path, name: str, agent: str, model: str | None, timeout_sec: float | None = None,
     kwargs: dict[str, Any] | None = None, provider: str | None = None, env: dict[str, str] | None = None,
@@ -564,7 +567,8 @@ async def run_trial(
         trial_name=name,
         trials_dir=trials,
         # Harbor reads `acp:<id>[@version]` as its ACP runner and `module:Class` as an import path, imported here, in the trial.
-        agent=AgentConfig(name=agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
+        # `hermes` runs the engine's Hermes, whose install check today's Hermes passes (openarena.harbor_hermes).
+        agent=AgentConfig(name=HERMES if agent == "hermes" else agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
         environment=environment_config(provider),
         verifier=VerifierConfig(),
     )

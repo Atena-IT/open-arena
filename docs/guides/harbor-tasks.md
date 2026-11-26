@@ -429,7 +429,9 @@ How to choose:
 `gemini-cli`, `goose`, `opencode`, `mini-swe-agent`, `cursor-cli`, `hermes`
 and `pi` need a `provider/model` id. An agent in the sandbox installs itself
 there before its first step, in each sandbox (Hermes takes several
-minutes); Hermes reads its key from the arena's own environment. A run
+minutes); Hermes reads its key from the arena's own environment, and
+runs as Harbor's Hermes with one fix: its install check, `hermes version`,
+is a command Hermes no longer has (harbor-framework/harbor#3091). A run
 that ends on a model error and leaves no answer fails its row, with the
 error, even when the agent exits as if it had worked (pi does); a task
 folder keeps what its own tests scored, and its trial notes the error.
