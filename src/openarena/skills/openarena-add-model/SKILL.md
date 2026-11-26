@@ -64,8 +64,8 @@ out to keep the provider's default. Where params actually apply:
 
 - Model under test on a generator, agent or tools dataset: sent with every call.
   Its `reasoning_effort` is the level it is asked at, unless the dataset's
-  block sets its own, which wins for every model of the evaluation (`max` is
-  sent as `xhigh`); `disable` turns thinking off with each provider's own
+  block sets its own, which wins for every model of the evaluation;
+  `disable` turns thinking off with each provider's own
   switch (OpenRouter's `reasoning: {"enabled": false}`), for a model whose
   entry sets `supports_reasoning: true`: the arena does not find it out, so
   set it for every model that thinks natively (OpenRouter lists a `reasoning`
