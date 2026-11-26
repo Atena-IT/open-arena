@@ -9,9 +9,12 @@ the first command that needs them, and `hermes sessions list` is one. `run_trial
 Remove it once Harbor's own Hermes installs.
 """
 
+import logging
 from typing import Any
 
 from harbor.agents.installed.hermes import Hermes as HarborHermes
+
+log = logging.getLogger("uvicorn.error")
 
 STALE_CHECK = "&& hermes version"
 CHECK = "&& hermes sessions list >/dev/null && hermes --version"
@@ -19,10 +22,16 @@ CHECK = "&& hermes sessions list >/dev/null && hermes --version"
 
 class Hermes(HarborHermes):
     def get_version_command(self) -> str | None:
-        return 'export PATH="$HOME/.local/bin:$PATH"; hermes --version | head -n 1'
+        return 'export PATH="$HOME/.local/bin:$PATH"; hermes --version'
+
+    def parse_version(self, stdout: str) -> str:
+        # `--version` goes on with the install directory, Python and SDK versions: the first line names the release.
+        return stdout.strip().splitlines()[0] if stdout.strip() else ""
 
     async def exec_as_agent(self, environment, command: str, *args: Any, **kwargs: Any) -> Any:
         # Only the install command ends so; once Harbor fixes its own, nothing matches and this passes it through.
         if command.endswith(STALE_CHECK):
             command = command.removesuffix(STALE_CHECK) + CHECK
+        elif "hermes version" in command:
+            log.warning("Harbor's Hermes runs `hermes version` where the engine does not rewrite it; the install may fail: %s", command)
         return await super().exec_as_agent(environment, command, *args, **kwargs)
