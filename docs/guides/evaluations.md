@@ -479,7 +479,8 @@ the calls it was billed for:
   that explains the costs. Otherwise they are approximate (`approx: true`):
   the same fit without those thresholds, the usual case when OpenRouter
   spread the calls over hosts at different prices; or, when input and
-  output cannot be told apart (one call, lengths in a fixed ratio), the
+  output cannot be told apart (one call, lengths in a fixed ratio) or that
+  fit prices output over input far from the hosts the calls could reach, the
   run's cost split as the model's hosts price output over input.
 
 ## When to use what

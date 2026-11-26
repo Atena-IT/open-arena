@@ -193,8 +193,10 @@ def _total(calls):
 
 
 def _ratio(monkeypatch, ratios):
-    """`price_ratio` as the test sets it, by model id: what the model's hosts charge out over in."""
-    monkeypatch.setattr(run_prices, "price_ratio", lambda model_id: ratios.get(model_id))
+    """`host_ratios` as the test sets it, by model id: what each host the calls could reach charges out over in."""
+    monkeypatch.setattr(
+        run_prices, "host_ratios", lambda model, kinds: list(ratios.get(getattr(model, "model", model), []))
+    )
 
 
 def test_a_fit_that_holds_gives_two_prices_not_approximate():
@@ -235,7 +237,7 @@ def test_a_few_calls_of_one_host_give_its_prices():
 
 def test_calls_that_cannot_be_told_apart_are_split_by_the_hosts_ratio(monkeypatch):
     # One call, or input and output always in a fixed ratio: the run's cost is split as the model's hosts price.
-    _ratio(monkeypatch, {"openrouter/acme/m": 5.0})
+    _ratio(monkeypatch, {"openrouter/acme/m": [4.0, 5.0, 6.0]})
     one = [BilledCall(1000, 200, 3e-5, "tools")]
     proportional = [BilledCall(n, 2 * n, n * 3e-7, "structured") for n in range(100, 100 + 10 * MIN_CALLS, 10)]
     prices = RunPrices({})
@@ -272,24 +274,62 @@ def test_what_is_not_a_cost_is_left_out_and_an_entry_with_none_is_absent(monkeyp
     assert set(paid) == {"mixed"} and paid["mixed"]["input"] == pytest.approx(3e-5 / 1200)
 
 
+def test_a_fit_far_from_the_hosts_ratio_gives_way_to_the_split(monkeypatch):
+    # Two calls from two hosts: the exact solve puts almost the whole cost on output, input near nothing.
+    _ratio(monkeypatch, {"openrouter/acme/m": [5.0, 6.4]})
+    calls = [BilledCall(1000, 200, 1000 * 1e-10 + 200 * 1.5e-6, "structured"), BilledCall(2000, 100, 2000 * 1e-10 + 100 * 1.5e-6, "structured")]
+    assert run_prices.loose_prices(calls) == (pytest.approx(1e-10), pytest.approx(1.5e-6))
+    prices = RunPrices({})
+    prices.models["pair"] = "openrouter/acme/m"
+    for call in calls:
+        prices.record("pair", call)
+    paid = prices.estimates()["pair"]
+    cost, tokens_in, tokens_out = _total(calls)
+    assert paid["approx"] is True
+    assert paid["output"] == pytest.approx(5.7 * paid["input"])  # the hosts' median ratio
+    assert paid["input"] * tokens_in + paid["output"] * tokens_out == pytest.approx(cost)
+
+
+def test_a_fit_within_the_hosts_ratio_is_kept(monkeypatch):
+    _ratio(monkeypatch, {"openrouter/acme/m": [1.5, 2.5]})
+    prices = RunPrices({})
+    prices.models["few"] = "openrouter/acme/m"
+    for call in _calls(MIN_CALLS - 1, 2.2e-7, 4.4e-7):
+        prices.record("few", call)
+    paid = prices.estimates()["few"]
+    assert (paid["input"], paid["output"]) == (pytest.approx(2.2e-7), pytest.approx(4.4e-7))
+
+
 def test_a_watched_model_is_known_by_its_id_for_its_entry():
     prices = RunPrices({})
     prices.watch(synalinks.LanguageModel(model="openrouter/acme/m"), "m-entry", "structured")
     assert prices.models == {"m-entry": "openrouter/acme/m"}
 
 
-def test_the_ratio_is_the_hosts_median_on_openrouter_and_the_table_elsewhere(monkeypatch):
-    endpoints = [
-        {"pricing": {"prompt": "1e-7", "completion": "5e-7"}},
-        {"pricing": {"prompt": "2e-7", "completion": "6e-7"}},
-        {"pricing": {"prompt": "1e-7", "completion": "8e-7"}},
-        {"pricing": {"prompt": "-1", "completion": "-1"}},  # priced per request: left out
-    ]
-    monkeypatch.setattr(run_prices, "openrouter_endpoints", lambda slug: endpoints if slug == "acme/m" else None)
+ENDPOINTS = [
+    # Takes structured output, one price for in and out.
+    {"tag": "structured-host", "pricing": {"prompt": "2.2e-7", "completion": "2.2e-7"},
+     "supported_parameters": ["response_format", "structured_outputs", "tools", "tool_choice", "max_tokens"]},
+    # No structured output: a structured call never reaches it.
+    {"tag": "cheap", "pricing": {"prompt": "5e-8", "completion": "8e-8"}, "supported_parameters": ["tools", "tool_choice", "max_tokens"]},
+    {"tag": "per-request", "pricing": {"prompt": "-1", "completion": "-1"}, "supported_parameters": ["response_format", "structured_outputs"]},
+]
+
+
+def test_the_ratios_are_of_the_hosts_the_calls_could_reach(monkeypatch):
+    monkeypatch.setattr(run_prices, "openrouter_endpoints", lambda slug: ENDPOINTS if slug == "acme/m" else None)
+    model = synalinks.LanguageModel(model="openrouter/acme/m")
+    # A structured call reaches the one host that takes structured output; a tools call reaches both.
+    assert run_prices.host_ratios(model, ["structured"]) == [pytest.approx(1.0)]
+    assert run_prices.host_ratios(model, ["tools"]) == [pytest.approx(1.0), pytest.approx(1.6)]
+    # Known by its id only: every host with a price per token.
+    assert run_prices.host_ratios("openrouter/acme/m", []) == [pytest.approx(1.0), pytest.approx(1.6)]
+
+
+def test_the_ratio_of_another_provider_is_the_tables(monkeypatch):
     monkeypatch.setattr(run_prices, "model_price", lambda model_id: Price(2.5e-6, 1e-5, "litellm") if model_id == "openai/gpt-4o" else None)
-    assert run_prices.price_ratio("openrouter/acme/m") == pytest.approx(5.0)
-    assert run_prices.price_ratio("openai/gpt-4o") == pytest.approx(4.0)
-    assert run_prices.price_ratio("acme/unknown") is None
+    assert run_prices.host_ratios("openai/gpt-4o", ["structured"]) == [pytest.approx(4.0)]
+    assert run_prices.host_ratios("acme/unknown", ["structured"]) == []
 
 
 # -- judges --------------------------------------------------------------------

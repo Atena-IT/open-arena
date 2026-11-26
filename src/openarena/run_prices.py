@@ -10,9 +10,9 @@ no intercept: the average of the hosts the run reached, weighted by what each
 served. A model with billed calls always gets the two prices: the fit when
 it can be trusted (`estimate_prices`); else, marked approximate, the same fit
 without its thresholds (typically when the calls reached hosts at different
-prices, or were few); else, when input and output cannot be told apart (one
-call, or tokens in a fixed ratio), the run's cost split as the model's hosts
-price output over input (`split_prices`, `price_ratio`).
+prices, or were few) when it prices output over input as the hosts its calls
+could reach do, give or take a factor of two (`loose_prices`, `host_ratios`);
+else the run's cost split by those hosts' median ratio (`split_prices`).
 
 Calls are kept by registry entry, not by model id: two entries may share an
 id with different params, which reach different hosts. A judge's calls count
@@ -25,6 +25,7 @@ A2A agents and embedding models.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import contextvars
 import json
@@ -37,7 +38,7 @@ import synalinks
 
 from openarena.callbacks.otel import _judges
 from openarena.lookups.endpoints import openrouter_endpoints
-from openarena.lookups.prices import CallKind, _per_token, model_price
+from openarena.lookups.prices import CallKind, _admitted, _per_token, _request, model_price
 
 # Below these the fit says nothing reliable: too few calls, input and output
 # tokens in a fixed ratio (they cannot be told apart), or a fit that explains
@@ -122,27 +123,54 @@ def split_prices(calls: Sequence[BilledCall], ratio: float) -> tuple[float, floa
     return per_input, ratio * per_input
 
 
-def price_ratio(model_id: str | None) -> float | None:
-    """What a model's hosts charge per output token over per input token; None when no source says.
+# How far a loose fit may price output over input from the hosts its calls could reach: past this, it
+# put the cost on the wrong side (two calls from two hosts) and gives way to the split.
+RATIO_SLACK = 2.0
 
-    An `openrouter/...` model: the median over its OpenRouter endpoints with a price per token (read
-    as `routed_price` reads them, cached). Any other: litellm's table, or OpenRouter's catalogue
-    (`model_price`). Never raises.
+
+def host_ratios(model, kinds: Sequence[CallKind]) -> list[float]:
+    """What each host `model`'s calls of `kinds` could reach charges per output token over per input token, sorted.
+
+    `model` is a language model, or its id. An `openrouter/...` model: its OpenRouter endpoints with a price
+    per token (read as `routed_price` reads them, cached), only those each kind's request is admitted to when
+    `model` is a language model and any is; by id, every one. Any other: litellm's table, or OpenRouter's
+    catalogue (`model_price`). Empty when no source says. Blocking (a first read waits on OpenRouter): call it
+    off an event loop. Never raises.
     """
+    model_id = model if isinstance(model, str) else getattr(model, "model", None)
     if not model_id:
-        return None
+        return []
     try:
         if model_id.startswith("openrouter/"):
-            priced = [p for e in openrouter_endpoints(model_id.removeprefix("openrouter/")) or [] if (p := _per_token(e))]
-            ratios = sorted(out / inp for inp, out in priced if inp > 0)
+            endpoints = openrouter_endpoints(model_id.removeprefix("openrouter/")) or []
+            if not isinstance(model, str) and kinds:
+                endpoints = asyncio.run(_reached(model, endpoints, kinds)) or endpoints
+            ratios = sorted(out / inp for e in endpoints if (p := _per_token(e)) for inp, out in [p] if inp > 0)
             if ratios:
-                return float(np.median(ratios))
+                return ratios
         price = model_price(model_id)
         if price is not None and price.input and price.output and price.input > 0:
-            return price.output / price.input
+            return [price.output / price.input]
     except Exception:  # noqa: BLE001 (no ratio: the cost is split evenly)
-        return None
-    return None
+        return []
+    return []
+
+
+async def _reached(model, endpoints: list[dict], kinds: Sequence[CallKind]) -> list[dict]:
+    """The endpoints any of `kinds`' requests is admitted to, as `routed_price` filters them."""
+    reached: dict[int, dict] = {}
+    for kind in kinds:
+        admitted, _ = _admitted(endpoints, await _request(model, kind))
+        reached |= {id(e): e for e in admitted}
+    return list(reached.values())
+
+
+def _plausible(prices: tuple[float, float], ratios: Sequence[float]) -> bool:
+    """Two prices above 0 whose output over input is within `RATIO_SLACK` of the hosts' ratios (any, without them)."""
+    per_input, per_output = prices
+    if per_input <= 0 or per_output <= 0:
+        return False
+    return not ratios or min(ratios) / RATIO_SLACK <= per_output / per_input <= max(ratios) * RATIO_SLACK
 
 
 def _key(model) -> tuple[str, str]:
@@ -249,8 +277,9 @@ class RunPrices:
     def __init__(self, judges: Mapping[tuple[str, str], str]):
         self._judges = dict(judges)
         self.calls: dict[str, list[BilledCall]] = {}
-        # Each entry's model id, as watched: what `price_ratio` reads when the calls cannot be told apart.
+        # Each entry's model, as watched (its id, and the language model itself): what `host_ratios` reads.
         self.models: dict[str, str] = {}
+        self._models: dict[str, object] = {}
         self._hooked: list[tuple[object, _BilledHook]] = []
         self._token: contextvars.Token | None = None
 
@@ -285,6 +314,7 @@ class RunPrices:
             return []
         if isinstance(model_id := getattr(model, "model", None), str):
             self.models.setdefault(entry, model_id)
+            self._models.setdefault(entry, model)
         hook = _BilledHook(self, entry, kind)
         hook.set_module(model)
         model.add_hook(hook)
@@ -319,15 +349,19 @@ class RunPrices:
     def estimates(self) -> dict[str, dict]:
         """What each entry with billed calls paid: USD per input and per output token, the kinds of call
         covered, and `approx`. Not approximate only when the fit can be trusted (`estimate_prices`); else
-        the fit without its thresholds (`loose_prices`); else the cost split by the hosts' ratio
-        (`split_prices`, `price_ratio`, even when no source has one)."""
+        the fit without its thresholds (`loose_prices`) when it is plausible next to the hosts its calls
+        could reach (`host_ratios`); else the cost split by their median ratio, even when none is known
+        (`split_prices`). Blocking (`host_ratios`): a sweep calls it in a thread."""
         out = {}
         for entry, calls in self.calls.items():
             kinds = sorted({c.kind for c in calls})
             if (fit := estimate_prices(calls)) is not None:
                 out[entry] = {"input": fit[0], "output": fit[1], "kinds": kinds, "approx": False}
                 continue
-            paid = loose_prices(calls) or split_prices(calls, price_ratio(self.models.get(entry)) or 1.0)
+            ratios = host_ratios(self._models.get(entry) or self.models.get(entry), kinds)
+            loose = loose_prices(calls)
+            paid = loose if loose is not None and _plausible(loose, ratios) else None
+            paid = paid or split_prices(calls, float(np.median(ratios)) if ratios else 1.0)
             if paid is not None:
                 out[entry] = {"input": paid[0], "output": paid[1], "kinds": kinds, "approx": True}
         return out
