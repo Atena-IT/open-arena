@@ -182,7 +182,8 @@ COPY data/ /app/data/
     image, it installs tmux at the start of every trial, which needs a
     package manager and the network, and fails without them. Install it in
     the Dockerfile. The arena turns off its terminal recording, so
-    `asciinema` is not needed.
+    `asciinema` is not needed unless the agent is told to record
+    (`record_terminal_session: true`).
 
 ### tests/: the verifier
 
