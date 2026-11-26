@@ -473,12 +473,15 @@ the calls it was billed for:
   counted;
 - cache hits, failed calls and calls with no cost are left out, and so are
   Harbor tasks, A2A agents and embedding models;
-- the two prices are given only when the fit can be trusted: at least 10
-  billed calls, questions and answers whose lengths are not in a fixed
-  ratio, and a fit that explains the costs. Otherwise the model gets
-  `blended`, what its calls cost over the tokens they took, input and output
-  together. That is the usual case when OpenRouter spread the calls over
-  hosts at different prices: no one pair of prices explains them all.
+- a model with billed calls always gets the two prices. They are exact
+  (`approx: false`) when the fit can be trusted: at least 10 billed calls,
+  questions and answers whose lengths are not in a fixed ratio, and a fit
+  that explains the costs. Otherwise they are approximate (`approx: true`):
+  the same fit without those thresholds, the usual case when OpenRouter
+  spread the calls over hosts at different prices; or, when input and
+  output cannot be told apart (one call, lengths in a fixed ratio) or that
+  fit prices output over input far from the hosts the calls could reach, the
+  run's cost split as the model's hosts price output over input.
 
 ## When to use what
 

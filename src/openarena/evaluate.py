@@ -20,6 +20,7 @@ Run a sweep with:
     uv run arena -v                # show the progress bar
 """
 
+import asyncio
 import copy
 import functools
 import inspect
@@ -1192,7 +1193,8 @@ async def run_sweep(
             }
         )
 
-    last_run_prices = prices.estimates()
+    # Off the event loop: a host's price ratio may wait on OpenRouter.
+    last_run_prices = await asyncio.to_thread(prices.estimates)
     emit({"event": "sweep_end", "last_run_prices": last_run_prices})
     return {"meta": results.meta(config_path), "rows": results.rows(), "last_run_prices": last_run_prices}
 

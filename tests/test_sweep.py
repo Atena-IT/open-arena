@@ -13,6 +13,7 @@ a tuner's trials, the metric merge, the grid hand-out.
 
 import asyncio
 import os
+import threading
 from types import SimpleNamespace
 
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
@@ -193,12 +194,25 @@ def test_a_sweep_records_each_billed_call_for_its_entry(tmp_path, monkeypatch):
         inner(self, entry, call)
 
     monkeypatch.setattr(run_prices.RunPrices, "record", record)
+    # The prices are worked out off the sweep's event loop: a host's ratio may wait on OpenRouter.
+    threads, estimates = [], run_prices.RunPrices.estimates
+
+    def off_the_loop(self):
+        threads.append(threading.current_thread())
+        return estimates(self)
+
+    monkeypatch.setattr(run_prices.RunPrices, "estimates", off_the_loop)
     result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state"))
+    assert threads and all(t is not threading.main_thread() for t in threads)
     assert sorted(recorded) == [("right", "structured", True)] * 3 + [("wrong", "structured", True)] * 3
-    # Three calls each: fewer than a fit needs, so each model gets what its calls cost per token.
+    # Three calls each: fewer than a trusted fit needs, so each model gets two approximate prices.
     paid = result["last_run_prices"]
     assert set(paid) == {"right", "wrong"}
-    assert all(set(p) == {"blended", "kinds"} and p["blended"] > 0 and p["kinds"] == ["structured"] for p in paid.values())
+    assert all(
+        set(p) == {"input", "output", "kinds", "approx"} and p["approx"] is True and p["kinds"] == ["structured"]
+        and p["input"] >= 0 and p["output"] >= 0 and p["input"] + p["output"] > 0
+        for p in paid.values()
+    )
 
 
 def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_again(tmp_path, monkeypatch):
