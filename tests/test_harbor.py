@@ -516,6 +516,10 @@ def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(t
     # No model call went through, so the agent did nothing a task folder's own tests could score either.
     with pytest.raises(ValueError, match="the agent's last model call failed: 401 invalid x-api-key"):
         prediction(trial, SimpleNamespace(exception_info=None), verified=True)
+    # The model's own error says why, not what Harbor met afterwards.
+    after = SimpleNamespace(exception_info=SimpleNamespace(exception_type="VerifierTimeoutError", exception_message="too slow"))
+    with pytest.raises(ValueError, match="^the agent's last model call failed: 401 invalid x-api-key$"):
+        prediction(trial, after, verified=True)
     # After a call that went through, a task folder's own tests score what the agent did in the sandbox, answer or not.
     later = {"type": "message", "id": "d4e5f6a7", "parentId": "c3d4e5f6", "timestamp": "2025-11-21T01:33:40.875Z", "message": failed}
     worked = _pi_trial(tmp_path / "worked", [*PI_SESSION[:4], later], output)
@@ -534,6 +538,43 @@ def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(t
     predicted = prediction(trial, SimpleNamespace(exception_info=None), "/app/answer.txt")
     assert predicted["answer"] == "4"
     assert run_error(predicted, trial / "agent") == "the agent's last model call failed: 401 invalid x-api-key"
+
+
+def _stepless_trial(folder, exception=None, tokens=None, rewards=None):
+    """A trial whose trajectory holds the instruction alone, as Terminus 2 leaves it before its first step, and its result."""
+    from types import SimpleNamespace
+
+    logs = folder / "agent"
+    logs.mkdir(parents=True)
+    (logs / "trajectory.json").write_text(json.dumps({**_trajectory(), "steps": _trajectory()["steps"][:1]}))
+    return folder, SimpleNamespace(
+        exception_info=SimpleNamespace(exception_type=exception, exception_message="it stopped") if exception else None,
+        agent_result=SimpleNamespace(n_input_tokens=tokens, n_output_tokens=tokens, cost_usd=None),
+        verifier_result=SimpleNamespace(rewards=rewards) if rewards else None,
+    )
+
+
+def test_a_trial_with_no_step_fails_only_when_no_model_call_went_through(tmp_path):
+    from openarena.programs.harbor_program import prediction
+
+    # Terminus 2 records a step once its reply's commands ran: a time limit that ran out in the first commands leaves
+    # the instruction alone, tokens spent, and Harbor's verifier still scores what those commands did.
+    trial, result = _stepless_trial(tmp_path / "worked", "AgentTimeoutError", tokens=380, rewards={"reward": 1.0})
+    assert prediction(trial, result, verified=True)["rewards"] == {"reward": 1.0}
+    # A time limit before the first reply is an unfinished trial like any other: scored, not failed.
+    trial, result = _stepless_trial(tmp_path / "slow", "AgentTimeoutError", tokens=0)
+    assert prediction(trial, result)["answer"] == ""
+    # Tokens spent, then the trial broke: the model spoke, and what it did is scored.
+    trial, result = _stepless_trial(tmp_path / "broke", "RuntimeError", tokens=12, rewards={"reward": 0.5})
+    assert prediction(trial, result, verified=True)["rewards"] == {"reward": 0.5}
+    # Nothing the trial knows of went wrong: an empty answer, scored.
+    trial, result = _stepless_trial(tmp_path / "quiet")
+    assert prediction(trial, result)["answer"] == ""
+    # The call raised before any token came back, whether the agent counts none or reports none: the model never answered.
+    for tokens in (0, None):
+        trial, result = _stepless_trial(tmp_path / f"refused-{tokens}", "BadRequestError", tokens=tokens, rewards={"reward": 1.0})
+        with pytest.raises(ValueError, match="^BadRequestError: it stopped$"):
+            prediction(trial, result, verified=True)
 
 
 def test_a_trial_without_a_trajectory_says_what_the_agent_printed(tmp_path):
