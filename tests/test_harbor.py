@@ -409,7 +409,8 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
 
 
-def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path):
+def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path, caplog):
+    # It patches Harbor's internals (`_exec`, `ensure_system_dependencies`, `Trial.create`): a Harbor bump may break it.
     import asyncio
 
     from harbor.agents.factory import AgentFactory
@@ -431,10 +432,14 @@ def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path
     asyncio.run(hermes.install(None))
     assert ran[-1].endswith("&& hermes sessions list >/dev/null && hermes --version")
     assert "hermes version" not in ran[-1]
-    assert hermes.get_version_command().endswith("hermes --version | head -n 1")
+    assert hermes.get_version_command().endswith("hermes --version")
+    assert hermes.parse_version("Hermes Agent v0.23.4\nInstall directory: /root\n") == "Hermes Agent v0.23.4"
     # Any other command goes as it came.
     asyncio.run(hermes.exec_as_agent(None, "hermes chat -q hi"))
     assert ran[-1] == "hermes chat -q hi"
+    # A reworded install that still runs `hermes version` goes as it came, with a warning.
+    asyncio.run(hermes.exec_as_agent(None, "hermes version && true"))
+    assert ran[-1] == "hermes version && true" and "does not rewrite it" in caplog.text
 
     seen = {}
 
