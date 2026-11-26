@@ -120,7 +120,7 @@ some rows failed.
 | every model at 0, answers look right | the answer's form differs from the reference (`"42"` vs `"42.0"`, `"B"` vs `"B) ..."`) | tighten `output_schema` or the template, or use `answer_accuracy` / a judge |
 | a judge reward fails | the judge's `language_model` has no key | say which provider key the user must set |
 | the run refuses to start: `not set in the environment: NAME (at ...)` | a `${NAME}` in the config is unset where the run reads its environment (the CLI: the shell or the workspace's `.env`; an app: its settings) | tell the user to set `NAME`; never write its value into a file yourself |
-| `none of the N Harbor task(s) got an answer` (`FAILED`) | the sandbox: no Docker / E2B key, image build failed, `tmux` missing | `harbor/trials.jsonl`, below |
+| `none of the N Harbor task(s) got an answer; the first: <error>` (`FAILED`) | the sandbox (no Docker / E2B key, image build failed, `tmux` missing), or the model never answered (wrong id, key unset, provider down) | the error after `the first:`, then `harbor/trials.jsonl`, below |
 
 However many cells fail, the run goes on to the end and writes
 `result.json`. Only an interruption (Ctrl-C, a crash) leaves no new
@@ -147,10 +147,11 @@ jq -c '{model, task, status, rewards, error}' .open-arena/<evaluation>/harbor/tr
 `dir` is that trial's folder: `agent/` (the session), `verifier/` (the tests'
 output) and `trial.log`. It may sit under `ARENA_HARBOR_WORKDIR` or
 `~/arena-harbor/` instead of the run folder, and `dir` always gives the real
-location. A `failed` line means the sandbox never ran that row, and it scores 0. If no
-row of a cell got an answer, the cell is `FAILED`. Look at the sandbox, the image
-or a key, not the model. If a task folder scores 0 for every model, run its
-solution first, because its `tests/test.sh` may be wrong (openarena-create-harbor-task).
+location. A `failed` line means the sandbox never ran that row, or no model call
+went through, and it scores 0. If no row of a cell got an answer, the cell is
+`FAILED`. Look at the sandbox, the image, a key or the model's id, not the
+model. If a task folder scores 0 for every model, run its solution first,
+because its `tests/test.sh` may be wrong (openarena-create-harbor-task).
 
 ## Reporting
 
