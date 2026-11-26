@@ -307,9 +307,9 @@ def test_a_dataset_that_returns_an_input_named_thinking_is_left_as_it_is_unless_
         asyncio.run(build_program(THINKER, named, {"return_inputs": True, "chain_of_thought": True}, get("exact_match")))
 
 
-def test_max_is_sent_as_the_highest_level_a_generator_takes(litellm_calls):
+def test_max_is_sent_as_given_never_rounded_down(litellm_calls):
     program, module = _generated(THINKER, lm_kwargs=_thinks({"reasoning_effort": "max"}))
-    assert module.reasoning_effort == "xhigh" and _sent(program, litellm_calls) == "xhigh"
+    assert module.reasoning_effort == "max" and _sent(program, litellm_calls) == "max"
 
 
 @pytest.mark.parametrize("effort", REASONING_EFFORTS)

@@ -292,7 +292,7 @@ leaderboard with shares on `cost` and latency weighs. A model that does not
 support the param may ignore it or refuse it.
 
 On a generator, agent or tools dataset the model is asked at its level on every
-call. `max` is sent as `xhigh`, the top level the engine's generator takes. A
+call, `max` included. A
 `reasoning_effort` in the dataset's block (`generator:`, `agent:`, `tools:`)
 applies to every model of the evaluation and wins over the model's own, so
 leave it out of the block to compare models on their levels. The level reaches
