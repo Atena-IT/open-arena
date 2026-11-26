@@ -8,6 +8,9 @@ one model, each with its input tokens, output tokens and cost, then give the
 model's price per token as the least-squares fit `cost ≈ a·in + b·out`, with
 no intercept: the average of the hosts the run reached, weighted by what each
 served. It is given only when the fit can be trusted (`estimate_prices`).
+Otherwise, typically when the calls reached hosts at different prices, the
+model gets what its calls cost over the tokens they took, input and output
+together (`blended_price`).
 
 Calls are kept by registry entry, not by model id: two entries may share an
 id with different params, which reach different hosts. A judge's calls count
@@ -85,6 +88,20 @@ def estimate_prices(calls: Sequence[BilledCall]) -> tuple[float, float] | None:
     if spread <= 0 or 1 - residual / spread < MIN_R2:
         return None
     return float(a), float(b)
+
+
+def blended_price(calls: Sequence[BilledCall]) -> float | None:
+    """USD per token, input and output together: what `calls` cost over the tokens they took.
+
+    What a model paid when `estimate_prices` gives nothing: its calls reached hosts at
+    different prices, were too few, or kept input and output in a fixed ratio. Calls whose
+    cost is not a number are left out; None when none is left or they took no token.
+    """
+    kept = [c for c in calls if math.isfinite(c.cost)]
+    tokens = sum(c.input_tokens + c.output_tokens for c in kept)
+    if not kept or tokens <= 0:
+        return None
+    return sum(c.cost for c in kept) / tokens
 
 
 def _key(model) -> tuple[str, str]:
@@ -255,13 +272,13 @@ class RunPrices:
         return _PriceWatch(self, entry, kind) if kind else None
 
     def estimates(self) -> dict[str, dict]:
-        """Each entry with a reliable estimate: USD per input and output token, and the kinds of call it covers."""
+        """What each entry paid, with the kinds of call it covers: USD per input and per output token
+        when the fit can be trusted (`estimate_prices`), else USD per token of either kind (`blended`)."""
         out = {}
         for entry, calls in self.calls.items():
+            kinds = sorted({c.kind for c in calls})
             if (fit := estimate_prices(calls)) is not None:
-                out[entry] = {
-                    "input": fit[0],
-                    "output": fit[1],
-                    "kinds": sorted({c.kind for c in calls}),
-                }
+                out[entry] = {"input": fit[0], "output": fit[1], "kinds": kinds}
+            elif (blended := blended_price(calls)) is not None:
+                out[entry] = {"blended": blended, "kinds": kinds}
         return out

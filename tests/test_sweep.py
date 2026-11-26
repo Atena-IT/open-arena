@@ -195,8 +195,10 @@ def test_a_sweep_records_each_billed_call_for_its_entry(tmp_path, monkeypatch):
     monkeypatch.setattr(run_prices.RunPrices, "record", record)
     result = asyncio.run(run_sweep(str(_config(tmp_path)), state_dir=tmp_path / "state"))
     assert sorted(recorded) == [("right", "structured", True)] * 3 + [("wrong", "structured", True)] * 3
-    # Three calls each: fewer than an estimate needs.
-    assert result["last_run_prices"] == {}
+    # Three calls each: fewer than a fit needs, so each model gets what its calls cost per token.
+    paid = result["last_run_prices"]
+    assert set(paid) == {"right", "wrong"}
+    assert all(set(p) == {"blended", "kinds"} and p["blended"] > 0 and p["kinds"] == ["structured"] for p in paid.values())
 
 
 def test_a_second_run_on_the_same_state_reads_the_scores_back_and_no_cache_runs_again(tmp_path, monkeypatch):
