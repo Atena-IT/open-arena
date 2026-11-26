@@ -374,11 +374,12 @@ def failure(result) -> str | None:
         return None
     message = info.exception_message or ""
     # A failed command quotes its whole command line first; what it printed says why, so the command goes.
-    if failed := re.match(r"Command failed \(exit (-?\d+)\): .*?\n(?=stdout: )", message, flags=re.S):
-        # Harbor 0.24: `Command failed (exit N): <command>` then `stdout: ...` and `stderr: ...`, an empty one `None`.
+    # Harbor 0.24: `Command failed (exit N): <command>` then `stdout: ...` and `stderr: ...`, an empty one `None`. Greedy,
+    # so a multi-line command holding a `stdout: ` line stays in the command; a stdout holding one loses its head, not the tail.
+    if failed := re.match(r"Command failed \(exit (-?\d+)\): .*\n(?=stdout: .*\nstderr: )", message, flags=re.S):
         output = " ".join(re.sub(r"(?m)^(stdout|stderr): None$", "", message[failed.end() :]).split())
         output = output if len(output) <= MAX_OUTPUT else "…" + output[-(MAX_OUTPUT - 1) :]
-        said = f"exit {failed[1]}: {output}"
+        said = f"exit {failed[1]}" + (f": {output}" if output else "")
     else:
         said = re.sub(r"Command: .*?(?=\. Return code|$)", "", message, flags=re.S)
         said = re.sub(r"\s*(Stderr|Stdout): None\.?", "", said)
