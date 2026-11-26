@@ -103,6 +103,8 @@ DEFAULT_SANDBOX = "e2b"
 TRIALS_LOG = "trials.jsonl"
 # How much of Harbor's error a row's log line quotes; the trial's own logs keep all of it.
 MAX_REASON = 400
+# How much of the end of a failed command's output is kept: the cause is printed last, after banners and progress.
+MAX_OUTPUT = 1500
 # How much of the question a trial's line keeps.
 MAX_QUESTION = 2000
 # The arena's "no thinking" is `disable`; Harbor's agents call it `none`, pi `off`.
@@ -370,11 +372,18 @@ def failure(result) -> str | None:
     info = result.exception_info
     if info is None:
         return None
+    message = info.exception_message or ""
     # A failed command quotes its whole command line first; what it printed says why, so the command goes.
-    said = re.sub(r"Command: .*?(?=\. Return code|$)", "", info.exception_message or "", flags=re.S)
-    said = re.sub(r"\s*(Stderr|Stdout): None\.?", "", said)
-    said = " ".join(said.split())
-    said = said if len(said) <= MAX_REASON else said[: MAX_REASON - 1] + "…"
+    if failed := re.match(r"Command failed \(exit (-?\d+)\): .*?\n(?=stdout: )", message, flags=re.S):
+        # Harbor 0.24: `Command failed (exit N): <command>` then `stdout: ...` and `stderr: ...`, an empty one `None`.
+        output = " ".join(re.sub(r"(?m)^(stdout|stderr): None$", "", message[failed.end() :]).split())
+        output = output if len(output) <= MAX_OUTPUT else "…" + output[-(MAX_OUTPUT - 1) :]
+        said = f"exit {failed[1]}: {output}"
+    else:
+        said = re.sub(r"Command: .*?(?=\. Return code|$)", "", message, flags=re.S)
+        said = re.sub(r"\s*(Stderr|Stdout): None\.?", "", said)
+        said = " ".join(said.split())
+        said = said if len(said) <= MAX_REASON else said[: MAX_REASON - 1] + "…"
     return f"{info.exception_type}" + (f": {said}" if said else "")
 
 
@@ -562,6 +571,10 @@ async def run_trial(
     if agent_kind(agent) == "class" and not agent_module_allowed(agent):
         raise ValueError(f"Harbor agent {agent!r} is a class from a module the arena does not allow ({AGENT_MODULES})")
     provider = sandbox(provider)
+    kwargs = dict(kwargs or {})
+    if agent == "terminus-2":
+        # Recording installs asciinema in the sandbox, which hangs a no-network task; the arena shows the trajectory instead.
+        kwargs.setdefault("record_terminal_session", False)
     config = TrialConfig(
         task=TaskConfig(path=task),
         trial_name=name,

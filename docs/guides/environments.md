@@ -177,7 +177,8 @@ runtime, the libraries, the command-line tools, the data files.
     `terminus-2`, the default agent, works its terminal through `tmux`. When
     the image lacks it, terminus-2 tries to install it at the start of every
     task, which needs a package manager and the network, and fails without
-    them. Install `tmux` in the Dockerfile. Most agents also run Python:
+    them. Install `tmux` in the Dockerfile. The arena turns off its terminal
+    recording, so `asciinema` is not needed. Most agents also run Python:
     start from an image that has `python3`.
 
 **`build_timeout_sec`** bounds the build (600 seconds by default). Raise it

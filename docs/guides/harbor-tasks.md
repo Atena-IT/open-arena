@@ -181,7 +181,8 @@ COPY data/ /app/data/
     `terminus-2`, the default agent, works through `tmux`. Without it in the
     image, it installs tmux at the start of every trial, which needs a
     package manager and the network, and fails without them. Install it in
-    the Dockerfile.
+    the Dockerfile. The arena turns off its terminal recording, so
+    `asciinema` is not needed.
 
 ### tests/: the verifier
 
