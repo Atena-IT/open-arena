@@ -9,7 +9,10 @@ Harbor 0.25 or later, which carries the three fixes (harbor-framework/harbor#355
 `test_harbor_agents_are_for_harbor_0_24` fails on any other Harbor, so the bump has to decide.
 """
 
+import functools
 import json
+import math
+import re
 import uuid
 from pathlib import Path
 
@@ -87,8 +90,9 @@ class Goose(HarborGoose):
 
 
 def _count(value) -> float | None:
-    """A usage number SWE-agent wrote, or None for anything that is not one (a string, a bool, a negative)."""
-    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0 else None
+    """A usage number SWE-agent wrote, or None for anything that is not one (a string, a bool, a negative, an infinity)."""
+    ok = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= 0
+    return value if ok else None
 
 
 def _model_stats(agent: "SweAgent") -> dict | None:
@@ -96,28 +100,49 @@ def _model_stats(agent: "SweAgent") -> dict | None:
     try:
         path = agent._find_trajectory_file() or Path(agent.logs_dir) / "swe-agent.trajectory.json"
         info = json.loads(Path(path).read_text()).get("info")
-    except (OSError, ValueError, AssertionError, AttributeError):  # Harbor's finder asserts one file at most
+    except (OSError, ValueError, AttributeError):
         return None
     stats = info.get("model_stats") if isinstance(info, dict) else None
     return stats if isinstance(stats, dict) else None
 
 
-def _priced(model: str | None, tokens_in: int | None, tokens_out: int | None) -> float | None:
-    """Tokens at the arena's price for `model` (`lookups.prices.model_price`), or None when no source has a whole price."""
-    if not model or not (tokens_in or tokens_out):
-        return None
+@functools.lru_cache(maxsize=64)
+def _unit_price(model: str) -> tuple[float, float] | None:
+    """The arena's whole price per token for `model` (`lookups.prices.model_price`), once per process: its first read may wait
+    on OpenRouter, and every SWE-agent trial of a run asks the same model."""
     try:
         from openarena.lookups.prices import model_price
 
         price = model_price(model)
     except Exception:  # noqa: BLE001 - a price unread costs the cell its cost, never the trial
         return None
-    if price is None or not price.complete:
+    return (price.input, price.output) if price is not None and price.complete else None
+
+
+def _priced(model: str | None, tokens_in: int | None, tokens_out: int | None) -> float | None:
+    """Tokens at the arena's price for `model`, or None when no source has a whole price or a side's tokens are unknown."""
+    if not model or tokens_in is None or tokens_out is None or not (tokens_in or tokens_out) or not (price := _unit_price(model)):
         return None
-    return (tokens_in or 0) * price.input + (tokens_out or 0) * price.output
+    return tokens_in * price[0] + tokens_out * price[1]
+
+
+# A version SWE-agent's package says (`1.1.0`): anything else its command printed (a traceback) is no version.
+VERSION = re.compile(r"^\d+(\.\d+)+\S*$")
 
 
 class SweAgent(HarborSweAgent):
+    # Harbor 0.24's finder asserts one trajectory at most, which would raise into the trial: the newest one is read.
+    def _find_trajectory_file(self) -> Path | None:
+        try:
+            found = sorted(Path(self.logs_dir, "swe-agent-output").glob("**/*.traj"), key=lambda p: p.stat().st_mtime)
+        except OSError:
+            return None
+        return found[-1] if found else None
+
+    def parse_version(self, stdout: str) -> str:
+        lines = stdout.strip().splitlines()
+        return lines[-1].strip() if lines and VERSION.match(lines[-1].strip()) else ""
+
     # harbor/agents/installed/swe_agent.py asks `pip show swe-agent`: the venv uv made has no pip, and the package is `sweagent`.
     # The venv is Harbor's install's; a SWE-agent the image brings elsewhere is read with the PATH's python.
     def get_version_command(self) -> str | None:

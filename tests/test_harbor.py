@@ -674,6 +674,8 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(
     if os.name == "posix" and shutil.which("bash") and shutil.which("nohup"):
         error, sent = outcome("fails")
         assert error is None
+        assert not [f.name for f in home.iterdir() if f.name.startswith(".hermes-install") and f.name != ".hermes-install.log"]
+        assert not (home / ".hermes-installer.sh").exists()
         error, _ = outcome("fails", 1)
         assert (
             error.rstrip().endswith("web UI build failed: exited 137")
@@ -896,6 +898,69 @@ def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
     assert run_error(predicted, trial / "agent") is None
 
 
+def test_hermes_asks_about_its_installer_until_a_poll_says_it_ended(monkeypatch, tmp_path):
+    # It patches Harbor's internals (`_exec`, `ensure_system_dependencies`): a Harbor bump may break it.
+    import asyncio
+    import types
+
+    from openarena import harbor_hermes
+    from openarena.harbor_hermes import ASK, Hermes, asked
+
+    # Only a poll's last line counts (a login shell may print before it), and only an exit code, `running` or `gone`.
+    assert asked("Welcome to the sandbox\nrunning") == "running" and asked("motd\n0\n") == "0" and asked("gone") == "gone"
+    assert asked("bash: warning: setlocale") is None and asked("") is None and asked(None) is None
+
+    def answers(*said):
+        sent, script = [], list(said)
+
+        async def sandbox(self, environment, command, **kwargs):
+            sent.append(command)
+            if command != ASK:
+                return types.SimpleNamespace(stdout="", stderr="", return_code=0)
+            out = script.pop(0)
+            if isinstance(out, Exception):
+                raise out
+            return types.SimpleNamespace(stdout=out, stderr="", return_code=0)
+
+        monkeypatch.setattr(Hermes, "_exec", sandbox)
+        return sent
+
+    async def nothing(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
+    monkeypatch.setattr(harbor_hermes, "POLL", 0)
+    # Noise and a poll that said nothing it knows are asked again, not taken for an end.
+    sent = answers("motd\nrunning", "bash: warning: setlocale", "motd\n1")
+    asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    assert sent.count(ASK) == 3 and "hermes sessions list" in sent[-1]
+    # One poll the sandbox did not answer is retried; `ASK_TRIES` in a row end the install with the error.
+    sent = answers(RuntimeError("Command failed (exit 255)"), "0")
+    asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    assert sent.count(ASK) == 2
+    answers(*[RuntimeError("Command failed (exit 255)")] * harbor_hermes.ASK_TRIES)
+    with pytest.raises(RuntimeError, match="exit 255"):
+        asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    # A stuck poll does not outlive the setup: the install's own deadline ends the asking.
+    monkeypatch.setattr(Hermes, "DEFAULT_SETUP_TIMEOUT_SEC", 0)
+    sent = answers()
+    asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    assert sent.count(ASK) == 0 and "stopped without an exit code" in sent[-1]
+
+    if os.name == "posix" and shutil.which("sh"):
+        # The poll is POSIX: under `sh` (dash on Debian images) as under bash. With nothing started, it says `gone`;
+        # with an exit code written, that code; with a live process and no code yet, `running`.
+        home = tmp_path / "home"
+        home.mkdir()
+        env = {**os.environ, "HOME": str(home)}
+        for shell in ("sh", "bash"):
+            assert subprocess.run([shell, "-c", ASK], capture_output=True, text=True, env=env).stdout.strip() == "gone"
+        (home / ".hermes-install.pid").write_text(str(os.getpid()))
+        assert subprocess.run(["sh", "-c", ASK], capture_output=True, text=True, env=env).stdout.strip() == "running"
+        (home / ".hermes-install.rc").write_text("1\n")
+        assert subprocess.run(["sh", "-c", ASK], capture_output=True, text=True, env=env).stdout.strip() == "1"
+
+
 def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path):
     # SWE-agent 1.1.0's trajectory: its usage under `info.model_stats`, as a staging trial of 18 steps wrote it.
     from harbor.models.agent.context import AgentContext
@@ -913,6 +978,7 @@ def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path)
         return prices.Price(1e-06, 5e-06, "openrouter")
 
     monkeypatch.setattr(prices, "model_price", price)
+    harbor_agents._unit_price.cache_clear()
 
     def read(info) -> tuple:
         traj.write_text(info if isinstance(info, str) else json.dumps({"info": info}))
@@ -933,12 +999,26 @@ def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path)
     assert read('{"info": {"model_stats": {"tokens_se') == (None, None, None)
     assert read({"model_stats": {"tokens_sent": "many", "tokens_received": True, "instance_cost": -1}}) == (None, None, None)
     assert read({"model_stats": ["not", "a", "dict"]}) == (None, None, None)
+    assert read({"model_stats": {"tokens_sent": float("inf"), "tokens_received": 3}}) == (None, 3, None)
+    assert agent.parse_version("Traceback (most recent call last):\n  ModuleNotFoundError: x") == ""
+    # Two trajectories (a retried run): the newest is read, and Harbor's assert never reaches the trial.
+    out = tmp_path / "swe-agent-output"
+    (out / "a").mkdir(parents=True)
+    (out / "b").mkdir()
+    (out / "a" / "x.traj").write_text(json.dumps({"info": {"model_stats": {"tokens_sent": 1, "tokens_received": 1}}}))
+    (out / "b" / "y.traj").write_text(json.dumps({"info": {"model_stats": {"tokens_sent": 7, "tokens_received": 8}}}))
+    os.utime(out / "a" / "x.traj", (1, 1))
+    context = AgentContext()
+    agent.populate_context_post_run(context)
+    assert (context.n_input_tokens, context.n_output_tokens) == (7, 8)
+    shutil.rmtree(out)
     traj.unlink()
     context = AgentContext()
     agent.populate_context_post_run(context)
     assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (None, None, None)
     # No whole price anywhere: the tokens are kept and the cost stays unknown, not 0.
     monkeypatch.setattr(prices, "model_price", lambda model: None)
+    harbor_agents._unit_price.cache_clear()
     assert read({"model_stats": {"instance_cost": 0, "tokens_sent": 10, "tokens_received": 2}}) == (10, 2, None)
 
 
