@@ -978,7 +978,7 @@ def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path)
         return prices.Price(1e-06, 5e-06, "openrouter")
 
     monkeypatch.setattr(prices, "model_price", price)
-    harbor_agents._unit_price.cache_clear()
+    harbor_agents._PRICES.clear()
 
     def read(info) -> tuple:
         traj.write_text(info if isinstance(info, str) else json.dumps({"info": info}))
@@ -1012,13 +1012,19 @@ def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path)
     agent.populate_context_post_run(context)
     assert (context.n_input_tokens, context.n_output_tokens) == (7, 8)
     shutil.rmtree(out)
+    # A price that could not be read now is asked again later, never kept: OpenRouter back, the cost is there.
+    harbor_agents._PRICES.clear()
+    monkeypatch.setattr(prices, "model_price", lambda model: None)
+    assert read({"model_stats": {"instance_cost": 0, "tokens_sent": 10, "tokens_received": 2}}) == (10, 2, None)
+    monkeypatch.setattr(prices, "model_price", price)
+    assert read({"model_stats": {"instance_cost": 0, "tokens_sent": 10, "tokens_received": 2}})[2] == pytest.approx(2e-05)
     traj.unlink()
     context = AgentContext()
     agent.populate_context_post_run(context)
     assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (None, None, None)
     # No whole price anywhere: the tokens are kept and the cost stays unknown, not 0.
     monkeypatch.setattr(prices, "model_price", lambda model: None)
-    harbor_agents._unit_price.cache_clear()
+    harbor_agents._PRICES.clear()
     assert read({"model_stats": {"instance_cost": 0, "tokens_sent": 10, "tokens_received": 2}}) == (10, 2, None)
 
 

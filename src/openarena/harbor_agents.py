@@ -9,7 +9,6 @@ Harbor 0.25 or later, which carries the three fixes (harbor-framework/harbor#355
 `test_harbor_agents_are_for_harbor_0_24` fails on any other Harbor, so the bump has to decide.
 """
 
-import functools
 import json
 import math
 import re
@@ -106,17 +105,26 @@ def _model_stats(agent: "SweAgent") -> dict | None:
     return stats if isinstance(stats, dict) else None
 
 
-@functools.lru_cache(maxsize=64)
+# Whole prices per token already read, by model: a found price is kept for the process (its first read may wait on
+# OpenRouter, and every SWE-agent trial of a run asks the same model); a failed or partial read is never kept, so the next
+# trial asks again. shortcut: a price that changes upstream is seen at the backend's next start; add an expiry if runs span days.
+_PRICES: dict[str, tuple[float, float]] = {}
+
+
 def _unit_price(model: str) -> tuple[float, float] | None:
-    """The arena's whole price per token for `model` (`lookups.prices.model_price`), once per process: its first read may wait
-    on OpenRouter, and every SWE-agent trial of a run asks the same model."""
+    """The arena's whole price per token for `model` (`lookups.prices.model_price`), or None when no source has one now."""
+    if model in _PRICES:
+        return _PRICES[model]
     try:
         from openarena.lookups.prices import model_price
 
         price = model_price(model)
     except Exception:  # noqa: BLE001 - a price unread costs the cell its cost, never the trial
         return None
-    return (price.input, price.output) if price is not None and price.complete else None
+    if price is None or not price.complete:
+        return None
+    _PRICES[model] = (price.input, price.output)
+    return _PRICES[model]
 
 
 def _priced(model: str | None, tokens_in: int | None, tokens_out: int | None) -> float | None:
@@ -131,10 +139,11 @@ VERSION = re.compile(r"^\d+(\.\d+)+\S*$")
 
 
 class SweAgent(HarborSweAgent):
-    # Harbor 0.24's finder asserts one trajectory at most, which would raise into the trial: the newest one is read.
+    # Harbor 0.24's finder asserts one trajectory at most, which would raise into the trial: the newest one is read, by
+    # modification time, and between two of the same time the last by path.
     def _find_trajectory_file(self) -> Path | None:
         try:
-            found = sorted(Path(self.logs_dir, "swe-agent-output").glob("**/*.traj"), key=lambda p: p.stat().st_mtime)
+            found = sorted(Path(self.logs_dir, "swe-agent-output").glob("**/*.traj"), key=lambda p: (p.stat().st_mtime, str(p)))
         except OSError:
             return None
         return found[-1] if found else None
