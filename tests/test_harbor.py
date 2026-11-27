@@ -441,6 +441,8 @@ def test_a_trial_says_which_version_was_asked_for_and_which_ran(monkeypatch, tmp
     assert version_line("v2.1.326", "harness", tmp_path)["detected"] == "2.1.326 (Claude Code)"
     assert version_line("2.1.300", "harness", tmp_path)["warning"] == "2.1.300 was asked for, 2.1.326 (Claude Code) ran"
     assert "warning" not in version_line("latest", "latest", tmp_path)
+    (tmp_path / FILE).write_text("2.1.326")
+    assert version_line("2.1.3", "harness", tmp_path)["warning"] == "2.1.3 was asked for, 2.1.326 ran"
     assert version_line(None, None, tmp_path / "none") == {}
 
     # The trial's line says it, failed or not: the arena's pin, and what the setup found.

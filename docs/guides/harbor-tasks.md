@@ -548,6 +548,7 @@ the task, the model and a short id. One line per trial goes to
 | `answer`, `steps`, `rewards` | for an answered trial |
 | `error` | why it failed, or why an answered trial stopped early |
 | `seconds`, `input_tokens`, `output_tokens`, `cost_usd` | time and usage, as the agent reported them |
+| `agent_version` | for an agent Harbor installs: `requested` (the pin, or `latest`), `detected` (what its version command printed after the install), `origin` (`arena` for the arena's pin, `harness` for the dataset's `agent_version`, `latest`) and a `warning` when the pin and what ran differ |
 
 See [Reading results](results.md) for how to read a run.
 

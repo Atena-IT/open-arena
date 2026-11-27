@@ -32,8 +32,9 @@ class Detects:
             return
         try:
             said = await environment.exec(command=command)
-            if said.return_code == 0 and said.stdout:
-                (Path(self.logs_dir) / FILE).write_text(self.parse_version(said.stdout))
+            # Some agents print a banner around it: the first line the agent's parser leaves is the version.
+            if said.return_code == 0 and (lines := self.parse_version(said.stdout or "").strip().splitlines()):
+                (Path(self.logs_dir) / FILE).write_text(lines[0])
         except Exception:  # noqa: BLE001 - best effort, as Harbor's own: a trial never fails on reading a version
             pass
 
@@ -66,7 +67,9 @@ def version_line(requested: str | None, origin: str | None, agent_dir: Path) -> 
     except OSError:
         detected = None
     line = {"requested": requested, "detected": detected, "origin": origin}
-    # `v1.1.0` asked for and `1.1.0` printed is one version; so is `2.1.326` and `2.1.326 (Claude Code)`.
-    if requested and requested != LATEST and detected and requested.removeprefix("v") not in detected:
+    # `v1.1.0` asked for and `1.1.0` printed is one version; so is `2.1.326` and `2.1.326 (Claude Code)`. Whole words
+    # only: `2.1.3` asked for and `2.1.326` printed are two.
+    words = {w.removeprefix("v") for w in re.findall(r"[\w.+-]+", detected or "")}
+    if requested and requested != LATEST and detected and requested.removeprefix("v") not in words:
         line["warning"] = f"{requested} was asked for, {detected} ran"
     return {k: v for k, v in line.items() if v is not None}
