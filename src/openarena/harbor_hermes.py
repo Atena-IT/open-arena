@@ -15,13 +15,16 @@ import shlex
 
 from harbor.agents.installed.hermes import Hermes as HarborHermes
 
-HOME = "/tmp/hermes"  # the root Harbor's run exports
+HOME = "/tmp/hermes"  # the root Harbor's run exports: here a link to the install on the sandbox's disk
+# E2B's /tmp is small: a 1 GiB sandbox ran out of space there cloning Hermes. The 3 GB install goes on the disk.
+DISK = "$HOME/.hermes"
 # Bumped on purpose: the installer and the tree it checks out, Hermes v0.23.4. The commit must be on Hermes's main.
 RELEASE, COMMIT = "v0.23.4", "8fc0374447313e276f6b9a2764bfc750190c966a"
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
-LOG = "/tmp/hermes-install.log"
-# The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error.
-SAID = f"{{ grep -iE 'fail|error|exited' {LOG} || tail -n 3 {LOG}; }} | tail -n 3 | grep -oE '.{{0,200}}$'"
+LOG = '"$HOME/.hermes-install.log"'
+# The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error. Not
+# every `error`: a full disk prints one per file it cannot write before the line that says why.
+SAID = f"{{ grep -iE 'fatal|fail|exited|could not|no space|out of disk' {LOG} || tail -n 3 {LOG}; }} | tail -n 3 | grep -oE '.{{0,200}}$'"
 
 
 class Hermes(HarborHermes):
@@ -44,19 +47,23 @@ class Hermes(HarborHermes):
             environment,
             command="; ".join((
                 "set -uo pipefail",
-                f'export HERMES_HOME={HOME} PATH="$HOME/.local/bin:$PATH"',
+                f'export HERMES_HOME={DISK} PATH="$HOME/.local/bin:$PATH"',
                 # Downloaded first, to a fresh file: a failed download is its own error, with curl's message, and a page that
                 # is not a script (empty, a proxy's HTML) is refused before bash runs it.
                 "installer=$(mktemp)",
                 f'curl -fsSL -o "$installer" {INSTALL_SH} >{LOG} 2>&1 || {{ rc=$?; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 {LOG})" >&2; exit "$rc"; }}',
                 '[ "$(head -c 2 "$installer")" = "#!" ] || { echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 "$installer" | cut -c1-120)" >&2; exit 1; }',
-                f'bash "$installer" --skip-setup {tree} 2>&1 | tee -a {LOG}',
+                # Into the log only: Harbor names a failed command's error from words anywhere in its output (`rate limit`
+                # makes it a rate-limit error), and the installer prints thousands of file names.
+                f'bash "$installer" --skip-setup {tree} >>{LOG} 2>&1',
                 "rc=$?",
-                f'[ "$rc" -eq 0 ] || {{ echo "install.sh exited $rc, the hermes command decides; it reported:" >&2; {SAID} >&2; }}',
                 # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.
                 'rm -f "$HERMES_HOME/.env"',
                 'mkdir -p "$HERMES_HOME/sessions" "$HERMES_HOME/skills" "$HERMES_HOME/memories"',
-                "hermes sessions list >/dev/null && hermes --version && exit 0",
+                f'rm -rf {HOME} && ln -s "$HERMES_HOME" {HOME}',
+                f"export HERMES_HOME={HOME}",
+                # The hermes command decides, not install.sh: on 1 GiB its web UI build runs out of memory, which `hermes chat` never uses.
+                f'if hermes sessions list >/dev/null && hermes --version; then [ "$rc" -eq 0 ] || {{ echo "install.sh exited $rc, but the hermes command runs; it reported:"; {SAID}; }} >&2; exit 0; fi',
                 f'echo "the hermes command does not run after install.sh (exit $rc), which reported:" >&2; {SAID} >&2; exit 1',
             )),
         )
