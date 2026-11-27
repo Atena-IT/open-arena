@@ -32,9 +32,9 @@ class Detects:
             return
         try:
             said = await environment.exec(command=command)
-            # Some agents print a banner around it: the first line the agent's parser leaves is the version.
+            # Some agents print warnings before it (OpenHands: grpc's FutureWarning): the last line is the version.
             if said.return_code == 0 and (lines := self.parse_version(said.stdout or "").strip().splitlines()):
-                (Path(self.logs_dir) / FILE).write_text(lines[0])
+                (Path(self.logs_dir) / FILE).write_text(lines[-1])
         except Exception:  # noqa: BLE001 - best effort, as Harbor's own: a trial never fails on reading a version
             pass
 

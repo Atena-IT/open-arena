@@ -429,7 +429,7 @@ def test_a_trial_says_which_version_was_asked_for_and_which_ran(monkeypatch, tmp
             return stdout.strip()
 
     class Said:
-        return_code, stdout = 0, "2.1.326 (Claude Code)\n"
+        return_code, stdout = 0, "FutureWarning: grpcio < 1.83.0 does not support PQC\n2.1.326 (Claude Code)\n"
 
     class Environment:
         async def exec(self, command):
