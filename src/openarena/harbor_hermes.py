@@ -37,14 +37,20 @@ class Hermes(HarborHermes):
 
     async def install(self, environment) -> None:
         await self.ensure_system_dependencies(environment, ("curl", "git", "ripgrep", "xz"))
-        # A version asked for in the trial's config is a branch or tag, as in Harbor; else the pinned release.
-        tree = f"--branch {shlex.quote(self._version)}" if self._version else f"--commit {COMMIT}"
+        # A version asked for in the trial's config is a branch or tag, as in Harbor; else the pinned release. Not `_version`
+        # alone: a first setup fills it with what `--version` printed, which a second setup would pass as a branch.
+        tree = f"--branch {shlex.quote(self._version)}" if self._version_was_pinned else f"--commit {COMMIT}"
         await self.exec_as_agent(
             environment,
             command="; ".join((
                 "set -uo pipefail",
                 f'export HERMES_HOME={HOME} PATH="$HOME/.local/bin:$PATH"',
-                f'curl -fsSL {INSTALL_SH} | bash -s -- --skip-setup {tree} 2>&1 | tee {LOG}',
+                # Downloaded first, to a fresh file: a failed download is its own error, with curl's message, and a page that
+                # is not a script (empty, a proxy's HTML) is refused before bash runs it.
+                "installer=$(mktemp)",
+                f'curl -fsSL -o "$installer" {INSTALL_SH} >{LOG} 2>&1 || {{ rc=$?; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 {LOG})" >&2; exit "$rc"; }}',
+                '[ "$(head -c 2 "$installer")" = "#!" ] || { echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 "$installer" | cut -c1-120)" >&2; exit 1; }',
+                f'bash "$installer" --skip-setup {tree} 2>&1 | tee -a {LOG}',
                 "rc=$?",
                 f'[ "$rc" -eq 0 ] || {{ echo "install.sh exited $rc, the hermes command decides; it reported:" >&2; {SAID} >&2; }}',
                 # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.

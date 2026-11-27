@@ -431,34 +431,50 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
     install = ran[-1]
-    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index("install.sh | bash")
+    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index('bash "$installer" --skip-setup')
     assert "/v0.23.4/scripts/install.sh" in install and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in install
     assert "hermes version" not in install and "--branch" not in install
     assert Hermes.DEFAULT_SETUP_TIMEOUT_SEC > 1200
     assert hermes.get_version_command().endswith("HERMES_HOME=/tmp/hermes; hermes --version")
     assert hermes.parse_version("Hermes Agent v0.23.4\nInstall directory: /root\n") == "Hermes Agent v0.23.4"
-    hermes._version = "v0.23.4"
+    # A second setup keeps the pin, though the first filled the version with what `--version` printed.
+    hermes._version = "Hermes Agent v0.23.4 (2026.9.24)"
     asyncio.run(hermes.install(None))
+    assert ran[-1] == install
+    asyncio.run(Hermes(logs_dir=tmp_path, version="v0.23.4").install(None))
     assert "--skip-setup --branch v0.23.4 2>&1" in ran[-1] and "--commit" not in ran[-1]
 
-    # The shell decides as installed: an installer failing on an optional product passes when hermes runs, and a hermes
-    # that does not run fails, its error ending on what the installer reported.
-    def outcome(installer: str, hermes_rc: int) -> subprocess.CompletedProcess:
+    # The shell decides as installed: an installer failing on an optional product passes when hermes runs, a hermes that
+    # does not run fails with what the installer reported last, and a failed download fails with curl's own error.
+    def outcome(installer: str, hermes_rc: int = 0) -> subprocess.CompletedProcess:
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir(exist_ok=True)
-        said = "echo '  web UI build failed: exited 137'; exit 1" if installer == "fails" else "true"
-        (bin_dir / "curl").write_text(f"#!/bin/sh\necho \"{said}\"\n")
+        body = "echo '  web UI build failed: exited 137'; exit 1" if installer == "fails" else "true"
+        page = {"empty": "", "html": "<html><body>Sign in to the network</body></html>"}.get(installer, f"#!/bin/sh\n{body}")
+        download = {
+            "404": "echo 'curl: (22) The requested URL returned error: 404' >&2; exit 22",
+            "offline": "echo 'curl: (6) Could not resolve host: raw.githubusercontent.com' >&2; exit 6",
+        }.get(installer, f'while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done; printf "%s" "{page}" > "$out"')
+        (bin_dir / "curl").write_text(f"#!/bin/sh\n{download}\n")
         (bin_dir / "hermes").write_text(f"#!/bin/sh\nexit {hermes_rc}\n")
         for tool in bin_dir.iterdir():
             tool.chmod(0o755)
-        script = install.replace("/tmp/hermes-install.log", str(tmp_path / "install.log")).replace("/tmp/hermes", str(tmp_path / "home"))
+        script = install.replace("/tmp/hermes-install", str(tmp_path / "install")).replace("/tmp/hermes", str(tmp_path / "home"))
         return subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True)
 
     if os.name == "posix" and shutil.which("bash"):
-        assert outcome("fails", 0).returncode == 0
+        assert outcome("fails").returncode == 0
         broken = outcome("fails", 1)
         assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
-        assert outcome("passes", 0).returncode == 0
+        assert outcome("passes").returncode == 0
+        missing = outcome("404")
+        assert missing.returncode == 22 and missing.stderr.rstrip().endswith("curl: (22) The requested URL returned error: 404")
+        offline = outcome("offline")
+        assert offline.returncode == 6 and "(curl exit 6): curl: (6) Could not resolve host" in offline.stderr
+        empty = outcome("empty")
+        assert empty.returncode == 1 and empty.stderr.rstrip().endswith("is empty or not a script; it begins:")
+        html = outcome("html")
+        assert html.returncode == 1 and html.stderr.rstrip().endswith("it begins: <html><body>Sign in to the network</body></html>")
 
     seen = {}
 
