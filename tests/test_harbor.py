@@ -553,19 +553,26 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
 
 
-def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(monkeypatch, tmp_path):
+def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(
+    monkeypatch, tmp_path
+):
     # It patches Harbor's internals (`_exec`, `ensure_system_dependencies`, `Trial.create`): a Harbor bump may break it.
     import asyncio
+    import types
 
     from harbor.agents.factory import AgentFactory
     from harbor.trial.trial import Trial
-    from openarena.harbor_hermes import BEAT, Hermes
+    from openarena import harbor_hermes
+    from openarena.harbor_hermes import ASK, Hermes
     from openarena.programs import harbor_program
 
     ran = []
 
     async def record(self, environment, command, **kwargs):
         ran.append(command)
+        return types.SimpleNamespace(
+            stdout="0" if command == ASK else "", stderr="", return_code=0
+        )
 
     async def nothing(*args, **kwargs):
         return None
@@ -574,72 +581,126 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
-    install = ran[-1]
-    # Installed on the disk, then linked where Harbor's run looks; checked there.
-    assert install.index('export HERMES_HOME=$HOME/.hermes') < install.index('bash "$installer" --skip-setup')
-    assert install.index('ln -s "$HERMES_HOME" /tmp/hermes') < install.index("export HERMES_HOME=/tmp/hermes") < install.index("hermes sessions list")
-    assert "/v0.23.4/scripts/install.sh" in install and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in install
-    assert "hermes version" not in install and "--branch" not in install
+    start, ask, check = ran
+    # Started on the disk and detached, asked about with short commands, then linked where Harbor's run looks and checked there.
+    assert start.index("export HERMES_HOME=$HOME/.hermes") < start.index("nohup bash")
+    assert ask == ASK and "--skip-setup" not in check
+    assert (
+        check.index('ln -s "$HERMES_HOME" /tmp/hermes')
+        < check.index("export HERMES_HOME=/tmp/hermes")
+        < check.index("hermes sessions list")
+    )
+    assert (
+        "/v0.23.4/scripts/install.sh" in start
+        and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in start
+    )
+    assert "hermes version" not in start + check and "--branch" not in start
     assert Hermes.DEFAULT_SETUP_TIMEOUT_SEC > 1200
-    assert hermes.get_version_command().endswith("HERMES_HOME=/tmp/hermes; hermes --version")
-    assert hermes.parse_version("Hermes Agent v0.23.4\nInstall directory: /root\n") == "Hermes Agent v0.23.4"
+    assert hermes.get_version_command().endswith(
+        "HERMES_HOME=/tmp/hermes; hermes --version"
+    )
+    assert (
+        hermes.parse_version("Hermes Agent v0.23.4\nInstall directory: /root\n")
+        == "Hermes Agent v0.23.4"
+    )
     # A second setup keeps the pin, though the first filled the version with what `--version` printed.
     hermes._version = "Hermes Agent v0.23.4 (2026.9.24)"
     asyncio.run(hermes.install(None))
-    assert ran[-1] == install
+    assert ran[-3] == start
     asyncio.run(Hermes(logs_dir=tmp_path, version="v0.23.4").install(None))
-    assert "--skip-setup --branch v0.23.4 >>" in ran[-1] and "--commit" not in ran[-1]
+    assert "--branch v0.23.4 </dev/null" in ran[-3] and "--commit" not in ran[-3]
 
-    # The shell decides as installed: an installer failing on an optional product passes when hermes runs, a hermes that
-    # does not run fails with what the installer reported last, and a failed download fails with curl's own error.
-    def outcome(installer: str, hermes_rc: int = 0) -> subprocess.CompletedProcess:
+    # The shell decides as installed, each command run here as the sandbox would. An installer failing on an optional
+    # product passes when hermes runs; a hermes that does not run fails with what the installer reported last; a failed
+    # download fails with curl's own error; an installer that ends with no exit code says so.
+    home, logs, run = tmp_path / "home", tmp_path / "logs", tmp_path / "run"
+    home.mkdir()
+
+    def outcome(installer: str, hermes_rc: int = 0) -> tuple[str | None, list[str]]:
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir(exist_ok=True)
         body = {
-            "slow": "sleep 3; echo installed",
+            "slow": "sleep 2; echo installed",
+            "killed": "kill -9 \\$PPID",  # escaped: the curl stub writes it, the installer runs it
             "fails": "echo 'error: unable to write file tests/test_rate_limit.py'; echo '  web UI build failed: exited 137'; exit 1",
             "full": "echo 'error: unable to write file a.py'; echo 'fatal: sha1 file write error. Out of diskspace'; "
             "echo 'error: unable to write file tests/test_failover.py'; echo '✗ could not check out 8fc0374'; exit 1",
         }.get(installer, "true")
-        page = {"empty": "", "html": "<html><body>Sign in to the network</body></html>"}.get(installer, f"#!/bin/sh\n{body}")
+        page = {
+            "empty": "",
+            "html": "<html><body>Sign in to the network</body></html>",
+        }.get(installer, f"#!/bin/sh\n{body}")
         download = {
             "404": "echo 'curl: (22) The requested URL returned error: 404' >&2; exit 22",
             "offline": "echo 'curl: (6) Could not resolve host: raw.githubusercontent.com' >&2; exit 6",
-        }.get(installer, f'while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done; printf "%s" "{page}" > "$out"')
+        }.get(
+            installer,
+            f'while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done; printf "%s" "{page}" > "$out"',
+        )
         (bin_dir / "curl").write_text(f"#!/bin/sh\n{download}\n")
         (bin_dir / "hermes").write_text(f"#!/bin/sh\nexit {hermes_rc}\n")
         for tool in bin_dir.iterdir():
             tool.chmod(0o755)
-        script = install.replace("/logs/agent", str(tmp_path / "logs")).replace("/tmp/hermes", str(tmp_path / "run"))
-        script = script.replace(f"sleep {BEAT} ", "sleep 1 ")  # the beat, quicker
-        env = {**os.environ, "HOME": str(tmp_path / "home")}
-        return subprocess.run(
-            ["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True, env=env, timeout=60
-        )
+        sent = []
 
-    if os.name == "posix" and shutil.which("bash"):
-        (tmp_path / "home").mkdir()
-        works = outcome("fails")
-        assert works.returncode == 0 and "install.sh exited 1, but the hermes command runs" in works.stderr
-        broken = outcome("fails", 1)
-        assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
-        assert broken.stderr.count("reported:") == 1
-        # An installer that fails at once stops the beat before its first sleep: the beat says nothing then.
-        assert "unbound" not in broken.stderr and "still running" not in broken.stdout
+        async def sandbox(self, environment, command, **kwargs):
+            sent.append(command)
+            script = command.replace("/logs/agent", str(logs)).replace(
+                "/tmp/hermes", str(run)
+            )
+            done = subprocess.run(
+                ["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "HOME": str(home)},
+                timeout=60,
+            )
+            if done.returncode:  # as Harbor's `_exec` raises it
+                raise RuntimeError(
+                    f"Command failed (exit {done.returncode}): stdout: {done.stdout} stderr: {done.stderr}"
+                )
+            return types.SimpleNamespace(
+                stdout=done.stdout, stderr=done.stderr, return_code=0
+            )
+
+        monkeypatch.setattr(Hermes, "_exec", sandbox)
+        monkeypatch.setattr(harbor_hermes, "POLL", 0.2)
+        try:
+            asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+            return None, sent
+        except RuntimeError as e:
+            return str(e), sent
+
+    if os.name == "posix" and shutil.which("bash") and shutil.which("nohup"):
+        error, sent = outcome("fails")
+        assert error is None
+        error, _ = outcome("fails", 1)
+        assert (
+            error.rstrip().endswith("web UI build failed: exited 137")
+            and error.count("reported:") == 1
+        )
         # The installer's file names stay in its log: Harbor would call the failure a rate limit.
-        assert "rate_limit" not in broken.stdout + broken.stderr
-        full = outcome("full", 127)
-        assert full.returncode == 1 and full.stderr.rstrip().endswith("Out of diskspace" + chr(10) + "✗ could not check out 8fc0374")
-        assert "test_failover" not in full.stderr
+        assert "rate_limit" not in error
+        error, _ = outcome("full", 127)
+        assert error.rstrip().endswith(
+            "Out of diskspace" + chr(10) + "✗ could not check out 8fc0374"
+        )
+        assert "test_failover" not in error
         # The installer's log is where Harbor downloads the agent's logs, whatever the outcome.
-        assert "Out of diskspace" in (tmp_path / "logs" / "hermes-install.log").read_text()
-        # An installer silent for longer than the beat: the install prints a line meanwhile, and the beat ends with it.
-        slow = outcome("slow")
-        assert slow.returncode == 0 and "hermes install: still running" in slow.stdout
-        assert slow.stdout.count("still running") <= 4
+        assert "Out of diskspace" in (logs / "hermes-install.log").read_text()
+        # An installer longer than a poll: asked about until it ends, each command short, then checked once.
+        error, sent = outcome("slow")
+        assert error is None and sent.count(ASK) >= 2
+        assert (
+            sent.index(ASK) > 0
+            and sent[-1].count("hermes sessions list") == 1
+            and ASK not in sent[-1]
+        )
+        # An installer killed before it wrote its exit code: said, not waited on until the setup times out.
+        error, _ = outcome("killed")
+        assert "stopped without an exit code" in error
         # A /tmp/hermes left by an earlier setup, a folder or a stale link, becomes the link to the install, not a link inside it.
         for earlier in ("folder", "stale link"):
-            run = tmp_path / "run"
             if run.is_symlink() or run.is_file():
                 run.unlink()
             elif run.exists():
@@ -648,17 +709,20 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
                 (run / "sessions").mkdir(parents=True)
             else:
                 run.symlink_to(tmp_path / "gone")
-            assert outcome("passes").returncode == 0
-            assert run.is_symlink() and run.resolve() == (tmp_path / "home" / ".hermes").resolve()
-        missing = outcome("404")
-        assert missing.returncode == 22 and missing.stderr.rstrip().endswith("curl: (22) The requested URL returned error: 404")
-        offline = outcome("offline")
-        assert offline.returncode == 6 and "(curl exit 6): curl: (6) Could not resolve host" in offline.stderr
-        empty = outcome("empty")
-        assert empty.returncode == 1 and empty.stderr.rstrip().endswith("is empty or not a script; it begins:")
-        html = outcome("html")
-        assert html.returncode == 1 and html.stderr.rstrip().endswith("it begins: <html><body>Sign in to the network</body></html>")
-
+            assert outcome("passes")[0] is None
+            assert run.is_symlink() and run.resolve() == (home / ".hermes").resolve()
+        error, _ = outcome("404")
+        assert "(exit 22)" in error and error.rstrip().endswith(
+            "curl: (22) The requested URL returned error: 404"
+        )
+        error, _ = outcome("offline")
+        assert "(curl exit 6): curl: (6) Could not resolve host" in error
+        error, _ = outcome("empty")
+        assert error.rstrip().endswith("is empty or not a script; it begins:")
+        error, _ = outcome("html")
+        assert error.rstrip().endswith(
+            "it begins: <html><body>Sign in to the network</body></html>"
+        )
     seen = {}
 
     class Ran:
