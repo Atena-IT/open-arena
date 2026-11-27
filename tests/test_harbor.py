@@ -431,7 +431,9 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
     install = ran[-1]
-    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index('bash "$installer" --skip-setup')
+    # Installed on the disk, then linked where Harbor's run looks; checked there.
+    assert install.index('export HERMES_HOME=$HOME/.hermes') < install.index('bash "$installer" --skip-setup')
+    assert install.index('ln -s "$HERMES_HOME" /tmp/hermes') < install.index("export HERMES_HOME=/tmp/hermes") < install.index("hermes sessions list")
     assert "/v0.23.4/scripts/install.sh" in install and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in install
     assert "hermes version" not in install and "--branch" not in install
     assert Hermes.DEFAULT_SETUP_TIMEOUT_SEC > 1200
@@ -442,14 +444,18 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     asyncio.run(hermes.install(None))
     assert ran[-1] == install
     asyncio.run(Hermes(logs_dir=tmp_path, version="v0.23.4").install(None))
-    assert "--skip-setup --branch v0.23.4 2>&1" in ran[-1] and "--commit" not in ran[-1]
+    assert "--skip-setup --branch v0.23.4 >>" in ran[-1] and "--commit" not in ran[-1]
 
     # The shell decides as installed: an installer failing on an optional product passes when hermes runs, a hermes that
     # does not run fails with what the installer reported last, and a failed download fails with curl's own error.
     def outcome(installer: str, hermes_rc: int = 0) -> subprocess.CompletedProcess:
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir(exist_ok=True)
-        body = "echo '  web UI build failed: exited 137'; exit 1" if installer == "fails" else "true"
+        body = {
+            "fails": "echo 'error: unable to write file tests/test_rate_limit.py'; echo '  web UI build failed: exited 137'; exit 1",
+            "full": "echo 'error: unable to write file a.py'; echo 'fatal: sha1 file write error. Out of diskspace'; "
+            "echo 'error: unable to write file tests/test_failover.py'; echo '✗ could not check out 8fc0374'; exit 1",
+        }.get(installer, "true")
         page = {"empty": "", "html": "<html><body>Sign in to the network</body></html>"}.get(installer, f"#!/bin/sh\n{body}")
         download = {
             "404": "echo 'curl: (22) The requested URL returned error: 404' >&2; exit 22",
@@ -459,14 +465,37 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         (bin_dir / "hermes").write_text(f"#!/bin/sh\nexit {hermes_rc}\n")
         for tool in bin_dir.iterdir():
             tool.chmod(0o755)
-        script = install.replace("/tmp/hermes-install", str(tmp_path / "install")).replace("/tmp/hermes", str(tmp_path / "home"))
-        return subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True)
+        script = install.replace("/logs/agent", str(tmp_path / "logs")).replace("/tmp/hermes", str(tmp_path / "run"))
+        env = {**os.environ, "HOME": str(tmp_path / "home")}
+        return subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True, env=env)
 
     if os.name == "posix" and shutil.which("bash"):
-        assert outcome("fails").returncode == 0
+        (tmp_path / "home").mkdir()
+        works = outcome("fails")
+        assert works.returncode == 0 and "install.sh exited 1, but the hermes command runs" in works.stderr
         broken = outcome("fails", 1)
         assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
-        assert outcome("passes").returncode == 0
+        assert broken.stderr.count("reported:") == 1
+        # The installer's file names stay in its log: Harbor would call the failure a rate limit.
+        assert "rate_limit" not in broken.stdout + broken.stderr
+        full = outcome("full", 127)
+        assert full.returncode == 1 and full.stderr.rstrip().endswith("Out of diskspace" + chr(10) + "✗ could not check out 8fc0374")
+        assert "test_failover" not in full.stderr
+        # The installer's log is where Harbor downloads the agent's logs, whatever the outcome.
+        assert "Out of diskspace" in (tmp_path / "logs" / "hermes-install.log").read_text()
+        # A /tmp/hermes left by an earlier setup, a folder or a stale link, becomes the link to the install, not a link inside it.
+        for earlier in ("folder", "stale link"):
+            run = tmp_path / "run"
+            if run.is_symlink() or run.is_file():
+                run.unlink()
+            elif run.exists():
+                shutil.rmtree(run)
+            if earlier == "folder":
+                (run / "sessions").mkdir(parents=True)
+            else:
+                run.symlink_to(tmp_path / "gone")
+            assert outcome("passes").returncode == 0
+            assert run.is_symlink() and run.resolve() == (tmp_path / "home" / ".hermes").resolve()
         missing = outcome("404")
         assert missing.returncode == 22 and missing.stderr.rstrip().endswith("curl: (22) The requested URL returned error: 404")
         offline = outcome("offline")
