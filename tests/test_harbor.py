@@ -822,6 +822,31 @@ def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
     assert run_error(predicted, trial / "agent") is None
 
 
+def test_swe_agent_counts_its_usage_and_reads_its_version(tmp_path):
+    # SWE-agent 1.1.0's trajectory: its usage under `info.model_stats`, as a staging trial of 18 steps wrote it.
+    from harbor.models.agent.context import AgentContext
+    from openarena import harbor_agents
+
+    agent = harbor_agents.SweAgent(logs_dir=tmp_path, model_name="openrouter/anthropic/claude-haiku-4.5")
+    assert "import sweagent; print(sweagent.__version__)" in agent.get_version_command()
+    assert agent.parse_version("1.1.0") == "1.1.0"
+    traj = {"info": {"model_stats": {"instance_cost": 0.0312, "tokens_sent": 28541, "tokens_received": 1210, "api_calls": 18}}}
+    (tmp_path / "swe-agent.trajectory.json").write_text(json.dumps(traj))
+    context = AgentContext()
+    agent.populate_context_post_run(context)
+    assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (28541, 1210, 0.0312)
+    # A trajectory that already says it Harbor's way keeps Harbor's numbers; none at all leaves the context as it was.
+    traj["info"].update(input_tokens=5, output_tokens=6, total_cost=0.5)
+    (tmp_path / "swe-agent.trajectory.json").write_text(json.dumps(traj))
+    context = AgentContext()
+    agent.populate_context_post_run(context)
+    assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (5, 6, 0.5)
+    (tmp_path / "swe-agent.trajectory.json").unlink()
+    context = AgentContext()
+    agent.populate_context_post_run(context)
+    assert not context.n_input_tokens and not context.cost_usd
+
+
 def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(tmp_path):
     from types import SimpleNamespace
 
