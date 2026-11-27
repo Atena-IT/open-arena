@@ -315,7 +315,7 @@ def task_files(spec: EnvironmentSpec, servers: dict[str, dict[str, Any]] | None 
 # Providers served from the arena's own machine by default: a sandbox cannot reach them.
 LOCAL_PROVIDERS = ("ollama", "ollama_chat", "lm_studio", "hosted_vllm", "vllm", "sglang")
 # Agents whose Harbor wrapper splits the model id at its first `/` and fails every trial of an id without one.
-PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes", "pi")
+PROVIDER_PREFIXED = ("gemini-cli", "goose", "opencode", "mini-swe-agent", "cursor-cli", "hermes", "pi", "cline-cli")
 # The providers pi knows (`KnownProvider` in pi's packages/ai/src/types.ts); it refuses any other `--provider`.
 # shortcut: pi 1.6.0's list, copied; add a name when a pi release adds a provider the arena needs.
 PI_PROVIDERS = frozenset({
@@ -418,6 +418,8 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     if (agent in PROVIDER_PREFIXED or agent_kind(agent) == "acp") and "/" not in model_id:
         return f"Harbor agent {agent!r} needs a `provider/model` id such as 'openai/gpt-4o', and {model_id!r} names no provider"
     provider = model_provider(model_id)
+    if agent == "goose" and (refused := _goose_problem(model_id, provider)):
+        return refused
     if info["provider"] and provider and provider != info["provider"]:
         return f"Harbor agent {agent!r} calls {info['provider']} models only, and {model_id!r} is a {provider} model"
     if info["runs"] == "sandbox":
@@ -426,6 +428,15 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
         if (provider or "") in LOCAL_PROVIDERS or model_id.split("/", 1)[0] in LOCAL_PROVIDERS:
             return f"Harbor agent {agent!r} runs inside the sandbox, which cannot reach {model_id!r} on the arena's machine"
     return pi_problem(model_id) if agent == "pi" else None
+
+
+def _goose_problem(model_id: str, provider: str | None) -> str | None:
+    """Why Goose cannot call `model_id`: Harbor hands Goose only the providers it names (`GOOSE_PROVIDERS`)."""
+    from openarena.harbor_agents import GOOSE_PROVIDERS
+
+    if provider and provider not in GOOSE_PROVIDERS:
+        return f"Harbor agent 'goose' calls only {', '.join(sorted(GOOSE_PROVIDERS))} models, and {model_id!r} is a {provider} model"
+    return None
 
 
 def pi_problem(model_id: str) -> str | None:
