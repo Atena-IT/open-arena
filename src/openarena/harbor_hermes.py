@@ -30,20 +30,38 @@ COMMIT = COMMITS[RELEASE]
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
 # The installer's log, where Harbor downloads the agent's logs even when the setup fails or times out; else the home.
 LOG_DIR = "/logs/agent"
-LOG = f'log={LOG_DIR}/hermes-install.log; [ -w "$log" ] || log="$HOME/.hermes-install.log"'
-# The running installer's process and, once it ends, its exit code.
+# The one rule for where the log is, in every command: under `LOG_DIR` when it can be written there, else the home.
+LOG = f'log={LOG_DIR}/hermes-install.log; {{ mkdir -p {LOG_DIR} && touch "$log"; }} 2>/dev/null || log="$HOME/.hermes-install.log"'
+# The installer, the script that runs it detached, its process and, once it ends, its exit code: removed once read.
+INSTALLER, RUNNER = '"$HOME/.hermes-installer.sh"', '"$HOME/.hermes-install-runner.sh"'
 PID, RC = '"$HOME/.hermes-install.pid"', '"$HOME/.hermes-install.rc"'
 # Seconds between the short commands that ask whether the installer has ended. It runs detached: a staging trial lost E2B's
 # command stream about 7 minutes into one long install command, so no command here lasts more than a few seconds.
 POLL = 20
+# Polls in a row that may fail (the sandbox did not answer) before the install gives up: one transient error is not the install's.
+ASK_TRIES = 3
 # The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error. Only
 # its own marks (`fatal:`, `✗`, `⚠`, `exited N`): a full disk prints `error: unable to write file <name>` per file, and a
 # name may hold `fail`.
 SAID = (
     "{ grep -E '^[[:space:]]*(fatal:|✗|⚠)|exited [0-9]+' \"$log\" || tail -n 3 \"$log\"; } | tail -n 3 | grep -oE '.{0,200}$'"
 )
-# What a poll says: the exit code once the installer ended, `running` while it runs, `gone` if it ended without one.
-ASK = f"if [ -s {RC} ]; then cat {RC}; elif kill -0 \"$(cat {PID} 2>/dev/null)\" 2>/dev/null; then echo running; else echo gone; fi"
+# A poll's last line: the exit code once the installer ended (the file is the truth), `running` while its process lives and
+# is not a zombie (a dead child nobody reaped still answers `kill -0`), `gone` otherwise. POSIX sh, as any sandbox's shell.
+ASK = (
+    f"if [ -s {RC} ]; then tail -n 1 {RC}; "
+    f'elif p=$(cat {PID} 2>/dev/null) && kill -0 "$p" 2>/dev/null && '
+    "[ \"$(sed -E 's/.*\\) ([A-Z]).*/\\1/' /proc/$p/stat 2>/dev/null)\" != Z ]; then echo running; "
+    "else echo gone; fi"
+)
+
+
+def asked(stdout: str | None) -> str | None:
+    """What a poll said, from its last line only (a login shell may print before it): an exit code, `running` or `gone`;
+    None for anything else, a poll to ask again."""
+    lines = (stdout or "").strip().splitlines()
+    last = lines[-1].strip() if lines else ""
+    return last if last.isdigit() or last in ("running", "gone") else None
 
 
 class Hermes(HarborHermes):
@@ -66,30 +84,41 @@ class Hermes(HarborHermes):
             "set -uo pipefail",
             f'export HERMES_HOME={DISK} PATH="$HOME/.local/bin:$PATH"',
             'mkdir -p "$HERMES_HOME" || { echo "cannot create $HERMES_HOME for the Hermes install" >&2; exit 1; }',
-            f'log={LOG_DIR}/hermes-install.log; {{ mkdir -p {LOG_DIR} && : >"$log"; }} 2>/dev/null || {{ log="$HOME/.hermes-install.log"; : >"$log"; }}',
-            f"rm -f {PID} {RC}",
-            # Downloaded first, to a fresh file: a failed download is its own error, with curl's message, and a page that
-            # is not a script (empty, a proxy's HTML) is refused before bash runs it.
-            "installer=$(mktemp)",
-            f'curl -fsSL -o "$installer" {INSTALL_SH} >>"$log" 2>&1 || {{ rc=$?; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 "$log")" >&2; exit "$rc"; }}',
-            '[ "$(head -c 2 "$installer")" = "#!" ] || { echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 "$installer" | cut -c1-120)" >&2; exit 1; }',
+            LOG,
+            ': >"$log"',
+            f"rm -f {PID} {RC} {INSTALLER} {RUNNER}",
+            # Downloaded first: a failed download is its own error, with curl's message, and a page that is not a script
+            # (empty, a proxy's HTML) is refused before bash runs it.
+            f'curl -fsSL -o {INSTALLER} {INSTALL_SH} >>"$log" 2>&1 || {{ rc=$?; rm -f {INSTALLER}; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 "$log")" >&2; exit "$rc"; }}',
+            f'[ "$(head -c 2 {INSTALLER})" = "#!" ] || {{ echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 {INSTALLER} | cut -c1-120)" >&2; rm -f {INSTALLER}; exit 1; }}',
             # Detached, into the log only (Harbor names a failed command's error from words anywhere in its output, and the
             # installer prints thousands of file names), its exit code written when it ends.
-            "runner=$(mktemp)",
-            "printf '%s\\n' " + shlex.quote('bash "$1" --skip-setup "${@:4}" >>"$2" 2>&1; echo $? > "$3"') + ' > "$runner"',
-            f'{{ command -v setsid >/dev/null && d=setsid || d=; }}; $d nohup bash "$runner" "$installer" "$log" {RC} {tree} </dev/null >/dev/null 2>&1 & echo $! > {PID}',
+            "printf '%s\\n' " + shlex.quote('bash "$1" --skip-setup "${@:4}" >>"$2" 2>&1; echo $? > "$3"') + f" > {RUNNER}",
+            f'{{ command -v setsid >/dev/null && d=setsid || d=; }}; $d nohup bash {RUNNER} {INSTALLER} "$log" {RC} {tree} </dev/null >/dev/null 2>&1 & echo $! > {PID}',
         )))
         started = time.monotonic()
-        while (said := ((await self.exec_as_agent(environment, command=ASK)).stdout or "").strip()) == "running":
-            # Harbor's setup timeout (`DEFAULT_SETUP_TIMEOUT_SEC`) cancels this wait, as it would one long command.
+        said, failed = None, 0
+        # Asked until it ends, within the setup's own limit (Harbor's timeout cancels this wait too, as one long command).
+        while time.monotonic() - started < self.DEFAULT_SETUP_TIMEOUT_SEC:
+            try:
+                said = asked((await self.exec_as_agent(environment, command=ASK)).stdout)
+                failed = 0
+            except Exception:
+                failed += 1
+                if failed >= ASK_TRIES:
+                    raise
+                said = None
+            if said not in (None, "running"):
+                break
             await asyncio.sleep(POLL)
         self.logger.debug(f"Hermes's installer ended after {time.monotonic() - started:.0f} s: {said}")
         await self.exec_as_agent(environment, command="; ".join((
             "set -uo pipefail",
             f'export HERMES_HOME={DISK} PATH="$HOME/.local/bin:$PATH"',
             LOG,
-            f'rc=$(cat {RC} 2>/dev/null)',
-            f'[ -n "$rc" ] || {{ echo "the Hermes installer stopped without an exit code (killed?); it reported:" >&2; {SAID} >&2; exit 1; }}',
+            f"rc=$(tail -n 1 {RC} 2>/dev/null)",
+            f"rm -f {PID} {RC} {INSTALLER} {RUNNER}",
+            f'case "$rc" in ""|*[!0-9]*) echo "the Hermes installer stopped without an exit code (killed?); it reported:" >&2; {SAID} >&2; exit 1;; esac',
             # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.
             'rm -f "$HERMES_HOME/.env"',
             'mkdir -p "$HERMES_HOME/sessions" "$HERMES_HOME/skills" "$HERMES_HOME/memories"',
