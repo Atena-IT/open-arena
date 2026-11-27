@@ -16,12 +16,12 @@ import shlex
 from harbor.agents.installed.hermes import Hermes as HarborHermes
 
 HOME = "/tmp/hermes"  # the root Harbor's run exports
-# Bumped on purpose: the installer and the tree it checks out, Hermes v0.23.4.
+# Bumped on purpose: the installer and the tree it checks out, Hermes v0.23.4. The commit must be on Hermes's main.
 RELEASE, COMMIT = "v0.23.4", "8fc0374447313e276f6b9a2764bfc750190c966a"
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
 LOG = "/tmp/hermes-install.log"
-# The installer's last failure lines, cut: a platform keeps only the end of an error.
-SAID = f"{{ grep -iE 'fail|error' {LOG} || tail -n 3 {LOG}; }} | tail -n 3 | cut -c1-200"
+# The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error.
+SAID = f"{{ grep -iE 'fail|error|exited' {LOG} || tail -n 3 {LOG}; }} | tail -n 3 | grep -oE '.{{0,200}}$'"
 
 
 class Hermes(HarborHermes):
