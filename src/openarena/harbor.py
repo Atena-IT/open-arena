@@ -418,7 +418,7 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     if (agent in PROVIDER_PREFIXED or agent_kind(agent) == "acp") and "/" not in model_id:
         return f"Harbor agent {agent!r} needs a `provider/model` id such as 'openai/gpt-4o', and {model_id!r} names no provider"
     provider = model_provider(model_id)
-    if agent == "goose" and (refused := _goose_problem(model_id, provider)):
+    if refused := _provider_problem(agent, model_id, provider):
         return refused
     if info["provider"] and provider and provider != info["provider"]:
         return f"Harbor agent {agent!r} calls {info['provider']} models only, and {model_id!r} is a {provider} model"
@@ -430,12 +430,13 @@ def agent_problem(agent: str, model_id: str, environment: EnvironmentSpec | None
     return pi_problem(model_id) if agent == "pi" else None
 
 
-def _goose_problem(model_id: str, provider: str | None) -> str | None:
-    """Why Goose cannot call `model_id`: Harbor hands Goose only the providers it names (`GOOSE_PROVIDERS`)."""
-    from openarena.harbor_agents import GOOSE_PROVIDERS
+def _provider_problem(agent: str, model_id: str, provider: str | None) -> str | None:
+    """Why `agent` cannot call `model_id`, for an agent Harbor hands only some providers (`harbor_agents.PROVIDERS`)."""
+    from openarena.harbor_agents import PROVIDERS
 
-    if provider and provider not in GOOSE_PROVIDERS:
-        return f"Harbor agent 'goose' calls only {', '.join(sorted(GOOSE_PROVIDERS))} models, and {model_id!r} is a {provider} model"
+    known = PROVIDERS.get(agent)
+    if known and provider and provider not in known:
+        return f"Harbor agent {agent!r} calls only {', '.join(sorted(known))} models, and {model_id!r} is a {provider} model"
     return None
 
 

@@ -513,6 +513,7 @@ def test_goose_swe_agent_and_cline_run_the_engines_fixes_of_harbor_0_24(monkeypa
     assert (env["PROVIDER"], env["MODELID"], env["API_KEY"]) == ("openrouter", "qwen/qwen3-coder:free", "sk-or-test")
     assert cline.model_name == model
     assert "names no provider" in agent_problem("cline-cli", "gpt-4o", public)
+    assert "calls only anthropic" in agent_problem("cline-cli", "deepseek/deepseek-chat", public)
 
     # SWE-agent: the working directory, a git repository with its files committed, is SWE-agent's repository as it is.
     ran.clear()
@@ -532,11 +533,19 @@ def test_goose_swe_agent_and_cline_run_the_engines_fixes_of_harbor_0_24(monkeypa
             out = subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=app, capture_output=True, text=True)
             assert out.returncode == 0, out.stderr
             assert "--env.repo.type=preexisting" in out.stdout and f"--env.repo.repo_name={app}" in out.stdout.splitlines()
-        git = lambda *args: subprocess.run(["git", *args], cwd=app, capture_output=True, text=True).stdout
+        def git(*args):
+            return subprocess.run(["git", *args], cwd=app, capture_output=True, text=True).stdout
+
         assert git("ls-files").split() == ["hello.txt"] and git("status", "--porcelain") == "" and len(git("log", "--oneline").splitlines()) == 1
         # SWE-agent's reset (`git restore .`) needs a file in the commit: an empty folder gets one.
         subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=empty, check=True, capture_output=True)
         assert subprocess.run(["git", "ls-files"], cwd=empty, capture_output=True, text=True).stdout.split() == [".gitkeep"]
+        # A folder inside another repository becomes its own, so SWE-agent's reset stays in it.
+        inner = app / "inner"
+        inner.mkdir()
+        (inner / "task.txt").write_text("x")
+        subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=inner, check=True, capture_output=True)
+        assert subprocess.run(["git", "ls-files"], cwd=inner, capture_output=True, text=True).stdout.split() == ["task.txt"]
 
     # `run_trial` runs the engine's class for each, under Harbor's name.
     seen = {}

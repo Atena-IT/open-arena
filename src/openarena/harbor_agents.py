@@ -15,6 +15,8 @@ from harbor.agents.installed.swe_agent import SweAgent as HarborSweAgent
 
 # The providers Harbor hands to Goose; 0.24 leaves out openrouter, which Goose itself serves (OPENROUTER_API_KEY).
 GOOSE_PROVIDERS = frozenset({"anthropic", "databricks", "google", "openai", "openrouter", "tetrate"})
+# The providers each agent can call, as Harbor names them: Cline's are those whose key Harbor 0.24 hands it.
+PROVIDERS = {"goose": GOOSE_PROVIDERS, "cline-cli": frozenset(HarborCline.PROVIDER_API_KEY_ENVS)}
 
 # Harbor 0.24's repository argument: single quotes keep `$(pwd)` literal, and SWE-agent fails on `/app/$(pwd)`.
 SWE_REPO_0_24 = (
@@ -25,11 +27,13 @@ SWE_REPO_0_24 = (
 SWE_REPO = '--env.repo.type=preexisting "--env.repo.repo_name=$(if [ -d /testbed ]; then echo /testbed; else pwd; fi)"'
 # SWE-agent resets the repository and builds its patch with git, and an arena task's folder is rarely a repository
 # (harbor-framework/harbor#3713, left open upstream): it becomes one, its files committed, so the reset keeps them. The reset's
-# `git restore .` fails on a commit without a file, so an empty folder gets a `.gitkeep`.
+# `git restore .` fails on a commit without a file, so an empty folder gets a `.gitkeep`. Only a repository rooted here
+# counts: SWE-agent would reset a parent one whole.
 SWE_GIT_INIT = (
-    "[ -d /testbed ] || git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { git init -q && git add -A && "
+    '[ -d /testbed ] || [ "$(git rev-parse --show-toplevel 2>/dev/null)" = "$(pwd -P)" ] || { git init -q && git add -A && '
     '{ [ -n "$(git ls-files)" ] || { touch .gitkeep && git add .gitkeep; }; } && '
-    "git -c user.name=arena -c user.email=arena@localhost commit -qm task; }\n"
+    "git -c user.name=arena -c user.email=arena@localhost commit -qm task; } || "
+    'echo "arena: could not make $(pwd) a git repository with its files committed, which SWE-agent needs" >&2\n'
 )
 
 

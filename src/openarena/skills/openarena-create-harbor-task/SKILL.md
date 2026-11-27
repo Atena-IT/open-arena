@@ -192,7 +192,9 @@ its own evaluation, naming the models that drive the agent
 (openarena-run-evaluation). Pair agents and models with care:
 
 - `claude-code` calls Anthropic models only, `codex` OpenAI, `gemini-cli`
-  Google; the others take any provider.
+  Google; `goose` Anthropic, Databricks, Google, OpenAI, OpenRouter and
+  Tetrate; `cline-cli` Anthropic, Gemini, OpenAI, OpenRouter, xAI and Cline;
+  the others take any provider.
 - `terminus-2` runs on this machine and can drive a local model (`ollama/`,
   `vllm/`, `sglang/`, ...); every other agent runs inside the sandbox, where a model
   on this machine's localhost is out of reach: give them hosted models.

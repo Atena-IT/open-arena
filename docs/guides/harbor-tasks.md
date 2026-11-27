@@ -412,8 +412,9 @@ evaluation's axis is what the agent calls to decide each step.
 | `claude-code` | in the sandbox | Anthropic models only |
 | `codex` | in the sandbox | OpenAI models only |
 | `gemini-cli` | in the sandbox | Google models only |
-| `opencode`, `openhands`, `mini-swe-agent`, `swe-agent`, `cline-cli`, `cursor-cli` | in the sandbox | any provider |
+| `opencode`, `openhands`, `mini-swe-agent`, `swe-agent`, `cursor-cli` | in the sandbox | any provider |
 | `goose` | in the sandbox | Anthropic, Databricks, Google, OpenAI, OpenRouter and Tetrate models |
+| `cline-cli` | in the sandbox | Anthropic, Gemini, OpenAI, OpenRouter, xAI and Cline models, the ones whose key Harbor hands it |
 | `pi` | in the sandbox | the providers pi knows, by Harbor's name (`google` for `gemini/`): `openai`, `anthropic`, `google`, `openrouter`, `groq`, `mistral`, `deepseek`, `xai`, `together` and more; not `nebius/`, nor `fireworks_ai/` (pi says `fireworks`), nor a custom endpoint (`OPENAI_BASE_URL`) |
 | `hermes` | in the sandbox | Anthropic, OpenAI, Z.ai, Kimi and MiniMax models with their provider's key; any other `provider/model` id, or one of those without its key, goes to OpenRouter whole, an `openrouter/` prefix included, with `OPENROUTER_API_KEY` |
 
