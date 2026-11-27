@@ -86,23 +86,58 @@ class Goose(HarborGoose):
         )
 
 
+def _count(value) -> float | None:
+    """A usage number SWE-agent wrote, or None for anything that is not one (a string, a bool, a negative)."""
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0 else None
+
+
+def _model_stats(agent: "SweAgent") -> dict | None:
+    """`info.model_stats` of the trial's SWE-agent trajectory, or None: none written, unreadable, cut short, another shape."""
+    try:
+        path = agent._find_trajectory_file() or Path(agent.logs_dir) / "swe-agent.trajectory.json"
+        info = json.loads(Path(path).read_text()).get("info")
+    except (OSError, ValueError, AssertionError, AttributeError):  # Harbor's finder asserts one file at most
+        return None
+    stats = info.get("model_stats") if isinstance(info, dict) else None
+    return stats if isinstance(stats, dict) else None
+
+
+def _priced(model: str | None, tokens_in: int | None, tokens_out: int | None) -> float | None:
+    """Tokens at the arena's price for `model` (`lookups.prices.model_price`), or None when no source has a whole price."""
+    if not model or not (tokens_in or tokens_out):
+        return None
+    try:
+        from openarena.lookups.prices import model_price
+
+        price = model_price(model)
+    except Exception:  # noqa: BLE001 - a price unread costs the cell its cost, never the trial
+        return None
+    if price is None or not price.complete:
+        return None
+    return (tokens_in or 0) * price.input + (tokens_out or 0) * price.output
+
+
 class SweAgent(HarborSweAgent):
     # harbor/agents/installed/swe_agent.py asks `pip show swe-agent`: the venv uv made has no pip, and the package is `sweagent`.
+    # The venv is Harbor's install's; a SWE-agent the image brings elsewhere is read with the PATH's python.
     def get_version_command(self) -> str | None:
-        return "/opt/sweagent-venv/bin/python -c \"import importlib.metadata as m; print(m.version('sweagent'))\""
+        return (
+            'p=/opt/sweagent-venv/bin/python; [ -x "$p" ] || p=python3; '
+            "\"$p\" -c \"import importlib.metadata as m; print(m.version('sweagent'))\""
+        )
 
     # Harbor 0.24 reads `info.total_cost`, `input_tokens` and `output_tokens`; SWE-agent 1.x writes its usage under
-    # `info.model_stats` (`instance_cost`, `tokens_sent`, `tokens_received`), so every run counted 0 calls' worth.
+    # `info.model_stats` (`instance_cost`, `tokens_sent`, `tokens_received`). Harbor's numbers stand when it found any. The
+    # cost is SWE-agent's own when above 0, else its tokens at the arena's price: litellm, which SWE-agent asks, has no price
+    # for an `openrouter/...` id and SWE-agent then writes 0. Nothing reported stays None, never 0.
     def populate_context_post_run(self, context) -> None:
         super().populate_context_post_run(context)
-        path = self._find_trajectory_file() or Path(self.logs_dir) / "swe-agent.trajectory.json"
-        try:
-            stats = (json.loads(Path(path).read_text()).get("info") or {}).get("model_stats") or {}
-        except (OSError, ValueError, AttributeError):  # no trajectory, or not SWE-agent's: Harbor's reading stands
-            return
-        context.n_input_tokens = context.n_input_tokens or stats.get("tokens_sent") or 0
-        context.n_output_tokens = context.n_output_tokens or stats.get("tokens_received") or 0
-        context.cost_usd = context.cost_usd or stats.get("instance_cost") or 0.0
+        stats = _model_stats(self) or {}
+        sent, received, cost = (_count(stats.get(key)) for key in ("tokens_sent", "tokens_received", "instance_cost"))
+        context.n_input_tokens = context.n_input_tokens or (int(sent) if sent is not None else None)
+        context.n_output_tokens = context.n_output_tokens or (int(received) if received is not None else None)
+        if not context.cost_usd:
+            context.cost_usd = cost if cost else _priced(self.model_name, context.n_input_tokens, context.n_output_tokens)
 
     # Replaces the repository argument of harbor/agents/installed/swe_agent.py `SweAgent.run` (Harbor 0.24.0, lines 567-568).
     async def exec_as_agent(self, environment, command, env=None, cwd=None, timeout_sec=None):
