@@ -89,7 +89,7 @@ class Goose(HarborGoose):
 class SweAgent(HarborSweAgent):
     # harbor/agents/installed/swe_agent.py asks `pip show swe-agent`: the venv uv made has no pip, and the package is `sweagent`.
     def get_version_command(self) -> str | None:
-        return '/opt/sweagent-venv/bin/python -c "import sweagent; print(sweagent.__version__)"'
+        return "/opt/sweagent-venv/bin/python -c \"import importlib.metadata as m; print(m.version('sweagent'))\""
 
     # Harbor 0.24 reads `info.total_cost`, `input_tokens` and `output_tokens`; SWE-agent 1.x writes its usage under
     # `info.model_stats` (`instance_cost`, `tokens_sent`, `tokens_received`), so every run counted 0 calls' worth.

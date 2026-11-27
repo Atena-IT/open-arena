@@ -828,7 +828,7 @@ def test_swe_agent_counts_its_usage_and_reads_its_version(tmp_path):
     from openarena import harbor_agents
 
     agent = harbor_agents.SweAgent(logs_dir=tmp_path, model_name="openrouter/anthropic/claude-haiku-4.5")
-    assert "import sweagent; print(sweagent.__version__)" in agent.get_version_command()
+    assert "m.version('sweagent')" in agent.get_version_command()
     assert agent.parse_version("1.1.0") == "1.1.0"
     traj = {"info": {"model_stats": {"instance_cost": 0.0312, "tokens_sent": 28541, "tokens_received": 1210, "api_calls": 18}}}
     (tmp_path / "swe-agent.trajectory.json").write_text(json.dumps(traj))
