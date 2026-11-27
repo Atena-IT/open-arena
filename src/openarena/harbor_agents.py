@@ -5,8 +5,11 @@
 Each fails every arena trial in 0.24, before any model call: Goose refuses openrouter, SWE-agent hands SWE-agent a
 literal `$(pwd)` as the repository path, Cline wants `provider:model-id` where the arena passes litellm's
 `provider/model`. `run_trial` runs these classes instead of Harbor's (`OWN_AGENTS`). Remove them with the bump to
-Harbor 0.25 or later, which carries the three fixes (harbor-framework/harbor#3551, #3715, #3474).
+Harbor 0.25 or later, which carries the three fixes (harbor-framework/harbor#3551, #3715, #3474):
+`test_harbor_agents_are_for_harbor_0_24` fails on any other Harbor, so the bump has to decide.
 """
+
+import uuid
 
 from harbor.agents.installed.base import with_prompt_template
 from harbor.agents.installed.cline.cline import ClineCli as HarborCline
@@ -28,7 +31,8 @@ SWE_REPO = '--env.repo.type=preexisting "--env.repo.repo_name=$(if [ -d /testbed
 # SWE-agent resets the repository and builds its patch with git, and an arena task's folder is rarely a repository
 # (harbor-framework/harbor#3713, left open upstream): it becomes one, its files committed, so the reset keeps them. The reset's
 # `git restore .` fails on a commit without a file, so an empty folder gets a `.gitkeep`. Only a repository rooted here
-# counts: SWE-agent would reset a parent one whole.
+# counts: SWE-agent would reset a parent one whole. The verifier then finds a `.git` (and maybe a `.gitkeep`) in the
+# folder: harmless, since a task whose tests read git state ships a repository, for which nothing is made.
 SWE_GIT_INIT = (
     '[ -d /testbed ] || [ "$(git rev-parse --show-toplevel 2>/dev/null)" = "$(pwd -P)" ] || { git init -q && git add -A && '
     '{ [ -n "$(git ls-files)" ] || { touch .gitkeep && git add .gitkeep; }; } && '
@@ -38,9 +42,11 @@ SWE_GIT_INIT = (
 
 
 class Goose(HarborGoose):
+    # Replaces harbor/agents/installed/goose.py `Goose.run` (Harbor 0.24.0, lines 731-799).
     @with_prompt_template
     async def run(self, instruction, environment, context) -> None:
-        # Harbor 0.24's run, with openrouter among the providers (harbor-framework/harbor#3551).
+        # Harbor 0.24's run, with openrouter among the providers (harbor-framework/harbor#3551), and a heredoc
+        # delimiter the recipe cannot hold (Harbor's is `EOF`).
         if not self.model_name or "/" not in self.model_name:
             raise ValueError("Model name must be in the format provider/model_name")
         provider, model = self.model_name.split("/", 1)
@@ -63,7 +69,8 @@ class Goose(HarborGoose):
         if skills_command := self._build_register_skills_command():
             await self.exec_as_agent(environment, command=skills_command, env=env, timeout_sec=10)
         recipe_yaml = self._create_recipe_yaml(instruction)
-        await self.exec_as_agent(environment, command=f"cat > ~/harbor-recipe.yaml << 'EOF'\n{recipe_yaml}EOF", env=env, timeout_sec=10)
+        end = f"HARBOR_RECIPE_{uuid.uuid4().hex}"
+        await self.exec_as_agent(environment, command=f"cat > ~/harbor-recipe.yaml << '{end}'\n{recipe_yaml}{end}", env=env, timeout_sec=10)
         resume_flag = "--resume " if self._resume else ""
         cli_flags = self.build_cli_flags()
         extra_flags = (cli_flags + " ") if cli_flags else ""
@@ -78,13 +85,18 @@ class Goose(HarborGoose):
 
 
 class SweAgent(HarborSweAgent):
+    # Replaces the repository argument of harbor/agents/installed/swe_agent.py `SweAgent.run` (Harbor 0.24.0, lines 567-568).
     async def exec_as_agent(self, environment, command, env=None, cwd=None, timeout_sec=None):
-        if SWE_REPO_0_24 in command:
+        if "sweagent run" in command:
+            if SWE_REPO_0_24 not in command:  # a Harbor that words it otherwise: the fix would do nothing, silently
+                raise RuntimeError(f"SWE-agent's command no longer holds Harbor 0.24's repository argument {SWE_REPO_0_24!r}: "
+                                   "update openarena.harbor_agents.SweAgent")
             command = SWE_GIT_INIT + command.replace(SWE_REPO_0_24, SWE_REPO)
         return await super().exec_as_agent(environment, command, env=env, cwd=cwd, timeout_sec=timeout_sec)
 
 
 class ClineCli(HarborCline):
+    # Feeds harbor/agents/installed/cline/cline.py `create_run_agent_commands` (Harbor 0.24.0, line 1060) the id it splits.
     def create_run_agent_commands(self, instruction):
         # Harbor 0.24 splits the id at its first `:`; the arena's `openrouter/qwen/qwen3:free` is `openrouter:qwen/qwen3:free`
         # to it (harbor-framework/harbor#3474). An id already in that form (no `/` before its `:`) goes as it is.
