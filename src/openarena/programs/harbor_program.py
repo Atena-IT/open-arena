@@ -45,8 +45,8 @@ would rank it as if it were.
 
 Each row's trial keeps its logs under the run's state, `harbor/trials/<trial>/`,
 and a line in `harbor/trials.jsonl` (`TRIALS_LOG`) says which dataset, model
-and question it was, what came of it and why: what the app's trial viewer
-reads. The task folder is removed once its trial is done.
+and question it was, what came of it and why, and which version of the
+agent ran (`agent_version`): what the app's trial viewer reads. The task folder is removed once its trial is done.
 """
 
 from __future__ import annotations
@@ -609,6 +609,7 @@ async def run_trial(
     from harbor.trial.trial import Trial
 
     from openarena.config.entries import AGENT_MODULES, agent_kind, agent_module_allowed
+    from openarena.harbor_versions import agent_path
 
     # The class itself was checked at the program's build; its module is checked again here, by name, at no cost.
     if agent_kind(agent) == "class" and not agent_module_allowed(agent):
@@ -623,8 +624,9 @@ async def run_trial(
         trial_name=name,
         trials_dir=trials,
         # Harbor reads `acp:<id>[@version]` as its ACP runner and `module:Class` as an import path, imported here, in the trial.
-        # Some built-ins run the engine's class of the same agent (`OWN_AGENTS`: openarena.harbor_hermes, openarena.harbor_agents).
-        agent=AgentConfig(name=OWN_AGENTS.get(agent, agent), model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
+        # A built-in agent Harbor installs runs as the engine's class, which writes down the version it ran
+        # (openarena.harbor_versions), over the engine's own class where it has one (`OWN_AGENTS`).
+        agent=AgentConfig(name=agent_path(agent), model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
         environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
@@ -704,6 +706,10 @@ class HarborTask(Module):
         # new pin for the rows left, as it runs that engine's code for them; each trial's line says which version ran.
         if version := spec.get("agent_version") or (AGENT_VERSIONS.get(agent) if agent != "hermes" else None):
             self.agent_kwargs.update(version_kwargs(agent, version))
+        # What each trial's line says of the version: the one asked for, and where from.
+        asked = spec.get("agent_version")
+        self.version_asked = asked or AGENT_VERSIONS.get(agent)
+        self.version_origin = (LATEST if asked == LATEST else "harness") if asked else "arena" if self.version_asked else None
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)
@@ -721,6 +727,10 @@ class HarborTask(Module):
         return SymbolicDataModel(schema=OUTPUT_SCHEMA, name=self.name)
 
     def _record(self, line: dict[str, Any]) -> None:
+        from openarena.harbor_versions import version_line
+
+        if version := version_line(self.version_asked, self.version_origin, Path(line["dir"]) / "agent"):
+            line = {**line, "agent_version": version}
         path = Path(self.work_dir) / TRIALS_LOG
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a") as f:

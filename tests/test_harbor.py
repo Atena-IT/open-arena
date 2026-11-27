@@ -399,6 +399,117 @@ def test_a_version_goes_only_to_an_agent_harbor_installs(monkeypatch):
     assert version_kwargs("cline-cli", "latest") == {"cline_version": "latest"}
 
 
+def test_a_trial_says_which_version_was_asked_for_and_which_ran(monkeypatch, tmp_path):
+    import asyncio
+
+    from harbor.agents.factory import AgentFactory
+    from harbor.agents.installed.claude_code import ClaudeCode
+    from harbor.trial.trial import Trial
+    from harbor.models.trial.config import AgentConfig
+    from openarena.harbor_versions import CLASSES, FILE, MAX_VERSION, Detects, agent_path, version_line
+    from openarena.programs import harbor_program
+    from synalinks.src.backend import JsonDataModel
+
+    # A built-in agent Harbor installs runs as the engine's class, the same agent; the others as named.
+    cls = AgentFactory.get_agent_class_from_config(AgentConfig(name=agent_path("claude-code")))
+    assert issubclass(cls, Detects) and issubclass(cls, ClaudeCode) and cls.name() == "claude-code"
+    assert [agent_path(a) for a in ("terminus-2", "acp:claude-acp", "pkg.mod:Agent")] == ["terminus-2", "acp:claude-acp", "pkg.mod:Agent"]
+
+    # After its setup the agent's version command runs, pinned or not, and what it says is written down.
+    class Installed:
+        logs_dir = tmp_path
+
+        async def setup(self, environment):
+            pass
+
+        def get_version_command(self):
+            return "claude --version"
+
+        def parse_version(self, stdout):
+            return stdout.strip()
+
+    class Said:
+        return_code, stdout = 0, "FutureWarning: grpcio < 1.83.0 does not support PQC\n2.1.326 (Claude Code)\n"
+
+    class Environment:
+        async def exec(self, command, **kwargs):
+            return Said()
+
+    asyncio.run(type("Agent", (Detects, Installed), {})().setup(Environment()))
+    assert (tmp_path / FILE).read_text() == "2.1.326 (Claude Code)"
+    assert version_line("2.1.326", "arena", tmp_path) == {"requested": "2.1.326", "detected": "2.1.326 (Claude Code)", "origin": "arena"}
+    assert version_line("v2.1.326", "harness", tmp_path)["detected"] == "2.1.326 (Claude Code)"
+    assert version_line("2.1.300", "harness", tmp_path)["warning"] == "2.1.300 was asked for, 2.1.326 (Claude Code) ran"
+    assert "warning" not in version_line("latest", "latest", tmp_path)
+    assert "warning" not in version_line("main", "harness", tmp_path)  # a branch, not a version
+    assert "warning" not in version_line("8fc0374447313e276f6b9a2764bfc750190c966a", "harness", tmp_path)
+    (tmp_path / FILE).write_text("x" * 500 + "\x1b[31m")
+    assert version_line(None, None, tmp_path) == {"detected": "x" * MAX_VERSION}
+    (tmp_path / FILE).write_text("\x1b[32m1.2.0\x1b[0m\n")
+    assert version_line("1.2.0", "harness", tmp_path) == {"requested": "1.2.0", "detected": "1.2.0", "origin": "harness"}
+    (tmp_path / FILE).write_text("2.1.326")
+    assert version_line("2.1.3", "harness", tmp_path)["warning"] == "2.1.3 was asked for, 2.1.326 ran"
+    assert version_line(None, None, tmp_path / "none") == {}
+
+    # Through Harbor's own Claude Code: already installed at the pin, its setup installs nothing and the version is read.
+    class Installed:
+        def __init__(self, hang=False, fail=False):
+            self.hang, self.fail, self.ran = hang, fail, []
+
+        async def exec(self, command, cwd=None, env=None, timeout_sec=None, user=None):
+            self.ran.append(command)
+            if timeout_sec is not None:  # the engine's read after setup; Harbor's own check passes none
+                if self.hang:
+                    await asyncio.sleep(60)
+                if self.fail:
+                    raise RuntimeError("the sandbox went away")
+            return type("Said", (), {"return_code": 0, "stdout": "2.1.326 (Claude Code)\n", "stderr": ""})()
+
+    def claude(folder):
+        folder.mkdir()
+        return CLASSES["claude-code"](logs_dir=folder, model_name="anthropic/claude-sonnet-4-5", version="2.1.326")
+
+    asyncio.run(claude(tmp_path / "real").setup(Installed()))
+    assert version_line("2.1.326", "arena", tmp_path / "real") == {"requested": "2.1.326", "detected": "2.1.326", "origin": "arena"}
+    # A version command that hangs or fails leaves no version, and the setup goes on.
+    monkeypatch.setattr("openarena.harbor_versions.VERSION_TIMEOUT", 0.1)
+    for case, environment in (("hung", Installed(hang=True)), ("failed", Installed(fail=True))):
+        asyncio.run(claude(tmp_path / case).setup(environment))
+        assert not (tmp_path / case / FILE).exists() and version_line("2.1.326", "arena", tmp_path / case) == {"requested": "2.1.326", "origin": "arena"}
+
+    # The trial's line says it, failed or not: the arena's pin, and what the setup found.
+    def create(config):
+        agent_dir = config.trials_dir / config.trial_name / "agent"
+        agent_dir.mkdir(parents=True)
+        (agent_dir / FILE).write_text("1.5.0")
+
+        class Ran:
+            async def run(self):
+                raise RuntimeError("no sandbox in tests")
+
+        async def made():
+            return Ran()
+
+        return made()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "ready", lambda name: True)
+    entry = EnvironmentSpec(docker_image="python:3.12-slim", sandbox="docker").model_dump(mode="json")
+    spec = {"agent": "openhands", "dataset": "d", "environment": "py", "environment_entry": entry, "mcp_servers": {}}
+    task = harbor_program.HarborTask(model="openai/gpt-4o", spec=spec, work_dir=str(tmp_path / "work"))
+    row = JsonDataModel(json={"question": "What is 2+2?"}, schema={"type": "object", "properties": {}})
+    assert asyncio.run(task.call(row)) is None
+    [line] = [json.loads(x) for x in (tmp_path / "work" / harbor_program.TRIALS_LOG).read_text().splitlines()]
+    assert line["agent_version"] == {
+        "requested": AGENT_VERSIONS["openhands"], "detected": "1.5.0", "origin": "arena",
+        "warning": f"{AGENT_VERSIONS['openhands']} was asked for, 1.5.0 ran",
+    }
+    asked = harbor_program.HarborTask(model="openai/gpt-4o", spec={**spec, "agent_version": "latest"}, work_dir=str(tmp_path))
+    assert (asked.version_asked, asked.version_origin) == ("latest", "latest")
+    terminus = harbor_program.HarborTask(model="openai/gpt-4o", spec={**spec, "agent": "terminus-2"}, work_dir=str(tmp_path))
+    assert (terminus.version_asked, terminus.version_origin) == (None, None)
+
+
 def test_an_agent_installs_the_arenas_pin_unless_its_dataset_asks(tmp_path):
     from openarena.config.entries import AGENT_VERSION, HARBOR_AGENTS
     from openarena.harbor_hermes import RELEASE
@@ -553,7 +664,7 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     (tmp_path / "task").mkdir()
     asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t", "hermes", "openrouter/x/y"))
     cls = AgentFactory.get_agent_class_from_config(seen["config"].agent)
-    assert cls is Hermes and cls.name() == "hermes"
+    assert issubclass(cls, Hermes) and cls.name() == "hermes"
 
 
 def test_harbor_agents_are_for_harbor_0_24():
@@ -561,7 +672,9 @@ def test_harbor_agents_are_for_harbor_0_24():
     # delete the module (and its `OWN_AGENTS` lines) or check each class against the new Harbor, then move this pin.
     from importlib.metadata import version
 
-    assert version("harbor").startswith("0.24."), "Harbor moved: openarena.harbor_agents was written for 0.24"
+    # openarena.harbor_versions reads the version Harbor 0.24 reads only when nothing is pinned: on a bump, check
+    # whether Harbor now reads a pinned install itself (0.26's `is_requested_version_installed`) and drop the module.
+    assert version("harbor").startswith("0.24."), "Harbor moved: openarena.harbor_agents and harbor_versions were written for 0.24"
 
 
 def test_goose_swe_agent_and_cline_run_the_engines_fixes_of_harbor_0_24(monkeypatch, tmp_path):
@@ -664,7 +777,8 @@ def test_goose_swe_agent_and_cline_run_the_engines_fixes_of_harbor_0_24(monkeypa
     (tmp_path / "task").mkdir()
     for agent, cls in (("goose", harbor_agents.Goose), ("swe-agent", harbor_agents.SweAgent), ("cline-cli", harbor_agents.ClineCli)):
         asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t", agent, model))
-        assert AgentFactory.get_agent_class_from_config(seen["config"].agent) is cls and cls.name() == agent
+        # The engine's class, under the one that writes down the version it ran.
+        assert issubclass(AgentFactory.get_agent_class_from_config(seen["config"].agent), cls) and cls.name() == agent
 
 
 # Recorded by pi: lines 746 to 751 of packages/coding-agent/test/fixtures/large-session.jsonl in pi v1.6.0 (MIT), after its
