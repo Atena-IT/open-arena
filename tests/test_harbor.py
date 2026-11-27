@@ -409,7 +409,7 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     assert agent_kwargs("hermes", {"temperature": 0.2, "max_tokens": 512}) == {}
 
 
-def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path, caplog):
+def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(monkeypatch, tmp_path):
     # It patches Harbor's internals (`_exec`, `ensure_system_dependencies`, `Trial.create`): a Harbor bump may break it.
     import asyncio
 
@@ -430,16 +430,35 @@ def test_hermes_installs_with_a_check_todays_hermes_passes(monkeypatch, tmp_path
     monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
-    assert ran[-1].endswith("&& hermes sessions list >/dev/null && hermes --version")
-    assert "hermes version" not in ran[-1]
-    assert hermes.get_version_command().endswith("hermes --version")
+    install = ran[-1]
+    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index("install.sh | bash")
+    assert "/v0.23.4/scripts/install.sh" in install and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in install
+    assert "hermes version" not in install and "--branch" not in install
+    assert Hermes.DEFAULT_SETUP_TIMEOUT_SEC > 1200
+    assert hermes.get_version_command().endswith("HERMES_HOME=/tmp/hermes; hermes --version")
     assert hermes.parse_version("Hermes Agent v0.23.4\nInstall directory: /root\n") == "Hermes Agent v0.23.4"
-    # Any other command goes as it came.
-    asyncio.run(hermes.exec_as_agent(None, "hermes chat -q hi"))
-    assert ran[-1] == "hermes chat -q hi"
-    # A reworded install that still runs `hermes version` goes as it came, with a warning.
-    asyncio.run(hermes.exec_as_agent(None, "hermes version && true"))
-    assert ran[-1] == "hermes version && true" and "does not rewrite it" in caplog.text
+    hermes._version = "v0.23.4"
+    asyncio.run(hermes.install(None))
+    assert "--skip-setup --branch v0.23.4 2>&1" in ran[-1] and "--commit" not in ran[-1]
+
+    # The shell decides as installed: an installer failing on an optional product passes when hermes runs, and a hermes
+    # that does not run fails, its error ending on what the installer reported.
+    def outcome(installer: str, hermes_rc: int) -> subprocess.CompletedProcess:
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir(exist_ok=True)
+        said = "echo '  web UI build failed: exited 137'; exit 1" if installer == "fails" else "true"
+        (bin_dir / "curl").write_text(f"#!/bin/sh\necho \"{said}\"\n")
+        (bin_dir / "hermes").write_text(f"#!/bin/sh\nexit {hermes_rc}\n")
+        for tool in bin_dir.iterdir():
+            tool.chmod(0o755)
+        script = install.replace("/tmp/hermes-install.log", str(tmp_path / "install.log")).replace("/tmp/hermes", str(tmp_path / "home"))
+        return subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True)
+
+    if os.name == "posix" and shutil.which("bash"):
+        assert outcome("fails", 0).returncode == 0
+        broken = outcome("fails", 1)
+        assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
+        assert outcome("passes", 0).returncode == 0
 
     seen = {}
 

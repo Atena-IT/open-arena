@@ -432,8 +432,9 @@ How to choose:
 and `pi` need a `provider/model` id. An agent in the sandbox installs itself
 there before its first step, in each sandbox (Hermes takes several
 minutes); Hermes reads its key from the arena's own environment, and
-runs as Harbor's Hermes with one fix: its install check, `hermes version`,
-is a command Hermes no longer has (harbor-framework/harbor#3091). A run
+runs as Harbor's Hermes with one fix: it installs a pinned release
+(v0.23.4) where the trial runs it, checks it with a command Hermes still
+has (harbor-framework/harbor#3091), and gets 30 minutes to set up. A run
 that ends on a model error and leaves no answer fails its row, with the
 error, even when the agent exits as if it had worked (pi does); a task
 folder keeps what its own tests scored, and its trial notes the error.
