@@ -554,15 +554,16 @@ def version_kwargs(agent: str, version: str) -> dict[str, Any]:
     from openarena.config.entries import agent_kind
     from openarena.harbor import _agent_class
 
-    if version == LATEST:
-        # Hermes installs the engine's pinned commit when given none; its newest is its main branch.
-        return {"version": "main"} if agent == "hermes" else {}
     kind = agent_kind(agent)
     # A class is imported only once the operator allows its module (`agent_class_problem`, at the program's build).
     cls = import_class(agent, label="agent") if kind == "class" else _agent_class(agent) if kind == "builtin" else None
     if cls is not None and not issubclass(cls, BaseInstalledAgent):
         log.warning("Harbor agent %r runs in the arena and installs nothing; running without `agent_version` %r.", agent, version)
         return {}
+    if version == LATEST:
+        # Hermes installs the engine's pinned commit when given none, Cline its nightly: their newest are Hermes's main
+        # branch and Cline's npm `latest` release.
+        return {"version": "main"} if agent == "hermes" else {"cline_version": LATEST} if agent == "cline-cli" else {}
     # Harbor's Cline reads its own kwarg; without it, it installs `cline@nightly`.
     return {"cline_version" if agent == "cline-cli" else "version": version}
 
@@ -699,6 +700,8 @@ class HarborTask(Module):
         agent = spec.get("agent") or "terminus-2"
         self.agent_kwargs = agent_kwargs(agent, self.params)
         # The version asked for, else the arena's pin; Hermes installs its pin itself, from a commit (harbor_hermes).
+        # Read here, at the cell's build, from the engine running it: a run resumed on an engine whose pin moved installs the
+        # new pin for the rows left, as it runs that engine's code for them; each trial's line says which version ran.
         if version := spec.get("agent_version") or (AGENT_VERSIONS.get(agent) if agent != "hermes" else None):
             self.agent_kwargs.update(version_kwargs(agent, version))
         self.spec = dict(spec)

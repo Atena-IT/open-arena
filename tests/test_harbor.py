@@ -396,6 +396,7 @@ def test_a_version_goes_only_to_an_agent_harbor_installs(monkeypatch):
     assert version_kwargs("cline-cli", "3.0.76") == {"cline_version": "3.0.76"}
     assert version_kwargs("codex", "latest") == {}
     assert version_kwargs("hermes", "latest") == {"version": "main"}
+    assert version_kwargs("cline-cli", "latest") == {"cline_version": "latest"}
 
 
 def test_an_agent_installs_the_arenas_pin_unless_its_dataset_asks(tmp_path):
@@ -414,6 +415,15 @@ def test_an_agent_installs_the_arenas_pin_unless_its_dataset_asks(tmp_path):
     assert "version" not in kwargs(agent="hermes") and RELEASE == AGENT_VERSIONS["hermes"]
     assert "version" not in kwargs(agent="terminus-2") and "version" not in kwargs(agent="cursor-cli")
     assert set(AGENT_VERSIONS) <= set(HARBOR_AGENTS) and all(AGENT_VERSION.match(v) for v in AGENT_VERSIONS.values())
+    # Every agent Harbor installs has a pin, or a reason it has none.
+    from harbor.agents.installed.base import BaseInstalledAgent
+    from openarena.harbor import _agent_class
+    from openarena.harbor_hermes import COMMIT, COMMITS
+
+    unpinned = {"cursor-cli": "Harbor's cursor-cli never puts its version in the install command"}
+    installed = {a for a in HARBOR_AGENTS if issubclass(_agent_class(a), BaseInstalledAgent)}
+    assert installed == set(AGENT_VERSIONS) | set(unpinned)
+    assert COMMIT == COMMITS[AGENT_VERSIONS["hermes"]]
 
 
 def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
