@@ -69,7 +69,7 @@ class Hermes(HarborHermes):
                 '[ "$(head -c 2 "$installer")" = "#!" ] || { echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 "$installer" | cut -c1-120)" >&2; exit 1; }',
                 # A line every `BEAT` seconds while it runs, so the command is never silent; it stops with the installer.
                 # The sleep's own output goes nowhere, so a stopped beat holds no pipe open.
-                "( trap 'kill \"$s\" 2>/dev/null; exit 0' TERM; "
+                "( s=; trap 'kill \"$s\" 2>/dev/null; exit 0' TERM; "
                 f'while :; do sleep {BEAT} >/dev/null 2>&1 & s=$!; wait "$s"; echo "hermes install: still running, $(wc -l < "$log") lines in its log"; done ) & beat=$!',
                 # Into the log only: Harbor names a failed command's error from words anywhere in its output (`rate limit`
                 # makes it a rate-limit error), and the installer prints thousands of file names.

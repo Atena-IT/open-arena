@@ -624,6 +624,8 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         broken = outcome("fails", 1)
         assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
         assert broken.stderr.count("reported:") == 1
+        # An installer that fails at once stops the beat before its first sleep: the beat says nothing then.
+        assert "unbound" not in broken.stderr and "still running" not in broken.stdout
         # The installer's file names stay in its log: Harbor would call the failure a rate limit.
         assert "rate_limit" not in broken.stdout + broken.stderr
         full = outcome("full", 127)
