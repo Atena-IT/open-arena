@@ -24,9 +24,11 @@ HOME = "/tmp/hermes"  # the root Harbor's run exports: here a link to the instal
 # E2B's /tmp is small: a 1 GiB sandbox ran out of space there cloning Hermes. The 3 GB install goes on the disk.
 DISK = "$HOME/.hermes"
 # Where an image with Hermes already in it keeps it (the platform's `hermes` environment template): its install, its
-# command in /usr/local/bin. A trial on such an image skips the install when that Hermes is the release asked for.
+# command in /usr/local/bin. A trial on such an image skips the install when that Hermes is the release asked for and
+# its folder is the trial user's: Hermes refuses a data root another user owns (`unsafe_control_path`). Harbor runs E2B
+# commands as root unless the task names a user; a task that does installs as before.
 IMAGE = "/opt/hermes"
-FOUND = f'{{ [ -d {IMAGE}/hermes-agent ] && HERMES_HOME={IMAGE} PATH="/usr/local/bin:$PATH" hermes --version 2>/dev/null | head -n 1; }} || true'
+FOUND = f'{{ [ -d {IMAGE}/hermes-agent ] && [ -O {IMAGE} ] && HERMES_HOME={IMAGE} PATH="/usr/local/bin:$PATH" hermes --version 2>/dev/null | head -n 1; }} || true'
 # The commit each pinned release checks out (its tag's), on Hermes's main: bumping `AGENT_VERSIONS["hermes"]` without its
 # commit here fails at import, so the two cannot drift apart.
 COMMITS = {"v0.23.4": "8fc0374447313e276f6b9a2764bfc750190c966a"}
