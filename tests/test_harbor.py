@@ -14,6 +14,7 @@ import openarena
 import pytest
 import yaml
 from openarena.config import ClockSpec, EnvironmentSpec
+from openarena.config.entries import AGENT_VERSIONS
 from openarena.config.check import check_file
 from openarena.config.errors import Invalid
 from openarena.harbor import (
@@ -243,6 +244,7 @@ def test_an_agent_refuses_a_model_or_a_network_it_cannot_work_with():
     by_name = {a["name"]: a for a in agents()}
     assert by_name["terminus-2"]["runs"] == "host" and by_name["claude-code"] == {
         "name": "claude-code", "runs": "sandbox", "provider": "anthropic", "params": ["reasoning_effort"],
+        "version": AGENT_VERSIONS["claude-code"],
     }
     public, offline = EnvironmentSpec(docker_image="x"), EnvironmentSpec(docker_image="x", network_mode="no-network")
     assert agent_problem("claude-code", "anthropic/claude-sonnet-4-5", public) is None
@@ -320,7 +322,7 @@ def test_an_acp_agent_runs_in_the_sandbox_and_a_class_is_checked_by_harbor_itsel
 
     public = EnvironmentSpec(docker_image="x")
     assert agent_info("acp:claude-acp")["runs"] == "sandbox"
-    assert agent_info("our_agents.harbor:OurAgent") == {"name": "our_agents.harbor:OurAgent", "runs": None, "provider": None, "params": []}
+    assert agent_info("our_agents.harbor:OurAgent") == {"name": "our_agents.harbor:OurAgent", "runs": None, "provider": None, "params": [], "version": None}
     assert agent_info("nope") is None and agent_info("acp:Claude") is None
     # Harbor's ACP runner splits the id into provider and model, and calls it from the sandbox.
     assert "names no provider" in agent_problem("acp:claude-acp", "claude-sonnet-4-5", public)
@@ -391,6 +393,37 @@ def test_a_version_goes_only_to_an_agent_harbor_installs(monkeypatch):
     monkeypatch.setenv(ALLOWED, "harbor")
     assert version_kwargs("harbor.agents.terminus_2:Terminus2", "1.0") == {}
     assert version_kwargs("harbor.agents.installed.codex:Codex", "1.0") == {"version": "1.0"}
+    assert version_kwargs("cline-cli", "3.0.76") == {"cline_version": "3.0.76"}
+    assert version_kwargs("codex", "latest") == {}
+    assert version_kwargs("hermes", "latest") == {"version": "main"}
+    assert version_kwargs("cline-cli", "latest") == {"cline_version": "latest"}
+
+
+def test_an_agent_installs_the_arenas_pin_unless_its_dataset_asks(tmp_path):
+    from openarena.config.entries import AGENT_VERSION, HARBOR_AGENTS
+    from openarena.harbor_hermes import RELEASE
+    from openarena.programs.harbor_program import HarborTask
+
+    def kwargs(**spec):
+        return HarborTask(model="openai/gpt-4o", spec={"dataset": "d", **spec}, work_dir=str(tmp_path)).agent_kwargs
+
+    assert kwargs(agent="openhands")["version"] == AGENT_VERSIONS["openhands"]
+    assert kwargs(agent="openhands", agent_version="1.5.0")["version"] == "1.5.0"
+    assert "version" not in kwargs(agent="openhands", agent_version="latest")
+    assert kwargs(agent="cline-cli")["cline_version"] == AGENT_VERSIONS["cline-cli"]
+    # Hermes installs its pin from a commit, not a `--branch`; terminus-2 and cursor-cli have none.
+    assert "version" not in kwargs(agent="hermes") and RELEASE == AGENT_VERSIONS["hermes"]
+    assert "version" not in kwargs(agent="terminus-2") and "version" not in kwargs(agent="cursor-cli")
+    assert set(AGENT_VERSIONS) <= set(HARBOR_AGENTS) and all(AGENT_VERSION.match(v) for v in AGENT_VERSIONS.values())
+    # Every agent Harbor installs has a pin, or a reason it has none.
+    from harbor.agents.installed.base import BaseInstalledAgent
+    from openarena.harbor import _agent_class
+    from openarena.harbor_hermes import COMMIT, COMMITS
+
+    unpinned = {"cursor-cli": "Harbor's cursor-cli never puts its version in the install command"}
+    installed = {a for a in HARBOR_AGENTS if issubclass(_agent_class(a), BaseInstalledAgent)}
+    assert installed == set(AGENT_VERSIONS) | set(unpinned)
+    assert COMMIT == COMMITS[AGENT_VERSIONS["hermes"]]
 
 
 def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
@@ -398,7 +431,7 @@ def test_hermes_is_an_agent_in_the_sandbox_on_any_provider():
     from openarena.harbor import agent_problem, agents
 
     assert HarborBlock(agent="hermes").agent == "hermes"
-    assert next(a for a in agents() if a["name"] == "hermes") == {"name": "hermes", "runs": "sandbox", "provider": None, "params": []}
+    assert next(a for a in agents() if a["name"] == "hermes") == {"name": "hermes", "runs": "sandbox", "provider": None, "params": [], "version": AGENT_VERSIONS["hermes"]}
     public, offline = EnvironmentSpec(docker_image="x"), EnvironmentSpec(docker_image="x", network_mode="no-network")
     assert agent_problem("hermes", "openrouter/qwen/qwen3-vl-8b-instruct", public) is None
     assert "no-network" in agent_problem("hermes", "anthropic/claude-sonnet-4-5", offline)
@@ -771,7 +804,7 @@ def test_pi_calls_only_the_providers_it_knows_and_takes_the_reasoning_effort(mon
     for env in ("OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENROUTER_BASE_URL", "GOOGLE_BASE_URL"):
         monkeypatch.delenv(env, raising=False)
     assert HarborBlock(agent="pi").agent == "pi"
-    assert next(a for a in agents() if a["name"] == "pi") == {"name": "pi", "runs": "sandbox", "provider": None, "params": ["reasoning_effort"]}
+    assert next(a for a in agents() if a["name"] == "pi") == {"name": "pi", "runs": "sandbox", "provider": None, "params": ["reasoning_effort"], "version": AGENT_VERSIONS["pi"]}
     # pi's `thinking` answers to `reasoning_effort` too; the rest it does not take.
     assert agent_kwargs("pi", {"reasoning_effort": "high", "temperature": 0.2}) == {"reasoning_effort": "high"}
     assert agent_kwargs("pi", {"reasoning_effort": "disable"}) == {"reasoning_effort": "off"}

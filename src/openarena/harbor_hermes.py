@@ -15,11 +15,16 @@ import shlex
 
 from harbor.agents.installed.hermes import Hermes as HarborHermes
 
+from openarena.config.entries import AGENT_VERSIONS
+
 HOME = "/tmp/hermes"  # the root Harbor's run exports: here a link to the install on the sandbox's disk
 # E2B's /tmp is small: a 1 GiB sandbox ran out of space there cloning Hermes. The 3 GB install goes on the disk.
 DISK = "$HOME/.hermes"
-# Bumped on purpose: the installer and the tree it checks out, Hermes v0.23.4. The commit must be on Hermes's main.
-RELEASE, COMMIT = "v0.23.4", "8fc0374447313e276f6b9a2764bfc750190c966a"
+# The commit each pinned release checks out (its tag's), on Hermes's main: bumping `AGENT_VERSIONS["hermes"]` without its
+# commit here fails at import, so the two cannot drift apart.
+COMMITS = {"v0.23.4": "8fc0374447313e276f6b9a2764bfc750190c966a"}
+RELEASE = AGENT_VERSIONS["hermes"]
+COMMIT = COMMITS[RELEASE]
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
 # The installer's log, where Harbor downloads the agent's logs even when the setup fails or times out; else the home.
 LOG_DIR = "/logs/agent"

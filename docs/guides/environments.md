@@ -472,7 +472,7 @@ datasets:
 |---|---|---|
 | `environment` | none | the sandbox every row runs in; required unless the dataset is `harbor_tasks` |
 | `agent` | `terminus-2` | the Harbor agent the model drives: one of Harbor's, `acp:<id>[@version]`, or `module.path:ClassName` ([Agents and models](harbor-tasks.md#agents-and-models)) |
-| `agent_version` | the latest | the version of the agent to install; an ACP agent is pinned in its name |
+| `agent_version` | the arena's pin | the version of the agent to install, `latest` for the newest; an ACP agent is pinned in its name |
 | `agent_env` | none | environment variables for the agent's own process |
 | `instructions` | none | said to the agent before every row's question; not on a `harbor_tasks` dataset |
 | `answer_file` | none | an absolute path in the sandbox; the agent is told to write its final answer there, and nothing else; not on a `harbor_tasks` dataset |
