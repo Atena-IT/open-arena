@@ -12,6 +12,7 @@ Hermes installs.
 """
 
 import asyncio
+import re
 import shlex
 import time
 
@@ -22,6 +23,10 @@ from openarena.config.entries import AGENT_VERSIONS
 HOME = "/tmp/hermes"  # the root Harbor's run exports: here a link to the install on the sandbox's disk
 # E2B's /tmp is small: a 1 GiB sandbox ran out of space there cloning Hermes. The 3 GB install goes on the disk.
 DISK = "$HOME/.hermes"
+# Where an image with Hermes already in it keeps it (the platform's `hermes` environment template): its install, its
+# command in /usr/local/bin. A trial on such an image skips the install when that Hermes is the release asked for.
+IMAGE = "/opt/hermes"
+FOUND = f'{{ [ -d {IMAGE}/hermes-agent ] && HERMES_HOME={IMAGE} PATH="/usr/local/bin:$PATH" hermes --version 2>/dev/null | head -n 1; }} || true'
 # The commit each pinned release checks out (its tag's), on Hermes's main: bumping `AGENT_VERSIONS["hermes"]` without its
 # commit here fails at import, so the two cannot drift apart.
 COMMITS = {"v0.23.4": "8fc0374447313e276f6b9a2764bfc750190c966a"}
@@ -80,6 +85,22 @@ class Hermes(HarborHermes):
         # A version asked for in the trial's config is a branch or tag, as in Harbor; else the pinned release. Not `_version`
         # alone: a first setup fills it with what `--version` printed, which a second setup would pass as a branch.
         tree = f"--branch {shlex.quote(self._version)}" if self._version_was_pinned else f"--commit {COMMIT}"
+        # Already in the image, at the release asked for: linked and checked, nothing installed (seconds, not 30 minutes).
+        wanted = self._version if self._version_was_pinned else RELEASE
+        found = ((await self.exec_as_agent(environment, command=FOUND)).stdout or "").strip()
+        if re.search(rf"(?<![\w.]){re.escape(wanted)}(?![\w.])", found):
+            self.logger.debug(f"Hermes {wanted} is in the image at {IMAGE}: its install is skipped")
+            await self.exec_as_agent(environment, command="; ".join((
+                "set -uo pipefail",
+                f'export HERMES_HOME={IMAGE} PATH="/usr/local/bin:$HOME/.local/bin:$PATH"',
+                'rm -f "$HERMES_HOME/.env"',
+                'mkdir -p "$HERMES_HOME/sessions" "$HERMES_HOME/skills" "$HERMES_HOME/memories"',
+                f'{{ rm -rf {HOME} && ln -s "$HERMES_HOME" {HOME}; }} || {{ echo "could not link {HOME} to the image\'s Hermes in $HERMES_HOME" >&2; exit 1; }}',
+                f"export HERMES_HOME={HOME}",
+                "hermes sessions list >/dev/null && hermes --version && exit 0",
+                f'echo "the Hermes in the image ({IMAGE}, {wanted}) does not run" >&2; exit 1',
+            )))
+            return
         await self.exec_as_agent(environment, command="; ".join((
             "set -uo pipefail",
             f'export HERMES_HOME={DISK} PATH="$HOME/.local/bin:$PATH"',

@@ -563,7 +563,7 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(
     from harbor.agents.factory import AgentFactory
     from harbor.trial.trial import Trial
     from openarena import harbor_hermes
-    from openarena.harbor_hermes import ASK, Hermes
+    from openarena.harbor_hermes import ASK, FOUND, Hermes
     from openarena.programs import harbor_program
 
     ran = []
@@ -581,7 +581,8 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(
     monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
-    start, ask, check = ran
+    found, start, ask, check = ran
+    assert found == FOUND
     # Started on the disk and detached, asked about with short commands, then linked where Harbor's run looks and checked there.
     assert start.index("export HERMES_HOME=$HOME/.hermes") < start.index("nohup bash")
     assert ask == ASK and "--skip-setup" not in check
@@ -896,6 +897,48 @@ def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
     predicted = prediction(trial, SimpleNamespace(exception_info=None))
     assert predicted["agent"]["name"] == "pi" and predicted["answer"].startswith("Done! The `test.json` theme file has been deleted.")
     assert run_error(predicted, trial / "agent") is None
+
+
+def test_hermes_already_in_the_image_is_linked_not_installed(monkeypatch, tmp_path):
+    # It patches Harbor's internals (`_exec`, `ensure_system_dependencies`): a Harbor bump may break it.
+    import asyncio
+    import types
+
+    from openarena.harbor_hermes import FOUND, IMAGE, Hermes
+
+    def image(says: str):
+        sent = []
+
+        async def sandbox(self, environment, command, **kwargs):
+            sent.append(command)
+            return types.SimpleNamespace(stdout=says if command == FOUND else "0", stderr="", return_code=0)
+
+        monkeypatch.setattr(Hermes, "_exec", sandbox)
+        return sent
+
+    async def nothing(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(Hermes, "ensure_system_dependencies", nothing)
+    # The image's Hermes is the pinned release: one command links it where Harbor's run looks and checks it.
+    sent = image("Hermes Agent v0.23.4 (2026.9.24) · stable · local 8fc037444731")
+    asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    assert len(sent) == 2 and 'ln -s "$HERMES_HOME" /tmp/hermes' in sent[1] and f"HERMES_HOME={IMAGE}" in sent[1]
+    assert "install.sh" not in "".join(sent) and "hermes sessions list" in sent[1]
+    # Another release in the image, none at all, or a version the trial asks for that is not the image's: installed as ever.
+    for says, version in (("Hermes Agent v0.23.3 (2026.9.18)", None), ("", None), ("Hermes Agent v0.23.4 (2026.9.24)", "main")):
+        sent = image(says)
+        asyncio.run(Hermes(logs_dir=tmp_path, version=version).install(None))
+        assert "install.sh" in sent[1], (says, version)
+    # `v0.23.4` is not `v0.23.41`: a whole version only.
+    sent = image("Hermes Agent v0.23.41 (2027.1.1)")
+    asyncio.run(Hermes(logs_dir=tmp_path).install(None))
+    assert "install.sh" in sent[1]
+
+    if os.name == "posix" and shutil.which("bash"):
+        # The probe runs in any sandbox and never fails the setup: no image install, no output, exit 0.
+        done = subprocess.run(["bash", "-c", FOUND], capture_output=True, text=True)
+        assert done.returncode == 0 and done.stdout == ""
 
 
 def test_hermes_asks_about_its_installer_until_a_poll_says_it_ended(monkeypatch, tmp_path):
