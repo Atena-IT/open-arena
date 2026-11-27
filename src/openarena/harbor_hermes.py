@@ -60,7 +60,7 @@ class Hermes(HarborHermes):
                 # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.
                 'rm -f "$HERMES_HOME/.env"',
                 'mkdir -p "$HERMES_HOME/sessions" "$HERMES_HOME/skills" "$HERMES_HOME/memories"',
-                f'rm -rf {HOME} && ln -s "$HERMES_HOME" {HOME}',
+                f'{{ rm -rf {HOME} && ln -s "$HERMES_HOME" {HOME}; }} || {{ echo "could not link {HOME} to the install in $HERMES_HOME" >&2; exit 1; }}',
                 f"export HERMES_HOME={HOME}",
                 # The hermes command decides, not install.sh: on 1 GiB its web UI build runs out of memory, which `hermes chat` never uses.
                 f'if hermes sessions list >/dev/null && hermes --version; then [ "$rc" -eq 0 ] || {{ echo "install.sh exited $rc, but the hermes command runs; it reported:"; {SAID}; }} >&2; exit 0; fi',
