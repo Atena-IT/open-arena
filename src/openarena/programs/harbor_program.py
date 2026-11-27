@@ -555,7 +555,8 @@ def version_kwargs(agent: str, version: str) -> dict[str, Any]:
     from openarena.harbor import _agent_class
 
     if version == LATEST:
-        return {}
+        # Hermes installs the engine's pinned commit when given none; its newest is its main branch.
+        return {"version": "main"} if agent == "hermes" else {}
     kind = agent_kind(agent)
     # A class is imported only once the operator allows its module (`agent_class_problem`, at the program's build).
     cls = import_class(agent, label="agent") if kind == "class" else _agent_class(agent) if kind == "builtin" else None

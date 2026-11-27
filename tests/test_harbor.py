@@ -395,6 +395,7 @@ def test_a_version_goes_only_to_an_agent_harbor_installs(monkeypatch):
     assert version_kwargs("harbor.agents.installed.codex:Codex", "1.0") == {"version": "1.0"}
     assert version_kwargs("cline-cli", "3.0.76") == {"cline_version": "3.0.76"}
     assert version_kwargs("codex", "latest") == {}
+    assert version_kwargs("hermes", "latest") == {"version": "main"}
 
 
 def test_an_agent_installs_the_arenas_pin_unless_its_dataset_asks(tmp_path):
