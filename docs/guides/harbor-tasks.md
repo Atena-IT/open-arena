@@ -464,8 +464,11 @@ their shape only, nothing installed or imported until the trial:
   `params`.
 
 `agent_version` pins the version of an agent Harbor installs (an ACP agent
-is pinned in its name instead): letters, digits, `.`, `_`, `+`, `-`. An agent
-that runs in the arena installs nothing and ignores it.
+is pinned in its name instead): letters, digits, `.`, `_`, `+`, `-`. Left
+blank, the agent installs the arena's pin, the last version the arena checked
+(`AGENT_VERSIONS` in `openarena.config.entries`, bumped on purpose); `latest`
+installs the newest, so two runs may not run the same agent. An agent that
+runs in the arena installs nothing and ignores it.
 
 `agent_env` is the environment of the agent's own process, for its flags.
 It is **not for secrets**: a dataset keeps it in plain text. So it refuses a

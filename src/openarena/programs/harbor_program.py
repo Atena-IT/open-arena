@@ -71,7 +71,7 @@ from pydantic import Field
 from synalinks.src.backend import JsonDataModel, SymbolicDataModel
 from synalinks.src.modules.module import Module
 
-from openarena.config.entries import EnvironmentSpec, sandbox_types
+from openarena.config.entries import AGENT_VERSIONS, LATEST, EnvironmentSpec, sandbox_types
 from openarena.harbor import (
     LOCAL_SANDBOX,
     arm_task,
@@ -546,6 +546,7 @@ def agent_kwargs(agent: str, params: dict[str, Any] | None) -> dict[str, Any]:
 def version_kwargs(agent: str, version: str) -> dict[str, Any]:
     """The version to install, for an agent Harbor installs: a built-in one, or a class of one's own as written (an ACP
     agent carries its own in its name). One that runs in the arena installs nothing: the version is logged and dropped.
+    `latest` is no version: Harbor installs the newest.
     """
     from harbor.agents.installed.base import BaseInstalledAgent
     from harbor.utils.import_path import import_class
@@ -553,13 +554,16 @@ def version_kwargs(agent: str, version: str) -> dict[str, Any]:
     from openarena.config.entries import agent_kind
     from openarena.harbor import _agent_class
 
+    if version == LATEST:
+        return {}
     kind = agent_kind(agent)
     # A class is imported only once the operator allows its module (`agent_class_problem`, at the program's build).
     cls = import_class(agent, label="agent") if kind == "class" else _agent_class(agent) if kind == "builtin" else None
     if cls is not None and not issubclass(cls, BaseInstalledAgent):
         log.warning("Harbor agent %r runs in the arena and installs nothing; running without `agent_version` %r.", agent, version)
         return {}
-    return {"version": version}
+    # Harbor's Cline reads its own kwarg; without it, it installs `cline@nightly`.
+    return {"cline_version" if agent == "cline-cli" else "version": version}
 
 
 def agent_class_problem(agent: str) -> str | None:
@@ -691,9 +695,11 @@ class HarborTask(Module):
         # A class of one's own is checked once, here: its module allowed, then imported, then a Harbor agent.
         if problem := agent_class_problem(spec.get("agent") or "terminus-2"):
             raise ValueError(problem)
-        self.agent_kwargs = agent_kwargs(spec.get("agent") or "terminus-2", self.params)
-        if version := spec.get("agent_version"):
-            self.agent_kwargs.update(version_kwargs(spec.get("agent") or "terminus-2", version))
+        agent = spec.get("agent") or "terminus-2"
+        self.agent_kwargs = agent_kwargs(agent, self.params)
+        # The version asked for, else the arena's pin; Hermes installs its pin itself, from a commit (harbor_hermes).
+        if version := spec.get("agent_version") or (AGENT_VERSIONS.get(agent) if agent != "hermes" else None):
+            self.agent_kwargs.update(version_kwargs(agent, version))
         self.spec = dict(spec)
         self.contexts = str(contexts) if contexts else None
         self.work_dir = str(work_dir)

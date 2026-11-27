@@ -338,13 +338,14 @@ def option_names(options) -> set[str]:
 
 
 def agents() -> list[dict[str, Any]]:
-    """Each agent a `harbor:` block may name: `{name, runs, provider, params}`.
+    """Each agent a `harbor:` block may name: `{name, runs, provider, params, version}`.
 
     `runs` is `host` (it calls the model from the arena, typing into the
     sandbox) or `sandbox` (it is installed in the sandbox and calls the
     model from there); `provider` the one provider it calls, or None for
     any; `params` the model settings it takes of `temperature`,
-    `reasoning_effort` and `max_tokens`.
+    `reasoning_effort` and `max_tokens`; `version` the one it installs when
+    its dataset asks for none (`AGENT_VERSIONS`), None when it has no pin.
     """
     from openarena.config.entries import HARBOR_AGENTS
 
@@ -364,6 +365,8 @@ def _agent_class(agent: str):
 def _described(name: str, cls) -> dict[str, Any]:
     from harbor.agents.installed.base import BaseInstalledAgent
 
+    from openarena.config.entries import AGENT_VERSIONS
+
     fields = option_names(cls.options_model)
     params = [p for p in ("temperature", "reasoning_effort", "max_tokens") if p in fields or ("llm_call_kwargs" in fields and p == "max_tokens")]
     connection = cls.MODEL_CONNECTION
@@ -372,6 +375,7 @@ def _described(name: str, cls) -> dict[str, Any]:
         "runs": "sandbox" if issubclass(cls, BaseInstalledAgent) else "host",
         "provider": connection.default_provider if connection else None,
         "params": params,
+        "version": AGENT_VERSIONS.get(name),
     }
 
 
@@ -386,7 +390,7 @@ def agent_info(agent: str) -> dict[str, Any] | None:
     if kind is None:
         return None
     if kind == "class":
-        return {"name": agent, "runs": None, "provider": None, "params": []}
+        return {"name": agent, "runs": None, "provider": None, "params": [], "version": None}
     return _described(agent, _agent_class(agent))
 
 

@@ -176,6 +176,16 @@ HARBOR_AGENTS = (
     "terminus-2", "claude-code", "codex", "gemini-cli", "goose", "opencode", "openhands",
     "mini-swe-agent", "swe-agent", "cline-cli", "cursor-cli", "hermes", "pi",
 )
+# The version each one installs when its dataset asks for none: the last one the arena checked, bumped on purpose.
+# `latest`, asked for, installs the newest. terminus-2 runs in the arena; cursor-cli takes no version.
+AGENT_VERSIONS = {
+    "claude-code": "2.1.326", "codex": "0.172.0", "gemini-cli": "0.71.1", "goose": "v1.61.1", "opencode": "1.19.6",
+    # openhands-ai 1.7.0 dropped `openhands.core.main`, which Harbor 0.24 runs.
+    "openhands": "1.6.0", "mini-swe-agent": "2.4.6", "swe-agent": "v1.1.0", "cline-cli": "3.0.76",
+    # Harbor's MCP adapter for pi takes pi 0.84.1 to 0.85.x only.
+    "pi": "0.85.1", "hermes": "v0.23.4",
+}
+LATEST = "latest"
 # Beside them, two kinds of agent named by shape, never imported or run to check: an agent of the public ACP registry,
 # which Harbor installs and runs (`acp:<id>`, `@<version>` to pin it), and a Harbor agent class of one's own
 # (`package.module:Class`), which Harbor imports inside the trial.
@@ -257,7 +267,7 @@ class HarborBlock(BaseModel):
         description=f"The Harbor agent the model drives: {', '.join(HARBOR_AGENTS)}, an ACP registry agent as `acp:<id>[@version]`, or a class as `module.path:ClassName`.",
     )
     agent_version: str | None = Field(
-        default=None, description="The version of the agent to install; blank: the latest. An ACP agent is pinned in its name instead."
+        default=None, description="The version of the agent to install; blank: the arena's pin, `latest`: the newest. An ACP agent is pinned in its name instead."
     )
     agent_env: dict[str, str] = Field(
         default_factory=dict, description="Environment variables for the agent's own process: a sign-in token, a flag. The model's key comes from the run."
