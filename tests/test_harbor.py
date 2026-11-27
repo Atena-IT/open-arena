@@ -939,6 +939,15 @@ def test_hermes_already_in_the_image_is_linked_not_installed(monkeypatch, tmp_pa
         # The probe runs in any sandbox and never fails the setup: no image install, no output, exit 0.
         done = subprocess.run(["bash", "-c", FOUND], capture_output=True, text=True)
         assert done.returncode == 0 and done.stdout == ""
+        # With an image install of the user's own (here a folder and a `hermes` that says its release), it says the release.
+        image_dir, bin_dir = tmp_path / "image", tmp_path / "bin"
+        (image_dir / "hermes-agent").mkdir(parents=True)
+        bin_dir.mkdir()
+        (bin_dir / "hermes").write_text('#!/bin/sh\necho "Hermes Agent v0.23.4 (2026.9.24) home=$HERMES_HOME"\necho second line\n')
+        (bin_dir / "hermes").chmod(0o755)
+        probe = FOUND.replace(IMAGE, str(image_dir)).replace('PATH="/usr/local/bin:$PATH"', f'PATH="{bin_dir}:$PATH"')
+        done = subprocess.run(["bash", "-c", probe], capture_output=True, text=True)
+        assert done.returncode == 0 and done.stdout.strip() == f"Hermes Agent v0.23.4 (2026.9.24) home={image_dir}"
 
 
 def test_hermes_asks_about_its_installer_until_a_poll_says_it_ended(monkeypatch, tmp_path):

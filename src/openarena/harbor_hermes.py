@@ -7,8 +7,9 @@ Harbor 0.24 installs Hermes under `~/.hermes` from the installer on Hermes's `ma
 Under that second root today's `hermes chat` fails at once (`No module named 'ruamel'`), and on a 1 GiB sandbox the
 installer itself exits 1: its web UI build runs out of memory, a product `hermes chat` does not use and no installer
 option skips. So Hermes is installed from a pinned release on the sandbox's disk, `/tmp/hermes` links to it, and the
-hermes command, not the installer's exit code, says whether it works. `run_trial` runs this class for `hermes`. Remove it once Harbor's own
-Hermes installs.
+hermes command, not the installer's exit code, says whether it works. An image that already holds the release asked
+for in /opt/hermes, owned by the trial's user (`[ -O ]`: the platform's `hermes` template, as root), skips the install:
+the trial links /tmp/hermes to it. `run_trial` runs this class for `hermes`. Remove it once Harbor's own Hermes installs.
 """
 
 import asyncio
@@ -103,6 +104,8 @@ class Hermes(HarborHermes):
                 f'echo "the Hermes in the image ({IMAGE}, {wanted}) does not run" >&2; exit 1',
             )))
             return
+        if found:  # an image with a Hermes that is not the one asked for: said, then installed as ever
+            self.logger.debug(f"Hermes in the image at {IMAGE} says {found!r}, not {wanted}: installing {wanted}")
         await self.exec_as_agent(environment, command="; ".join((
             "set -uo pipefail",
             f'export HERMES_HOME={DISK} PATH="$HOME/.local/bin:$PATH"',
