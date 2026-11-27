@@ -896,29 +896,50 @@ def test_a_recorded_pi_session_reads_as_its_trajectory_and_last_word(tmp_path):
     assert run_error(predicted, trial / "agent") is None
 
 
-def test_swe_agent_counts_its_usage_and_reads_its_version(tmp_path):
+def test_swe_agent_counts_its_usage_and_reads_its_version(monkeypatch, tmp_path):
     # SWE-agent 1.1.0's trajectory: its usage under `info.model_stats`, as a staging trial of 18 steps wrote it.
     from harbor.models.agent.context import AgentContext
     from openarena import harbor_agents
+    from openarena.lookups import prices
 
     agent = harbor_agents.SweAgent(logs_dir=tmp_path, model_name="openrouter/anthropic/claude-haiku-4.5")
-    assert "m.version('sweagent')" in agent.get_version_command()
+    assert "m.version('sweagent')" in agent.get_version_command() and "python3" in agent.get_version_command()
     assert agent.parse_version("1.1.0") == "1.1.0"
-    traj = {"info": {"model_stats": {"instance_cost": 0.0312, "tokens_sent": 28541, "tokens_received": 1210, "api_calls": 18}}}
-    (tmp_path / "swe-agent.trajectory.json").write_text(json.dumps(traj))
+    traj = tmp_path / "swe-agent.trajectory.json"
+    asked = []
+
+    def price(model):
+        asked.append(model)
+        return prices.Price(1e-06, 5e-06, "openrouter")
+
+    monkeypatch.setattr(prices, "model_price", price)
+
+    def read(info) -> tuple:
+        traj.write_text(info if isinstance(info, str) else json.dumps({"info": info}))
+        context = AgentContext()
+        agent.populate_context_post_run(context)
+        return context.n_input_tokens, context.n_output_tokens, context.cost_usd
+
+    # SWE-agent's own cost when it has one; its tokens at the arena's price when it wrote 0, never both.
+    assert read({"model_stats": {"instance_cost": 0.0312, "tokens_sent": 28541, "tokens_received": 1210}}) == (28541, 1210, 0.0312)
+    assert asked == []
+    tokens_in, tokens_out, cost = read({"model_stats": {"instance_cost": 0, "tokens_sent": 28541, "tokens_received": 1210}})
+    assert (tokens_in, tokens_out) == (28541, 1210) and cost == pytest.approx(28541e-06 + 1210 * 5e-06)
+    assert asked == ["openrouter/anthropic/claude-haiku-4.5"]
+    # A trajectory that says it Harbor's way keeps Harbor's numbers.
+    assert read({"input_tokens": 5, "output_tokens": 6, "total_cost": 0.5, "model_stats": {"tokens_sent": 9}}) == (5, 6, 0.5)
+    # Nothing reported stays unknown: no model_stats, a trajectory cut short, numbers that are not numbers, no file at all.
+    assert read({"exit_status": "submitted"}) == (None, None, None)
+    assert read('{"info": {"model_stats": {"tokens_se') == (None, None, None)
+    assert read({"model_stats": {"tokens_sent": "many", "tokens_received": True, "instance_cost": -1}}) == (None, None, None)
+    assert read({"model_stats": ["not", "a", "dict"]}) == (None, None, None)
+    traj.unlink()
     context = AgentContext()
     agent.populate_context_post_run(context)
-    assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (28541, 1210, 0.0312)
-    # A trajectory that already says it Harbor's way keeps Harbor's numbers; none at all leaves the context as it was.
-    traj["info"].update(input_tokens=5, output_tokens=6, total_cost=0.5)
-    (tmp_path / "swe-agent.trajectory.json").write_text(json.dumps(traj))
-    context = AgentContext()
-    agent.populate_context_post_run(context)
-    assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (5, 6, 0.5)
-    (tmp_path / "swe-agent.trajectory.json").unlink()
-    context = AgentContext()
-    agent.populate_context_post_run(context)
-    assert not context.n_input_tokens and not context.cost_usd
+    assert (context.n_input_tokens, context.n_output_tokens, context.cost_usd) == (None, None, None)
+    # No whole price anywhere: the tokens are kept and the cost stays unknown, not 0.
+    monkeypatch.setattr(prices, "model_price", lambda model: None)
+    assert read({"model_stats": {"instance_cost": 0, "tokens_sent": 10, "tokens_received": 2}}) == (10, 2, None)
 
 
 def test_a_pi_run_that_ended_on_an_error_did_not_answer_whatever_its_exit_code(tmp_path):
