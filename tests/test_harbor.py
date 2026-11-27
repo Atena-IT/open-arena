@@ -523,6 +523,117 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     assert cls is Hermes and cls.name() == "hermes"
 
 
+def test_harbor_agents_are_for_harbor_0_24():
+    # openarena.harbor_agents copies or patches Harbor 0.24's code; Harbor 0.25 carries the three fixes. On a bump,
+    # delete the module (and its `OWN_AGENTS` lines) or check each class against the new Harbor, then move this pin.
+    from importlib.metadata import version
+
+    assert version("harbor").startswith("0.24."), "Harbor moved: openarena.harbor_agents was written for 0.24"
+
+
+def test_goose_swe_agent_and_cline_run_the_engines_fixes_of_harbor_0_24(monkeypatch, tmp_path):
+    # It patches Harbor's internals (`exec_as_agent`, `Trial.create`) and holds Harbor 0.24's command: a Harbor bump may break it.
+    import asyncio
+
+    from harbor.agents.factory import AgentFactory
+    from harbor.agents.installed.base import BaseInstalledAgent
+    from harbor.models.agent.context import AgentContext
+    from harbor.trial.trial import Trial
+    from openarena import harbor_agents
+    from openarena.harbor import agent_problem
+    from openarena.programs import harbor_program
+
+    ran = []
+
+    async def record(self, environment, command, env=None, **kwargs):
+        ran.append((command, env or {}))
+
+    monkeypatch.setattr(BaseInstalledAgent, "exec_as_agent", record)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    model, public = "openrouter/qwen/qwen3-coder:free", EnvironmentSpec(docker_image="x")
+
+    # Goose: Harbor hands it openrouter, with its key; the check refuses a provider Harbor does not hand it.
+    asyncio.run(harbor_agents.Goose(logs_dir=tmp_path, model_name=model).run("hi", None, AgentContext()))
+    command, env = ran[-1]
+    assert "goose run --recipe" in command
+    assert (env["GOOSE_PROVIDER"], env["GOOSE_MODEL"], env["OPENROUTER_API_KEY"]) == ("openrouter", "qwen/qwen3-coder:free", "sk-or-test")
+    assert "<< 'EOF'" not in ran[-2][0] and "<< 'HARBOR_RECIPE_" in ran[-2][0]  # the recipe's heredoc
+    assert agent_problem("goose", model, public) is None
+    assert "calls only anthropic, databricks" in agent_problem("goose", "fireworks_ai/accounts/fireworks/models/qwen3", public)
+
+    # Cline: the arena's `provider/model` goes as Cline's `provider:model-id`, and the agent keeps the arena's id.
+    cline = harbor_agents.ClineCli(logs_dir=tmp_path, model_name=model)
+    env = [step.env for step in cline.create_run_agent_commands("hi") if step.env][-1]
+    assert (env["PROVIDER"], env["MODELID"], env["API_KEY"]) == ("openrouter", "qwen/qwen3-coder:free", "sk-or-test")
+    assert cline.model_name == model
+    # An id Harbor 0.24 already takes (`provider:model-id`) goes as it is.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    cline.model_name = "anthropic:claude-haiku-4-5"
+    env = [step.env for step in cline.create_run_agent_commands("hi") if step.env][-1]
+    assert (env["PROVIDER"], env["MODELID"]) == ("anthropic", "claude-haiku-4-5")
+    assert "names no provider" in agent_problem("cline-cli", "gpt-4o", public)
+    assert "calls only anthropic" in agent_problem("cline-cli", "deepseek/deepseek-chat", public)
+
+    # SWE-agent: the working directory, a git repository with its files committed, is SWE-agent's repository as it is.
+    ran.clear()
+    asyncio.run(harbor_agents.SweAgent(logs_dir=tmp_path, model_name=model).run("hi", None, AgentContext()))
+    command = next(c for c, _ in ran if "sweagent run" in c)
+    assert command.startswith(harbor_agents.SWE_GIT_INIT) and harbor_agents.SWE_REPO in command and "'--env.repo.path=$(pwd)'" not in command
+    # A Harbor whose command no longer holds 0.24's argument fails loudly, not silently unfixed.
+    with pytest.raises(RuntimeError, match="repository argument"):
+        asyncio.run(harbor_agents.SweAgent(logs_dir=tmp_path, model_name=model).exec_as_agent(None, "sweagent run --env.repo.path=."))
+    if os.name == "posix" and shutil.which("bash") and shutil.which("git"):
+        bin_dir, app, empty = tmp_path / "bin", tmp_path / "app", tmp_path / "empty"
+        for folder in (bin_dir, app, empty):
+            folder.mkdir()
+        (app / "hello.txt").write_text("hi\n")
+        (bin_dir / "sweagent").write_text('#!/bin/sh\nprintf "%s\n" "$@"\n')
+        for tool in bin_dir.iterdir():
+            tool.chmod(0o755)
+        script = command.replace("/logs/agent", str(tmp_path / "logs"))
+        for _ in range(2):  # the second run finds the repository the first made
+            out = subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=app, capture_output=True, text=True)
+            assert out.returncode == 0, out.stderr
+            assert "--env.repo.type=preexisting" in out.stdout and f"--env.repo.repo_name={app}" in out.stdout.splitlines()
+        def git(*args):
+            return subprocess.run(["git", *args], cwd=app, capture_output=True, text=True).stdout
+
+        assert git("ls-files").split() == ["hello.txt"] and git("status", "--porcelain") == "" and len(git("log", "--oneline").splitlines()) == 1
+        # SWE-agent's reset (`git restore .`) needs a file in the commit: an empty folder gets one.
+        subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=empty, check=True, capture_output=True)
+        assert subprocess.run(["git", "ls-files"], cwd=empty, capture_output=True, text=True).stdout.split() == [".gitkeep"]
+        # With /testbed (here a stand-in), SWE-agent's repository is /testbed and the working directory is left alone.
+        testbed, plain = tmp_path / "testbed", tmp_path / "plain"
+        testbed.mkdir()
+        plain.mkdir()
+        out = subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script.replace("/testbed", str(testbed))}'], cwd=plain, capture_output=True, text=True)
+        assert f"--env.repo.repo_name={testbed}" in out.stdout.splitlines() and not (plain / ".git").exists()
+        # A folder inside another repository becomes its own, so SWE-agent's reset stays in it.
+        inner = app / "inner"
+        inner.mkdir()
+        (inner / "task.txt").write_text("x")
+        subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], cwd=inner, check=True, capture_output=True)
+        assert subprocess.run(["git", "ls-files"], cwd=inner, capture_output=True, text=True).stdout.split() == ["task.txt"]
+
+    # `run_trial` runs the engine's class for each, under Harbor's name.
+    seen = {}
+
+    class Ran:
+        async def run(self):
+            return "result"
+
+    async def create(config):
+        seen["config"] = config
+        return Ran()
+
+    monkeypatch.setattr(Trial, "create", staticmethod(create))
+    monkeypatch.setattr(harbor_program, "sandbox", lambda name=None: "docker")
+    (tmp_path / "task").mkdir()
+    for agent, cls in (("goose", harbor_agents.Goose), ("swe-agent", harbor_agents.SweAgent), ("cline-cli", harbor_agents.ClineCli)):
+        asyncio.run(harbor_program.run_trial(tmp_path / "task", tmp_path / "trials", "t", agent, model))
+        assert AgentFactory.get_agent_class_from_config(seen["config"].agent) is cls and cls.name() == agent
+
+
 # Recorded by pi: lines 746 to 751 of packages/coding-agent/test/fixtures/large-session.jsonl in pi v1.6.0 (MIT), after its
 # header, moved to the session format pi 1.6 writes (version 3: each entry an `id` and its `parentId`), as pi migrates them.
 PI_SESSION = [

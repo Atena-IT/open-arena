@@ -582,7 +582,13 @@ def agent_class_problem(agent: str) -> str | None:
     return None
 
 
-HERMES = "openarena.harbor_hermes:Hermes"
+# The engine's own classes for Harbor agents whose 0.24 wrapper fails today's agent or the arena's ids and tasks.
+OWN_AGENTS = {
+    "hermes": "openarena.harbor_hermes:Hermes",
+    "goose": "openarena.harbor_agents:Goose",
+    "swe-agent": "openarena.harbor_agents:SweAgent",
+    "cline-cli": "openarena.harbor_agents:ClineCli",
+}
 
 
 async def run_trial(
@@ -611,8 +617,8 @@ async def run_trial(
         trial_name=name,
         trials_dir=trials,
         # Harbor reads `acp:<id>[@version]` as its ACP runner and `module:Class` as an import path, imported here, in the trial.
-        # `hermes` runs the engine's Hermes, whose install check today's Hermes passes (openarena.harbor_hermes).
-        agent=AgentConfig(name=HERMES if agent == "hermes" else agent, model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
+        # Some built-ins run the engine's class of the same agent (`OWN_AGENTS`: openarena.harbor_hermes, openarena.harbor_agents).
+        agent=AgentConfig(name=OWN_AGENTS.get(agent, agent), model_name=model, override_timeout_sec=timeout_sec, kwargs=dict(kwargs or {}), env=dict(env or {})),
         environment=environment_config(provider),
         verifier=VerifierConfig(),
     )
