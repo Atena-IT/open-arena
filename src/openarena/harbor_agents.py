@@ -9,7 +9,9 @@ Harbor 0.25 or later, which carries the three fixes (harbor-framework/harbor#355
 `test_harbor_agents_are_for_harbor_0_24` fails on any other Harbor, so the bump has to decide.
 """
 
+import json
 import uuid
+from pathlib import Path
 
 from harbor.agents.installed.base import with_prompt_template
 from harbor.agents.installed.cline.cline import ClineCli as HarborCline
@@ -85,6 +87,23 @@ class Goose(HarborGoose):
 
 
 class SweAgent(HarborSweAgent):
+    # harbor/agents/installed/swe_agent.py asks `pip show swe-agent`: the venv uv made has no pip, and the package is `sweagent`.
+    def get_version_command(self) -> str | None:
+        return "/opt/sweagent-venv/bin/python -c \"import importlib.metadata as m; print(m.version('sweagent'))\""
+
+    # Harbor 0.24 reads `info.total_cost`, `input_tokens` and `output_tokens`; SWE-agent 1.x writes its usage under
+    # `info.model_stats` (`instance_cost`, `tokens_sent`, `tokens_received`), so every run counted 0 calls' worth.
+    def populate_context_post_run(self, context) -> None:
+        super().populate_context_post_run(context)
+        path = self._find_trajectory_file() or Path(self.logs_dir) / "swe-agent.trajectory.json"
+        try:
+            stats = (json.loads(Path(path).read_text()).get("info") or {}).get("model_stats") or {}
+        except (OSError, ValueError, AttributeError):  # no trajectory, or not SWE-agent's: Harbor's reading stands
+            return
+        context.n_input_tokens = context.n_input_tokens or stats.get("tokens_sent") or 0
+        context.n_output_tokens = context.n_output_tokens or stats.get("tokens_received") or 0
+        context.cost_usd = context.cost_usd or stats.get("instance_cost") or 0.0
+
     # Replaces the repository argument of harbor/agents/installed/swe_agent.py `SweAgent.run` (Harbor 0.24.0, lines 567-568).
     async def exec_as_agent(self, environment, command, env=None, cwd=None, timeout_sec=None):
         if "sweagent run" in command:
