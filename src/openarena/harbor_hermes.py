@@ -19,7 +19,7 @@ HOME = "/tmp/hermes"  # the root Harbor's run exports
 # Bumped on purpose: the installer and the tree it checks out, Hermes v0.23.4. The commit must be on Hermes's main.
 RELEASE, COMMIT = "v0.23.4", "8fc0374447313e276f6b9a2764bfc750190c966a"
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
-LOG = "/tmp/hermes-install.log"
+INSTALLER, LOG = "/tmp/hermes-install.sh", "/tmp/hermes-install.log"
 # The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error.
 SAID = f"{{ grep -iE 'fail|error|exited' {LOG} || tail -n 3 {LOG}; }} | tail -n 3 | grep -oE '.{{0,200}}$'"
 
@@ -37,14 +37,17 @@ class Hermes(HarborHermes):
 
     async def install(self, environment) -> None:
         await self.ensure_system_dependencies(environment, ("curl", "git", "ripgrep", "xz"))
-        # A version asked for in the trial's config is a branch or tag, as in Harbor; else the pinned release.
-        tree = f"--branch {shlex.quote(self._version)}" if self._version else f"--commit {COMMIT}"
+        # A version asked for in the trial's config is a branch or tag, as in Harbor; else the pinned release. Not `_version`
+        # alone: a first setup fills it with what `--version` printed, which a second setup would pass as a branch.
+        tree = f"--branch {shlex.quote(self._version)}" if self._version_was_pinned else f"--commit {COMMIT}"
         await self.exec_as_agent(
             environment,
             command="; ".join((
                 "set -uo pipefail",
                 f'export HERMES_HOME={HOME} PATH="$HOME/.local/bin:$PATH"',
-                f'curl -fsSL {INSTALL_SH} | bash -s -- --skip-setup {tree} 2>&1 | tee {LOG}',
+                # Downloaded first: a failed download is its own error, with curl's message, not an empty installer log.
+                f'curl -fsSL -o {INSTALLER} {INSTALL_SH} >{LOG} 2>&1 || {{ rc=$?; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 {LOG})" >&2; exit "$rc"; }}',
+                f"bash {INSTALLER} --skip-setup {tree} 2>&1 | tee -a {LOG}",
                 "rc=$?",
                 f'[ "$rc" -eq 0 ] || {{ echo "install.sh exited $rc, the hermes command decides; it reported:" >&2; {SAID} >&2; }}',
                 # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.
