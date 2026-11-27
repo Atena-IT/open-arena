@@ -431,7 +431,7 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
     hermes = Hermes(logs_dir=tmp_path)
     asyncio.run(hermes.install(None))
     install = ran[-1]
-    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index("bash /tmp/hermes-install.sh --skip-setup")
+    assert install.index("export HERMES_HOME=/tmp/hermes") < install.index('bash "$installer" --skip-setup')
     assert "/v0.23.4/scripts/install.sh" in install and "--commit 8fc0374447313e276f6b9a2764bfc750190c966a" in install
     assert "hermes version" not in install and "--branch" not in install
     assert Hermes.DEFAULT_SETUP_TIMEOUT_SEC > 1200
@@ -450,10 +450,11 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir(exist_ok=True)
         body = "echo '  web UI build failed: exited 137'; exit 1" if installer == "fails" else "true"
+        page = {"empty": "", "html": "<html><body>Sign in to the network</body></html>"}.get(installer, f"#!/bin/sh\n{body}")
         download = {
             "404": "echo 'curl: (22) The requested URL returned error: 404' >&2; exit 22",
             "offline": "echo 'curl: (6) Could not resolve host: raw.githubusercontent.com' >&2; exit 6",
-        }.get(installer, f'while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done; echo "{body}" > "$out"')
+        }.get(installer, f'while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done; printf "%s" "{page}" > "$out"')
         (bin_dir / "curl").write_text(f"#!/bin/sh\n{download}\n")
         (bin_dir / "hermes").write_text(f"#!/bin/sh\nexit {hermes_rc}\n")
         for tool in bin_dir.iterdir():
@@ -470,6 +471,10 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         assert missing.returncode == 22 and missing.stderr.rstrip().endswith("curl: (22) The requested URL returned error: 404")
         offline = outcome("offline")
         assert offline.returncode == 6 and "(curl exit 6): curl: (6) Could not resolve host" in offline.stderr
+        empty = outcome("empty")
+        assert empty.returncode == 1 and empty.stderr.rstrip().endswith("is empty or not a script; it begins:")
+        html = outcome("html")
+        assert html.returncode == 1 and html.stderr.rstrip().endswith("it begins: <html><body>Sign in to the network</body></html>")
 
     seen = {}
 
