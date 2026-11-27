@@ -28,6 +28,9 @@ COMMIT = COMMITS[RELEASE]
 INSTALL_SH = f"https://raw.githubusercontent.com/NousResearch/hermes-agent/{RELEASE}/scripts/install.sh"
 # The installer's log, where Harbor downloads the agent's logs even when the setup fails or times out; else the home.
 LOG_DIR = "/logs/agent"
+# Seconds between the lines the install prints while the installer runs into its log: E2B's command stream times out
+# after minutes of silence (a staging trial lost it after about 7 minutes of a silent install).
+BEAT = 20
 # The installer's last failure lines, each cut to its end (`exited 137`): a platform keeps only the end of an error. Only
 # its own marks (`fatal:`, `✗`, `⚠`, `exited N`): a full disk prints `error: unable to write file <name>` per file, and a
 # name may hold `fail`.
@@ -64,10 +67,15 @@ class Hermes(HarborHermes):
                 "installer=$(mktemp)",
                 f'curl -fsSL -o "$installer" {INSTALL_SH} >>"$log" 2>&1 || {{ rc=$?; echo "could not download the Hermes installer (curl exit $rc): $(tail -n 2 "$log")" >&2; exit "$rc"; }}',
                 '[ "$(head -c 2 "$installer")" = "#!" ] || { echo "the Hermes installer download is empty or not a script; it begins: $(head -n 1 "$installer" | cut -c1-120)" >&2; exit 1; }',
+                # A line every `BEAT` seconds while it runs, so the command is never silent; it stops with the installer.
+                # The sleep's own output goes nowhere, so a stopped beat holds no pipe open.
+                "( s=; trap 'kill \"$s\" 2>/dev/null; exit 0' TERM; "
+                f'while :; do sleep {BEAT} >/dev/null 2>&1 & s=$!; wait "$s"; echo "hermes install: still running, $(wc -l < "$log") lines in its log"; done ) & beat=$!',
                 # Into the log only: Harbor names a failed command's error from words anywhere in its output (`rate limit`
                 # makes it a rate-limit error), and the installer prints thousands of file names.
                 f'bash "$installer" --skip-setup {tree} >>"$log" 2>&1',
                 "rc=$?",
+                'kill "$beat" 2>/dev/null; wait "$beat" 2>/dev/null',
                 # The installer's example .env (TERMINAL_TIMEOUT=60, ...) is not Harbor's: the run's config.yaml sets Hermes.
                 'rm -f "$HERMES_HOME/.env"',
                 'mkdir -p "$HERMES_HOME/sessions" "$HERMES_HOME/skills" "$HERMES_HOME/memories"',

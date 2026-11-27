@@ -559,7 +559,7 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
 
     from harbor.agents.factory import AgentFactory
     from harbor.trial.trial import Trial
-    from openarena.harbor_hermes import Hermes
+    from openarena.harbor_hermes import BEAT, Hermes
     from openarena.programs import harbor_program
 
     ran = []
@@ -596,6 +596,7 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir(exist_ok=True)
         body = {
+            "slow": "sleep 3; echo installed",
             "fails": "echo 'error: unable to write file tests/test_rate_limit.py'; echo '  web UI build failed: exited 137'; exit 1",
             "full": "echo 'error: unable to write file a.py'; echo 'fatal: sha1 file write error. Out of diskspace'; "
             "echo 'error: unable to write file tests/test_failover.py'; echo '✗ could not check out 8fc0374'; exit 1",
@@ -610,8 +611,11 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         for tool in bin_dir.iterdir():
             tool.chmod(0o755)
         script = install.replace("/logs/agent", str(tmp_path / "logs")).replace("/tmp/hermes", str(tmp_path / "run"))
+        script = script.replace(f"sleep {BEAT} ", "sleep 1 ")  # the beat, quicker
         env = {**os.environ, "HOME": str(tmp_path / "home")}
-        return subprocess.run(["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True, env=env)
+        return subprocess.run(
+            ["bash", "-c", f'export PATH="{bin_dir}:$PATH"; {script}'], capture_output=True, text=True, env=env, timeout=60
+        )
 
     if os.name == "posix" and shutil.which("bash"):
         (tmp_path / "home").mkdir()
@@ -620,6 +624,8 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         broken = outcome("fails", 1)
         assert broken.returncode == 1 and broken.stderr.rstrip().endswith("web UI build failed: exited 137")
         assert broken.stderr.count("reported:") == 1
+        # An installer that fails at once stops the beat before its first sleep: the beat says nothing then.
+        assert "unbound" not in broken.stderr and "still running" not in broken.stdout
         # The installer's file names stay in its log: Harbor would call the failure a rate limit.
         assert "rate_limit" not in broken.stdout + broken.stderr
         full = outcome("full", 127)
@@ -627,6 +633,10 @@ def test_hermes_installs_where_the_trial_runs_it_and_lets_the_command_decide(mon
         assert "test_failover" not in full.stderr
         # The installer's log is where Harbor downloads the agent's logs, whatever the outcome.
         assert "Out of diskspace" in (tmp_path / "logs" / "hermes-install.log").read_text()
+        # An installer silent for longer than the beat: the install prints a line meanwhile, and the beat ends with it.
+        slow = outcome("slow")
+        assert slow.returncode == 0 and "hermes install: still running" in slow.stdout
+        assert slow.stdout.count("still running") <= 4
         # A /tmp/hermes left by an earlier setup, a folder or a stale link, becomes the link to the install, not a link inside it.
         for earlier in ("folder", "stale link"):
             run = tmp_path / "run"
